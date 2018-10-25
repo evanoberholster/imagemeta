@@ -49,25 +49,6 @@ type ItemPath struct {
 	Item 	string
 }
 
-func GetWithReader(reader io.Reader) {
-	resp, err := extractJson(reader)
-	if err != nil {
-		log.Println(err)
-	}
-
-	// Parse response keys
-	data := parseResponse(resp)
-
-	log.Println(data.ToExif())
-	log.Println(data.ToComposite())
-	log.Println(data.ToLocation())
-
-	log.Println(data.ToMakerNotes())
-
-	//log.Println(data.GetExifItem(GroupComposite, "Aperture"))
-	//log.Println(data.Group[GroupFile].Item["ImageHeight"])
-}
-
 func ExtractWithReader(reader io.Reader) (ExifResponse, error) {
 	resp, err := extractJson(reader)
 	if err != nil {

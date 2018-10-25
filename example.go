@@ -10,7 +10,7 @@ type File struct {
 	ImageHeight		int
 } 
 
-func (e ExifResponse)ToFile() (File) {
+func ToFile(e ExifResponse) (File) {
 	filesize := e.GetExifItem(GroupFile, "FileSize").ToInt()
 	mimeType := e.GetExifItem(GroupFile, "MIMEType").ToString()
 	width := e.ExifPath(Path(GroupFile, "ImageWidth"), Path(GroupExif, "ImageWidth")).ToInt()
@@ -53,7 +53,7 @@ type Exif struct {
 	HyperfocalDistance			float64		`json:"HyperfocalDistance"` // meters
 }
 
-func (e ExifResponse)ToExif() (Exif) {
+func ToExif(e ExifResponse) (Exif) {
 	//dateTimeOriginal := e.ExifPath(Path(GroupComposite, "SubSecDateTimeOriginal"), Path(GroupExif, "DateTimeOriginal")).ToTime()
 	return Exif{
 		FileSize: e.GetExifItem(GroupFile, "FileSize").ToInt(),
@@ -120,7 +120,7 @@ type MakerNotes struct {
 	LensModel                  	string  `json:"LensModel"`
 }
 
-func (e ExifResponse)ToMakerNotes() (MakerNotes) {
+func ToMakerNotes(e ExifResponse) (MakerNotes) {
 	return MakerNotes{
 		MacroMode: e.ExifPath(Path(GroupMakerNotes, "MacroMode")).ToString(),
 		SelfTimer: e.ExifPath(Path(GroupMakerNotes, "SelfTimer")).ToString(),
@@ -180,7 +180,7 @@ type Location struct {
 	GPSPositionError 			float64	
 }
 
-func (e ExifResponse)ToLocation() (Location) {
+func ToLocation(e ExifResponse) (Location) {
 	altitude := e.ExifPath(Path(GroupComposite, "GPSAltitude"),Path(GroupExif, "GPSAltitude")).ToFloat()
 	latitude := e.ExifPath(Path(GroupComposite, "GPSLatitude"),Path(GroupExif, "GPSLatitude")).ToFloat()
 	longitude := e.ExifPath(Path(GroupComposite, "GPSLongitude"),Path(GroupExif, "GPSLongitude")).ToFloat()
@@ -218,7 +218,7 @@ type Composite struct {
 	DriveMode              	string  	`json:"DriveMode"`
 }
 
-func (e ExifResponse)ToComposite() (Composite) {	
+func ToComposite(e ExifResponse) (Composite) {	
 	return Composite{
 		Aperture: e.GetExifItem(GroupComposite, "Aperture").ToFloat(),
 		ISO: e.ExifPath(Path(GroupComposite, "ISO"), Path(GroupExif, "ISO")).ToInt(),
