@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/evanoberholster/exiftool"
 )
@@ -32,21 +31,22 @@ func main() {
 
 	f, err := os.Open(imageFilename)
 	if err != nil {
-		panic(err)
+	    panic(err)
 	}
 
 	eh, err := exiftool.SearchExifHeader(f)
 	if err != nil {
-		panic(err)
+	    panic(err)
 	}
 	f.Seek(0, 0)
 	buf, _ := ioutil.ReadAll(f)
-    cb := bytes.NewReader(buf)
-    
+	cb := bytes.NewReader(buf)
+
 	e, err := eh.ParseExif(cb)
 	if err != nil {
-        fmt.Println(err)
-        
+	    fmt.Println(err)
+	}
+
 	// Strings
 	fmt.Println(e.CameraMake())
 	fmt.Println(e.CameraModel())
@@ -57,24 +57,24 @@ func main() {
 	fmt.Println(e.CameraSerial())
 	fmt.Println(e.LensSerial())
 	fmt.Println(e.XMLPacket())
-	
+
 	// Canon Makernotes
 	fmt.Println(e.CanonCameraSettings())
 	fmt.Println(e.CanonFileInfo())
 	fmt.Println(e.CanonShotInfo())
 	fmt.Println(e.CanonAFInfo())
-	
+
 	// Time
 	fmt.Println(e.ModifyDate())
 	fmt.Println(e.DateTime())
-    fmt.Println(e.GPSTime())
-    
+	fmt.Println(e.GPSTime())
+
 	// GPS
 	fmt.Println(e.GPSInfo())
-    fmt.Println(e.GPSAltitude())
-    
+	fmt.Println(e.GPSAltitude())
+
     // Metadata
-    fmt.Println(e.Dimensions())
+	fmt.Println(e.Dimensions())
 	fmt.Println(e.ExposureProgram())
 	fmt.Println(e.MeteringMode())
 	fmt.Println(e.ShutterSpeed())
@@ -120,10 +120,10 @@ Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org)
 
 Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
 
-
 ## LICENSE
 
 Copyright (c) 2019, Evan Oberholster & Contributors
+
 Copyright (c) 2019, Dustin Oprea
 
 [License-Url]: https://opensource.org/licenses/BSD-2-Clause
