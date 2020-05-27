@@ -10,8 +10,20 @@ var (
 	ErrTagTypeNotValid = errors.New("Tag type not valid")
 )
 
-// Type -
+// Type is the type of Tag
 type Type uint8
+
+// Rational is a rational value
+type Rational struct {
+	Numerator   uint32
+	Denominator uint32
+}
+
+// SignedRational is a signed rational value
+type SignedRational struct {
+	Numerator   int32
+	Denominator int32
+}
 
 // TagTypes defined
 // Copied from dsoprea/go-exif
@@ -45,19 +57,6 @@ const (
 	// TypeASCIINoNul is just a pseudo-type, for our own purposes.
 	TypeASCIINoNul Type = 0xf0
 )
-
-// IsValid returns true if tagType is a valid type.
-func (tagType Type) IsValid() bool {
-	return tagType == TypeByte ||
-		tagType == TypeASCII ||
-		tagType == TypeASCIINoNul ||
-		tagType == TypeShort ||
-		tagType == TypeLong ||
-		tagType == TypeRational ||
-		tagType == TypeSignedLong ||
-		tagType == TypeSignedRational ||
-		tagType == TypeUndefined
-}
 
 // Tag sizes
 const (
@@ -93,6 +92,19 @@ func (tagType Type) Size() uint32 {
 	}
 }
 
+// IsValid returns true if tagType is a valid type.
+func (tagType Type) IsValid() bool {
+	return tagType == TypeByte ||
+		tagType == TypeASCII ||
+		tagType == TypeASCIINoNul ||
+		tagType == TypeShort ||
+		tagType == TypeLong ||
+		tagType == TypeRational ||
+		tagType == TypeSignedLong ||
+		tagType == TypeSignedRational ||
+		tagType == TypeUndefined
+}
+
 // String returns the name of the Tag Type
 func (tagType Type) String() string {
 	switch tagType {
@@ -126,16 +138,4 @@ func TypeFromRaw(tagTypeRaw uint16) Type {
 		panic(ErrTagTypeNotValid)
 	}
 	return tagType
-}
-
-// Rational -
-type Rational struct {
-	Numerator   uint32
-	Denominator uint32
-}
-
-// SignedRational -
-type SignedRational struct {
-	Numerator   int32
-	Denominator int32
 }

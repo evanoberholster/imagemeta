@@ -42,5 +42,4 @@ func TestSearchExifHeader(t *testing.T) {
 			}
 		})
 	}
-
 }
