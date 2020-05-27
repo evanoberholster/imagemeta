@@ -58,6 +58,7 @@ func (eh ExifHeader) String() string {
 	return fmt.Sprintf("ExifHeader: empty | %s", str)
 }
 
+// SearchExifHeader searches an io.Reader for a LittleEndian Tiff Header or a BigEndian Tiff Header
 func SearchExifHeader(reader io.Reader) (eh ExifHeader, err error) {
 	defer func() {
 		if state := recover(); state != nil {

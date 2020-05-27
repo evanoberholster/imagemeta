@@ -106,7 +106,7 @@ BenchmarkParseExif100/.DNG/Adobe-8       	   13603	     87055 ns/op	   18494 B/o
 
 ## TODO
 
-- Example Usage
+- Write tests
 - Create Thumbnail API
 - Update ImageTypes API
 - Stabalize API
