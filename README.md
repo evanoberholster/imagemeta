@@ -126,8 +126,8 @@ Copyright (c) 2019, Evan Oberholster & Contributors
 
 Copyright (c) 2019, Dustin Oprea
 
-[License-Url]: https://opensource.org/licenses/BSD-2-Clause
-[License-Image]: https://img.shields.io/badge/license-2%20Clause%20BSD-blue.svg?maxAge=2592000
+[License-Url]: https://opensource.org/licenses/MIT
+[License-Image]: https://img.shields.io/badge/License-MIT-blue.svg?maxAge=2592000
 [Godoc-Url]: https://godoc.org/github.com/evanoberholster/exiftool
 [Godoc-Image]: https://godoc.org/github.com/evanoberholster/exiftool?status.svg
 [ReportCard-Url]: https://goreportcard.com/report/github.com/evanoberholster/exiftool
