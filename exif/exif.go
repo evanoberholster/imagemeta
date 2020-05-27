@@ -31,7 +31,7 @@ type Exif struct {
 	Model      string
 }
 
-// NewExif creates a new initalized Exif object
+// NewExif creates a new initialized Exif object
 func NewExif(exifReader Reader) *Exif {
 	return &Exif{
 		exifReader: exifReader,
