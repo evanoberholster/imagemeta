@@ -113,7 +113,8 @@ func (ite *ifdTagEnumerator) ParseIfd(e *exif.Exif, ifd ifds.IFD, ifdIndex int, 
 	for i := 0; i < int(tagCount); i++ {
 		t, err := ite.ParseTag()
 		if err != nil {
-			if errors.Is(err, tag.ErrTagTypeNotValid) {
+			if err == ErrTagTypeNotValid {
+				//if errors.Is(err, tag.ErrTagTypeNotValid) {
 				// Log TagNotValid Error
 				//ifdEnumerateLogger.Warningf(nil, "Tag in IFD [%s] at position (%d) has invalid type and will be skipped.", fqIfdPath, i)
 				continue
