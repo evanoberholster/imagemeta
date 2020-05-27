@@ -127,7 +127,7 @@ func decodeBits(vals []uint16, bits int) (list []int) {
 	for _, a := range vals {
 		for i := 0; i < bits; i++ {
 			n = i + num
-			if a&(1<<i) > 0 {
+			if a&(1<<uint(i)) > 0 {
 				list = append(list, n)
 			}
 		}
