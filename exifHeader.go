@@ -8,7 +8,6 @@ import (
 	"io"
 )
 
-// Errors
 var (
 	// ErrNoExif no exif information was found
 	ErrNoExif = errors.New("No exif in object")
@@ -17,8 +16,6 @@ var (
 const (
 	// Tiff Header Length is 8 bytes
 	tiffHeaderLength = 8
-	// tiffHeaderMaxOffset
-	tiffHeaderMaxOffset = 256 << 10 // 128bytes
 )
 
 var (
@@ -41,6 +38,9 @@ var (
 	PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
 )
 
+// ExifHeader contains the byte Order, first Ifd Offset,
+// tiff Header offset and Image type for the parsing
+// of Exif information.
 type ExifHeader struct {
 	byteOrder        binary.ByteOrder
 	firstIfdOffset   uint32

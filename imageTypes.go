@@ -3,13 +3,7 @@ package exiftool
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"io"
-)
-
-var (
-	// ErrDataLength is an error for data length
-	ErrDataLength = errors.New("Error the data is not long enough")
 )
 
 // SearchImageType -

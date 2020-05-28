@@ -10,7 +10,7 @@ import (
 	"github.com/evanoberholster/exiftool"
 )
 
-const testFilename = "../../test/img/3.heic"
+const testFilename = "../../test/img/2.CR2"
 
 func main() {
 	var err error

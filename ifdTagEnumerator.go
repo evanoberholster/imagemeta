@@ -3,17 +3,11 @@ package exiftool
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 
 	"github.com/evanoberholster/exiftool/exif"
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/ifds/mknote"
 	"github.com/evanoberholster/exiftool/tag"
-)
-
-// Errors
-var (
-	ErrIfdBufferLength = fmt.Errorf("Ifd buffer length insufficient")
 )
 
 type ifdTagEnumerator struct {
@@ -69,6 +63,8 @@ func (ite *ifdTagEnumerator) parseUndefinedIfds(e *exif.Exif, ifd ifds.IFD) bool
 			// ByteOrder is the same as RootIfd
 			return true
 		case "NIKON CORPORATION", "Nikon":
+			// Nikon v3 maker note is a self-contained Ifd
+			// (offsets are relative to the start of the maker note)
 			byteOrder, err := mknote.NikonMkNoteHeader(ite)
 			if err != nil {
 				return false

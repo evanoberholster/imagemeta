@@ -149,9 +149,9 @@ func BenchmarkParseExif100(b *testing.B) {
 
 //BenchmarkParseExif100/.CR2/GPS-8         	   23035	     54230 ns/op	    9310 B/op	      56 allocs/op
 //BenchmarkParseExif100/.CR2/7D-8          	   24091	     48405 ns/op	    8957 B/op	      54 allocs/op
-//BenchmarkParseExif100/.CR3-8   	  176527	      6746 ns/op	     901 B/op	      14 allocs/op
+//BenchmarkParseExif100/.CR3-8   	  		  176527	      6746 ns/op	     901 B/op	      14 allocs/op
 //BenchmarkParseExif100/.JPG/GPS-8         	   47270	     25754 ns/op	    5123 B/op	      32 allocs/op
-//BenchmarkParseExif100/.HEIC-8  	   50145	     25194 ns/op	    4882 B/op	      29 allocs/op
+//BenchmarkParseExif100/.HEIC-8  	   		   50145	     25194 ns/op	    4882 B/op	      29 allocs/op
 //BenchmarkParseExif100/.GoPro/6-8         	   54031	     22543 ns/op	    3782 B/op	      28 allocs/op
 //BenchmarkParseExif100/.NEF/Nikon-8       	   22287	     54464 ns/op	   12417 B/op	      59 allocs/op
 //BenchmarkParseExif100/.ARW/Sony-8        	   28357	     42439 ns/op	    7671 B/op	      53 allocs/op

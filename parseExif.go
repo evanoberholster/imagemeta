@@ -13,16 +13,22 @@ import (
 var (
 	// ErrInvalidHeader is an error for an Invalid Exif Header
 	ErrInvalidHeader = errors.New("error exif header not valid")
+
+	// ErrDataLength is an error for data length
+	ErrDataLength = errors.New("Error the data is not long enough")
+
+	// ErrIfdBufferLength
+	ErrIfdBufferLength = errors.New("Ifd buffer length insufficient")
 )
 
 // IsValid returns true for a Valid ExifHeader
-func (eh ExifHeader) IsValid() bool {
+func (eh ExifHeader) isValid() bool {
 	return eh.byteOrder != nil || eh.firstIfdOffset > 0x0000
 }
 
 // ParseExif parses an io.ReaderAt for exif informationan and returns it
 func (eh ExifHeader) ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
-	if !eh.IsValid() {
+	if !eh.isValid() {
 		err = ErrInvalidHeader
 		return
 	}
