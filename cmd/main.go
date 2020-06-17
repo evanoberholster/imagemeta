@@ -8,11 +8,16 @@ import (
 	"time"
 
 	"github.com/evanoberholster/exiftool"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const testFilename = "../../test/img/2.CR2"
 
 func main() {
+	// Pretty Logging
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	var err error
 
 	f, err := os.Open(testFilename)

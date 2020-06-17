@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 // TODO: write tests for ParseExif
@@ -23,6 +25,7 @@ func TestParseExif(t *testing.T) {
 	}
 	for _, wantedExif := range exifTests {
 		t.Run(wantedExif.filename, func(t *testing.T) {
+			zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 			// Open file
 			f, err := os.Open(wantedExif.filename)
 			if err != nil {

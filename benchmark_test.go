@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 const testFilename = "testImages/ARW.exif"
@@ -120,8 +122,10 @@ func BenchmarkSearchExifHeader200(b *testing.B) {
 }
 
 func BenchmarkParseExif100(b *testing.B) {
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	for _, bm := range testFilenames {
 		b.Run(bm, func(b *testing.B) {
+			zerolog.New(os.Stderr)
 			f, err := os.Open(sampleDir + bm)
 			if err != nil {
 				panic(err)
