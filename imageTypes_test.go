@@ -18,6 +18,7 @@ func TestSearchImageType(t *testing.T) {
 		{"testImages/CR2.exif", ImageCR2},
 		{"testImages/Heic.exif", ImageHEIF},
 		{"testImages/CRW.CRW", ImageCRW},
+		{"testImages/XMP.xmp", ImageXMP},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {

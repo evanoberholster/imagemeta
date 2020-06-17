@@ -2,13 +2,32 @@ package exiftool
 
 import (
 	"bufio"
-	"bytes"
 	"io"
 )
 
 const (
 	// searchImageHeaderLength is the number of bytes to read while searching for an Image Header
 	searchImageHeaderLength = 16
+)
+
+var (
+	// TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
+	TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
+
+	// TiffLittleEndianSignature is the Tiff Signature for LittleEndian encoded images
+	TiffLittleEndianSignature = []byte{0x49, 0x49, 0x2a, 0x00}
+
+	// JPEGStartOfImageMarker is the JPEG Start of Image Marker.
+	// JPEG SOI Marker
+	JPEGStartOfImageMarker = []byte{0xff, 0xd8}
+
+	// JPEGEndofImageMarker is the JPEG End of Image Marker.
+	// JPEG EOI Marker
+	JPEGEndofImageMarker = []byte{0xff, 0xd9}
+
+	// PNGImageSignature is the marker for the start of a PNG Image.
+	// 4 Bytes
+	PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
 )
 
 // SearchImageType -
@@ -117,13 +136,33 @@ var imageTypeValues = map[string]ImageType{
 	"application/rdf+xml":       ImageXMP,
 }
 
-// isTiff() Checks to see if an Image has the tiff format header
+// isTiff() Checks to see if an Image has the tiff format header.
+//
 func isTiff(buf []byte) bool {
-	return bytes.Equal(buf[:4], TiffBigEndianSignature[:]) ||
-		bytes.Equal(buf[:4], TiffLittleEndianSignature[:])
+	return len(buf) > 4 &&
+		// BigEndian Tiff Image Header
+		IsTiffBigEndian(buf[:4]) ||
+		// LittleEndian Tiff Image Header
+		IsTiffLittleEndian(buf[:4])
 }
 
-// isCRW returns true if it matches an image/x-canon-crw.
+// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func IsTiffLittleEndian(buf []byte) bool {
+	return buf[0] == 0x49 &&
+		buf[1] == 0x49 &&
+		buf[2] == 0x2a &&
+		buf[3] == 0x00
+}
+
+// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
+func IsTiffBigEndian(buf []byte) bool {
+	return buf[0] == 0x4d &&
+		buf[1] == 0x4d &&
+		buf[2] == 0x00 &&
+		buf[3] == 0x2a
+}
+
+// isCRW returns true if it matches an image/x-canon-crw with 14 bytes of the header.
 //
 // CanonCRWHeader is the file Header for a Canon CRW file. Currently only Little Endian support
 // Reference: https://exiftool.org/canon_raw.html
@@ -205,6 +244,7 @@ func isBMP(buf []byte) bool {
 
 // isRW2 returns true if the first 4 bytes match the Panasonic Tiff alternate
 // header and bytes 8 through 12 match the RW2 header
+//
 func isRW2(buf []byte) bool {
 	return buf[0] == 0x49 &&
 		buf[1] == 0x49 &&
@@ -217,12 +257,14 @@ func isRW2(buf []byte) bool {
 }
 
 // isJPEG returns true if the first 2 bytes match a JPEG file header
+//
 func isJPEG(buf []byte) bool {
 	return buf[0] == 0xff &&
 		buf[1] == 0xd8
 }
 
 // isPNG returns true if the first 4 bytes match a PNG file header.
+//
 func isPNG(buf []byte) bool {
 	return buf[0] == 0x89 &&
 		buf[1] == 0x50 &&
@@ -243,7 +285,8 @@ func isWebP(buf []byte) bool {
 		buf[11] == 0x50
 }
 
-// isJPEG2000 returns true if the first 12bytes match a JPEG2000 file header
+// isJPEG2000 returns true if the first 12 bytes match a JPEG2000 file header
+//
 func isJPEG2000(buf []byte) bool {
 	return buf[0] == 0x0 &&
 		buf[1] == 0x0 &&
@@ -259,13 +302,16 @@ func isJPEG2000(buf []byte) bool {
 		buf[11] == 0xA
 }
 
-// isPSD returns true if the header matches PSDImage
+// isPSD returns true if the header matches a PSDImage.
+//
+// PSD Photoshop document
 func isPSD(buf []byte) bool {
 	return buf[0] == 0x38 && buf[1] == 0x42 &&
 		buf[2] == 0x50 && buf[3] == 0x53
 }
 
 // isXMP returns true if the header matches "<x:xmpmeta" start of a file.
+//
 // XMP sidecar files. The XMPHeader are the first 10bytes of an XMP sidecar.
 func isXMP(buf []byte) bool {
 	return buf[0] == 0x3c &&
@@ -294,69 +340,69 @@ func parseImageHeader(br *bufio.Reader) ImageType {
 		panic(ErrDataLength)
 	}
 
-	// JPEG Image
+	// JPEG Header
 	if isJPEG(buf) {
 		return ImageJPEG
 	}
 
-	// JPEG2000 Image
+	// JPEG2000 Header
 	if isJPEG2000(buf) {
 		return ImageJPEG
 	}
 
-	// Canon CRW Image
+	// Canon CRW Header
 	if isCRW(buf) {
 		return ImageCRW
 	}
 
-	// Canon CR2 Image
+	// Canon CR2 Header
 	if isCR2(buf) {
 		return ImageCR2
 	}
 
-	// Canon CR3 Image
+	// Canon CR3 Header
 	if isCR3(buf) {
 		return ImageCR3
 	}
 
-	// Heif
+	// Heif Header
 	if isHeif(buf) {
 		return ImageHEIF
 	}
 
-	// Panasonic/Leica raw Image
+	// Panasonic/Leica Raw Header
 	if isRW2(buf) {
 		return ImagePanaRAW
 	}
 
-	// TiffHeader
+	// Tiff Header
 	if isTiff(buf) {
 		return ImageTiff
 	}
 
 	// PNG Header
-	if bytes.Equal(buf[:4], PNGImageSignature[:]) {
+	if isPNG(buf) {
 		return ImagePNG
 	}
 
-	// XMP file
-	if isXMP(buf) {
-		return ImageXMP
-	}
-
-	// PSD
+	// PSD Header
 	if isPSD(buf) {
 		return ImagePSD
 	}
 
-	// BMP
+	// BMP Header
 	if isBMP(buf) {
 		return ImageBMP
 	}
 
-	// Webp
+	// Webp Header
 	if isWebP(buf) {
 		return ImageWebP
+	}
+
+	// XMP file Header
+	if isXMP(buf) {
+		return ImageXMP
 	}
 
 	return ImageUnknown

@@ -18,26 +18,6 @@ const (
 	tiffHeaderLength = 8
 )
 
-var (
-	// TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
-	TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
-
-	// TiffLittleEndianSignature is the Tiff Signature for LittleEndian encoded images
-	TiffLittleEndianSignature = []byte{0x49, 0x49, 0x2a, 0x00}
-
-	// JPEGStartOfImageMarker is the JPEG Start of Image Marker.
-	// JPEG SOI Marker
-	JPEGStartOfImageMarker = []byte{0xff, 0xd8}
-
-	// JPEGEndofImageMarker is the JPEG End of Image Marker.
-	// JPEG EOI Marker
-	JPEGEndofImageMarker = []byte{0xff, 0xd9}
-
-	// PNGImageSignature is the marker for the start of a PNG Image.
-	// 4 Bytes
-	PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
-)
-
 // ExifHeader contains the byte Order, first Ifd Offset,
 // tiff Header offset and Image type for the parsing
 // of Exif information.
@@ -123,20 +103,4 @@ func parseExifHeader(data []byte) binary.ByteOrder {
 		return binary.LittleEndian
 	}
 	return nil
-}
-
-// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func IsTiffLittleEndian(buf []byte) bool {
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x2a &&
-		buf[3] == 0x00
-}
-
-// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func IsTiffBigEndian(buf []byte) bool {
-	return buf[0] == 0x4d &&
-		buf[1] == 0x4d &&
-		buf[2] == 0x00 &&
-		buf[3] == 0x2a
 }
