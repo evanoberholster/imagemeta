@@ -6,6 +6,11 @@ import (
 	"io"
 )
 
+const (
+	// searchImageHeaderLength is the number of bytes to read while searching for an Image Header
+	searchImageHeaderLength = 16
+)
+
 // SearchImageType -
 // TODO: Documentation
 func SearchImageType(reader io.Reader) (imageType ImageType, err error) {
@@ -118,7 +123,27 @@ func isTiff(buf []byte) bool {
 		bytes.Equal(buf[:4], TiffLittleEndianSignature[:])
 }
 
+// isCRW returns true if it matches an image/x-canon-crw.
+//
+// CanonCRWHeader is the file Header for a Canon CRW file. Currently only Little Endian support
+// Reference: https://exiftool.org/canon_raw.html
+func isCRW(buf []byte) bool {
+	// ByteOrder: LittleEndian
+	return buf[0] == 0x49 &&
+		buf[1] == 0x49 &&
+		// Signature: HEAPCCDR
+		buf[6] == 0x48 &&
+		buf[7] == 0x45 &&
+		buf[8] == 0x41 &&
+		buf[9] == 0x50 &&
+		buf[10] == 0x43 &&
+		buf[11] == 0x43 &&
+		buf[12] == 0x44 &&
+		buf[13] == 0x52
+}
+
 // isCR2 returns true if it matches an image/x-canon-cr2.
+//
 // CanonCR2Header is the Header for a Canon CR2 file
 // 4 bytes after TiffSignature and before the beginning of IFDO
 func isCR2(buf []byte) bool {
@@ -256,7 +281,8 @@ func isXMP(buf []byte) bool {
 }
 
 func parseImageHeader(br *bufio.Reader) ImageType {
-	buf, err := br.Peek(12)
+
+	buf, err := br.Peek(searchImageHeaderLength)
 	if err != nil {
 		if err == io.EOF {
 			return ImageUnknown
@@ -264,7 +290,7 @@ func parseImageHeader(br *bufio.Reader) ImageType {
 		panic(err)
 	}
 
-	if len(buf) < 12 {
+	if len(buf) < searchImageHeaderLength {
 		panic(ErrDataLength)
 	}
 
@@ -276,6 +302,11 @@ func parseImageHeader(br *bufio.Reader) ImageType {
 	// JPEG2000 Image
 	if isJPEG2000(buf) {
 		return ImageJPEG
+	}
+
+	// Canon CRW Image
+	if isCRW(buf) {
+		return ImageCRW
 	}
 
 	// Canon CR2 Image
