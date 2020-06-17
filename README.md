@@ -33,6 +33,7 @@ func main() {
 	if err != nil {
 	    panic(err)
 	}
+	defer f.Close()
 
 	eh, err := exiftool.SearchExifHeader(f)
 	if err != nil {
@@ -73,7 +74,7 @@ func main() {
 	fmt.Println(e.GPSInfo())
 	fmt.Println(e.GPSAltitude())
 
-    // Metadata
+	// Metadata
 	fmt.Println(e.Dimensions())
 	fmt.Println(e.ExposureProgram())
 	fmt.Println(e.MeteringMode())
