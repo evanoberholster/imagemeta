@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/evanoberholster/exiftool/exif"
 	"github.com/rs/zerolog"
 )
 
@@ -14,14 +15,17 @@ import (
 
 func TestParseExif(t *testing.T) {
 	exifTests := []struct {
-		filename string
-		make     string
-		model    string
+		filename    string
+		make        string
+		model       string
+		ISOSpeed    int
+		aperture    float32
+		focalLength exif.FocalLength
 	}{
-		{"testImages/ARW.exif", "SONY", "SLT-A55V"},
-		{"testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100"},
-		{"testImages/CR2.exif", "Canon", "Canon EOS-1Ds Mark III"},
-		{"testImages/Heic.exif", "Canon", "Canon EOS 6D"},
+		{"testImages/ARW.exif", "SONY", "SLT-A55V", 100, 13.0, 30.0},
+		{"testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0},
+		{"testImages/CR2.exif", "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0},
+		{"testImages/Heic.exif", "Canon", "Canon EOS 6D", 500, 5.0, 20.0},
 	}
 	for _, wantedExif := range exifTests {
 		t.Run(wantedExif.filename, func(t *testing.T) {
@@ -49,6 +53,18 @@ func TestParseExif(t *testing.T) {
 			}
 			if e.Model != wantedExif.model {
 				t.Errorf("Incorrect Exif Model wanted %s got %s", wantedExif.model, e.Model)
+			}
+			isoSpeed, err := e.ISOSpeed()
+			if err != nil || isoSpeed != wantedExif.ISOSpeed {
+				t.Errorf("Incorrect ISO Speed wanted %d got %d", wantedExif.ISOSpeed, isoSpeed)
+			}
+			aperture, err := e.Aperture()
+			if err != nil || aperture != wantedExif.aperture {
+				t.Errorf("Incorrect Aperture wanted %0.2f got %0.2f", wantedExif.aperture, aperture)
+			}
+			focalLength, err := e.FocalLength()
+			if err != nil || focalLength != wantedExif.focalLength {
+				t.Errorf("Incorrect Focal Length wanted %s got %s", wantedExif.focalLength.String(), focalLength.String())
 			}
 		})
 	}
