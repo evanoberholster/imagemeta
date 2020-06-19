@@ -8,7 +8,6 @@ import (
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/ifds/mknote"
 	"github.com/evanoberholster/exiftool/tag"
-	"github.com/rs/zerolog/log"
 )
 
 type ifdTagEnumerator struct {
@@ -101,12 +100,13 @@ func (ite *ifdTagEnumerator) ParseIfd(e *exif.Exif, ifd ifds.IFD, ifdIndex int, 
 	//fmt.Printf("Parsing \"%s\" with %d tags at offset [0x%04x]\n", ifd.String(), tagCount, ite.ifdOffset)
 
 	// Log info
-	log.Info().
-		Str("ifd", ifd.String()).
-		Uint32("offset", ite.ifdOffset).
-		Uint8("ifdIndex", uint8(ifdIndex)).
-		Uint16("tagcount", tagCount).
-		Msg("Parsing IFD")
+	// Remove Log until we can find a better solution
+	//log.Info().
+	//	Str("ifd", ifd.String()).
+	//	Uint32("offset", ite.ifdOffset).
+	//	Uint8("ifdIndex", uint8(ifdIndex)).
+	//	Uint16("tagcount", tagCount).
+	//	Msg("Parsing IFD")
 
 	if tagCount > 256 {
 		panic(errors.New("error Tagcount too high"))
