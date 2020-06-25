@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 )
 
@@ -25,17 +24,7 @@ type ExifHeader struct {
 	byteOrder        binary.ByteOrder
 	firstIfdOffset   uint32
 	tiffHeaderOffset uint32
-	imageType        ImageType
-}
-
-func (eh ExifHeader) String() string {
-	str, _ := eh.imageType.MarshalText()
-	if eh.byteOrder == binary.BigEndian {
-		return fmt.Sprintf("ExifHeader: BigEndian | Tiff offset:  0x%04x | IFD offset: 0x%04x | %s", eh.tiffHeaderOffset, eh.firstIfdOffset, str)
-	} else if eh.byteOrder == binary.LittleEndian {
-		return fmt.Sprintf("ExifHeader: LittleEndian | Tiff offset: 0x%04x | IFD offset: 0x%04x | %s", eh.tiffHeaderOffset, eh.firstIfdOffset, str)
-	}
-	return fmt.Sprintf("ExifHeader: empty | %s", str)
+	//imageType        ImageType
 }
 
 // SearchExifHeader searches an io.Reader for a LittleEndian Tiff Header or a BigEndian Tiff Header
@@ -103,4 +92,20 @@ func parseExifHeader(data []byte) binary.ByteOrder {
 		return binary.LittleEndian
 	}
 	return nil
+}
+
+// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func IsTiffLittleEndian(buf []byte) bool {
+	return buf[0] == 0x49 &&
+		buf[1] == 0x49 &&
+		buf[2] == 0x2a &&
+		buf[3] == 0x00
+}
+
+// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
+func IsTiffBigEndian(buf []byte) bool {
+	return buf[0] == 0x4d &&
+		buf[1] == 0x4d &&
+		buf[2] == 0x00 &&
+		buf[3] == 0x2a
 }

@@ -1,13 +1,13 @@
-package exiftool
+package imagetype
 
 import (
-	"bufio"
-	"io"
+	"errors"
 )
 
-const (
-	// searchImageHeaderLength is the number of bytes to read while searching for an Image Header
-	searchImageHeaderLength = 16
+// Errors
+var (
+	// ErrDataLength is an error for data length
+	ErrDataLength = errors.New("Error the data is not long enough")
 )
 
 var (
@@ -21,33 +21,10 @@ var (
 	// JPEG SOI Marker
 	JPEGStartOfImageMarker = []byte{0xff, 0xd8}
 
-	// JPEGEndofImageMarker is the JPEG End of Image Marker.
-	// JPEG EOI Marker
-	JPEGEndofImageMarker = []byte{0xff, 0xd9}
-
 	// PNGImageSignature is the marker for the start of a PNG Image.
 	// 4 Bytes
 	PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
 )
-
-// SearchImageType -
-// TODO: Documentation
-func SearchImageType(reader io.Reader) (imageType ImageType, err error) {
-	defer func() {
-		if state := recover(); state != nil {
-			err = state.(error)
-		}
-	}()
-	br := bufio.NewReader(reader)
-	if err != nil {
-		panic(err)
-	}
-
-	// Parse Image Header for IamgeType
-	imageType = parseImageHeader(br)
-
-	return
-}
 
 // ImageType -
 type ImageType uint8
@@ -324,86 +301,4 @@ func isXMP(buf []byte) bool {
 		buf[7] == 0x65 &&
 		buf[8] == 0x74 &&
 		buf[9] == 0x61
-}
-
-func parseImageHeader(br *bufio.Reader) ImageType {
-
-	buf, err := br.Peek(searchImageHeaderLength)
-	if err != nil {
-		if err == io.EOF {
-			return ImageUnknown
-		}
-		panic(err)
-	}
-
-	if len(buf) < searchImageHeaderLength {
-		panic(ErrDataLength)
-	}
-
-	// JPEG Header
-	if isJPEG(buf) {
-		return ImageJPEG
-	}
-
-	// JPEG2000 Header
-	if isJPEG2000(buf) {
-		return ImageJPEG
-	}
-
-	// Canon CRW Header
-	if isCRW(buf) {
-		return ImageCRW
-	}
-
-	// Canon CR2 Header
-	if isCR2(buf) {
-		return ImageCR2
-	}
-
-	// Canon CR3 Header
-	if isCR3(buf) {
-		return ImageCR3
-	}
-
-	// Heif Header
-	if isHeif(buf) {
-		return ImageHEIF
-	}
-
-	// Panasonic/Leica Raw Header
-	if isRW2(buf) {
-		return ImagePanaRAW
-	}
-
-	// Tiff Header
-	if isTiff(buf) {
-		return ImageTiff
-	}
-
-	// PNG Header
-	if isPNG(buf) {
-		return ImagePNG
-	}
-
-	// PSD Header
-	if isPSD(buf) {
-		return ImagePSD
-	}
-
-	// BMP Header
-	if isBMP(buf) {
-		return ImageBMP
-	}
-
-	// Webp Header
-	if isWebP(buf) {
-		return ImageWebP
-	}
-
-	// XMP file Header
-	if isXMP(buf) {
-		return ImageXMP
-	}
-
-	return ImageUnknown
 }
