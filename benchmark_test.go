@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const testFilename = "testImages/ARW.exif"
-
 var (
 	dir        = "../test/img/"
 	benchmarks = []struct {
@@ -53,72 +51,6 @@ var (
 	}
 )
 
-func testOpenFile() *os.File {
-	f, err := os.Open(testFilename)
-	if err != nil {
-		panic(err)
-	}
-	f.Seek(0, 0)
-	return f
-}
-
-// BenchmarkSearchExifHeader200-8   	  254524	      4106 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkSearchExifHeader200-8   	  245546	      4206 ns/op	    4128 B/op	       2 allocs/op
-
-func BenchmarkSearchImageType200(b *testing.B) {
-	f := testOpenFile()
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		f.Seek(0, 0)
-		if _, err := SearchImageType(f); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkSearchExifHeader100(b *testing.B) {
-	for _, bm := range benchmarks {
-		b.Run(bm.name, func(b *testing.B) {
-			f, err := os.Open(dir + bm.fileName)
-			if err != nil {
-				panic(err)
-			}
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				f.Seek(0, 0)
-				if _, err := SearchExifHeader(f); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	}
-}
-
-//BenchmarkSearchExifHeader100/.CR2/GPS-8         	  365108	      2984 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.CR2/7D-8          	  403268	      2967 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.CR3-8   	  197685	      6220 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.JPG/GPS-8         	  374775	      3255 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.HEIC-8  	    5858	    196891 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.GoPro/6-8         	  372853	      3261 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkSearchExifHeader100/.JPG/NoExif-8      	     475	   2673707 ns/op	    4096 B/op	       1 allocs/op
-
-func BenchmarkSearchExifHeader200(b *testing.B) {
-	f := testOpenFile()
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		f.Seek(0, 0)
-		if _, err := SearchExifHeader(f); err != nil {
-			//b.Fatal(err)
-		}
-
-	}
-}
-
 func BenchmarkParseExif100(b *testing.B) {
 	//zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	for _, bm := range testFilenames {
@@ -162,28 +94,3 @@ func BenchmarkParseExif100(b *testing.B) {
 // 2.CR2
 //BenchmarkParseExif200-8   	   25021	     47577 ns/op	    9434 B/op	      60 allocs/op
 //BenchmarkParseExif200-8   	   25111	     49063 ns/op	    9314 B/op	      56 allocs/op
-func BenchmarkParseExif200(b *testing.B) {
-	f := testOpenFile()
-	b.ReportAllocs()
-	b.ResetTimer()
-	f.Seek(0, 0)
-
-	eh, err := SearchExifHeader(f)
-	if err != nil {
-		b.Fatal(err)
-	}
-	f.Seek(0, 0)
-
-	//cb := bufra.NewBufReaderAt(f, 256*1024)
-	buf, _ := ioutil.ReadAll(f)
-	cb := bytes.NewReader(buf)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, err = eh.ParseExif(cb)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
