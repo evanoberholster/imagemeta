@@ -22,8 +22,8 @@ type SOFHeader struct {
 
 // Metadata from JPEG files
 type Metadata struct {
-	SOF        SOFHeader
-	XML        string
+	sof        SOFHeader
+	xml        string
 	TiffHeader tiffmeta.Header
 	Exif       []byte
 
@@ -35,7 +35,12 @@ type Metadata struct {
 
 // Size returns the width and height of the JPEG Image
 func (m *Metadata) Size() (width, height uint16) {
-	return m.SOF.width, m.SOF.height
+	return m.sof.width, m.sof.height
+}
+
+// XML returns the xml in the JPEG Image as a string
+func (m Metadata) XML() string {
+	return m.xml
 }
 
 // newMetadata creates a New metadata object from an io.Reader
@@ -111,7 +116,7 @@ func (m *Metadata) readXMP(buf []byte) (err error) {
 		i += n
 	}
 
-	m.XML = string(xmpBuf)
+	m.xml = string(xmpBuf)
 	//str := strings.Replace(string(xmpBuf), "\n", "", -1)
 	//m.XML = strings.Replace(str, "   ", "", -1)
 	//m.XML = xmlfmt.FormatXML(string(buf), "\t", "  ")
@@ -128,7 +133,7 @@ func (m *Metadata) readSOF(buf []byte) error {
 		jpegByteOrder.Uint16(buf[7:9]),
 		buf[9]}
 	if m.pos == 1 {
-		m.SOF = header
+		m.sof = header
 	}
 	return m.discard(length + 2)
 }
