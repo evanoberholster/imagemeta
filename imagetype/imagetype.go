@@ -7,7 +7,7 @@ import (
 // Errors
 var (
 	// ErrDataLength is an error for data length
-	ErrDataLength = errors.New("Error the data is not long enough")
+	ErrDataLength = errors.New("error the data is not long enough")
 )
 
 // TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
@@ -40,6 +40,10 @@ func (it *ImageType) MarshalText() (text []byte, err error) {
 
 func (it ImageType) String() string {
 	return imageTypeStrings[it]
+}
+
+func FromString(str string) ImageType {
+	return imageTypeValues[str]
 }
 
 // Image file types Raw/Compressed/JPEG

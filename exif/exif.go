@@ -13,7 +13,7 @@ import (
 
 // API Errors
 var (
-	ErrEmptyTag = errors.New("Error empty tag")
+	ErrEmptyTag = errors.New("error empty tag")
 )
 
 type Reader interface {

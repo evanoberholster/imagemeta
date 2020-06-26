@@ -8,9 +8,9 @@ import (
 
 // Errors
 var (
-	ErrNoExif       = errors.New("Error No Exif")
-	ErrNoJPEGMarker = errors.New("No JPEG Marker")
-	ErrEndOfImage   = errors.New("End of Image")
+	ErrNoExif       = errors.New("error No Exif")
+	ErrNoJPEGMarker = errors.New("no JPEG Marker")
+	ErrEndOfImage   = errors.New("end of Image")
 )
 
 // Scan -
@@ -106,17 +106,19 @@ func (m *Metadata) scanMarkers(buf []byte) (err error) {
 	case markerAPP0:
 		return m.ignoreMarker(buf)
 	case markerAPP2:
-		//if isICCProfilePrefix(buf) {
-		// Ignore ICC Profile Marker
-		//}
+		if isICCProfilePrefix(buf) {
+			// Ignore ICC Profile Marker
+			return m.ignoreMarker(buf)
+		}
 		return m.ignoreMarker(buf)
 	case markerAPP7, markerAPP8,
 		markerAPP9, markerAPP10:
 		return m.ignoreMarker(buf)
 	case markerAPP13:
-		//if isPhotoshopPrefix(buf) {
-		// Ignore Photoshop Profile Marker
-		//}
+		if isPhotoshopPrefix(buf) {
+			// Ignore Photoshop Profile Marker
+			return m.ignoreMarker(buf)
+		}
 		return m.ignoreMarker(buf)
 	case markerAPP14:
 		return m.ignoreMarker(buf)

@@ -13,11 +13,11 @@ import (
 
 // Errors for Parsing of Time
 var (
-	ErrParseYear  = fmt.Errorf("Error parsing Year")
-	ErrParseMonth = fmt.Errorf("Error parsing Month")
-	ErrParseDay   = fmt.Errorf("Error parsing Day")
-	ErrParseHour  = fmt.Errorf("Error parsing Hour")
-	ErrParseMin   = fmt.Errorf("Error parsing Min")
+	ErrParseYear  = fmt.Errorf("error parsing Year")
+	ErrParseMonth = fmt.Errorf("error parsing Month")
+	ErrParseDay   = fmt.Errorf("error parsing Day")
+	ErrParseHour  = fmt.Errorf("error parsing Hour")
+	ErrParseMin   = fmt.Errorf("error parsing Min")
 )
 
 // ModifyDate - the date and time at which the Exif file was modified

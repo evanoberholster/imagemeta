@@ -74,7 +74,5 @@ func TestTag(t *testing.T) {
 	if !bytes.Equal(tag.rawValueOffset[:], rawValueOffset[:]) {
 		t.Errorf("Incorrect Tag Type wanted %b got %b", []byte{0, 0, 0, 2}, tag.rawValueOffset[:])
 	}
-	if tag.String() != tag.String() {
-		t.Errorf("This should never happen")
-	}
+
 }

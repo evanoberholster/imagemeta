@@ -8,7 +8,7 @@ import (
 // Errors
 var (
 	// ErrInvalidHeader is an error for an Invalid Exif Header
-	ErrInvalidHeader = errors.New("Error Tiff Header is not valid")
+	ErrInvalidHeader = errors.New("error Tiff Header is not valid")
 )
 
 // Header represents a Tiff Header.

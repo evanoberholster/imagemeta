@@ -13,10 +13,10 @@ import (
 // Errors
 var (
 	// ErrDataLength is an error for data length
-	ErrDataLength = errors.New("Error the data is not long enough")
+	ErrDataLength = errors.New("error the data is not long enough")
 
 	// ErrIfdBufferLength
-	ErrIfdBufferLength = errors.New("Ifd buffer length insufficient")
+	ErrIfdBufferLength = errors.New("ifd buffer length insufficient")
 )
 
 type ifdTagEnumerator struct {
