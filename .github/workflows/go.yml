@@ -1,0 +1,48 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: ["1.14", "1.13", "1.12", "1.x"]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+            
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Go Format
+        run: go fmt ./...
+        
+      - name: Test
+        run: go test ./...
+
+      - name: Staticcheck
+        run: |
+          go get -u honnef.co/go/tools/cmd/staticcheck
+          staticcheck -checks all ./...
+          
+      - name: go vet
+        run: go vet ./...
+
+      - name: Review security
+        run: go get github.com/securego/gosec/cmd/gosec; gosec ./...
+
+      - name: Test build
+        run: go build .
