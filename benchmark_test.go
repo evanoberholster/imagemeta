@@ -148,5 +148,3 @@ func BenchmarkScanExif100(b *testing.B) {
 //BenchmarkScanExif100/2.ARW-8               	   29332	     40165 ns/op	   11932 B/op	      56 allocs/op
 //BenchmarkScanExif100/4.RW2-8               	   34719	     34740 ns/op	    8202 B/op	      31 allocs/op
 //BenchmarkScanExif100/hero6.gpr-8           	   31630	     38285 ns/op	   13606 B/op	      39 allocs/op
-//
-//BenchmarkScanExif100/20.jpg-8              	 1249808	       996 ns/op	    4496 B/op	       5 allocs/op

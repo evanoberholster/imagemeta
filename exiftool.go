@@ -2,7 +2,6 @@ package exiftool
 
 import (
 	"bufio"
-	"bytes"
 	"io"
 
 	"github.com/evanoberholster/exiftool/exif"
@@ -23,7 +22,7 @@ var (
 // searches for exif headers, then it parses the io.ReaderAt for exif
 // information and returns it.
 // Sets exif imagetype from magicbytes, if not found sets imagetype
-// Unknown.
+// to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
@@ -97,45 +96,6 @@ func ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
 
 		// Scan the RootIFD with the FirstIfdOffset from the ExifReader
 		err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-	}
-	return
-}
-
-// ParseExifBytes parses exif information from the tiff header and a byte slice
-// that contains raw exif data and returns exif and an error.
-// Sets Exif imagetype to ImageTypeUnknown.
-//
-// If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExifBytes(rawexif []byte, header tiffmeta.Header) (e *exif.Exif, err error) {
-	if !header.IsValid() {
-		err = ErrInvalidHeader
-		return
-	}
-
-	// Creates NewReader
-	r := bytes.NewReader(rawexif)
-
-	// NewExifReader from io.ReaderAt with the ByteOrder and TiffHeaderOffset
-	er := NewExifReader(r, header.ByteOrder, header.TiffHeaderOffset)
-
-	// NewExif with an ExifReader attached
-	e = exif.NewExif(er, imagetype.ImageUnknown)
-
-	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
-	err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-	return
-}
-
-//
-// OLD - Will be removed
-
-// ParseExif parses an io.ReaderAt for exif informationan and returns it
-func (eh ExifHeader) ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
-	er := NewExifReader(r, eh.byteOrder, eh.tiffHeaderOffset)
-
-	e = exif.NewExif(er, imagetype.ImageUnknown)
-	if err = scan(er, e, ifds.RootIFD, eh.firstIfdOffset); err != nil {
-		return
 	}
 	return
 }

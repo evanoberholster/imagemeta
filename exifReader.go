@@ -12,13 +12,22 @@ import (
 type ExifReader struct {
 	reader io.ReaderAt
 
-	// previously ExifHeader
+	// Exif Header
 	byteOrder  binary.ByteOrder
 	exifOffset int64
 	exifLength uint32
 
 	// reader interface offset
 	offset int64
+}
+
+// NewExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
+func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
+	return &ExifReader{
+		reader:     reader,
+		byteOrder:  byteOrder,
+		exifOffset: int64(exifOffset),
+	}
 }
 
 // Read reads from ExifReader and moves the placement marker
@@ -58,13 +67,4 @@ func (er *ExifReader) SetHeader(header tiffmeta.Header) error {
 	er.exifLength = header.ExifLength
 	er.offset = 0
 	return nil
-}
-
-// NewExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
-func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
-	return &ExifReader{
-		reader:     reader,
-		byteOrder:  byteOrder,
-		exifOffset: int64(exifOffset),
-	}
 }
