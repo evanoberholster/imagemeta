@@ -18,9 +18,9 @@ const (
 
 var (
 	// ErrGpsCoordsNotValid means that some part of the geographic data were unparseable.
-	ErrGpsCoordsNotValid = errors.New("GPS coordinates not valid")
+	ErrGpsCoordsNotValid = errors.New("error GPS coordinates not valid")
 	// ErrGPSRationalNotValid means that the rawCoordinates were not long enough.
-	ErrGPSRationalNotValid = errors.New("GPS Coords requires a raw-coordinate with exactly three rationals")
+	ErrGPSRationalNotValid = errors.New("error GPS Coords requires a raw-coordinate with exactly three rationals")
 )
 
 // gpsCoordsFromRationals returns a decimal given the EXIF-encoded information.
@@ -74,7 +74,8 @@ func (gi *GpsInfo) S2CellID() (cellID s2.CellID, err error) {
 	cellID = s2.CellIDFromLatLng(latLng)
 
 	if !cellID.IsValid() {
-		panic(ErrGpsCoordsNotValid)
+		err = ErrGpsCoordsNotValid
+		return
 	}
 
 	return cellID, nil
@@ -95,6 +96,27 @@ func (e *Exif) GPSAltitude() (alt float32, err error) {
 
 	// Altitude Ref - GPSAltitudeRef uint16
 	return 0.0, err
+}
+
+// GPSCellID convenience func. retrieves "IFD/GPS" GPSLatitude and GPSLongitude
+// converts them into an S2 CellID and returns the CellID.
+//
+// If the CellID is not valid it returns ErrGpsCoordsNotValid.
+func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
+	lat, lng, err := e.GPSInfo()
+	if err != nil {
+		return
+	}
+
+	latLng := s2.LatLngFromDegrees(lat, lng)
+	cellID = s2.CellIDFromLatLng(latLng)
+
+	if !cellID.IsValid() {
+		err = ErrGpsCoordsNotValid
+		return
+	}
+
+	return cellID, nil
 }
 
 // GPSInfo convenience func. "IFD/GPS" GPSLatitude and GPSLongitude
