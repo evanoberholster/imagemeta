@@ -92,7 +92,7 @@ func TempConv(val uint16) int16 {
 	return int16(val) - 128
 }
 
-// PointsInFocus
+// PointsInFocus returns AFPoints that are in focus and AFPoints that are selected
 func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
 	validPoints := int(af[3])
 	var count int

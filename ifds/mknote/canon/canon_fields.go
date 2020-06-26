@@ -81,7 +81,7 @@ var mapCanonFocusRange = map[FocusRange]string{
 	10: "Infinity",
 }
 
-// CanonExposureMode is part of the CanonCameraSettings field
+// ExposureMode is part of the CanonCameraSettings field
 type ExposureMode int16
 
 func (cem ExposureMode) String() string {
