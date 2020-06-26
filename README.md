@@ -5,6 +5,7 @@
 [![ReportCard][ReportCard-Image]][ReportCard-Url]
 [![Coverage Status](https://coveralls.io/repos/github/evanoberholster/exiftool/badge.svg?branch=master)](https://coveralls.io/github/evanoberholster/exiftool?branch=master)
 [![Build][Build-Status-Image]][Build-Status-Url]
+![Test](https://github.com/evanoberholster/exiftool/workflows/Test/badge.svg)
 
 Provides decoding of basic exif and tiff encoded data.
 
