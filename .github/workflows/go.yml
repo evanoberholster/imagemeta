@@ -4,9 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    env:
-      GOPATH: ${{ github.workspace }}
-  
+    
     strategy:
       matrix:
         go-version: ["1.14", "1.13", "1.x"]
