@@ -181,5 +181,7 @@ Copyright (c) 2019, Dustin Oprea
 [Godoc-Image]: https://godoc.org/github.com/evanoberholster/exiftool?status.svg
 [ReportCard-Url]: https://goreportcard.com/report/github.com/evanoberholster/exiftool
 [ReportCard-Image]: https://goreportcard.com/badge/github.com/evanoberholster/exiftool
-[Build-Status-Url]: https://travis-ci.com/evanoberholster/exiftool?branch=master
-[Build-Status-Image]: https://travis-ci.com/evanoberholster/exiftool.svg?branch=master
+[Coverage-Image]: https://coveralls.io/repos/github/evanoberholster/exiftool/badge.svg?branch=master
+[Coverage-Url]: https://coveralls.io/github/evanoberholster/exiftool?branch=master
+[Build-Status-Url]: https://github.com/evanoberholster/exiftool/actions?query=branch%3Amaster
+[Build-Status-Image]: https://github.com/evanoberholster/exiftool/workflows/Build/badge.svg?branch=master
