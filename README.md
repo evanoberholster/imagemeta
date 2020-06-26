@@ -10,7 +10,7 @@ This package provides for performance oriented decoding of exif and tiff encoded
 
 ## Documentation
 
-See [Documentation]([Godoc-Url]) for more information.
+See [Documentation](https://godoc.org/github.com/evanoberholster/exiftool) for more information.
 
 ## Example Usage
 
