@@ -8,7 +8,7 @@ import (
 
 // Errors
 var (
-	ErrNikonMkNote = errors.New("Makernote is not a Nikon makernote")
+	ErrNikonMkNote = errors.New("makernote is not a Nikon makernote")
 )
 
 // NikonMkNoteHeader parses the Nikon Makernote from reader and returns byteOrder and error

@@ -43,16 +43,16 @@ func (mm MeteringMode) String() string {
 
 // MeteringModeValues -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-var meteringModeValues = map[MeteringMode]string{
-	0:   "Unknown",
-	1:   "Average",
-	2:   "Center-weighted average",
-	3:   "Spot",
-	4:   "Multi-spot",
-	5:   "Multi-segment",
-	6:   "Partial",
-	255: "Other",
-}
+//var meteringModeValues = map[MeteringMode]string{
+//	0:   "Unknown",
+//	1:   "Average",
+//	2:   "Center-weighted average",
+//	3:   "Spot",
+//	4:   "Multi-spot",
+//	5:   "Multi-segment",
+//	6:   "Partial",
+//	255: "Other",
+//}
 
 // ExposureMode - Mode in which the Exposure was taken.
 type ExposureMode uint8

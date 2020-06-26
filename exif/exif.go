@@ -1,3 +1,4 @@
+// Package exif provides an API for retrieving exif information
 package exif
 
 import (
@@ -13,7 +14,7 @@ import (
 
 // API Errors
 var (
-	ErrEmptyTag = errors.New("Error empty tag")
+	ErrEmptyTag = errors.New("error empty tag")
 )
 
 type Reader interface {

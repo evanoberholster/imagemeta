@@ -8,23 +8,6 @@ import (
 )
 
 var (
-	dir        = "../test/img/"
-	benchmarks = []struct {
-		name     string
-		fileName string
-	}{
-		{".CR2/GPS", "2.CR2"},
-		{".CR2/7D", "7D2.CR2"},
-		{".CR3", "1.CR3"},
-		{".JPG/GPS", "17.jpg"},
-		{".HEIC", "1.heic"},
-		{".GoPro/6", "hero6.jpg"},
-		{".NEF/Nikon", "2.NEF"},
-		{".ARW/Sony", "2.ARW"},
-		{".DNG/Adobe", "1.DNG"},
-		{".JPG/NoExif", "20.jpg"},
-	}
-
 	sampleDir     = "samples/"
 	testFilenames = []string{
 		"honor20.jpg",

@@ -1,3 +1,4 @@
+// Package tag provides types and functions for decoding Exif Tags
 package tag
 
 import (
@@ -42,10 +43,10 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, rawVal
 }
 
 // Offset returns the tag's valueOffset as a uint32 Offset
-func (tag Tag) Offset() uint32 {
-	return tag.valueOffset
+func (t Tag) Offset() uint32 {
+	return t.valueOffset
 }
 
-func (tag Tag) String() string {
-	return fmt.Sprintf("0x%04x \t | %s ", tag.TagID, tag.TagType)
+func (t Tag) String() string {
+	return fmt.Sprintf("0x%04x \t | %s ", t.TagID, t.TagType)
 }

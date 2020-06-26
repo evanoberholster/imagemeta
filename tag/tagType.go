@@ -88,7 +88,7 @@ func (tagType Type) Size() uint32 {
 	case TypeSignedRational:
 		return TypeSignedRationalSize
 	default:
-		panic(fmt.Errorf("Can not determine tag-value size for type (%d): [%s]", tagType, tagType.String()))
+		panic(fmt.Errorf("can not determine tag-value size for type (%d): [%s]", tagType, tagType.String()))
 	}
 }
 
@@ -134,7 +134,7 @@ func (tagType Type) String() string {
 // if the tag type cannot be determined
 func TypeFromRaw(tagTypeRaw uint16) Type {
 	tagType := Type(tagTypeRaw)
-	if tagType.IsValid() == false {
+	if !tagType.IsValid() {
 		panic(ErrTagTypeNotValid)
 	}
 	return tagType

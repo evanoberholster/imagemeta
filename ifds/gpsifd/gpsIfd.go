@@ -1,3 +1,4 @@
+// Package gpsifd provides types for "RootIfd/GPSIfd"
 package gpsifd
 
 import "github.com/evanoberholster/exiftool/tag"

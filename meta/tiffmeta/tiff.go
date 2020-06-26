@@ -1,3 +1,4 @@
+// Package tiffmeta provides types and functions for identifying and decoding Tiff Headers
 package tiffmeta
 
 import (
@@ -10,7 +11,7 @@ import (
 // Errors
 var (
 	// ErrNoExif no exif information was found
-	ErrNoExif = errors.New("No exif found")
+	ErrNoExif = errors.New("no exif found")
 )
 
 const (

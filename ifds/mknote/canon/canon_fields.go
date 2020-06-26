@@ -81,7 +81,7 @@ var mapCanonFocusRange = map[FocusRange]string{
 	10: "Infinity",
 }
 
-// CanonExposureMode is part of the CanonCameraSettings field
+// ExposureMode is part of the CanonCameraSettings field
 type ExposureMode int16
 
 func (cem ExposureMode) String() string {
@@ -131,6 +131,10 @@ var mapCanonBracketMode = map[BracketMode]string{
 
 // AESetting - Canon Makernote AutoExposure Setting
 type AESetting int16
+
+func (cae AESetting) String() string {
+	return mapCanonAESetting[cae]
+}
 
 var mapCanonAESetting = map[AESetting]string{
 	0: "Normal AE",

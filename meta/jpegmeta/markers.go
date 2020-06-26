@@ -38,82 +38,10 @@ const (
 	exifPrefixLength = 8
 )
 
-// isDQTMarker returns true if the first 2 bytes
-// match an DQT Marker
-func isDQTMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerDQT
-}
-
-// isDHTMarker returns true if the first 2 bytes
-// match an DHT Marker
-func isDHTMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerDHT
-}
-
-// isDRIMarker returns true if the first 2 bytes match
-func isDRIMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerDRI
-}
-
-// isSOFMarker returns true if the first 2 bytes match an SOF marker
-func isSOFMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		(buf[1] == markerSOF0 ||
-			buf[1] == markerSOF1 ||
-			buf[1] == markerSOF2 ||
-			buf[1] == markerSOF3 ||
-			buf[1] == markerSOF5 ||
-			buf[1] == markerSOF6 ||
-			buf[1] == markerSOF7 ||
-			buf[1] == markerSOF9 ||
-			buf[1] == markerSOF10 ||
-			buf[1] == markerSOF11)
-}
-
-// isEOIMarker returns true if the first 2 bytes
-// match an EOI marker
-func isEOIMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerEOI
-}
-
 // isSOIMarker returns true if the first 2 bytes match an SOI marker
 func isSOIMarker(buf []byte) bool {
 	return buf[0] == markerFirstByte &&
 		buf[1] == markerSOI
-}
-
-func isAPP0Marker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerAPP0
-}
-
-func isAPP1Marker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerAPP1
-}
-
-func isAPP2Marker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerAPP2
-}
-
-func isAPP13Marker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerAPP13
-}
-
-func isAPP14Marker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerAPP14
-}
-
-func isMarker(buf []byte, marker uint8) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == marker
 }
 
 func isMarkerFirstByte(buf []byte) bool {

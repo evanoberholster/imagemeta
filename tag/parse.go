@@ -6,9 +6,9 @@ import (
 
 // Errors
 var (
-	ErrEmptyTag      = errors.New("Error empty tag")
-	ErrTagNotValid   = errors.New("Error tag not valid")
-	ErrNotEnoughData = errors.New("Error not enough data to parse tag")
+	ErrEmptyTag      = errors.New("error empty tag")
+	ErrTagNotValid   = errors.New("error tag not valid")
+	ErrNotEnoughData = errors.New("error not enough data to parse tag")
 )
 
 // RawEncodedBytes returns the raw encoded bytes for the value that we represent.

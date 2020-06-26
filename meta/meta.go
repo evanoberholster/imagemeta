@@ -1,3 +1,5 @@
+// Package meta provides a Metadata interface for interpreting metadata
+// from different image types
 package meta
 
 import (
@@ -12,8 +14,8 @@ import (
 
 // Errors
 var (
-	ErrNoExif               = errors.New("Error No Exif")
-	ErrMetadataNotSupported = errors.New("Metadata not supported for this imagetype")
+	ErrNoExif               = errors.New("error No Exif")
+	ErrMetadataNotSupported = errors.New("metadata not supported for this imagetype")
 )
 
 // Metadata interface
