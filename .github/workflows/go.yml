@@ -34,6 +34,11 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      - name: Staticcheck
+        run: |
+          go get -u honnef.co/go/tools/cmd/staticcheck
+          staticcheck -checks all ./...
+
       - name: Review security
         run: go get github.com/securego/gosec/cmd/gosec; gosec ./...
 
