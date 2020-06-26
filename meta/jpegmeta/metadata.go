@@ -3,8 +3,6 @@ package jpegmeta
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
-	"io"
 
 	"github.com/evanoberholster/exiftool/meta/tiffmeta"
 )
@@ -24,7 +22,7 @@ type SOFHeader struct {
 type Metadata struct {
 	sof        SOFHeader
 	xml        string
-	TiffHeader tiffmeta.Header
+	tiffHeader tiffmeta.Header
 	Exif       []byte
 
 	// Reader
@@ -34,7 +32,7 @@ type Metadata struct {
 }
 
 // Size returns the width and height of the JPEG Image
-func (m *Metadata) Size() (width, height uint16) {
+func (m Metadata) Size() (width, height uint16) {
 	return m.sof.width, m.sof.height
 }
 
@@ -43,10 +41,15 @@ func (m Metadata) XML() string {
 	return m.xml
 }
 
+// TiffHeader returns the tiffmeta.Header from the JPEG Image
+func (m Metadata) TiffHeader() tiffmeta.Header {
+	return m.tiffHeader
+}
+
 // newMetadata creates a New metadata object from an io.Reader
-func newMetadata(reader io.Reader) Metadata {
+func newMetadata(reader *bufio.Reader) Metadata {
 	return Metadata{
-		br:        bufio.NewReader(reader),
+		br:        reader,
 		discarded: 0,
 	}
 }
@@ -85,9 +88,10 @@ func (m *Metadata) readAPP1(buf []byte) (err error) {
 		// the tiff Header Offset, and the length of the exif information.
 		byteOrder := tiffmeta.BinaryOrder(buf)
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
-		m.TiffHeader = tiffmeta.NewHeader(byteOrder, firstIfdOffset, m.discarded, length)
+		exifLength := uint32(length)
+		m.setTiffHeader(tiffmeta.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength))
 
-		//fmt.Println("Exif Header:", m.pos, length, byteOrder, firstIfdOffset, m.discarded)
+		//fmt.Println("Exif Tiff Header:", m.tiffHeader)
 
 		// Discard Exif information bytes
 		return m.discard(int(length))
@@ -138,6 +142,10 @@ func (m *Metadata) readSOF(buf []byte) error {
 	return m.discard(length + 2)
 }
 
+func (m *Metadata) setTiffHeader(tiffHeader tiffmeta.Header) {
+	m.tiffHeader = tiffHeader
+}
+
 // ignoreMarker reads the Marker Header length and then
 // discards the said marker and its header length
 func (m *Metadata) ignoreMarker(buf []byte) error {
@@ -148,83 +156,16 @@ func (m *Metadata) ignoreMarker(buf []byte) error {
 	return m.discard(length + 2)
 }
 
+//
+// scanMarkersAlt is an alternative solution for scanning JPEG Markers
+//
+// NOT USED
 func (m *Metadata) scanMarkersAlt(buf []byte) (err error) {
 	if isSOIMarker(buf) {
 		//fmt.Println("SOI:", jm.discarded, jm.pos)
 		m.pos++
 		return m.discard(2)
-	}
-	if m.pos > 0 {
-		switch buf[1] {
-		case markerSOF0, markerSOF1,
-			markerSOF2, markerSOF3,
-			markerSOF5, markerSOF6,
-			markerSOF7, markerSOF9,
-			markerSOF10:
-			return m.readSOF(buf)
-		case markerDHT:
-			// Artifical End Of Image for DHT Marker.
-			// This is done to improve performance.
-			if m.pos == 1 {
-				return ErrEndOfImage
-			}
-			// Ignore DHT Markers
-			return m.ignoreMarker(buf)
-		case markerSOI:
-			m.pos++
-			return m.discard(2)
-		case markerEOI:
-			m.pos--
-			// Return EndOfImage
-			if m.pos == 1 {
-				return ErrEndOfImage
-			}
-			return m.discard(2)
-		case markerDQT:
-			// Ignore DQT Markers
-			return m.ignoreMarker(buf)
-		case markerDRI:
-			return m.discard(6)
-		case markerAPP0, markerAPP2,
-			markerAPP7, markerAPP8,
-			markerAPP9, markerAPP10,
-			markerAPP13, markerAPP14:
-			return m.ignoreMarker(buf)
-		case markerAPP1:
-			return m.readAPP1(buf)
-		}
-		fmt.Println(m.discarded)
-	}
-	return m.discard(1)
-}
-
-func (m *Metadata) scanMarkers(buf []byte) (err error) {
-	if isSOIMarker(buf) {
-		//fmt.Println("SOI:", jm.discarded, jm.pos)
-		m.pos++
-		return m.discard(2)
 	} else if m.pos > 0 {
-		// EOIMarker: End of Image Marker
-		if isEOIMarker(buf) {
-			m.pos--
-			if m.pos == 0 {
-				return ErrEndOfImage // Return EndOfImage
-			}
-			return m.discard(2)
-		}
-		if isDHTMarker(buf) {
-			// Artifical End Of Image for DHT Marker.
-			// This is done to improve performance.
-			if m.pos == 1 {
-				return ErrEndOfImage
-			}
-			// Ignore DHT Markers
-			return m.ignoreMarker(buf)
-		}
-		if isDQTMarker(buf) {
-			// Ignore DQT Markers
-			return m.ignoreMarker(buf)
-		}
 		if isDRIMarker(buf) {
 			return m.discard(6)
 		}
@@ -238,11 +179,41 @@ func (m *Metadata) scanMarkers(buf []byte) (err error) {
 		if isAPP1Marker(buf) {
 			return m.readAPP1(buf)
 		}
-		if isMarker(buf, markerAPP2) {
+		if isAPP2Marker(buf) {
 			//if isICCProfilePrefix(buf) {
 			// Ignore ICC Profile Marker
 			//}
 			return m.ignoreMarker(buf)
+		}
+		if isAPP13Marker(buf) {
+			//if isPhotoshopPrefix(buf) {
+			// Ignore Photoshop Profile Marker
+			//}
+			return m.ignoreMarker(buf)
+		}
+		if isAPP14Marker(buf) {
+			return m.ignoreMarker(buf)
+		}
+		if isDQTMarker(buf) {
+			// Ignore DQT Markers
+			return m.ignoreMarker(buf)
+		}
+		if isDHTMarker(buf) {
+			// Artifical End Of Image for DHT Marker.
+			// This is done to improve performance.
+			if m.pos == 1 {
+				return ErrEndOfImage
+			}
+			// Ignore DHT Markers
+			return m.ignoreMarker(buf)
+		}
+		// EOIMarker: End of Image Marker
+		if isEOIMarker(buf) {
+			m.pos--
+			if m.pos == 0 {
+				return ErrEndOfImage // Return EndOfImage
+			}
+			return m.discard(2)
 		}
 		if isMarker(buf, markerAPP7) {
 			// Ignore APP7 Marker
@@ -258,15 +229,6 @@ func (m *Metadata) scanMarkers(buf []byte) (err error) {
 		}
 		if isMarker(buf, markerAPP10) {
 			// Ignore APP10 Marker
-			return m.ignoreMarker(buf)
-		}
-		if isMarker(buf, markerAPP13) {
-			//if isPhotoshopPrefix(buf) {
-			// Ignore Photoshop Profile Marker
-			//}
-			return m.ignoreMarker(buf)
-		}
-		if isMarker(buf, markerAPP14) {
 			return m.ignoreMarker(buf)
 		}
 	}

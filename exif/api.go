@@ -85,6 +85,9 @@ func (e *Exif) LensSerial() (serial string, err error) {
 
 // Dimensions convenience func. "IFD" Dimensions
 func (e *Exif) Dimensions() (width, height uint16, err error) {
+	if e.width > 0 && e.height > 0 {
+		return e.width, e.height, nil
+	}
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.PixelXDimension)
 	if err == nil {
 		width, err = t.Uint16Value(e.exifReader)
@@ -110,14 +113,22 @@ func (e *Exif) Dimensions() (width, height uint16, err error) {
 	return 0, 0, ErrEmptyTag
 }
 
-// XMLPacket convenience func. "IFD" XMLPacket
-// WIP
+// XMLPacket convenience func. that returns XMP metadata
+// from a JPEG image or XMP Packet from "IFD" XMLPacket.
+// Whichever is present.
 func (e *Exif) XMLPacket() (str string, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
+
+	if len(e.XMP) > 0 {
+		str = strings.Replace(e.XMP, "\n", "", -1)
+		return strings.Replace(str, "   ", "", -1), nil
+		//return xmlfmt.FormatXML(e.XMP, "\t", "  "), nil
+	}
+
 	t, err := e.GetTag(ifds.RootIFD, 0, ifds.XMLPacket)
 	if err != nil {
 		return
@@ -125,6 +136,7 @@ func (e *Exif) XMLPacket() (str string, err error) {
 	str, err = t.ASCIIValue(e.exifReader)
 	str = strings.Replace(str, "\n", "", -1)
 	return strings.Replace(str, "   ", "", -1), nil
+	//return xmlfmt.FormatXML(str, "\t", "  "), nil
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram

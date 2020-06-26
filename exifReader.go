@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+
+	"github.com/evanoberholster/exiftool/meta/tiffmeta"
 )
 
 // ExifReader -
@@ -13,6 +15,7 @@ type ExifReader struct {
 	// previously ExifHeader
 	byteOrder  binary.ByteOrder
 	exifOffset int64
+	exifLength uint32
 
 	// reader interface offset
 	offset int64
@@ -39,6 +42,24 @@ func (er *ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
 	return
 }
 
+// ByteOrder returns the ExifReader's byteOrder
+func (er *ExifReader) ByteOrder() binary.ByteOrder {
+	return er.byteOrder
+}
+
+// SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
+// from a TiffHeader and sets the ExifReader read offset to 0
+func (er *ExifReader) SetHeader(header tiffmeta.Header) error {
+	if !header.IsValid() {
+		return ErrInvalidHeader
+	}
+	er.byteOrder = header.ByteOrder
+	er.exifOffset = int64(header.TiffHeaderOffset)
+	er.exifLength = header.ExifLength
+	er.offset = 0
+	return nil
+}
+
 // NewExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
 func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
 	return &ExifReader{
@@ -46,9 +67,4 @@ func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset ui
 		byteOrder:  byteOrder,
 		exifOffset: int64(exifOffset),
 	}
-}
-
-// ByteOrder returns the ExifReader's byteOrder
-func (er ExifReader) ByteOrder() binary.ByteOrder {
-	return er.byteOrder
 }

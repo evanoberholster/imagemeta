@@ -10,21 +10,19 @@ var (
 	ErrDataLength = errors.New("Error the data is not long enough")
 )
 
-var (
-	// TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
-	TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
+// TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
+//TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
 
-	// TiffLittleEndianSignature is the Tiff Signature for LittleEndian encoded images
-	TiffLittleEndianSignature = []byte{0x49, 0x49, 0x2a, 0x00}
+// TiffLittleEndianSignature is the Tiff Signature for LittleEndian encoded images
+//TiffLittleEndianSignature = []byte{0x49, 0x49, 0x2a, 0x00}
 
-	// JPEGStartOfImageMarker is the JPEG Start of Image Marker.
-	// JPEG SOI Marker
-	JPEGStartOfImageMarker = []byte{0xff, 0xd8}
+// JPEGStartOfImageMarker is the JPEG Start of Image Marker.
+// JPEG SOI Marker
+//JPEGStartOfImageMarker = []byte{0xff, 0xd8}
 
-	// PNGImageSignature is the marker for the start of a PNG Image.
-	// 4 Bytes
-	PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
-)
+// PNGImageSignature is the marker for the start of a PNG Image.
+// 4 Bytes
+//PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
 
 // ImageType -
 type ImageType uint8
@@ -235,6 +233,7 @@ func isRW2(buf []byte) bool {
 
 // isJPEG returns true if the first 2 bytes match a JPEG file header
 //
+// JPEG SOI Marker (FF D8)
 func isJPEG(buf []byte) bool {
 	return buf[0] == 0xff &&
 		buf[1] == 0xd8

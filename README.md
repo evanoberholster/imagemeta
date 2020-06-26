@@ -20,32 +20,34 @@ import (
    "fmt"
    "io/ioutil"
    "os"
+   "time"
 
    "github.com/evanoberholster/exiftool"
 )
 
-const imageFilename = "../../test/img/3.heic"
+const testFilename = "image.jpg"
 
 func main() {
    var err error
 
-   f, err := os.Open(imageFilename)
+   f, err := os.Open(testFilename)
    if err != nil {
-       panic(err)
+      panic(err)
    }
    defer f.Close()
 
-   eh, err := exiftool.SearchExifHeader(f)
-   if err != nil {
-       panic(err)
+   start := time.Now()
+   e, err := exiftool.ScanExif(f)
+   if err != nil && err != exiftool.ErrNoExif {
+      panic(err)
    }
-   f.Seek(0, 0)
-   buf, _ := ioutil.ReadAll(f)
-   cb := bytes.NewReader(buf)
+   elapsed := time.Since(start)
+   fmt.Println(elapsed)
 
-   e, err := eh.ParseExif(cb)
-   if err != nil {
-       fmt.Println(err)
+   if err == exiftool.ErrNoExif {
+      fmt.Println(e.XMLPacket())
+      fmt.Println(e.Dimensions())
+      return
    }
 
    // Strings
@@ -57,25 +59,26 @@ func main() {
    fmt.Println(e.LensModel())
    fmt.Println(e.CameraSerial())
    fmt.Println(e.LensSerial())
+   //
+   fmt.Println(e.Dimensions())
    fmt.Println(e.XMLPacket())
-
-   // Canon Makernotes
+   //
+   //// Makernotes
    fmt.Println(e.CanonCameraSettings())
    fmt.Println(e.CanonFileInfo())
    fmt.Println(e.CanonShotInfo())
    fmt.Println(e.CanonAFInfo())
-
-   // Time
+   //
+   //// Time
    fmt.Println(e.ModifyDate())
    fmt.Println(e.DateTime())
    fmt.Println(e.GPSTime())
-
-   // GPS
+   //
+   //// GPS
    fmt.Println(e.GPSInfo())
    fmt.Println(e.GPSAltitude())
-
+   //
    // Metadata
-   fmt.Println(e.Dimensions())
    fmt.Println(e.ExposureProgram())
    fmt.Println(e.MeteringMode())
    fmt.Println(e.ShutterSpeed())
@@ -91,18 +94,23 @@ func main() {
 ## Benchmarks
 
 This was benchmarked without the retrival of values.
-To run your own benchmarks see exifHeader_test.go
+To run your own benchmarks see benchmark_test.go
 
 ```go
-BenchmarkParseExif100/.CR2/GPS-8               23035        54230 ns/op       9310 B/op         56 allocs/op
-BenchmarkParseExif100/.CR2/7D-8                24091        48405 ns/op       8957 B/op         54 allocs/op
-BenchmarkParseExif100/.CR3-8                  176527         6746 ns/op        901 B/op         14 allocs/op
-BenchmarkParseExif100/.JPG/GPS-8               47270        25754 ns/op       5123 B/op         32 allocs/op
-BenchmarkParseExif100/.HEIC-8                  50145        25194 ns/op       4882 B/op         29 allocs/op
-BenchmarkParseExif100/.GoPro/6-8               54031        22543 ns/op       3782 B/op         28 allocs/op
-BenchmarkParseExif100/.NEF/Nikon-8             22287        54464 ns/op      12417 B/op         59 allocs/op
-BenchmarkParseExif100/.ARW/Sony-8              28357        42439 ns/op       7671 B/op         53 allocs/op
-BenchmarkParseExif100/.DNG/Adobe-8             13603        87055 ns/op      18494 B/op         87 allocs/op
+BenchmarkScanExif100/NoExif.jpg-8              1249808          996 ns/op       4496 B/op          5 allocs/op
+BenchmarkScanExif100/350D.CR2-8                  39280        31519 ns/op      10445 B/op         46 allocs/op
+BenchmarkScanExif100/XT1.CR2-8                   37731        31582 ns/op      10444 B/op         46 allocs/op
+BenchmarkScanExif100/60D.CR2-8                   27439        43459 ns/op      12593 B/op         52 allocs/op
+BenchmarkScanExif100/6D.CR2-8                    26264        45286 ns/op      13185 B/op         57 allocs/op
+BenchmarkScanExif100/7D.CR2-8                    26625        46062 ns/op      13216 B/op         57 allocs/op
+BenchmarkScanExif100/5DMKIII.CR2-8               24404        48578 ns/op      13212 B/op         57 allocs/op
+BenchmarkScanExif100/1.CR3-8                    138854         8470 ns/op       5157 B/op         17 allocs/op
+BenchmarkScanExif100/1.jpg-8                     52980        22424 ns/op      31394 B/op         32 allocs/op
+BenchmarkScanExif100/1.NEF-8                     24420        50230 ns/op      13598 B/op         61 allocs/op
+BenchmarkScanExif100/3.NEF-8                     20294        58299 ns/op      17008 B/op         67 allocs/op
+BenchmarkScanExif100/1.ARW-8                     30277        39593 ns/op      11928 B/op         56 allocs/op
+BenchmarkScanExif100/4.RW2-8                     34719        34740 ns/op       8202 B/op         31 allocs/op
+BenchmarkScanExif100/hero6.gpr-8                 31630        38285 ns/op      13606 B/op         39 allocs/op
 ```
 
 ## Imagetype Identification
@@ -144,10 +152,10 @@ Benchmarks can be found with the exiftool/imagetype package
 ## TODO
 
 - [x] Update ImageTypes API
-- [ ] Write Exif extraction for individual image types
+- [-] Write Exif extraction for individual image types (jpg, heic)
+- [ ] Write tests
 - [ ] Include support for CRW image type (ciff format images)
 - [ ] Create Thumbnail API
-- [ ] Write tests
 - [ ] Stabalize API
 - [ ] Documentation
 

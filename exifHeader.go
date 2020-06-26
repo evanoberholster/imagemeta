@@ -3,13 +3,7 @@ package exiftool
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
 	"io"
-)
-
-var (
-	// ErrNoExif no exif information was found
-	ErrNoExif = errors.New("No exif in object")
 )
 
 const (
@@ -86,24 +80,24 @@ func parseExifHeader(data []byte) binary.ByteOrder {
 	//
 	//      CIPA DC-008-2016; JEITA CP-3451D
 	//      -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
-	if IsTiffBigEndian(data[:4]) {
+	if isTiffBigEndian(data[:4]) {
 		return binary.BigEndian
-	} else if IsTiffLittleEndian(data[:4]) {
+	} else if isTiffLittleEndian(data[:4]) {
 		return binary.LittleEndian
 	}
 	return nil
 }
 
-// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func IsTiffLittleEndian(buf []byte) bool {
+// isTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func isTiffLittleEndian(buf []byte) bool {
 	return buf[0] == 0x49 &&
 		buf[1] == 0x49 &&
 		buf[2] == 0x2a &&
 		buf[3] == 0x00
 }
 
-// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func IsTiffBigEndian(buf []byte) bool {
+// isTiffBigEndian checks the buf for the TiffBigEndianSignature
+func isTiffBigEndian(buf []byte) bool {
 	return buf[0] == 0x4d &&
 		buf[1] == 0x4d &&
 		buf[2] == 0x00 &&

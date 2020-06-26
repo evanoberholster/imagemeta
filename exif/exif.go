@@ -6,6 +6,8 @@ import (
 	"io"
 
 	"github.com/evanoberholster/exiftool/ifds"
+	"github.com/evanoberholster/exiftool/imagetype"
+	"github.com/evanoberholster/exiftool/meta"
 	"github.com/evanoberholster/exiftool/tag"
 )
 
@@ -29,16 +31,31 @@ type Exif struct {
 	mkNote     ifds.TagMap
 	Make       string
 	Model      string
+	XMP        string
+	width      uint16
+	height     uint16
+	ImageType  imagetype.ImageType
 }
 
 // NewExif creates a new initialized Exif object
-func NewExif(exifReader Reader) *Exif {
+func NewExif(exifReader Reader, it imagetype.ImageType) *Exif {
 	return &Exif{
 		exifReader: exifReader,
+		ImageType:  it,
 		//exifIfd:    make(ifds.TagMap),
 		//gpsIfd:     make(ifds.TagMap),
 		//mkNote:     make(ifds.TagMap),
 	}
+}
+
+// SetMetadata sets the imagetype metadata in exif
+func (e *Exif) SetMetadata(m meta.Metadata) {
+	// Set Exif Width, Height from Metadata Image Size
+	e.width, e.height = m.Size()
+
+	// Set Exif XMP form Metadata XML
+	e.XMP = m.XML()
+
 }
 
 // AddIfd adds an Ifd to a TagMap
@@ -65,6 +82,15 @@ func (e *Exif) AddIfd(ifd ifds.IFD) {
 
 // AddTag adds a Tag to an Ifd -> IfdIndex -> tag.TagMap
 func (e *Exif) AddTag(ifd ifds.IFD, ifdIndex int, t tag.Tag) {
+	if ifd == ifds.RootIFD {
+		// Add Make and Model to Exif struct for future decoding of Makernotes
+		switch t.TagID {
+		case ifds.Make:
+			e.Make, _ = t.ASCIIValue(e.exifReader)
+		case ifds.Model:
+			e.Model, _ = t.ASCIIValue(e.exifReader)
+		}
+	}
 	switch ifd {
 	case ifds.RootIFD:
 		e.rootIfd[ifdIndex][t.TagID] = t
@@ -82,9 +108,13 @@ func (e *Exif) AddTag(ifd ifds.IFD, ifdIndex int, t tag.Tag) {
 func (e *Exif) getTagMap(ifd ifds.IFD, ifdIndex int) ifds.TagMap {
 	switch ifd {
 	case ifds.RootIFD:
-		return e.rootIfd[ifdIndex]
+		if len(e.rootIfd) > ifdIndex {
+			return e.rootIfd[ifdIndex]
+		}
 	case ifds.SubIFD:
-		return e.subIfd[ifdIndex]
+		if len(e.subIfd) > ifdIndex {
+			return e.subIfd[ifdIndex]
+		}
 	case ifds.ExifIFD:
 		return e.exifIfd
 	case ifds.GPSIFD:
@@ -97,6 +127,12 @@ func (e *Exif) getTagMap(ifd ifds.IFD, ifdIndex int) ifds.TagMap {
 
 // GetTag returns a tag from Exif and returns an error if tag doesn't exist
 func (e *Exif) GetTag(ifd ifds.IFD, ifdIndex int, tagID tag.ID) (t tag.Tag, err error) {
+	defer func() {
+		if state := recover(); state != nil {
+			err = state.(error)
+		}
+	}()
+
 	if tm := e.getTagMap(ifd, ifdIndex); tm != nil {
 		var ok bool
 		if t, ok = tm[tagID]; ok {

@@ -43,7 +43,7 @@ func BenchmarkScan200(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				cb.Seek(0, 0)
 				if _, err := Scan(cb); err != nil {
-					if err != ErrEndOfImage {
+					if err != ErrNoExif {
 						b.Fatal(err)
 					}
 				}
@@ -52,15 +52,15 @@ func BenchmarkScan200(b *testing.B) {
 	}
 }
 
-//BenchmarkScan200/1.jpg-8         	  800500	      1424 ns/op	    5984 B/op	       4 allocs/op
-//BenchmarkScan200/2.jpg-8         	  811891	      1475 ns/op	    5984 B/op	       4 allocs/op
-//BenchmarkScan200/3.jpg-8         	  619838	      1955 ns/op	    5984 B/op	       4 allocs/op
-//BenchmarkScan200/10.jpg-8        	  341607	      3350 ns/op	   28768 B/op	       4 allocs/op
-//BenchmarkScan200/13.jpg-8        	 1422186	       842 ns/op	    4192 B/op	       2 allocs/op
-//BenchmarkScan200/14.jpg-8        	 1327370	       907 ns/op	    4192 B/op	       2 allocs/op
-//BenchmarkScan200/16.jpg-8        	  314200	      3740 ns/op	   28768 B/op	       4 allocs/op
-//BenchmarkScan200/17.jpg-8        	  280066	      4283 ns/op	   31328 B/op	       4 allocs/op
-//BenchmarkScan200/20.jpg/NoExif-8 	 1851289	       651 ns/op	    4192 B/op	       2 allocs/op
-//BenchmarkScan200/21.jpeg-8       	  833792	      1304 ns/op	   10336 B/op	       4 allocs/op
-//BenchmarkScan200/24.jpg-8        	  868519	      1360 ns/op	   10336 B/op	       4 allocs/op
-//BenchmarkScan200/123.jpg-8       	 1876675	       643 ns/op	    4192 B/op	       2 allocs/op
+//BenchmarkScan200/1.jpg-8         	  745874	      1562 ns/op	    5984 B/op	       4 allocs/op
+//BenchmarkScan200/2.jpg-8         	  714488	      1630 ns/op	    5984 B/op	       4 allocs/op
+//BenchmarkScan200/3.jpg-8         	  558403	      1940 ns/op	    5984 B/op	       4 allocs/op
+//BenchmarkScan200/10.jpg-8        	  359642	      3430 ns/op	   28768 B/op	       4 allocs/op
+//BenchmarkScan200/13.jpg-8        	 1320680	       908 ns/op	    4192 B/op	       2 allocs/op
+//BenchmarkScan200/14.jpg-8        	 1290163	       934 ns/op	    4192 B/op	       2 allocs/op
+//BenchmarkScan200/16.jpg-8        	  327699	      3665 ns/op	   28768 B/op	       4 allocs/op
+//BenchmarkScan200/17.jpg-8        	  283201	      4253 ns/op	   31328 B/op	       4 allocs/op
+//BenchmarkScan200/20.jpg/NoExif-8 	 1753628	       682 ns/op	    4192 B/op	       2 allocs/op
+//BenchmarkScan200/21.jpeg-8       	  826738	      1328 ns/op	   10336 B/op	       4 allocs/op
+//BenchmarkScan200/24.jpg-8        	  794427	      1392 ns/op	   10336 B/op	       4 allocs/op
+//BenchmarkScan200/123.jpg-8       	 1745244	       687 ns/op	    4192 B/op	       2 allocs/op

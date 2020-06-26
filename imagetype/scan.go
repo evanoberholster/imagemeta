@@ -18,17 +18,30 @@ func Scan(reader io.Reader) (imageType ImageType, err error) {
 			err = state.(error)
 		}
 	}()
-	br := bufio.NewReader(reader)
-	if err != nil {
-		panic(err)
-	}
 
 	// Parse Header for an ImageType
+	br := bufio.NewReader(reader)
 	imageType = parseHeader(br)
 
 	return
 }
 
+// ScanBuf -
+// TODO: Documentation
+func ScanBuf(reader *bufio.Reader) (imageType ImageType, err error) {
+	defer func() {
+		if state := recover(); state != nil {
+			err = state.(error)
+		}
+	}()
+
+	// Parse Header for an ImageType
+	imageType = parseHeader(reader)
+
+	return
+}
+
+// parseHeader
 func parseHeader(br *bufio.Reader) ImageType {
 	buf, err := br.Peek(searchHeaderLength)
 	if err != nil {

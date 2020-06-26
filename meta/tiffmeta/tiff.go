@@ -15,21 +15,35 @@ var (
 
 const (
 	// Tiff Header Length is 8 bytes
-	tiffHeaderLength = 8
+	tiffHeaderLength = 16
 )
 
 // Scan searches an io.Reader for a LittleEndian Tiff Header or a BigEndian Tiff Header
 // and returns the TiffHeader
-func Scan(reader io.Reader) (h Header, err error) {
+func Scan(reader io.Reader) (m Metadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
 
-	// Search for the beginning of the EXIF information. The EXIF is near the
-	// beginning of most Image files, so this likely doesn't have a high cost.
 	br := bufio.NewReader(reader)
+	return scan(br)
+}
+
+func ScanBuf(reader *bufio.Reader) (m Metadata, err error) {
+	defer func() {
+		if state := recover(); state != nil {
+			err = state.(error)
+		}
+	}()
+	return scan(reader)
+}
+
+// Search for the beginning of the EXIF information. The EXIF is near the
+// beginning of most Image files, so this likely doesn't have a high cost.
+func scan(br *bufio.Reader) (m Metadata, err error) {
+	m = Metadata{}
 	discarded := 0
 
 	var buf []byte
@@ -62,7 +76,8 @@ func Scan(reader io.Reader) (h Header, err error) {
 		// Found
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
-		return NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0), nil
+		m.Header = NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
+		return
 	}
 
 	return
@@ -78,24 +93,24 @@ func BinaryOrder(buf []byte) binary.ByteOrder {
 		return nil
 	}
 
-	if IsTiffBigEndian(buf[:4]) {
+	if isTiffBigEndian(buf[:4]) {
 		return binary.BigEndian
-	} else if IsTiffLittleEndian(buf[:4]) {
+	} else if isTiffLittleEndian(buf[:4]) {
 		return binary.LittleEndian
 	}
 	return nil
 }
 
-// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func IsTiffLittleEndian(buf []byte) bool {
+// isTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func isTiffLittleEndian(buf []byte) bool {
 	return buf[0] == 0x49 &&
 		buf[1] == 0x49 &&
 		buf[2] == 0x2a &&
 		buf[3] == 0x00
 }
 
-// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func IsTiffBigEndian(buf []byte) bool {
+// isTiffBigEndian checks the buf for the TiffBigEndianSignature
+func isTiffBigEndian(buf []byte) bool {
 	return buf[0] == 0x4d &&
 		buf[1] == 0x4d &&
 		buf[2] == 0x00 &&

@@ -10,12 +10,9 @@ import (
 	"github.com/evanoberholster/exiftool"
 )
 
-const testFilename = "../../test/img/2.CR2"
+const testFilename = "../../test/img/123.jpg"
 
 func main() {
-	// Pretty Logging
-	//log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 	var err error
 
 	f, err := os.Open(testFilename)
@@ -23,26 +20,24 @@ func main() {
 		panic(err)
 	}
 
-	eh, err := exiftool.SearchExifHeader(f)
-	if err != nil {
+	buf, _ := ioutil.ReadAll(f)
+	reader := bytes.NewReader(buf)
+
+	start := time.Now()
+	e, err := exiftool.ScanExif(reader)
+	if err != nil && err != exiftool.ErrNoExif {
 		panic(err)
 	}
-	f.Seek(0, 0)
+	elapsed := time.Since(start)
+	fmt.Println(elapsed)
 
-	//cb := bufra.NewBufReaderAt(f, 128*1024)
-	buf, _ := ioutil.ReadAll(f)
-	cb := bytes.NewReader(buf)
-	start := time.Now()
-	e, err := eh.ParseExif(cb)
-	if err != nil {
-		fmt.Println(err)
+	if err == exiftool.ErrNoExif {
+		fmt.Println(e.XMLPacket())
+		fmt.Println(e.Dimensions())
+		return
 	}
 
-	//fmt.Println(e)
-	//start := time.Now()
-
 	// Strings
-
 	fmt.Println(e.CameraMake())
 	fmt.Println(e.CameraModel())
 	fmt.Println(e.Artist())

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/exiftool/exif"
-	"github.com/rs/zerolog"
 )
 
 // TODO: write tests for ParseExif
@@ -29,22 +28,15 @@ func TestParseExif(t *testing.T) {
 	}
 	for _, wantedExif := range exifTests {
 		t.Run(wantedExif.filename, func(t *testing.T) {
-			zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+			//zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 			// Open file
 			f, err := os.Open(wantedExif.filename)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// Search for Tiff header
-			eh, err := SearchExifHeader(f)
-			if err != nil {
-				panic(err)
-			}
-			f.Seek(0, 0)
-
 			buf, _ := ioutil.ReadAll(f)
 			cb := bytes.NewReader(buf)
-			e, err := eh.ParseExif(cb)
+			e, err := ParseExif(cb)
 			if err != nil {
 				fmt.Println(err)
 			}
