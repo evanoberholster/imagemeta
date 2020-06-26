@@ -74,10 +74,10 @@ func (m *Metadata) readAPP1(buf []byte) (err error) {
 	// APP1 Exif Marker
 	if isJpegExifPrefix(buf) {
 		// Read the length of the Exif Information
-		length := jpegByteOrder.Uint16(buf[2:4]) - exifPrefixLength
+		length := jpegByteOrder.Uint16(buf[2:4]) - 8
 
 		// Discard App Marker bytes and Exif header bytes
-		m.discard(2 + exifPrefixLength)
+		m.discard(2 + 8)
 
 		// Peek at TiffHeader information
 		if buf, err = m.br.Peek(exifPrefixLength); err != nil {
