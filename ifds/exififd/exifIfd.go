@@ -1,3 +1,4 @@
+// Package exififd provides types for "RootIfd/ExifIfd"
 package exififd
 
 import "github.com/evanoberholster/exiftool/tag"

@@ -1,3 +1,4 @@
+// Package ifds provides types and functions for decoding tiff Ifds
 package ifds
 
 import (

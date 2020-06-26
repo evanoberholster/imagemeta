@@ -1,3 +1,4 @@
+// Package imagetype provides types and functions for identifying Image document types
 package imagetype
 
 import (

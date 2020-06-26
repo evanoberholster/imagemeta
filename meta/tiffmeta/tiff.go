@@ -1,3 +1,4 @@
+// Package tiffmeta provides types and functions for identifying and decoding Tiff Headers
 package tiffmeta
 
 import (

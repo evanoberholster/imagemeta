@@ -1,3 +1,4 @@
+// Package canon provides functions for decoding of canon makernote values
 package canon
 
 import "fmt"

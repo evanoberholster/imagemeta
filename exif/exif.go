@@ -1,3 +1,4 @@
+// Package exif provides an API for retrieving exif information
 package exif
 
 import (

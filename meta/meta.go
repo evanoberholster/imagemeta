@@ -1,3 +1,5 @@
+// Package meta provides a Metadata interface for interpreting metadata
+// from different image types
 package meta
 
 import (

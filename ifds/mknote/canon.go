@@ -1,3 +1,4 @@
+// Package mknote provides functions and types for decoding Exif Makernote values
 package mknote
 
 import (

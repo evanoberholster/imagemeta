@@ -1,3 +1,4 @@
+// Package jpegmeta provides types and functions for decoding JPEG file Metadata
 package jpegmeta
 
 import (

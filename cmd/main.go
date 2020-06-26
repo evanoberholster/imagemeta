@@ -1,3 +1,4 @@
+// Package main provides an example command
 package main
 
 import (

@@ -1,3 +1,4 @@
+// Package tag provides types and functions for decoding Exif Tags
 package tag
 
 import (

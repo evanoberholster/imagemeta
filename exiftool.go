@@ -1,3 +1,4 @@
+// Package exiftool provides functions for scanning for Exif Information and extracting it
 package exiftool
 
 import (

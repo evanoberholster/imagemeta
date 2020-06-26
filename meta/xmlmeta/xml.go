@@ -1,3 +1,5 @@
+// Package xmlmeta provides types and functions for identifying and decoding
+// image xml information as well as xmp files.
 package xmlmeta
 
 // TODO: Create Unmarhsal for XMP Info
