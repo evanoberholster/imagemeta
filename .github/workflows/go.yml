@@ -30,11 +30,6 @@ jobs:
         
       - name: Test
         run: go test ./...
-
-      - name: Staticcheck
-        run: |
-          go get -u honnef.co/go/tools/cmd/staticcheck
-          staticcheck -checks all ./...
           
       - name: go vet
         run: go vet ./...
