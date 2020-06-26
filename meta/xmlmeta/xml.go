@@ -11,3 +11,4 @@ package xmlmeta
 //xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
 //xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
 //xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+//xmlns:darktable="http://darktable.sf.net/"
