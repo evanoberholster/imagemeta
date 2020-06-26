@@ -8,9 +8,11 @@
 
 This package provides for performance oriented decoding of exif and tiff encoded data.
 
-See ([Godoc-Url])[Godoc-Url] for more doumentation.
+## Documentation
 
-Suggestions and pull requests are welcome.
+See [Documentation]([Godoc-Url]) for more information.
+
+## Example Usage
 
 Example usage:
 
@@ -93,6 +95,10 @@ func main() {
 }
 ```
 
+## Contributing
+
+Suggestions and pull requests are welcome.
+
 ## Benchmarks
 
 This was benchmarked without the retrival of values.
@@ -118,6 +124,8 @@ BenchmarkScanExif100/hero6.gpr-8                 31630        38285 ns/op      1
 ## Imagetype Identification
 
 Images can be identified with: "github.com/evanoberholster/exiftool/imagetype" package.
+
+Benchmarks can be found with the exiftool/imagetype package
 
 Example:
 
@@ -148,8 +156,6 @@ func main() {
    fmt.Println(t)
 }
 ```
-
-Benchmarks can be found with the exiftool/imagetype package
 
 ## TODO
 
