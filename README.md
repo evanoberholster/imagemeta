@@ -3,11 +3,12 @@
 [![License][License-Image]][License-Url]
 [![Godoc][Godoc-Image]][Godoc-Url]
 [![ReportCard][ReportCard-Image]][ReportCard-Url]
-[![Coverage Status](https://coveralls.io/repos/github/evanoberholster/exiftool/badge.svg?branch=master)](https://coveralls.io/github/evanoberholster/exiftool?branch=master)
+[![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
-[![Test](https://github.com/evanoberholster/exiftool/workflows/Test/badge.svg)](https://github.com/evanoberholster/exiftool/actions?query=branch%3Amaster)
 
-Provides decoding of basic exif and tiff encoded data.
+This package provides for performance oriented decoding of exif and tiff encoded data.
+
+See ([Godoc-Url])[Godoc-Url] for more doumentation.
 
 Suggestions and pull requests are welcome.
 
