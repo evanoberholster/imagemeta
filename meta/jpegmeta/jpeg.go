@@ -82,7 +82,7 @@ func (m *Metadata) scanMarkers(buf []byte) (err error) {
 		markerSOF10:
 		return m.readSOF(buf)
 	case markerDHT:
-		// Artifical End Of Image for DHT Marker.
+		// Artificial End Of Image for DHT Marker.
 		// This is done to improve performance.
 		if m.pos == 1 {
 			return ErrEndOfImage

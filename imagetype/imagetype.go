@@ -121,13 +121,13 @@ var imageTypeValues = map[string]ImageType{
 func isTiff(buf []byte) bool {
 	return len(buf) > 4 &&
 		// BigEndian Tiff Image Header
-		IsTiffBigEndian(buf[:4]) ||
+		isTiffBigEndian(buf[:4]) ||
 		// LittleEndian Tiff Image Header
-		IsTiffLittleEndian(buf[:4])
+		isTiffLittleEndian(buf[:4])
 }
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func IsTiffLittleEndian(buf []byte) bool {
+func isTiffLittleEndian(buf []byte) bool {
 	return buf[0] == 0x49 &&
 		buf[1] == 0x49 &&
 		buf[2] == 0x2a &&
@@ -135,7 +135,7 @@ func IsTiffLittleEndian(buf []byte) bool {
 }
 
 // IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func IsTiffBigEndian(buf []byte) bool {
+func isTiffBigEndian(buf []byte) bool {
 	return buf[0] == 0x4d &&
 		buf[1] == 0x4d &&
 		buf[2] == 0x00 &&
