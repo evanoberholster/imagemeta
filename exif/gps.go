@@ -97,6 +97,22 @@ func (e *Exif) GPSAltitude() (alt float32, err error) {
 	return 0.0, err
 }
 
+// GPSCellID convenience func.
+func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
+	var lat, lng float64
+	if lat, lng, err = e.GPSInfo(); err != nil {
+		return
+	}
+
+	latLng := s2.LatLngFromDegrees(lat, lng)
+	cellID = s2.CellIDFromLatLng(latLng)
+
+	if !cellID.IsValid() {
+		panic(ErrGpsCoordsNotValid)
+	}
+	return
+}
+
 // GPSInfo convenience func. "IFD/GPS" GPSLatitude and GPSLongitude
 func (e *Exif) GPSInfo() (lat, lng float64, err error) {
 	defer func() {
