@@ -18,3 +18,4 @@ samples/*
 testImages/gen.go
 testImages/*.html
 meta/jpegmeta/cmd
+meta/xmlmeta/cmd

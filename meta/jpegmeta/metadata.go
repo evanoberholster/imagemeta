@@ -122,6 +122,8 @@ func (m *Metadata) readXMP(buf []byte) (err error) {
 		i += n
 	}
 
+	//b := bytes.ReplaceAll([]byte(m.XML()), []byte{0}, []byte{})
+	//b = bytes.ReplaceAll(b, []byte{32, 32, 32}, []byte{})
 	m.xml = string(xmpBuf)
 	//str := strings.Replace(string(xmpBuf), "\n", "", -1)
 	//m.XML = strings.Replace(str, "   ", "", -1)

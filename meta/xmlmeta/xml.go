@@ -2,15 +2,70 @@
 // image xml information as well as xmp files.
 package xmlmeta
 
-// TODO: Create Unmarhsal for XMP Info
+import (
+	"encoding/xml"
+	"io"
+)
 
-//xmlns:xmp="http://ns.adobe.com/xap/1.0/"
-//xmlns:dc="http://purl.org/dc/elements/1.1/"
-//xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
-//xmlns:exifEX="http://cipa.jp/exif/1.0/"
-//xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
-//xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
-//xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
-//xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
-//xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
-//xmlns:darktable="http://darktable.sf.net/"
+var (
+	rdfSeq         = xml.Name{Space: "rdf", Local: "Seq"}
+	rdfLi          = xml.Name{Space: "rdf", Local: "li"}
+	rdfDescription = xml.Name{Space: "rdf", Local: "Description"}
+)
+
+func Walk(r io.Reader) (xmp XMPPacket, err error) {
+	xmp = XMPPacket{}
+
+	decoder := xml.NewDecoder(r)
+	var t xml.Token
+	for {
+		if t, err = decoder.RawToken(); err != nil {
+			if err == io.EOF {
+				return xmp, nil
+			}
+			return
+		}
+		switch x := t.(type) {
+		case xml.StartElement:
+			switch x.Name.Space {
+			case "rdf":
+				xmp.XMPDescription(decoder, &x)
+			case "dc":
+				xmp.DC.decode(decoder, &x)
+				//default:
+				//fmt.Println(x.Name)
+				//xmp.XMPDescription(decoder, &x)
+				//fmt.Printf("Unexpected SE {%s}%s\n", x.Name.Space, x.Name.Local)
+			}
+
+			//case xml.EndElement:
+			//	switch x.Name {
+			//	default:
+			//		//fmt.Printf("Unexpected EE {%s}%s\n", x.Name.Space, x.Name.Local)
+			//	}
+		}
+	}
+}
+
+// XMPPacket is an Instance of the XMP Data Model.
+// Also known as an XMP document.
+type XMPPacket2 struct {
+	RDF XMPRDFMeta `xml:"RDF"`
+}
+
+// XMP is itself a subset of the Resource Description Framework.
+// RDF is an OG (Original Gangter) web (W3) standard for data interchange.
+// https://www.w3.org/TR/rdf11-concepts/
+// All XMPPackets are a single instance of an RDF document, with limitations
+// defined by the XMP spec
+type XMPRDFMeta struct {
+	Description XMPDescription `xml:"Description"`
+}
+
+type XMPDescription struct {
+	DublinCore
+	XMPBasic
+	//XMPRights
+	//XMPMM
+	//XMPIdq
+}
