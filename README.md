@@ -160,11 +160,11 @@ func main() {
 ## TODO
 
 - [x] Update ImageTypes API
-- [-] Write Exif extraction for individual image types (jpg, heic)
+- [x] Write Exif extraction for individual image types (jpg, cr2, tiff)
+- [ ] Stabalize API
 - [ ] Write tests
 - [ ] Include support for CRW image type (ciff format images)
 - [ ] Create Thumbnail API
-- [ ] Stabalize API
 - [ ] Documentation
 
 ## Based on and Inspired by
