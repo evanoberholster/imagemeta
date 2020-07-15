@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/evanoberholster/exiftool/exif"
 )
 
 // TODO: write tests for ParseExif
@@ -19,7 +17,7 @@ func TestParseExif(t *testing.T) {
 		model       string
 		ISOSpeed    int
 		aperture    float32
-		focalLength exif.FocalLength
+		focalLength FocalLength
 	}{
 		{"testImages/ARW.exif", "SONY", "SLT-A55V", 100, 13.0, 30.0},
 		{"testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0},

@@ -1,4 +1,4 @@
-package exif
+package exiftool
 
 import (
 	"errors"
@@ -83,7 +83,7 @@ func (gi *GpsInfo) S2CellID() (cellID s2.CellID, err error) {
 
 // GPSAltitude convenience func. "IFD/GPS" GPSAltitude
 // WIP
-func (e *Exif) GPSAltitude() (alt float32, err error) {
+func (e *ExifData) GPSAltitude() (alt float32, err error) {
 	// Altitude
 	t, err := e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSAltitude)
 	if err == nil {
@@ -102,7 +102,7 @@ func (e *Exif) GPSAltitude() (alt float32, err error) {
 // converts them into an S2 CellID and returns the CellID.
 //
 // If the CellID is not valid it returns ErrGpsCoordsNotValid.
-func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
+func (e *ExifData) GPSCellID() (cellID s2.CellID, err error) {
 	lat, lng, err := e.GPSInfo()
 	if err != nil {
 		return
@@ -120,7 +120,7 @@ func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
 }
 
 // GPSInfo convenience func. "IFD/GPS" GPSLatitude and GPSLongitude
-func (e *Exif) GPSInfo() (lat, lng float64, err error) {
+func (e *ExifData) GPSInfo() (lat, lng float64, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -181,7 +181,7 @@ func (e *Exif) GPSInfo() (lat, lng float64, err error) {
 }
 
 // GPSTime convenience func. "IFD/GPS" GPSDateStamp and GPSTimeStamp
-func (e *Exif) GPSTime() (timestamp time.Time, err error) {
+func (e *ExifData) GPSTime() (timestamp time.Time, err error) {
 	t, err := e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSDateStamp)
 	if err != nil {
 		return

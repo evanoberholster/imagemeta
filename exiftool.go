@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"io"
 
-	"github.com/evanoberholster/exiftool/exif"
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/imagetype"
 	"github.com/evanoberholster/exiftool/meta"
@@ -26,7 +25,7 @@ var (
 // to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
+func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 	er := NewExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
@@ -46,7 +45,7 @@ func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = exif.NewExif(er, t)
+	e = NewExif(er, t)
 	e.SetMetadata(m)
 
 	if err == nil {
@@ -69,7 +68,7 @@ func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
 // Sets exif imagetype as imageTypeUnknown
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
+func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
 	er := NewExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
@@ -83,7 +82,7 @@ func ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = exif.NewExif(er, imagetype.ImageUnknown)
+	e = NewExif(er, imagetype.ImageUnknown)
 	e.SetMetadata(m)
 
 	if err == nil {

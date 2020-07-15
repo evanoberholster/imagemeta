@@ -1,4 +1,4 @@
-package exif
+package exiftool
 
 import (
 	"github.com/evanoberholster/exiftool/ifds"
@@ -8,7 +8,7 @@ import (
 
 // CanonCameraSettings convenience func. "IFD/Exif/Makernotes.Canon" CanonCameraSettings
 // Canon Camera Settings from the Makernote
-func (e *Exif) CanonCameraSettings() (canon.CameraSettings, error) {
+func (e *ExifData) CanonCameraSettings() (canon.CameraSettings, error) {
 	if e.Make != "Canon" {
 		return canon.CameraSettings{}, ErrEmptyTag
 	}
@@ -34,7 +34,7 @@ func (e *Exif) CanonCameraSettings() (canon.CameraSettings, error) {
 
 // CanonFileInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonFileInfo
 // Canon Camera File Info from the Makernote
-func (e *Exif) CanonFileInfo() (canon.FileInfo, error) {
+func (e *ExifData) CanonFileInfo() (canon.FileInfo, error) {
 	t, err := e.GetTag(ifds.MknoteIFD, 0, mknote.CanonFileInfo)
 	if err != nil {
 		return canon.FileInfo{}, err
@@ -54,7 +54,7 @@ func (e *Exif) CanonFileInfo() (canon.FileInfo, error) {
 
 // CanonShotInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonShotInfo
 // Canon Camera Shot Info from the Makernote
-func (e *Exif) CanonShotInfo() (canon.ShotInfo, error) {
+func (e *ExifData) CanonShotInfo() (canon.ShotInfo, error) {
 	t, err := e.GetTag(ifds.MknoteIFD, 0, mknote.CanonShotInfo)
 	if err != nil {
 		return canon.ShotInfo{}, err
@@ -76,7 +76,7 @@ func (e *Exif) CanonShotInfo() (canon.ShotInfo, error) {
 
 // CanonAFInfo -
 // Canon Camera AutoFocus Information from the Makernote
-func (e *Exif) CanonAFInfo() (afInfo canon.AFInfo, err error) {
+func (e *ExifData) CanonAFInfo() (afInfo canon.AFInfo, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)

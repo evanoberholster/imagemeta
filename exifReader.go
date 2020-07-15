@@ -43,7 +43,7 @@ func (er *ExifReader) Read(p []byte) (n int, err error) {
 }
 
 // ReadAt reads from ExifReader at the given offset
-func (er *ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
+func (er ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
 	if off < 0 {
 		return 0, errors.New("ExifReader.ReadAt: negative offset")
 	}
@@ -52,7 +52,7 @@ func (er *ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 // ByteOrder returns the ExifReader's byteOrder
-func (er *ExifReader) ByteOrder() binary.ByteOrder {
+func (er ExifReader) ByteOrder() binary.ByteOrder {
 	return er.byteOrder
 }
 
