@@ -31,6 +31,7 @@ type TagReader interface {
 	ReadAt(p []byte, off int64) (n int, err error)
 }
 
+//
 // NewTag creates a new Tag from
 func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, rawValueOffset RawValueOffset) Tag {
 	return Tag{

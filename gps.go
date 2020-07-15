@@ -11,11 +11,6 @@ import (
 	"github.com/golang/geo/s2"
 )
 
-// GPS constants
-const (
-	GPSIfd = ifds.GPSIFD
-)
-
 var (
 	// ErrGpsCoordsNotValid means that some part of the geographic data were unparseable.
 	ErrGpsCoordsNotValid = errors.New("error GPS coordinates not valid")

@@ -30,8 +30,8 @@ type ExifData struct {
 	ImageType  imagetype.ImageType
 }
 
-// NewExif creates a new initialized Exif object
-func NewExif(exifReader *ExifReader, it imagetype.ImageType) *ExifData {
+// newExif creates a new initialized Exif object
+func newExifData(exifReader *ExifReader, it imagetype.ImageType) *ExifData {
 	return &ExifData{
 		exifReader: exifReader,
 		ImageType:  it,

@@ -21,8 +21,8 @@ type ExifReader struct {
 	offset int64
 }
 
-// NewExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
-func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
+// newExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
+func newExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
 	return &ExifReader{
 		reader:     reader,
 		byteOrder:  byteOrder,
@@ -52,7 +52,7 @@ func (er ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 // ByteOrder returns the ExifReader's byteOrder
-func (er ExifReader) ByteOrder() binary.ByteOrder {
+func (er *ExifReader) ByteOrder() binary.ByteOrder {
 	return er.byteOrder
 }
 

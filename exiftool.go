@@ -26,7 +26,7 @@ var (
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
-	er := NewExifReader(r, nil, 0)
+	er := newExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
 	// Identify Image Type
@@ -45,7 +45,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = NewExif(er, t)
+	e = newExifData(er, t)
 	e.SetMetadata(m)
 
 	if err == nil {
@@ -69,7 +69,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
 func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
-	er := NewExifReader(r, nil, 0)
+	er := newExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
 	// Search Image for Metadata Header using
@@ -82,7 +82,7 @@ func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = NewExif(er, imagetype.ImageUnknown)
+	e = newExifData(er, imagetype.ImageUnknown)
 	e.SetMetadata(m)
 
 	if err == nil {
