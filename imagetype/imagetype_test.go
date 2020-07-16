@@ -1,11 +1,10 @@
 package imagetype
 
 import (
+	"bytes"
 	"os"
 	"testing"
 )
-
-// TODO: write tests for ImageTypes
 
 // Tests
 func TestSearchImageType(t *testing.T) {
@@ -36,6 +35,64 @@ func TestSearchImageType(t *testing.T) {
 
 			if header.imageType != imageType {
 				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType.String(), imageType.String())
+			}
+		})
+	}
+
+}
+
+func TestImageType(t *testing.T) {
+	fileOffset := 32
+	testDataFilename := "test.dat"
+
+	var headerTests = []struct {
+		name      string
+		fileName  string
+		imageType string
+	}{
+		{".CRW", "0.CRW", "image/x-canon-crw"},
+		{".CR2/GPS", "2.CR2", "image/x-canon-cr2"},
+		{".CR2/7D", "7D2.CR2", "image/x-canon-cr2"},
+		{".CR3", "1.CR3", "image/x-canon-cr3"},
+		{".JPG/GPS", "17.jpg", "image/jpeg"},
+		{".JPG/NoExif", "20.jpg", "image/jpeg"},
+		{".JPG/GoPro", "hero6.jpg", "image/jpeg"},
+		{".JPEG", "21.jpeg", "image/jpeg"},
+		{".HEIC/iPhone", "1.heic", "image/heif"},
+		{".HEIC/Conv", "3.heic", "image/heif"},
+		{".HEIC/Alt", "4.heic", "image/heif"},
+		{".WEBP", "4.webp", "image/webp"},
+		{".GPR/GoPro", "hero6.gpr", "image/tiff"},
+		{".NEF/Nikon", "2.NEF", "image/tiff"},
+		{".ARW/Sony", "2.ARW", "image/tiff"},
+		{".DNG/Adobe", "1.DNG", "image/tiff"},
+		{".PNG", "0.png", "image/png"},
+		{".RW2", "4.RW2", "image/x-panasonic-raw"},
+		{".XMP", "test.xmp", "application/rdf+xml"},
+	}
+
+	// Open file
+	f, err := os.Open(testDataFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	buf := make([]byte, fileOffset)
+
+	for i, header := range headerTests {
+		t.Run(header.name, func(t *testing.T) {
+			if n, err := f.ReadAt(buf, int64(i*fileOffset)); n != fileOffset || err != nil {
+				t.Fatal(err)
+			}
+			// Search for Image Type
+			imageType, err := Scan(bytes.NewReader(buf))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if header.imageType != imageType.String() {
+				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType, imageType.String())
 			}
 		})
 	}
