@@ -22,6 +22,9 @@ func main() {
 	//cb := bytes.NewReader(buf)
 	start := time.Now()
 	m, err := meta.Scan(f, imagetype.ImageUnknown)
+	if err != nil {
+		panic(err)
+	}
 
 	elapsed := time.Since(start)
 
