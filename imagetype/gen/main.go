@@ -63,7 +63,7 @@ func main() {
 			err = f.Close()
 			panic(err)
 		}
-		if _, err := f.Close(); err != nil {
+		if err := f.Close(); err != nil {
 			panic(err)
 		}
 	}
