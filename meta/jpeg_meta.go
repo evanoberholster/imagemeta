@@ -1,13 +1,11 @@
-package jpegmeta
+package meta
 
 import (
 	"bufio"
 	"encoding/binary"
-
-	"github.com/evanoberholster/exiftool/meta/tiffmeta"
 )
 
-// jpegByteOrder - JPEG uses a BigEndian Byte Order.
+// jpegByteOrder - JPEG always uses a BigEndian Byteorder.
 var jpegByteOrder = binary.BigEndian
 
 // SOFHeader contains height, width and number of components.
@@ -18,12 +16,16 @@ type SOFHeader struct {
 	components uint8
 }
 
-// Metadata from JPEG files
-type Metadata struct {
-	sof        SOFHeader
-	xml        string
-	tiffHeader tiffmeta.Header
-	Exif       []byte
+// JPEGMetadata from JPEG files
+type JPEGMetadata struct {
+	// SOF Header and Tiff Header
+	SOFHeader
+	TiffHeader
+	XMPHeader
+
+	// XML and Exif
+	xml  string
+	Exif []byte
 
 	// Reader
 	br        *bufio.Reader
@@ -32,23 +34,23 @@ type Metadata struct {
 }
 
 // Size returns the width and height of the JPEG Image
-func (m Metadata) Size() (width, height uint16) {
-	return m.sof.width, m.sof.height
+func (m JPEGMetadata) Size() (width, height uint16) {
+	return m.width, m.height
 }
 
 // XML returns the xml in the JPEG Image as a string
-func (m Metadata) XML() string {
+func (m JPEGMetadata) XML() string {
 	return m.xml
 }
 
-// TiffHeader returns the tiffmeta.Header from the JPEG Image
-func (m Metadata) TiffHeader() tiffmeta.Header {
-	return m.tiffHeader
+// Header returns the TiffHeader from the JPEG Image
+func (m JPEGMetadata) Header() TiffHeader {
+	return m.TiffHeader
 }
 
 // newMetadata creates a New metadata object from an io.Reader
-func newMetadata(reader *bufio.Reader) Metadata {
-	return Metadata{
+func newMetadata(reader *bufio.Reader) JPEGMetadata {
+	return JPEGMetadata{
 		br:        reader,
 		discarded: 0,
 	}
@@ -56,7 +58,7 @@ func newMetadata(reader *bufio.Reader) Metadata {
 
 // readAPP1
 // TODO: Documentation/Testing
-func (m *Metadata) discard(i int) (err error) {
+func (m *JPEGMetadata) discard(i int) (err error) {
 	// Exif not identified. Move forward by one byte.
 	i, err = m.br.Discard(i)
 	m.discarded += uint32(i)
@@ -65,7 +67,7 @@ func (m *Metadata) discard(i int) (err error) {
 
 // readAPP1
 // TODO: Documentation/Testing
-func (m *Metadata) readAPP1(buf []byte) (err error) {
+func (m *JPEGMetadata) readAPP1(buf []byte) (err error) {
 	// APP1 XML Marker
 	if isXMPPrefix(buf) {
 		// ReadXMP reads the XML header/component into metadata
@@ -88,10 +90,12 @@ func (m *Metadata) readAPP1(buf []byte) (err error) {
 
 		// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
 		// the tiff Header Offset, and the length of the exif information.
-		byteOrder := tiffmeta.BinaryOrder(buf)
+		byteOrder := BinaryOrder(buf)
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		exifLength := uint32(length)
-		m.setTiffHeader(tiffmeta.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength))
+
+		// Set Tiff Header
+		m.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
 
 		//fmt.Println("Exif Tiff Header:", m.tiffHeader)
 
@@ -103,7 +107,7 @@ func (m *Metadata) readAPP1(buf []byte) (err error) {
 
 // readXMP
 // TODO: Documentation/Testing
-func (m *Metadata) readXMP(buf []byte) (err error) {
+func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 	// Read the length of the XMPHeader
 	length := int(jpegByteOrder.Uint16(buf[2:4])) - 2 - xmpPrefixLength
 
@@ -131,7 +135,7 @@ func (m *Metadata) readXMP(buf []byte) (err error) {
 
 // readSOF
 // TODO: Documentation/Testing
-func (m *Metadata) readSOF(buf []byte) error {
+func (m *JPEGMetadata) readSOF(buf []byte) error {
 	length := int(jpegByteOrder.Uint16(buf[2:4]))
 	header := SOFHeader{
 		//m.discarded,
@@ -139,18 +143,14 @@ func (m *Metadata) readSOF(buf []byte) error {
 		jpegByteOrder.Uint16(buf[7:9]),
 		buf[9]}
 	if m.pos == 1 {
-		m.sof = header
+		m.SOFHeader = header
 	}
 	return m.discard(length + 2)
 }
 
-func (m *Metadata) setTiffHeader(tiffHeader tiffmeta.Header) {
-	m.tiffHeader = tiffHeader
-}
-
 // ignoreMarker reads the Marker Header length and then
 // discards the said marker and its header length
-func (m *Metadata) ignoreMarker(buf []byte) error {
+func (m *JPEGMetadata) ignoreMarker(buf []byte) error {
 	// Read Marker Header Length
 	length := int(jpegByteOrder.Uint16(buf[2:4]))
 

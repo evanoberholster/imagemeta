@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/exiftool/meta/tiffmeta"
+	"github.com/evanoberholster/exiftool/meta"
 )
 
 // ExifReader -
@@ -58,7 +58,7 @@ func (er *ExifReader) ByteOrder() binary.ByteOrder {
 
 // SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
 // from a TiffHeader and sets the ExifReader read offset to 0
-func (er *ExifReader) SetHeader(header tiffmeta.Header) error {
+func (er *ExifReader) SetHeader(header meta.TiffHeader) error {
 	if !header.IsValid() {
 		return ErrInvalidHeader
 	}

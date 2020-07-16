@@ -8,13 +8,12 @@ import (
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/imagetype"
 	"github.com/evanoberholster/exiftool/meta"
-	"github.com/evanoberholster/exiftool/meta/tiffmeta"
 )
 
 // Errors
 var (
-	// Alias to tiffmeta ErrInvalidHeader
-	ErrInvalidHeader = tiffmeta.ErrInvalidHeader
+	// Alias to meta Errors
+	ErrInvalidHeader = meta.ErrInvalidHeader
 	ErrNoExif        = meta.ErrNoExif
 )
 
@@ -49,7 +48,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 	e.SetMetadata(m)
 
 	if err == nil {
-		header := m.TiffHeader()
+		header := m.Header()
 		// Set TiffHeader sets the ExifReader and checks
 		// the header validity.
 		// Returns ErrInvalidHeader if header is not valid.
@@ -86,7 +85,7 @@ func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
 	e.SetMetadata(m)
 
 	if err == nil {
-		header := m.TiffHeader()
+		header := m.Header()
 		// Set TiffHeader sets the ExifReader and checks
 		// the header validity.
 		// Returns ErrInvalidHeader if header is not valid.
