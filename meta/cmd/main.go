@@ -12,11 +12,14 @@ import (
 const testFilename = "../../../../test/img/6.jpg"
 
 func main() {
+
 	f, err := os.Open(testFilename)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+	defer func() {
+		f.Close()
+	}()
 	fmt.Println(testFilename)
 	//buf, _ := ioutil.ReadAll(f)
 	//cb := bytes.NewReader(buf)
