@@ -55,11 +55,17 @@ func main() {
 			panic(err)
 		}
 		if n, err := f.ReadAt(buf, 0); n != 32 || err != nil {
-			f.Close()
+			err = f.Close()
 			panic(err)
 		}
 		fmt.Println(imagetype.Scan(f))
-		dat.Write(buf)
-		f.Close()
+		_, err := dat.Write(buf)
+		if err != nil {
+			err = f.Close()
+			panic(err)
+		}
+		if _, err := f.Close(); err != nil {
+			panic(err)
+		}
 	}
 }
