@@ -38,10 +38,32 @@ func TestSearchImageType(t *testing.T) {
 			}
 		})
 	}
-
 }
 
-func TestImageType(t *testing.T) {
+func TestImageTypeFunc(t *testing.T) {
+
+	str := "image/jpeg"
+	it := ImageJPEG
+
+	if it.IsUnknown() || !ImageUnknown.IsUnknown() {
+		t.Errorf("Error Imagetype should not be Unknown")
+	}
+
+	itbuf, err := it.MarshalText()
+	if err != nil {
+		t.Errorf("Error Imagetype could not be marshalled")
+	}
+
+	if !bytes.Equal(itbuf, []byte(str)) {
+		t.Errorf("Incorrect Imagetype Marshall wanted %s got %s", str, string(itbuf))
+	}
+
+	if it2 := FromString(str); it2 != it {
+		t.Errorf("Incorrect Imagetype FromString wanted %s got %s", str, it2.String())
+	}
+}
+
+func TestScanImageType(t *testing.T) {
 	fileOffset := 32
 	testDataFilename := "test.dat"
 
@@ -69,6 +91,9 @@ func TestImageType(t *testing.T) {
 		{".PNG", "0.png", "image/png"},
 		{".RW2", "4.RW2", "image/x-panasonic-raw"},
 		{".XMP", "test.xmp", "application/rdf+xml"},
+		{".PSD", "0.psd", "image/vnd.adobe.photoshop"},
+		{".JP2/JPEG2000", "0.jp2", "image/jpeg"},
+		{".BMP", "0.bmp", "image/bmp"},
 	}
 
 	// Open file
@@ -95,6 +120,24 @@ func TestImageType(t *testing.T) {
 				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType, imageType.String())
 			}
 		})
+	}
+
+	// Image Unknown
+	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop12345")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imageType != ImageUnknown {
+		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
+	}
+
+	//  Image Unknown - Empty ByteSlice
+	imageType, err = Scan(bytes.NewReader([]byte("")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imageType != ImageUnknown {
+		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 
 }

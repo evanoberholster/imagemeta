@@ -33,6 +33,9 @@ var (
 		{".PNG", "0.png", "image/png"},
 		{".RW2", "4.RW2", "image/x-panasonic-raw"},
 		{".XMP", "test.xmp", "application/rdf+xml"},
+		{".PSD", "0.psd", "image/vnd.adobe.photoshop"},
+		{".JP2/JPEG2000", "0.jp2", "image/jpeg"},
+		{".BMP", "0.bmp", "image/bmp"},
 	}
 )
 

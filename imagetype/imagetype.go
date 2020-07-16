@@ -35,8 +35,8 @@ func (it ImageType) IsUnknown() bool {
 
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
-func (it *ImageType) MarshalText() (text []byte, err error) {
-	return []byte(imageTypeStrings[*it]), nil
+func (it ImageType) MarshalText() (text []byte, err error) {
+	return []byte(imageTypeStrings[it]), nil
 }
 
 func (it ImageType) String() string {

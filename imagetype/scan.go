@@ -10,20 +10,11 @@ const (
 	searchHeaderLength = 16
 )
 
-// Scan -
-// TODO: Documentation
+// Scan is a conveninence function for ScanBuf
 func Scan(reader io.Reader) (imageType ImageType, err error) {
-	defer func() {
-		if state := recover(); state != nil {
-			err = state.(error)
-		}
-	}()
-
 	// Parse Header for an ImageType
 	br := bufio.NewReader(reader)
-	imageType = parseHeader(br)
-
-	return
+	return ScanBuf(br)
 }
 
 // ScanBuf -
@@ -51,9 +42,9 @@ func parseHeader(br *bufio.Reader) ImageType {
 		panic(err)
 	}
 
-	if len(buf) < searchHeaderLength {
-		panic(ErrDataLength)
-	}
+	//if len(buf) < searchHeaderLength {
+	//	panic(ErrDataLength)
+	//}
 
 	// JPEG Header
 	if isJPEG(buf) {
