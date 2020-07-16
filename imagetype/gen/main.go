@@ -59,8 +59,7 @@ func main() {
 			panic(err)
 		}
 		fmt.Println(imagetype.Scan(f))
-		_, err := dat.Write(buf)
-		if err != nil {
+		if _, err := dat.Write(buf); err != nil {
 			err = f.Close()
 			panic(err)
 		}
