@@ -1,17 +1,9 @@
-// Package tiffmeta provides types and functions for identifying and decoding Tiff Headers
-package tiffmeta
+package meta
 
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
 	"io"
-)
-
-// Errors
-var (
-	// ErrNoExif no exif information was found
-	ErrNoExif = errors.New("no exif found")
 )
 
 const (
@@ -19,32 +11,21 @@ const (
 	tiffHeaderLength = 16
 )
 
-// Scan searches an io.Reader for a LittleEndian Tiff Header or a BigEndian Tiff Header
+// ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
 // and returns the TiffHeader
-func Scan(reader io.Reader) (m Metadata, err error) {
+func ScanTiff(reader *bufio.Reader) (m TiffMetadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
-
-	br := bufio.NewReader(reader)
-	return scan(br)
-}
-
-func ScanBuf(reader *bufio.Reader) (m Metadata, err error) {
-	defer func() {
-		if state := recover(); state != nil {
-			err = state.(error)
-		}
-	}()
-	return scan(reader)
+	return scanTIFF(reader)
 }
 
 // Search for the beginning of the EXIF information. The EXIF is near the
 // beginning of most Image files, so this likely doesn't have a high cost.
-func scan(br *bufio.Reader) (m Metadata, err error) {
-	m = Metadata{}
+func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
+	tm = TiffMetadata{}
 	discarded := 0
 
 	var buf []byte
@@ -57,10 +38,6 @@ func scan(br *bufio.Reader) (m Metadata, err error) {
 				break
 			}
 			panic(err)
-		}
-		if len(buf) < 8 {
-			err = ErrNoExif
-			break
 		}
 
 		byteOrder := BinaryOrder(buf)
@@ -77,7 +54,7 @@ func scan(br *bufio.Reader) (m Metadata, err error) {
 		// Found
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
-		m.Header = NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
+		tm.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
 		return
 	}
 
@@ -90,13 +67,14 @@ func scan(br *bufio.Reader) (m Metadata, err error) {
 // CIPA DC-008-2016; JEITA CP-3451D
 // -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
 func BinaryOrder(buf []byte) binary.ByteOrder {
-	if len(buf) < 4 {
-		return nil
+	if len(buf) < 8 {
+		panic(ErrNoExif)
 	}
 
 	if isTiffBigEndian(buf[:4]) {
 		return binary.BigEndian
-	} else if isTiffLittleEndian(buf[:4]) {
+	}
+	if isTiffLittleEndian(buf[:4]) {
 		return binary.LittleEndian
 	}
 	return nil

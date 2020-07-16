@@ -1,4 +1,4 @@
-package exif
+package exiftool
 
 import (
 	"errors"
@@ -11,16 +11,11 @@ import (
 	"github.com/golang/geo/s2"
 )
 
-// GPS constants
-const (
-	GPSIfd = ifds.GPSIFD
-)
-
 var (
 	// ErrGpsCoordsNotValid means that some part of the geographic data were unparseable.
-	ErrGpsCoordsNotValid = errors.New("GPS coordinates not valid")
+	ErrGpsCoordsNotValid = errors.New("error GPS coordinates not valid")
 	// ErrGPSRationalNotValid means that the rawCoordinates were not long enough.
-	ErrGPSRationalNotValid = errors.New("GPS Coords requires a raw-coordinate with exactly three rationals")
+	ErrGPSRationalNotValid = errors.New("error GPS Coords requires a raw-coordinate with exactly three rationals")
 )
 
 // gpsCoordsFromRationals returns a decimal given the EXIF-encoded information.
@@ -74,7 +69,8 @@ func (gi *GpsInfo) S2CellID() (cellID s2.CellID, err error) {
 	cellID = s2.CellIDFromLatLng(latLng)
 
 	if !cellID.IsValid() {
-		panic(ErrGpsCoordsNotValid)
+		err = ErrGpsCoordsNotValid
+		return
 	}
 
 	return cellID, nil
@@ -82,7 +78,7 @@ func (gi *GpsInfo) S2CellID() (cellID s2.CellID, err error) {
 
 // GPSAltitude convenience func. "IFD/GPS" GPSAltitude
 // WIP
-func (e *Exif) GPSAltitude() (alt float32, err error) {
+func (e *ExifData) GPSAltitude() (alt float32, err error) {
 	// Altitude
 	t, err := e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSAltitude)
 	if err == nil {
@@ -97,10 +93,13 @@ func (e *Exif) GPSAltitude() (alt float32, err error) {
 	return 0.0, err
 }
 
-// GPSCellID convenience func.
-func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
-	var lat, lng float64
-	if lat, lng, err = e.GPSInfo(); err != nil {
+// GPSCellID convenience func. retrieves "IFD/GPS" GPSLatitude and GPSLongitude
+// converts them into an S2 CellID and returns the CellID.
+//
+// If the CellID is not valid it returns ErrGpsCoordsNotValid.
+func (e *ExifData) GPSCellID() (cellID s2.CellID, err error) {
+	lat, lng, err := e.GPSInfo()
+	if err != nil {
 		return
 	}
 
@@ -108,13 +107,15 @@ func (e *Exif) GPSCellID() (cellID s2.CellID, err error) {
 	cellID = s2.CellIDFromLatLng(latLng)
 
 	if !cellID.IsValid() {
-		panic(ErrGpsCoordsNotValid)
+		err = ErrGpsCoordsNotValid
+		return
 	}
-	return
+
+	return cellID, nil
 }
 
 // GPSInfo convenience func. "IFD/GPS" GPSLatitude and GPSLongitude
-func (e *Exif) GPSInfo() (lat, lng float64, err error) {
+func (e *ExifData) GPSInfo() (lat, lng float64, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -175,7 +176,7 @@ func (e *Exif) GPSInfo() (lat, lng float64, err error) {
 }
 
 // GPSTime convenience func. "IFD/GPS" GPSDateStamp and GPSTimeStamp
-func (e *Exif) GPSTime() (timestamp time.Time, err error) {
+func (e *ExifData) GPSTime() (timestamp time.Time, err error) {
 	t, err := e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSDateStamp)
 	if err != nil {
 		return

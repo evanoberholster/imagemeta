@@ -17,5 +17,6 @@
 samples/*
 testImages/gen.go
 testImages/*.html
-meta/jpegmeta/cmd
+
+meta/cmd/*
 meta/xmlmeta/cmd

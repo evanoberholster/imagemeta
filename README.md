@@ -3,12 +3,16 @@
 [![License][License-Image]][License-Url]
 [![Godoc][Godoc-Image]][Godoc-Url]
 [![ReportCard][ReportCard-Image]][ReportCard-Url]
-[![Coverage Status][Coverage-Image]](Coverage-Url)
+[![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-Provides decoding of basic exif and tiff encoded data.
+This package provides for performance oriented decoding of exif and tiff encoded data.
 
-Suggestions and pull requests are welcome.
+## Documentation
+
+See [Documentation](https://godoc.org/github.com/evanoberholster/exiftool) for more information.
+
+## Example Usage
 
 Example usage:
 
@@ -91,6 +95,10 @@ func main() {
 }
 ```
 
+## Contributing
+
+Suggestions and pull requests are welcome.
+
 ## Benchmarks
 
 This was benchmarked without the retrival of values.
@@ -116,6 +124,8 @@ BenchmarkScanExif100/hero6.gpr-8                 31630        38285 ns/op      1
 ## Imagetype Identification
 
 Images can be identified with: "github.com/evanoberholster/exiftool/imagetype" package.
+
+Benchmarks can be found with the exiftool/imagetype package
 
 Example:
 
@@ -147,16 +157,14 @@ func main() {
 }
 ```
 
-Benchmarks can be found with the exiftool/imagetype package
-
 ## TODO
 
 - [x] Update ImageTypes API
-- [-] Write Exif extraction for individual image types (jpg, heic)
+- [x] Write Exif extraction for individual image types (jpg, cr2, tiff)
+- [ ] Stabalize API
 - [ ] Write tests
 - [ ] Include support for CRW image type (ciff format images)
 - [ ] Create Thumbnail API
-- [ ] Stabalize API
 - [ ] Documentation
 
 ## Based on and Inspired by

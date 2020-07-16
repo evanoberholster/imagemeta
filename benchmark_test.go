@@ -111,23 +111,64 @@ func BenchmarkScanExif100(b *testing.B) {
 }
 
 //BenchmarkScanExif100/honor20.jpg-8         	   36843	     29699 ns/op	   17050 B/op	      40 allocs/op
+// BenchmarkScanExif100/honor20.jpg-8         	   59407	     19624 ns/op	   17049 B/op	      40 allocs/op
+
 //BenchmarkScanExif100/hero6.jpg-8           	   46316	     25988 ns/op	   35238 B/op	      33 allocs/op
+// BenchmarkScanExif100/hero6.jpg-8           	   67970	     17689 ns/op	   35238 B/op	      33 allocs/op
+
 //BenchmarkScanExif100/1.CR2-8               	   24404	     48578 ns/op	   13212 B/op	      57 allocs/op
+// BenchmarkScanExif100/1.CR2-8               	   41458	     25894 ns/op	   13214 B/op	      57 allocs/op
+
 //BenchmarkScanExif100/3.CR2-8               	   28908	     40710 ns/op	   12145 B/op	      53 allocs/op
+// BenchmarkScanExif100/3.CR2-8               	   53098	     23005 ns/op	   12146 B/op	      53 allocs/op
+
 //BenchmarkScanExif100/350D.CR2-8            	   39280	     31519 ns/op	   10445 B/op	      46 allocs/op
+// BenchmarkScanExif100/350D.CR2-8            	   64694	     18197 ns/op	   10445 B/op	      46 allocs/op
+
 //BenchmarkScanExif100/XT1.CR2-8             	   37731	     31582 ns/op	   10444 B/op	      46 allocs/op
+// BenchmarkScanExif100/XT1.CR2-8             	   63362	     17807 ns/op	   10443 B/op	      46 allocs/op
+
 //BenchmarkScanExif100/60D.CR2-8             	   27439	     43459 ns/op	   12593 B/op	      52 allocs/op
+// BenchmarkScanExif100/60D.CR2-8             	   46090	     25861 ns/op	   12591 B/op	      52 allocs/op
+
 //BenchmarkScanExif100/6D.CR2-8              	   26264	     45286 ns/op	   13185 B/op	      57 allocs/op
+// BenchmarkScanExif100/6D.CR2-8              	   42843	     26770 ns/op	   13185 B/op	      57 allocs/op
+
 //BenchmarkScanExif100/7D.CR2-8              	   26625	     46062 ns/op	   13216 B/op	      57 allocs/op
+// BenchmarkScanExif100/7D.CR2-8              	   44905	     25491 ns/op	   13215 B/op	      57 allocs/op
+
 //BenchmarkScanExif100/90D.cr3-8             	  131457	      8244 ns/op	    5157 B/op	      17 allocs/op
+// BenchmarkScanExif100/90D.cr3-8             	  191923	      6453 ns/op	    5157 B/op	      17 allocs/op
+
 //BenchmarkScanExif100/2.CR3-8               	  149314	      8345 ns/op	    5157 B/op	      17 allocs/op
+// BenchmarkScanExif100/2.CR3-8               	  203869	      5984 ns/op	    5157 B/op	      17 allocs/op
+
 //BenchmarkScanExif100/1.CR3-8               	  138854	      8470 ns/op	    5157 B/op	      17 allocs/op
+// BenchmarkScanExif100/1.CR3-8               	  200392	      5953 ns/op	    5158 B/op	      17 allocs/op
+
 //BenchmarkScanExif100/1.jpg-8               	   52980	     22424 ns/op	   31394 B/op	      32 allocs/op
+// BenchmarkScanExif100/1.jpg-8               	   77228	     15160 ns/op	   31395 B/op	      32 allocs/op
+
 //BenchmarkScanExif100/2.jpg-8               	   49075	     23813 ns/op	   16679 B/op	      35 allocs/op
+// BenchmarkScanExif100/2.jpg-8               	   76886	     15607 ns/op	   16678 B/op	      35 allocs/op
+
 //BenchmarkScanExif100/1.NEF-8               	   24420	     50230 ns/op	   13598 B/op	      61 allocs/op
+// BenchmarkScanExif100/1.NEF-8               	   40345	     29460 ns/op	   13597 B/op	      61 allocs/op
+
 //BenchmarkScanExif100/2.NEF-8               	   22437	     53125 ns/op	   16671 B/op	      62 allocs/op
+// BenchmarkScanExif100/2.NEF-8               	   40816	     30719 ns/op	   16671 B/op	      62 allocs/op
+
 //BenchmarkScanExif100/3.NEF-8               	   20294	     58299 ns/op	   17008 B/op	      67 allocs/op
+// BenchmarkScanExif100/3.NEF-8               	   34401	     33142 ns/op	   17009 B/op	      67 allocs/op
+
 //BenchmarkScanExif100/1.ARW-8               	   30277	     39593 ns/op	   11928 B/op	      56 allocs/op
+// BenchmarkScanExif100/1.ARW-8               	   52366	     22904 ns/op	   11930 B/op	      56 allocs/op
+
 //BenchmarkScanExif100/2.ARW-8               	   29332	     40165 ns/op	   11932 B/op	      56 allocs/op
+// BenchmarkScanExif100/2.ARW-8               	   51834	     23576 ns/op	   11930 B/op	      56 allocs/op
+
 //BenchmarkScanExif100/4.RW2-8               	   34719	     34740 ns/op	    8202 B/op	      31 allocs/op
+// BenchmarkScanExif100/4.RW2-8               	   47896	     25658 ns/op	    8200 B/op	      31 allocs/op
+
 //BenchmarkScanExif100/hero6.gpr-8           	   31630	     38285 ns/op	   13606 B/op	      39 allocs/op
+// BenchmarkScanExif100/hero6.gpr-8           	   52658	     23629 ns/op	   13605 B/op	      39 allocs/op

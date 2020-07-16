@@ -1,7 +1,7 @@
-package exif
+package exiftool
 
 // Thumbnail convenience func.
-func (e *Exif) Thumbnail() (offset uint32, sixe uint32, err error) {
+func (e *ExifData) Thumbnail() (offset uint32, size uint32, err error) {
 	//t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ISOSpeedRatings)
 	//if err != nil {
 	//	return 0, err

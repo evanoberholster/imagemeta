@@ -1,6 +1,7 @@
-package tiffmeta
+package meta
 
 import (
+	"bufio"
 	"encoding/binary"
 	"os"
 	"testing"
@@ -14,10 +15,10 @@ func TestScan(t *testing.T) {
 		firstIfdOffset   uint32
 		tiffHeaderOffset uint32
 	}{
-		{"../../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00},
-		{"../../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00},
-		{"../../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00},
-		{"../../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178},
+		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00},
+		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00},
+		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00},
+		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {
@@ -28,7 +29,8 @@ func TestScan(t *testing.T) {
 			}
 			defer f.Close()
 			// Search for Tiff header
-			h, err := Scan(f)
+			br := bufio.NewReader(f)
+			h, err := ScanTiff(br)
 			if err != nil {
 				t.Fatal(err)
 			}

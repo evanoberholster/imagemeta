@@ -1,4 +1,4 @@
-package exif
+package exiftool
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ var (
 )
 
 // ModifyDate - the date and time at which the Exif file was modified
-func (e *Exif) ModifyDate() (time.Time, error) {
+func (e *ExifData) ModifyDate() (time.Time, error) {
 	// "IFD" DateTime
 	// "IFD/Exif" SubSecTime
 	return e.getDateTags(ifds.RootIFD, ifds.DateTime, ifds.ExifIFD, exififd.SubSecTime)
@@ -29,7 +29,7 @@ func (e *Exif) ModifyDate() (time.Time, error) {
 
 // DateTime - the date and time at which the EXIF file was created
 // with sub-second precision
-func (e *Exif) DateTime() (time.Time, error) {
+func (e *ExifData) DateTime() (time.Time, error) {
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
@@ -46,7 +46,7 @@ func (e *Exif) DateTime() (time.Time, error) {
 	return time.Time{}, ErrEmptyTag
 }
 
-func (e *Exif) getDateTags(dateIFD ifds.IFD, dateTagID tag.ID, subSecIFD ifds.IFD, subSecTagID tag.ID) (time.Time, error) {
+func (e *ExifData) getDateTags(dateIFD ifds.IFD, dateTagID tag.ID, subSecIFD ifds.IFD, subSecTagID tag.ID) (time.Time, error) {
 	// "IFD" DateTime
 	t, err := e.GetTag(dateIFD, 0, dateTagID)
 	if err != nil {

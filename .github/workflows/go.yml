@@ -1,9 +1,10 @@
-name: Test
+name: Build
 
 on: [push, pull_request]
 
 jobs:
-  test:
+   
+  build:
     
     strategy:
       matrix:

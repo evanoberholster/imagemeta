@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"github.com/evanoberholster/exiftool/exif"
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/ifds/mknote"
 	"github.com/evanoberholster/exiftool/tag"
@@ -28,7 +27,7 @@ type ifdTagEnumerator struct {
 }
 
 // scan moves through an ifd at the specified offset and enumerates over the IfdTags
-func scan(er *ExifReader, e *exif.Exif, ifd ifds.IFD, offset uint32) (err error) {
+func scan(er *ExifReader, e *ExifData, ifd ifds.IFD, offset uint32) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -52,7 +51,7 @@ func scan(er *ExifReader, e *exif.Exif, ifd ifds.IFD, offset uint32) (err error)
 }
 
 // scanSubIfds moves through the subIfds at the specified offsetes and enumerates over their IfdTags
-func scanSubIfds(er *ExifReader, e *exif.Exif, t tag.Tag) (err error) {
+func scanSubIfds(er *ExifReader, e *ExifData, t tag.Tag) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -113,7 +112,7 @@ func (ite *ifdTagEnumerator) rawValueOffset() (rawValueOffset tag.RawValueOffset
 
 // parseUndefinedIfds
 // Makernotes and AdobeDNGData
-func (ite *ifdTagEnumerator) parseUndefinedIfds(e *exif.Exif, ifd ifds.IFD) bool {
+func (ite *ifdTagEnumerator) parseUndefinedIfds(e *ExifData, ifd ifds.IFD) bool {
 	if ifd == ifds.MknoteIFD {
 		switch e.Make {
 		case "Canon":
@@ -139,7 +138,7 @@ func (ite *ifdTagEnumerator) parseUndefinedIfds(e *exif.Exif, ifd ifds.IFD) bool
 }
 
 // ParseIfd - enumerates over the ifd using the enumerator.ifdReader
-func (ite *ifdTagEnumerator) ParseIfd(e *exif.Exif, ifd ifds.IFD, ifdIndex int, doDescend bool) (nextIfdOffset uint32, err error) {
+func (ite *ifdTagEnumerator) ParseIfd(e *ExifData, ifd ifds.IFD, ifdIndex int, doDescend bool) (nextIfdOffset uint32, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)

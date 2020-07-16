@@ -5,17 +5,15 @@ import (
 	"bufio"
 	"io"
 
-	"github.com/evanoberholster/exiftool/exif"
 	"github.com/evanoberholster/exiftool/ifds"
 	"github.com/evanoberholster/exiftool/imagetype"
 	"github.com/evanoberholster/exiftool/meta"
-	"github.com/evanoberholster/exiftool/meta/tiffmeta"
 )
 
 // Errors
 var (
-	// Alias to tiffmeta ErrInvalidHeader
-	ErrInvalidHeader = tiffmeta.ErrInvalidHeader
+	// Alias to meta Errors
+	ErrInvalidHeader = meta.ErrInvalidHeader
 	ErrNoExif        = meta.ErrNoExif
 )
 
@@ -26,8 +24,8 @@ var (
 // to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
-	er := NewExifReader(r, nil, 0)
+func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
+	er := newExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
 	// Identify Image Type
@@ -46,11 +44,11 @@ func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = exif.NewExif(er, t)
+	e = newExifData(er, t)
 	e.SetMetadata(m)
 
 	if err == nil {
-		header := m.TiffHeader()
+		header := m.Header()
 		// Set TiffHeader sets the ExifReader and checks
 		// the header validity.
 		// Returns ErrInvalidHeader if header is not valid.
@@ -69,8 +67,8 @@ func ScanExif(r io.ReaderAt) (e *exif.Exif, err error) {
 // Sets exif imagetype as imageTypeUnknown
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
-	er := NewExifReader(r, nil, 0)
+func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
+	er := newExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
 	// Search Image for Metadata Header using
@@ -83,11 +81,11 @@ func ParseExif(r io.ReaderAt) (e *exif.Exif, err error) {
 	}
 
 	// NewExif with an ExifReader attached
-	e = exif.NewExif(er, imagetype.ImageUnknown)
+	e = newExifData(er, imagetype.ImageUnknown)
 	e.SetMetadata(m)
 
 	if err == nil {
-		header := m.TiffHeader()
+		header := m.Header()
 		// Set TiffHeader sets the ExifReader and checks
 		// the header validity.
 		// Returns ErrInvalidHeader if header is not valid.

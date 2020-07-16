@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/exiftool/meta/tiffmeta"
+	"github.com/evanoberholster/exiftool/meta"
 )
 
 // ExifReader -
@@ -21,8 +21,8 @@ type ExifReader struct {
 	offset int64
 }
 
-// NewExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
-func NewExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
+// newExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
+func newExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
 	return &ExifReader{
 		reader:     reader,
 		byteOrder:  byteOrder,
@@ -43,7 +43,7 @@ func (er *ExifReader) Read(p []byte) (n int, err error) {
 }
 
 // ReadAt reads from ExifReader at the given offset
-func (er *ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
+func (er ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
 	if off < 0 {
 		return 0, errors.New("ExifReader.ReadAt: negative offset")
 	}
@@ -58,7 +58,7 @@ func (er *ExifReader) ByteOrder() binary.ByteOrder {
 
 // SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
 // from a TiffHeader and sets the ExifReader read offset to 0
-func (er *ExifReader) SetHeader(header tiffmeta.Header) error {
+func (er *ExifReader) SetHeader(header meta.TiffHeader) error {
 	if !header.IsValid() {
 		return ErrInvalidHeader
 	}

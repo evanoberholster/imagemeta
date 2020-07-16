@@ -1,4 +1,4 @@
-package exif
+package exiftool
 
 import (
 	"strings"
@@ -8,17 +8,17 @@ import (
 )
 
 // CameraMake convenience func. "IFD" Make
-func (e *Exif) CameraMake() (make string) {
+func (e *ExifData) CameraMake() (make string) {
 	return e.Make
 }
 
 // CameraModel convenience func. "IFD" Model
-func (e *Exif) CameraModel() (model string) {
+func (e *ExifData) CameraModel() (model string) {
 	return e.Model
 }
 
 // Artist convenience func. "IFD" Artist
-func (e *Exif) Artist() (artist string, err error) {
+func (e *ExifData) Artist() (artist string, err error) {
 	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Artist)
 	if err != nil {
 		return
@@ -27,7 +27,7 @@ func (e *Exif) Artist() (artist string, err error) {
 }
 
 // Copyright convenience func. "IFD" Copyright
-func (e *Exif) Copyright() (copyright string, err error) {
+func (e *ExifData) Copyright() (copyright string, err error) {
 	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Copyright)
 	if err != nil {
 		return
@@ -36,7 +36,7 @@ func (e *Exif) Copyright() (copyright string, err error) {
 }
 
 // CameraSerial convenience func. "IFD/Exif" BodySerialNumber
-func (e *Exif) CameraSerial() (serial string, err error) {
+func (e *ExifData) CameraSerial() (serial string, err error) {
 	// BodySerialNumber
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.BodySerialNumber)
 	if err == nil {
@@ -55,7 +55,7 @@ func (e *Exif) CameraSerial() (serial string, err error) {
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake
-func (e *Exif) LensMake() (make string, err error) {
+func (e *ExifData) LensMake() (make string, err error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.LensMake)
 	if err != nil {
 		return
@@ -64,7 +64,7 @@ func (e *Exif) LensMake() (make string, err error) {
 }
 
 // LensModel convenience func. "IFD/Exif" LensModel
-func (e *Exif) LensModel() (model string, err error) {
+func (e *ExifData) LensModel() (model string, err error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.LensModel)
 	if err != nil {
 		return
@@ -73,7 +73,7 @@ func (e *Exif) LensModel() (model string, err error) {
 }
 
 // LensSerial convenience func. "IFD/Exif" LensSerialNumber
-func (e *Exif) LensSerial() (serial string, err error) {
+func (e *ExifData) LensSerial() (serial string, err error) {
 	// LensSerialNumber
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.LensSerialNumber)
 	if err == nil {
@@ -84,7 +84,7 @@ func (e *Exif) LensSerial() (serial string, err error) {
 }
 
 // Dimensions convenience func. "IFD" Dimensions
-func (e *Exif) Dimensions() (width, height uint16, err error) {
+func (e *ExifData) Dimensions() (width, height uint16, err error) {
 	if e.width > 0 && e.height > 0 {
 		return e.width, e.height, nil
 	}
@@ -116,7 +116,7 @@ func (e *Exif) Dimensions() (width, height uint16, err error) {
 // XMLPacket convenience func. that returns XMP metadata
 // from a JPEG image or XMP Packet from "IFD" XMLPacket.
 // Whichever is present.
-func (e *Exif) XMLPacket() (str string, err error) {
+func (e *ExifData) XMLPacket() (str string, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -140,7 +140,7 @@ func (e *Exif) XMLPacket() (str string, err error) {
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram
-func (e *Exif) ExposureProgram() (ExposureMode, error) {
+func (e *ExifData) ExposureProgram() (ExposureMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureProgram)
 	if err != nil {
 		return 0, err
@@ -153,7 +153,7 @@ func (e *Exif) ExposureProgram() (ExposureMode, error) {
 }
 
 // MeteringMode convenience func. "IFD/Exif" MeteringMode
-func (e *Exif) MeteringMode() (MeteringMode, error) {
+func (e *ExifData) MeteringMode() (MeteringMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.MeteringMode)
 	if err != nil {
 		return 0, err
@@ -166,7 +166,7 @@ func (e *Exif) MeteringMode() (MeteringMode, error) {
 }
 
 // ShutterSpeed convenience func. "IFD/Exif" ExposureTime
-func (e *Exif) ShutterSpeed() (ShutterSpeed, error) {
+func (e *ExifData) ShutterSpeed() (ShutterSpeed, error) {
 	// ShutterSpeedValue
 	// ExposureTime
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureTime)
@@ -182,7 +182,7 @@ func (e *Exif) ShutterSpeed() (ShutterSpeed, error) {
 }
 
 // Aperture convenience func. "IFD/Exif" FNumber
-func (e *Exif) Aperture() (float32, error) {
+func (e *ExifData) Aperture() (float32, error) {
 	// ApertureValue
 	// FNumber
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.FNumber)
@@ -199,7 +199,7 @@ func (e *Exif) Aperture() (float32, error) {
 
 // FocalLength convenience func. "IFD/Exif" FocalLength
 // Lens Focal Length in mm
-func (e *Exif) FocalLength() (fl FocalLength, err error) {
+func (e *ExifData) FocalLength() (fl FocalLength, err error) {
 	// FocalLength
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.FocalLength)
 	if err == nil {
@@ -216,7 +216,7 @@ func (e *Exif) FocalLength() (fl FocalLength, err error) {
 
 // FocalLengthIn35mmFilm convenience func. "IFD/Exif" FocalLengthIn35mmFilm
 // Lens Focal Length Equivalent for 35mm sensor in mm
-func (e *Exif) FocalLengthIn35mmFilm() (fl FocalLength, err error) {
+func (e *ExifData) FocalLengthIn35mmFilm() (fl FocalLength, err error) {
 	// FocalLengthIn35mmFilm
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.FocalLengthIn35mmFilm)
 	if err == nil {
@@ -232,7 +232,7 @@ func (e *Exif) FocalLengthIn35mmFilm() (fl FocalLength, err error) {
 }
 
 // ISOSpeed convenience func. "IFD/Exif" ISOSpeed
-func (e *Exif) ISOSpeed() (iso int, err error) {
+func (e *ExifData) ISOSpeed() (iso int, err error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ISOSpeedRatings)
 	if err != nil {
 		return 0, err
@@ -246,7 +246,7 @@ func (e *Exif) ISOSpeed() (iso int, err error) {
 }
 
 // Flash convenience func. "IFD/Exif" Flash
-func (e *Exif) Flash() (FlashMode, error) {
+func (e *ExifData) Flash() (FlashMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.Flash)
 	if err != nil {
 		return 0, err
@@ -260,14 +260,14 @@ func (e *Exif) Flash() (FlashMode, error) {
 
 // Orientation convenience func. "IFD" Orientation
 // TODO: Add Orientation Function
-func (e *Exif) Orientation() (string, error) {
+func (e *ExifData) Orientation() (string, error) {
 	// Orientation
 	return "", nil
 }
 
 // ExposureBias convenience func. "IFD/Exif" ExposureBiasValue
 // TODO: Add ExposureBias Function
-func (e *Exif) ExposureBias() (string, error) {
+func (e *ExifData) ExposureBias() (string, error) {
 	// ExposureBiasValue
 	return "", nil
 }
