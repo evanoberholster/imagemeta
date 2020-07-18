@@ -43,7 +43,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 		}
 	}
 
-	// NewExif with an ExifReader attached
+	// ExifData with an ExifReader attached
 	e = newExifData(er, t)
 	e.SetMetadata(m)
 
@@ -80,7 +80,7 @@ func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
 		}
 	}
 
-	// NewExif with an ExifReader attached
+	// ExifData with an ExifReader attached
 	e = newExifData(er, imagetype.ImageUnknown)
 	e.SetMetadata(m)
 
