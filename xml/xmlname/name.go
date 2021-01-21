@@ -2,16 +2,27 @@ package xmlname
 
 import "fmt"
 
-// Name is an XML Name
-type Name uint8
+// Name is an interface representing (NS) Namespace or TagName
+type Name interface {
+	String() string
+}
 
-func (n Name) String() string {
-	return fmt.Sprintf(MapNameString[n])
+// TagName is an XML Name
+type TagName uint8
+
+func (n TagName) String() string {
+	return fmt.Sprintf(mapTagNameString[n])
+}
+
+// IdentifyTagName returns the (TagName) XML Tag Name correspondent to buf.
+// If Tag Name was not identified returns UnknownName.
+func IdentifyTagName(buf []byte) (n TagName) {
+	return mapStringTagName[string(buf)]
 }
 
 // Names
 const (
-	Unknown Name = iota
+	UnknownTagName TagName = iota
 	RDF
 	Description
 	ModifyDate
@@ -62,11 +73,25 @@ const (
 	OriginalDocumentID
 	InstanceID
 	RawFileName
+
+	ISOSpeedRatings
+	Seq
+	Li
+	Flash
+	Fired
+	Return
+	Mode
+	Function
+	RedEyeMode
+	Creator
+	Rights
+	Alt
+	Lang
 )
 
-// MapNameString returns Name's value as a string
-var MapNameString = map[Name]string{
-	Unknown:                  "Unknown",
+// mapTagNameString returns Name's value as a string
+var mapTagNameString = map[TagName]string{
+	UnknownTagName:           "Unknown",
 	RDF:                      "RDF",
 	Description:              "Description",
 	ModifyDate:               "ModifyDate",
@@ -99,7 +124,7 @@ var MapNameString = map[Name]string{
 	DateTimeOriginal:         "DateTimeOriginal",
 	PixelXDimension:          "PixelXDimension",
 	PixelYDimension:          "PixelYDimension",
-	Format:                   "Format",
+	Format:                   "format",
 	SerialNumber:             "SerialNumber",
 	LensInfo:                 "LensInfo",
 	Lens:                     "Lens",
@@ -117,11 +142,24 @@ var MapNameString = map[Name]string{
 	OriginalDocumentID:       "OriginalDocumentID",
 	InstanceID:               "InstanceID",
 	RawFileName:              "RawFileName",
+	ISOSpeedRatings:          "ISOSpeedRatings",
+	Seq:                      "Seq",
+	Li:                       "li",
+	Flash:                    "Flash",
+	Fired:                    "Fired",
+	Return:                   "Return",
+	Mode:                     "Mode",
+	Function:                 "Function",
+	RedEyeMode:               "RedEyeMode",
+	Creator:                  "creator",
+	Rights:                   "rights",
+	Alt:                      "Alt",
+	Lang:                     "lang",
 }
 
-// MapStringName returns string's value as a Name
-var MapStringName = map[string]Name{
-	"Unknown":                  Unknown,
+// mapStringTagName returns string's value as a Name
+var mapStringTagName = map[string]TagName{
+	"Unknown":                  UnknownTagName,
 	"RDF":                      RDF,
 	"Description":              Description,
 	"ModifyDate":               ModifyDate,
@@ -154,7 +192,7 @@ var MapStringName = map[string]Name{
 	"DateTimeOriginal":         DateTimeOriginal,
 	"PixelXDimension":          PixelXDimension,
 	"PixelYDimension":          PixelYDimension,
-	"Format":                   Format,
+	"format":                   Format,
 	"SerialNumber":             SerialNumber,
 	"LensInfo":                 LensInfo,
 	"Lens":                     Lens,
@@ -172,4 +210,17 @@ var MapStringName = map[string]Name{
 	"OriginalDocumentID":       OriginalDocumentID,
 	"InstanceID":               InstanceID,
 	"RawFileName":              RawFileName,
+	"ISOSpeedRatings":          ISOSpeedRatings,
+	"Seq":                      Seq,
+	"li":                       Li,
+	"Flash":                    Flash,
+	"Fired":                    Fired,
+	"Return":                   Return,
+	"Mode":                     Mode,
+	"Function":                 Function,
+	"RedEyeMode":               RedEyeMode,
+	"creator":                  Creator,
+	"rights":                   Rights,
+	"Alt":                      Alt,
+	"lang":                     Lang,
 }
