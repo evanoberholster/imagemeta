@@ -23,204 +23,317 @@ func IdentifyTagName(buf []byte) (n TagName) {
 // Names
 const (
 	UnknownTagName TagName = iota
-	RDF
-	Description
-	ModifyDate
-	CreateDate
-	MetadataDate
-	Make
-	Model
-	Orientation
-	ImageWidth
-	ImageLength
-	ExifVersion
-	ExposureTime
-	ShutterSpeedValue
-	FNumber
+	About                  // about
+	Action
+	Alt
 	ApertureValue
-	ExposureProgram
-	SensitivityType
-	RecommendedExposureIndex
-	ExposureBiasValue
-	MaxApertureValue
-	MeteringMode
-	FocalLength
+	ApproximateFocusDistance
+	Bag
+	BodySerialNumber
+	CameraOwnerName
+	Changed
+	ColorMode
+	ColorSpace
+	ComponentsConfiguration
+	Contrast
+	CreateDate
+	Creator
 	CustomRendered
+	DateCreated
+	DateTimeDigitized
+	DateTimeOriginal
+	Description
+	DocumentID
+	EmbeddedXMPDigest
+	ExifVersion
+	ExposureBiasValue
 	ExposureMode
-	WhiteBalance
-	SceneCaptureType
+	ExposureProgram
+	ExposureTime
+	Fired
+	Firmware
+	Flash
+	FlashCompensation
+	FlashpixVersion
+	FNumber
+	FocalLength
+	FocalPlaneResolutionUnit
 	FocalPlaneXResolution
 	FocalPlaneYResolution
-	FocalPlaneResolutionUnit
-	DateTimeOriginal
-	PixelXDimension
-	PixelYDimension
 	Format // format
-	SerialNumber
-	LensInfo
+	Function
+	GPSAltitude
+	GPSAltitudeRef
+	GPSLatitude
+	GPSLongitude
+	GPSMapDatum
+	GPSTimeStamp
+	GPSVersionID
+	HierarchicalSubject
+	History
+	ICCProfile
+	ImageLength
+	ImageNumber
+	ImageWidth
+	InstanceID
+	InteroperabilityIndex
+	ISOSpeedRatings
+	Lang
+	LegacyIPTCDigest
 	Lens
 	LensID
-	LensSerialNumber
-	ImageNumber
-	ApproximateFocusDistance
-	FlashCompensation
-	Firmware
+	LensInfo
 	LensModel
-	DateCreated
-	SidecarForExtension
-	EmbeddedXMPDigest
-	DocumentID
-	OriginalDocumentID
-	InstanceID
-	RawFileName
-
-	ISOSpeedRatings
-	Seq
+	LensSerialNumber
 	Li
-	Flash
-	Fired
-	Return
+	Make
+	MaxApertureValue
+	MetadataDate
+	MeteringMode
 	Mode
-	Function
+	Model
+	ModifyDate
+	NativeDigest
+	Orientation
+	OriginalDocumentID
+	ParseType // parseType
+	PixelXDimension
+	PixelYDimension
+	Rating
+	RawFileName
+	RDF
+	RecommendedExposureIndex
 	RedEyeMode
-	Creator
+	ResolutionUnit
+	Return
 	Rights
-	Alt
-	Lang
+	SceneCaptureType
+	SensitivityType
+	Seq
+	SerialNumber
+	ShutterSpeedValue
+	SidecarForExtension
+	SoftwareAgent
+	Subject
+	SubjectDistance
+	Temperature
+	ToneCurve
+	UserComment
+	When
+	WhiteBalance
+	XmpMeta
+	XResolution
+	YResolution
 )
 
 // mapTagNameString returns Name's value as a string
 var mapTagNameString = map[TagName]string{
 	UnknownTagName:           "Unknown",
-	RDF:                      "RDF",
-	Description:              "Description",
-	ModifyDate:               "ModifyDate",
-	CreateDate:               "CreateDate",
-	MetadataDate:             "MetadataDate",
-	Make:                     "Make",
-	Model:                    "Model",
-	Orientation:              "Orientation",
-	ImageWidth:               "ImageWidth",
-	ImageLength:              "ImageLength",
-	ExifVersion:              "ExifVersion",
-	ExposureTime:             "ExposureTime",
-	ShutterSpeedValue:        "ShutterSpeedValue",
-	FNumber:                  "FNumber",
+	About:                    "about",
+	Action:                   "action",
+	Alt:                      "Alt",
 	ApertureValue:            "ApertureValue",
-	ExposureProgram:          "ExposureProgram",
-	SensitivityType:          "SensitivityType",
-	RecommendedExposureIndex: "RecommendedExposureIndex",
-	ExposureBiasValue:        "ExposureBiasValue",
-	MaxApertureValue:         "MaxApertureValue",
-	MeteringMode:             "MeteringMode",
-	FocalLength:              "FocalLength",
+	ApproximateFocusDistance: "ApproximateFocusDistance",
+	Bag:                      "Bag",
+	BodySerialNumber:         "BodySerialNumber",
+	CameraOwnerName:          "CameraOwnerName",
+	Changed:                  "changed",
+	ColorMode:                "ColorMode",
+	ColorSpace:               "ColorSpace",
+	ComponentsConfiguration:  "ComponentsConfiguration",
+	Contrast:                 "Contrast",
+	CreateDate:               "CreateDate",
+	Creator:                  "creator",
 	CustomRendered:           "CustomRendered",
+	DateCreated:              "DateCreated",
+	DateTimeDigitized:        "DateTimeDigitized",
+	DateTimeOriginal:         "DateTimeOriginal",
+	Description:              "Description",
+	DocumentID:               "DocumentID",
+	EmbeddedXMPDigest:        "EmbeddedXMPDigest",
+	ExifVersion:              "ExifVersion",
+	ExposureBiasValue:        "ExposureBiasValue",
 	ExposureMode:             "ExposureMode",
-	WhiteBalance:             "WhiteBalance",
-	SceneCaptureType:         "SceneCaptureType",
+	ExposureProgram:          "ExposureProgram",
+	ExposureTime:             "ExposureTime",
+	Fired:                    "Fired",
+	Firmware:                 "Firmware",
+	Flash:                    "Flash",
+	FlashCompensation:        "FlashCompensation",
+	FlashpixVersion:          "FlashpixVersion",
+	FNumber:                  "FNumber",
+	FocalLength:              "FocalLength",
+	FocalPlaneResolutionUnit: "FocalPlaneResolutionUnit",
 	FocalPlaneXResolution:    "FocalPlaneXResolution",
 	FocalPlaneYResolution:    "FocalPlaneYResolution",
-	FocalPlaneResolutionUnit: "FocalPlaneResolutionUnit",
-	DateTimeOriginal:         "DateTimeOriginal",
-	PixelXDimension:          "PixelXDimension",
-	PixelYDimension:          "PixelYDimension",
 	Format:                   "format",
-	SerialNumber:             "SerialNumber",
-	LensInfo:                 "LensInfo",
+	Function:                 "Function",
+	GPSAltitude:              "GPSAltitude",
+	GPSAltitudeRef:           "GPSAltitudeRef",
+	GPSLatitude:              "GPSLatitude",
+	GPSLongitude:             "GPSLongitude",
+	GPSMapDatum:              "GPSMapDatum",
+	GPSTimeStamp:             "GPSTimeStamp",
+	GPSVersionID:             "GPSVersionID",
+	HierarchicalSubject:      "hierarchicalSubject",
+	History:                  "History",
+	ICCProfile:               "ICCProfile",
+	ImageLength:              "ImageLength",
+	ImageNumber:              "ImageNumber",
+	ImageWidth:               "ImageWidth",
+	InstanceID:               "InstanceID",
+	InteroperabilityIndex:    "InteroperabilityIndex",
+	ISOSpeedRatings:          "ISOSpeedRatings",
+	Lang:                     "lang",
+	LegacyIPTCDigest:         "LegacyIPTCDigest",
 	Lens:                     "Lens",
 	LensID:                   "LensID",
-	LensSerialNumber:         "LensSerialNumber",
-	ImageNumber:              "ImageNumber",
-	ApproximateFocusDistance: "ApproximateFocusDistance",
-	FlashCompensation:        "FlashCompensation",
-	Firmware:                 "Firmware",
+	LensInfo:                 "LensInfo",
 	LensModel:                "LensModel",
-	DateCreated:              "DateCreated",
-	SidecarForExtension:      "SidecarForExtension",
-	EmbeddedXMPDigest:        "EmbeddedXMPDigest",
-	DocumentID:               "DocumentID",
-	OriginalDocumentID:       "OriginalDocumentID",
-	InstanceID:               "InstanceID",
-	RawFileName:              "RawFileName",
-	ISOSpeedRatings:          "ISOSpeedRatings",
-	Seq:                      "Seq",
+	LensSerialNumber:         "LensSerialNumber",
 	Li:                       "li",
-	Flash:                    "Flash",
-	Fired:                    "Fired",
-	Return:                   "Return",
+	Make:                     "Make",
+	MaxApertureValue:         "MaxApertureValue",
+	MetadataDate:             "MetadataDate",
+	MeteringMode:             "MeteringMode",
 	Mode:                     "Mode",
-	Function:                 "Function",
+	Model:                    "Model",
+	ModifyDate:               "ModifyDate",
+	NativeDigest:             "NativeDigest",
+	Orientation:              "Orientation",
+	OriginalDocumentID:       "OriginalDocumentID",
+	ParseType:                "parseType",
+	PixelXDimension:          "PixelXDimension",
+	PixelYDimension:          "PixelYDimension",
+	Rating:                   "Rating",
+	RawFileName:              "RawFileName",
+	RDF:                      "RDF",
+	RecommendedExposureIndex: "RecommendedExposureIndex",
 	RedEyeMode:               "RedEyeMode",
-	Creator:                  "creator",
+	ResolutionUnit:           "ResolutionUnit",
+	Return:                   "Return",
 	Rights:                   "rights",
-	Alt:                      "Alt",
-	Lang:                     "lang",
+	SceneCaptureType:         "SceneCaptureType",
+	SensitivityType:          "SensitivityType",
+	Seq:                      "Seq",
+	SerialNumber:             "SerialNumber",
+	ShutterSpeedValue:        "ShutterSpeedValue",
+	SidecarForExtension:      "SidecarForExtension",
+	SoftwareAgent:            "softwareAgent",
+	Subject:                  "subject",
+	SubjectDistance:          "SubjectDistance",
+	Temperature:              "Temperature",
+	ToneCurve:                "ToneCurve",
+	UserComment:              "UserComment",
+	When:                     "when",
+	WhiteBalance:             "WhiteBalance",
+	XmpMeta:                  "xmpmeta",
+	XResolution:              "XResolution",
+	YResolution:              "YResolution",
 }
 
 // mapStringTagName returns string's value as a Name
 var mapStringTagName = map[string]TagName{
-	"Unknown":                  UnknownTagName,
-	"RDF":                      RDF,
-	"Description":              Description,
-	"ModifyDate":               ModifyDate,
-	"CreateDate":               CreateDate,
-	"MetadataDate":             MetadataDate,
-	"Make":                     Make,
-	"Model":                    Model,
-	"Orientation":              Orientation,
-	"ImageWidth":               ImageWidth,
-	"ImageLength":              ImageLength,
-	"ExifVersion":              ExifVersion,
-	"ExposureTime":             ExposureTime,
-	"ShutterSpeedValue":        ShutterSpeedValue,
-	"FNumber":                  FNumber,
+	"about":                    About,
+	"action":                   Action,
+	"Alt":                      Alt,
 	"ApertureValue":            ApertureValue,
-	"ExposureProgram":          ExposureProgram,
-	"SensitivityType":          SensitivityType,
-	"RecommendedExposureIndex": RecommendedExposureIndex,
-	"ExposureBiasValue":        ExposureBiasValue,
-	"MaxApertureValue":         MaxApertureValue,
-	"MeteringMode":             MeteringMode,
-	"FocalLength":              FocalLength,
+	"ApproximateFocusDistance": ApproximateFocusDistance,
+	"Bag":                      Bag,
+	"BodySerialNumber":         BodySerialNumber,
+	"CameraOwnerName":          CameraOwnerName,
+	"changed":                  Changed,
+	"ColorMode":                ColorMode,
+	"ColorSpace":               ColorSpace,
+	"ComponentsConfiguration":  ComponentsConfiguration,
+	"Contrast":                 Contrast,
+	"CreateDate":               CreateDate,
+	"creator":                  Creator,
 	"CustomRendered":           CustomRendered,
+	"DateCreated":              DateCreated,
+	"DateTimeDigitized":        DateTimeDigitized,
+	"DateTimeOriginal":         DateTimeOriginal,
+	"Description":              Description,
+	"DocumentID":               DocumentID,
+	"EmbeddedXMPDigest":        EmbeddedXMPDigest,
+	"ExifVersion":              ExifVersion,
+	"ExposureBiasValue":        ExposureBiasValue,
 	"ExposureMode":             ExposureMode,
-	"WhiteBalance":             WhiteBalance,
-	"SceneCaptureType":         SceneCaptureType,
+	"ExposureProgram":          ExposureProgram,
+	"ExposureTime":             ExposureTime,
+	"Fired":                    Fired,
+	"Firmware":                 Firmware,
+	"Flash":                    Flash,
+	"FlashCompensation":        FlashCompensation,
+	"FlashpixVersion":          FlashpixVersion,
+	"FNumber":                  FNumber,
+	"FocalLength":              FocalLength,
+	"FocalPlaneResolutionUnit": FocalPlaneResolutionUnit,
 	"FocalPlaneXResolution":    FocalPlaneXResolution,
 	"FocalPlaneYResolution":    FocalPlaneYResolution,
-	"FocalPlaneResolutionUnit": FocalPlaneResolutionUnit,
-	"DateTimeOriginal":         DateTimeOriginal,
-	"PixelXDimension":          PixelXDimension,
-	"PixelYDimension":          PixelYDimension,
 	"format":                   Format,
-	"SerialNumber":             SerialNumber,
-	"LensInfo":                 LensInfo,
+	"Function":                 Function,
+	"GPSAltitude":              GPSAltitude,
+	"GPSAltitudeRef":           GPSAltitudeRef,
+	"GPSLatitude":              GPSLatitude,
+	"GPSLongitude":             GPSLongitude,
+	"GPSMapDatum":              GPSMapDatum,
+	"GPSTimeStamp":             GPSTimeStamp,
+	"GPSVersionID":             GPSVersionID,
+	"hierarchicalSubject":      HierarchicalSubject,
+	"History":                  History,
+	"ICCProfile":               ICCProfile,
+	"ImageLength":              ImageLength,
+	"ImageNumber":              ImageNumber,
+	"ImageWidth":               ImageWidth,
+	"InstanceID":               InstanceID,
+	"InteroperabilityIndex":    InteroperabilityIndex,
+	"ISOSpeedRatings":          ISOSpeedRatings,
+	"lang":                     Lang,
+	"LegacyIPTCDigest":         LegacyIPTCDigest,
 	"Lens":                     Lens,
 	"LensID":                   LensID,
-	"LensSerialNumber":         LensSerialNumber,
-	"ImageNumber":              ImageNumber,
-	"ApproximateFocusDistance": ApproximateFocusDistance,
-	"FlashCompensation":        FlashCompensation,
-	"Firmware":                 Firmware,
+	"LensInfo":                 LensInfo,
 	"LensModel":                LensModel,
-	"DateCreated":              DateCreated,
-	"SidecarForExtension":      SidecarForExtension,
-	"EmbeddedXMPDigest":        EmbeddedXMPDigest,
-	"DocumentID":               DocumentID,
-	"OriginalDocumentID":       OriginalDocumentID,
-	"InstanceID":               InstanceID,
-	"RawFileName":              RawFileName,
-	"ISOSpeedRatings":          ISOSpeedRatings,
-	"Seq":                      Seq,
+	"LensSerialNumber":         LensSerialNumber,
 	"li":                       Li,
-	"Flash":                    Flash,
-	"Fired":                    Fired,
-	"Return":                   Return,
+	"Make":                     Make,
+	"MaxApertureValue":         MaxApertureValue,
+	"MetadataDate":             MetadataDate,
+	"MeteringMode":             MeteringMode,
 	"Mode":                     Mode,
-	"Function":                 Function,
+	"Model":                    Model,
+	"ModifyDate":               ModifyDate,
+	"NativeDigest":             NativeDigest,
+	"Orientation":              Orientation,
+	"OriginalDocumentID":       OriginalDocumentID,
+	"parseType":                ParseType,
+	"PixelXDimension":          PixelXDimension,
+	"PixelYDimension":          PixelYDimension,
+	"Rating":                   Rating,
+	"RawFileName":              RawFileName,
+	"RDF":                      RDF,
+	"RecommendedExposureIndex": RecommendedExposureIndex,
 	"RedEyeMode":               RedEyeMode,
-	"creator":                  Creator,
+	"ResolutionUnit":           ResolutionUnit,
+	"Return":                   Return,
 	"rights":                   Rights,
-	"Alt":                      Alt,
-	"lang":                     Lang,
+	"SceneCaptureType":         SceneCaptureType,
+	"SensitivityType":          SensitivityType,
+	"Seq":                      Seq,
+	"SerialNumber":             SerialNumber,
+	"ShutterSpeedValue":        ShutterSpeedValue,
+	"SidecarForExtension":      SidecarForExtension,
+	"softwareAgent":            SoftwareAgent,
+	"subject":                  Subject,
+	"SubjectDistance":          SubjectDistance,
+	"Temperature":              Temperature,
+	"ToneCurve":                ToneCurve,
+	"Unknown":                  UnknownTagName,
+	"UserComment":              UserComment,
+	"when":                     When,
+	"WhiteBalance":             WhiteBalance,
+	"xmpmeta":                  XmpMeta,
+	"XResolution":              XResolution,
+	"YResolution":              YResolution,
 }
