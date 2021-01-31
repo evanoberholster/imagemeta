@@ -1,4 +1,4 @@
-package xmlname
+package xmpns
 
 import "fmt"
 
