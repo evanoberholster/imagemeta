@@ -2,22 +2,22 @@ package xmlname
 
 import "fmt"
 
-// Name is the Name part of an XMP Namespace
+// Name is the XMP Property name
 type Name uint8
 
 func (n Name) String() string {
 	return fmt.Sprintf(mapNameString[n])
 }
 
-// IdentifyTagName returns the (TagName) XML Tag Name correspondent to buf.
-// If Tag Name was not identified returns UnknownName.
-func IdentifyTagName(buf []byte) (n Name) {
+// IdentifyName returns the XMP Property Name correspondent to buf.
+// If Property Name was not identified returns UnknownName.
+func IdentifyName(buf []byte) (n Name) {
 	return mapStringName[string(buf)]
 }
 
 // Names
 const (
-	UnknownTagName Name = iota
+	UnknownPropertyName Name = iota
 
 	About // about
 	Action
@@ -132,7 +132,7 @@ const (
 
 // mapNameString returns Name's value as a string
 var mapNameString = map[Name]string{
-	UnknownTagName:           "Unknown",
+	UnknownPropertyName:      "Unknown",
 	About:                    "about",
 	Action:                   "action",
 	Alt:                      "Alt",
@@ -349,7 +349,7 @@ var mapStringName = map[string]Name{
 	"ToneCurvePV2012Green":     ToneCurvePV2012Green,
 	"ToneCurvePV2012Red":       ToneCurvePV2012Red,
 	"ToneCurveRed":             ToneCurveRed,
-	"Unknown":                  UnknownTagName,
+	"Unknown":                  UnknownPropertyName,
 	"UserComment":              UserComment,
 	"when":                     When,
 	"WhiteBalance":             WhiteBalance,
