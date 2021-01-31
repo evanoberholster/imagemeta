@@ -2,28 +2,24 @@ package xmlname
 
 import "fmt"
 
-// Name is an interface representing (NS) Namespace or TagName
-type Name interface {
-	String() string
-}
+// Name is the Name part of an XMP Namespace
+type Name uint8
 
-// TagName is an XML Name
-type TagName uint8
-
-func (n TagName) String() string {
-	return fmt.Sprintf(mapTagNameString[n])
+func (n Name) String() string {
+	return fmt.Sprintf(mapNameString[n])
 }
 
 // IdentifyTagName returns the (TagName) XML Tag Name correspondent to buf.
 // If Tag Name was not identified returns UnknownName.
-func IdentifyTagName(buf []byte) (n TagName) {
-	return mapStringTagName[string(buf)]
+func IdentifyTagName(buf []byte) (n Name) {
+	return mapStringName[string(buf)]
 }
 
 // Names
 const (
-	UnknownTagName TagName = iota
-	About                  // about
+	UnknownTagName Name = iota
+
+	About // about
 	Action
 	Alt
 	ApertureValue
@@ -117,7 +113,15 @@ const (
 	Subject
 	SubjectDistance
 	Temperature
+	Title
 	ToneCurve
+	ToneCurveBlue
+	ToneCurveGreen
+	ToneCurvePV2012
+	ToneCurvePV2012Blue
+	ToneCurvePV2012Green
+	ToneCurvePV2012Red
+	ToneCurveRed
 	UserComment
 	When
 	WhiteBalance
@@ -126,8 +130,8 @@ const (
 	YResolution
 )
 
-// mapTagNameString returns Name's value as a string
-var mapTagNameString = map[TagName]string{
+// mapNameString returns Name's value as a string
+var mapNameString = map[Name]string{
 	UnknownTagName:           "Unknown",
 	About:                    "about",
 	Action:                   "action",
@@ -223,7 +227,15 @@ var mapTagNameString = map[TagName]string{
 	Subject:                  "subject",
 	SubjectDistance:          "SubjectDistance",
 	Temperature:              "Temperature",
+	Title:                    "Title",
 	ToneCurve:                "ToneCurve",
+	ToneCurveBlue:            "ToneCurveBlue",
+	ToneCurveGreen:           "ToneCurveGreen",
+	ToneCurvePV2012:          "ToneCurvePV2012",
+	ToneCurvePV2012Blue:      "ToneCurvePV2012Blue",
+	ToneCurvePV2012Green:     "ToneCurvePV2012Green",
+	ToneCurvePV2012Red:       "ToneCurvePV2012Red",
+	ToneCurveRed:             "ToneCurveRed",
 	UserComment:              "UserComment",
 	When:                     "when",
 	WhiteBalance:             "WhiteBalance",
@@ -232,8 +244,8 @@ var mapTagNameString = map[TagName]string{
 	YResolution:              "YResolution",
 }
 
-// mapStringTagName returns string's value as a Name
-var mapStringTagName = map[string]TagName{
+// mapStringName returns string's value as a Name
+var mapStringName = map[string]Name{
 	"about":                    About,
 	"action":                   Action,
 	"Alt":                      Alt,
@@ -328,7 +340,15 @@ var mapStringTagName = map[string]TagName{
 	"subject":                  Subject,
 	"SubjectDistance":          SubjectDistance,
 	"Temperature":              Temperature,
+	"Title":                    Title,
 	"ToneCurve":                ToneCurve,
+	"ToneCurveBlue":            ToneCurveBlue,
+	"ToneCurveGreen":           ToneCurveGreen,
+	"ToneCurvePV2012":          ToneCurvePV2012,
+	"ToneCurvePV2012Blue":      ToneCurvePV2012Blue,
+	"ToneCurvePV2012Green":     ToneCurvePV2012Green,
+	"ToneCurvePV2012Red":       ToneCurvePV2012Red,
+	"ToneCurveRed":             ToneCurveRed,
 	"Unknown":                  UnknownTagName,
 	"UserComment":              UserComment,
 	"when":                     When,
