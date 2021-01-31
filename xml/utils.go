@@ -72,6 +72,7 @@ func parseUint32(s string) uint32 {
 	return uint32(u64)
 }
 
+// parseUint parses a []byte of a string representation of a uint64 value and returns the value.
 func parseUint(buf []byte) (u uint64) {
 	for i := 0; i < len(buf); i++ {
 		u *= 10

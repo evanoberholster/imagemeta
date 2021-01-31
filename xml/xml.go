@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/evanoberholster/image-meta/xml/xmlname"
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
 // xmpRootTag starts with "<x:xmpmeta"
@@ -39,7 +39,7 @@ func Read(r io.Reader) (XMP, error) {
 	// read Tags
 	var t Tag
 	for {
-		if t, err = xmp.readTag(xmlname.XMPRootNamespace); err != nil {
+		if t, err = xmp.readTag(xmpns.XMPRootProperty); err != nil {
 			fmt.Println(err)
 			break
 		}
@@ -72,16 +72,16 @@ func (xmp *XMP) readRootTag() (discarded uint, err error) {
 	}
 }
 
-func (xmp *XMP) decodeSeq(namespace xmlname.Namespace, val []byte) (err error) {
+func (xmp *XMP) decodeSeq(property xmpns.Property, val []byte) (err error) {
 
-	switch namespace.Name() {
-	case xmlname.ISOSpeedRatings:
+	switch property.Name() {
+	case xmpns.ISOSpeedRatings:
 		xmp.Exif.ISOSpeedRatings = uint32(parseUint(val))
-	case xmlname.Creator:
+	case xmpns.Creator:
 		xmp.DC.Creator = append(xmp.DC.Creator, string(val))
-	case xmlname.Rights:
+	case xmpns.Rights:
 		xmp.DC.Rights = append(xmp.DC.Rights, string(val))
-	case xmlname.Title:
+	case xmpns.Title:
 		xmp.DC.Title = append(xmp.DC.Rights, string(val))
 	}
 	//fmt.Println("Seq:", string(val))
@@ -90,7 +90,7 @@ func (xmp *XMP) decodeSeq(namespace xmlname.Namespace, val []byte) (err error) {
 
 func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 	var err error
-	if (tag.ns.Equals(xmlname.RDFSeq) || tag.ns.Equals(xmlname.RDFAlt)) && tag.TagType() == StartTag {
+	if (tag.self.Equals(xmpns.RDFSeq) || tag.self.Equals(xmpns.RDFAlt)) && tag.TagType() == StartTag {
 		//fmt.Println(tag.parent)
 		// Read till end of sequence
 		var child Tag
@@ -112,7 +112,7 @@ func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 				}
 				continue
 			}
-			if child.isEndTag(xmlname.RDFSeq) || child.isEndTag(xmlname.RDFAlt) {
+			if child.isEndTag(xmpns.RDFSeq) || child.isEndTag(xmpns.RDFAlt) {
 				//fmt.Println(tag)
 				return tag, nil
 			}
@@ -121,7 +121,7 @@ func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 	return tag, nil
 }
 
-func (xmp *XMP) readTag(parent xmlname.Namespace) (Tag, error) {
+func (xmp *XMP) readTag(parent xmpns.Property) (Tag, error) {
 	t, err := xmp.decodeTag(parent)
 	if err != nil {
 		if err != io.EOF {
@@ -152,11 +152,11 @@ func (xmp *XMP) readTag(parent xmlname.Namespace) (Tag, error) {
 		default:
 			var child Tag
 			for {
-				if child, err = xmp.readTag(t.ns); err != nil {
+				if child, err = xmp.readTag(t.self); err != nil {
 					fmt.Println("Tags here", err)
 					break
 				}
-				if child.isEndTag(t.ns) {
+				if child.isEndTag(t.self) {
 					break
 				}
 			}
@@ -181,17 +181,17 @@ func (xmp *XMP) setValue(t Tag, attr Attribute) {
 }
 
 func (xmp *XMP) setDescription(attr Attribute) {
-	if attr.ns.Space() == xmlname.Tiff {
-		switch attr.ns.Name() {
-		case xmlname.Make:
+	if attr.Namespace() == xmpns.Tiff {
+		switch attr.Name() {
+		case xmpns.Make:
 			xmp.Tiff.Make = string(attr.value)
-		case xmlname.Model:
+		case xmpns.Model:
 			xmp.Tiff.Model = string(attr.value)
-		case xmlname.Orientation:
+		case xmpns.Orientation:
 			//xmp.Tiff.Orientation = attr.parseUint8()
-		case xmlname.ImageWidth:
+		case xmpns.ImageWidth:
 			//xmp.Tiff.ImageWidth = attr.parseUint16()
-		case xmlname.ImageLength:
+		case xmpns.ImageLength:
 			//xmp.Tiff.ImageLength = attr.parseUint16()
 		default:
 			fmt.Println("Not supported:", attr)
@@ -199,8 +199,8 @@ func (xmp *XMP) setDescription(attr Attribute) {
 	}
 }
 
-func (xmp *XMP) decodeTag(parentNS xmlname.Namespace) (t Tag, err error) {
-	t.parent = parentNS
+func (xmp *XMP) decodeTag(p xmpns.Property) (t Tag, err error) {
+	t.parent = p
 	if _, err = xmp.br.ReadSlice(startTag); err != nil {
 		return
 	}

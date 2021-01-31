@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evanoberholster/image-meta/xml/xmlname"
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
 // XMPFlash represents exif:Flash
@@ -22,16 +22,16 @@ func (xmpFlash *XMPFlash) read(t Tag) (err error) {
 	if t.t == SoloTag {
 		for t.nextAttr() {
 			attr, _ = t.attr()
-			switch attr.ns.Name() {
-			case xmlname.Fired:
+			switch attr.Name() {
+			case xmpns.Fired:
 				xmpFlash.Fired = parseBool(attr.value)
-			case xmlname.Return:
+			case xmpns.Return:
 				xmpFlash.Return = uint8(parseUint32(string(attr.value)))
-			case xmlname.Mode:
+			case xmpns.Mode:
 				xmpFlash.Mode = uint8(parseUint32(string(attr.value)))
-			case xmlname.Function:
+			case xmpns.Function:
 				//xmpFlash.Function = parseBool(attr.value)
-			case xmlname.RedEyeMode:
+			case xmpns.RedEyeMode:
 				xmpFlash.RedEyeMode = parseBool(attr.value)
 			default:
 			}

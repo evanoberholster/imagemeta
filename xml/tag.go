@@ -4,40 +4,40 @@ import (
 	"bufio"
 	"fmt"
 
-	"github.com/evanoberholster/image-meta/xml/xmlname"
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
 // Tag -
 type Tag struct {
-	parent xmlname.Namespace
-	ns     xmlname.Namespace
+	parent xmpns.Property
+	self   xmpns.Property
 	raw    []byte
 	val    []byte
 	t      TagType
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("%s: \t (%s) %s \t Val:%s", t.t.String(), t.parent.String(), t.ns.String(), string(t.val))
+	return fmt.Sprintf("%s: \t (%s) %s \t Val:%s", t.t.String(), t.parent.String(), t.self.String(), string(t.val))
 }
 
-// Namespace returns the tag's namespace
-func (t Tag) Namespace() xmlname.Namespace {
-	return t.ns
+// Property returns the tag's XMP Property
+func (t Tag) Property() xmpns.Property {
+	return t.self
 }
 
-// Parent returns the tag's parent namespace
-func (t Tag) Parent() xmlname.Namespace {
+// Parent returns the tag's parent's XMP Property
+func (t Tag) Parent() xmpns.Property {
 	return t.parent
 }
 
-// Space returns the Tag's XMP Namespace
-func (t Tag) Space() xmlname.Space {
-	return t.ns.Space()
+// Namespace returns the Tag's XMP Property's Namespace
+func (t Tag) Namespace() xmpns.Namespace {
+	return t.self.Namespace()
 }
 
-// Name returns the Tag's Name
-func (t Tag) Name() xmlname.Name {
-	return t.ns.Name()
+// Name returns the Tag's XMP Property's Name
+func (t Tag) Name() xmpns.Name {
+	return t.self.Name()
 }
 
 func (t *Tag) readNamespace() {
@@ -52,7 +52,7 @@ func (t *Tag) readNamespace() {
 			b = b[:len(b)-1]
 		}
 	}
-	t.ns = xmlname.IdentifyNamespace(a, b)
+	t.self = xmpns.IdentifyProperty(a, b)
 }
 
 func (t *Tag) nextAttr() bool {
@@ -95,7 +95,7 @@ func (t *Tag) attr() (attr Attribute, err error) {
 			b = b[:len(b)-1]
 		}
 	}
-	attr.ns = xmlname.IdentifyNamespace(a, b)
+	attr.self = xmpns.IdentifyProperty(a, b)
 
 	//var a []byte
 	//// Read Namespace
@@ -146,26 +146,29 @@ func (t *Tag) readVal(br *bufio.Reader) (err error) {
 
 // Attribute -
 type Attribute struct {
-	parent xmlname.Namespace
-	ns     xmlname.Namespace
+	parent xmpns.Property
+	self   xmpns.Property
 	value  []byte
 	raw    []byte
 }
 
 func (attr Attribute) String() string {
-	return fmt.Sprintf("Attribute: %s=\"%s\"", attr.ns.String(), string(attr.value))
+	return fmt.Sprintf("Attribute: %s=\"%s\"", attr.self.String(), string(attr.value))
 }
 
-func (attr Attribute) Parent() xmlname.Namespace {
+// Parent returns the Parent's XMP Property
+func (attr Attribute) Parent() xmpns.Property {
 	return attr.parent
 }
 
-func (attr Attribute) Space() xmlname.Space {
-	return attr.ns.Space()
+// Namespace returns the Attribute's Namespace
+func (attr Attribute) Namespace() xmpns.Namespace {
+	return attr.self.Namespace()
 }
 
-func (attr Attribute) Name() xmlname.Name {
-	return attr.ns.Name()
+// Name returns the Attribute's Name
+func (attr Attribute) Name() xmpns.Name {
+	return attr.self.Name()
 }
 
 // TagType represents the Tag's type.
@@ -202,21 +205,21 @@ func (t Tag) TagType() TagType {
 // ---------------------------------------------------
 
 func (t Tag) isRDFSeq() bool {
-	return t.ns.Equals(xmlname.RDFSeq)
+	return t.self.Equals(xmpns.RDFSeq)
 }
 
 func (t Tag) isRDFAlt() bool {
-	return t.ns.Equals(xmlname.RDFAlt)
+	return t.self.Equals(xmpns.RDFAlt)
 }
 func (t Tag) isRDFLi() bool {
-	return t.ns.Equals(xmlname.RDFLi)
+	return t.self.Equals(xmpns.RDFLi)
 }
 func (t Tag) isRootStopTag() bool {
-	return t.ns.Equals(xmlname.XMPRootNamespace) && t.t == StopTag
+	return t.self.Equals(xmpns.XMPRootProperty) && t.t == StopTag
 }
 
-func (t Tag) isEndTag(namespace xmlname.Namespace) bool {
-	return t.t == StopTag && t.ns.Equals(namespace)
+func (t Tag) isEndTag(p xmpns.Property) bool {
+	return t.t == StopTag && t.self.Equals(p)
 }
 
 // ---------------------------------------------------
