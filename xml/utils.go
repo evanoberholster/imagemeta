@@ -1,10 +1,35 @@
 package xml
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/xml"
 	"strconv"
 	"time"
 )
+
+func readUntilByte(br *bufio.Reader, end byte) (n int, err error) {
+	var b byte
+	for {
+		b, err = br.ReadByte()
+		if err != nil {
+			return
+		}
+		n++
+		if b == end {
+			return
+		}
+	}
+}
+
+func readUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == delimiter || buf[i] == endTag {
+			return buf[:i], buf[i+1:]
+		}
+	}
+	return nil, nil
+}
 
 func decodeRDF(decoder *xml.Decoder, start *xml.StartElement) (strs []string) {
 	var t xml.Token
@@ -45,4 +70,16 @@ func parseUint32(s string) uint32 {
 		return 0
 	}
 	return uint32(u64)
+}
+
+func parseUint(buf []byte) (u uint64) {
+	for i := 0; i < len(buf); i++ {
+		u *= 10
+		u += uint64(buf[i] - '0')
+	}
+	return
+}
+
+func parseBool(buf []byte) bool {
+	return bytes.EqualFold(buf, []byte("True"))
 }

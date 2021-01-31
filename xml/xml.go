@@ -13,299 +13,237 @@ import (
 var xmpRootTag = [10]byte{60, 120, 58, 120, 109, 112, 109, 101, 116, 97}
 
 const (
-	colon    byte = 58   // ":"
-	startTag byte = 60   // "<"
-	equals   byte = 61   // "="
-	endTag   byte = 62   // ">"
-	space         = 0x20 // " "
-	quotes        = 0x22 // \"
+	newLine      byte = 10   // "\n"
+	colon        byte = 58   // ":"
+	startTag     byte = 60   // "<"
+	equals       byte = 61   // "="
+	endTag       byte = 62   // ">"
+	space        byte = 0x20 // " "
+	quotesAlt    byte = 0x27 // "'"
+	quotes       byte = 0x22 // """
+	forwardSlash byte = 0x2f // "/"
 )
 
 // Read -
-func Read(r io.Reader) (xmp XMP, err error) {
-	br := bufio.NewReader(r)
+func Read(r io.Reader) (XMP, error) {
+	var err error
+	xmp := XMP{
+		br: bufio.NewReaderSize(r, 1024*6),
+	}
 	// find start of XML
-	_, err = findRootTag(br)
+	_, err = xmp.readRootTag()
 	if err != nil {
-		return
+		return xmp, err
 	}
 
-	// find end of tag
-	n, err := readUntilByte(br, endTag)
-	if err != nil {
-		return
-	}
-	_ = n
-	//fmt.Println(n)
-
-	xmp.readTag(br)
-	xmp.readTag(br)
-	//fmt.Println(br.ReadByte())
-	return
-}
-
-func findRootTag(br *bufio.Reader) (discarded int, err error) {
-	var tag []byte
+	// read Tags
+	var t Tag
 	for {
-		tag, err = br.Peek(10)
-		if err != nil {
+		if t, err = xmp.readTag(xmlname.XMPRootNamespace); err != nil {
+			fmt.Println(err)
+			break
+		}
+		if t.isRootStopTag() {
+			break
+		}
+	}
+
+	return xmp, err
+}
+func (xmp *XMP) readRootTag() (discarded uint, err error) {
+	var buf []byte
+	for {
+		if buf, err = xmp.br.Peek(10); err != nil {
+			if err == io.EOF {
+				err = ErrNoXMP
+			}
 			return
 		}
-		if bytes.EqualFold(xmpRootTag[:], tag) {
+		//if buf[0] == xmpRootTag[0] {
+		//
+		//}
+		if bytes.EqualFold(xmpRootTag[:], buf) {
+			// Read until end of the StartTag (RootTag)
+			_, err = readUntilByte(xmp.br, endTag)
 			return
 		}
 		discarded++
-		br.Discard(1)
+		xmp.br.Discard(1)
 	}
 }
 
-func readUntilByte(br *bufio.Reader, end byte) (n int, err error) {
-	var b byte
-	for {
-		b, err = br.ReadByte()
-		if err != nil {
-			return
-		}
-		n++
-		if b == end {
-			return
-		}
+func (xmp *XMP) decodeSeq(namespace xmlname.Namespace, val []byte) (err error) {
+
+	switch namespace.Name() {
+	case xmlname.ISOSpeedRatings:
+		xmp.Exif.ISOSpeedRatings = uint32(parseUint(val))
+	case xmlname.Creator:
+		xmp.DC.Creator = append(xmp.DC.Creator, string(val))
+	case xmlname.Rights:
+		xmp.DC.Rights = append(xmp.DC.Rights, string(val))
+	case xmlname.Title:
+		xmp.DC.Title = append(xmp.DC.Rights, string(val))
 	}
-}
-
-// Attribute -
-type Attribute struct {
-	ns    ns
-	name  xmlname.Name
-	value []byte
-}
-
-func (attr Attribute) String() string {
-	return fmt.Sprintf("Attribute: %s:%s=\"%s\"", mapNSString[attr.ns], attr.name.String(), string(attr.value))
-}
-
-// Tag -
-type Tag struct {
-	ns   ns
-	name xmlname.Name
-}
-
-func (t Tag) String() string {
-	return fmt.Sprintf("Tag: %s:%s", mapNSString[t.ns], t.name)
-}
-
-func (t *Tag) readNS(br *bufio.Reader) error {
-	buf, err := br.ReadSlice(colon)
-	if err != nil {
-		return err
-	}
-	buf = buf[:len(buf)-1]
-	t.ns = identifyNS(buf)
-	return nil
-}
-
-func (t *Tag) readName(br *bufio.Reader) error {
-	buf, err := br.ReadSlice(space)
-	if err != nil {
-		return err
-	}
-	buf = buf[:len(buf)-1]
-	t.name = identifyName(buf)
-	return nil
-}
-
-func readUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
-	for i := 0; i < len(buf); i++ {
-		if buf[i] == delimiter {
-			return buf[:i], buf[i+1:]
-		}
-	}
-	return nil, nil
-}
-
-func (attr *Attribute) readName(buf []byte) []byte {
-	var a []byte
-	a, buf = readUntil(buf, equals)
-	attr.name = identifyName(a)
-	return buf
-}
-
-func (attr *Attribute) readNS(buf []byte) []byte {
-	var a []byte
-	a, buf = readUntil(buf, colon)
-	attr.ns = identifyNS(a)
-	return buf
-}
-
-func (attr *Attribute) readValue(buf []byte) (b []byte) {
-	if buf[0] == quotes {
-		val, buf := readUntil(buf[1:], quotes)
-		attr.value = val
-		return buf
-	}
-	// TODO: write error
-	panic("Attribute Error")
-}
-
-func (attr *Attribute) parseUint8() uint8 {
-	val := uint8(parseUint(attr.value))
-	return val
-}
-
-func (attr *Attribute) parseUint16() uint16 {
-	val := uint16(parseUint(attr.value))
-	return val
-}
-
-func (attr *Attribute) parseUint32() uint32 {
-	val := uint32(parseUint(attr.value))
-	return val
-}
-
-func parseUint(buf []byte) (u uint64) {
-	for i := 0; i < len(buf); i++ {
-		u *= 10
-		u += uint64(buf[i] - '0')
-	}
+	//fmt.Println("Seq:", string(val))
 	return
 }
 
-func readAttr(buf []byte) (b []byte, attr Attribute) {
+func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
+	var err error
+	if (tag.ns.Equals(xmlname.RDFSeq) || tag.ns.Equals(xmlname.RDFAlt)) && tag.TagType() == StartTag {
+		//fmt.Println(tag.parent)
+		// Read till end of sequence
+		var child Tag
+		for {
+			// Start Tag
+			if child, err = xmp.decodeTag(tag.parent); err != nil {
+				return Tag{}, err
+			}
+			if child.t == SoloTag {
+				// read Attributes
+			}
+			if child.t == StartTag {
+				if err = child.readVal(xmp.br); err != nil {
+					return tag, err
+				}
+				// ISOSpeed
+				if err = xmp.decodeSeq(tag.parent, child.val); err != nil {
+					fmt.Println(err)
+				}
+				continue
+			}
+			if child.isEndTag(xmlname.RDFSeq) || child.isEndTag(xmlname.RDFAlt) {
+				//fmt.Println(tag)
+				return tag, nil
+			}
+		}
+	}
+	return tag, nil
+}
 
-	buf = attr.readNS(buf)    // Read Namespace
-	buf = attr.readName(buf)  // Read Name
-	buf = attr.readValue(buf) // Read Value
+func (xmp *XMP) readTag(parent xmlname.Namespace) (Tag, error) {
+	t, err := xmp.decodeTag(parent)
+	if err != nil {
+		if err != io.EOF {
+			fmt.Println("Error Here", err)
+		}
+		return Tag{}, err
+	}
 
-	return buf, attr
+	var attr Attribute
+	for t.nextAttr() {
+		attr, _ = t.attr()
+		_ = attr
+		//fmt.Println(attr)
+	}
+
+	if err = t.readVal(xmp.br); err != nil {
+		return t, err
+	}
+
+	//fmt.Println(t)
+
+	// read Next Tag
+	// if tag is start Tag, read next tag
+	if t.TagType() == StartTag {
+		switch {
+		case t.isRDFSeq(), t.isRDFAlt():
+			return xmp.readRdfSeq(t)
+		default:
+			var child Tag
+			for {
+				if child, err = xmp.readTag(t.ns); err != nil {
+					fmt.Println("Tags here", err)
+					break
+				}
+				if child.isEndTag(t.ns) {
+					break
+				}
+			}
+		}
+	}
+	//if t.TagType() != StopTag {
+	//xmp.readTag(br, t)
+	//}
+
+	return t, err
 }
 
 func (xmp *XMP) setValue(t Tag, attr Attribute) {
-	if t.ns == rdfNS {
-		switch t.name {
-		case xmlname.Description:
-			xmp.setDescription(attr)
-		default:
-			return
-		}
-	}
+	//if t.ns == xmlname.Rdf {
+	//	switch t.name {
+	//	case xmlname.Description:
+	//		xmp.setDescription(attr)
+	//	default:
+	//		return
+	//	}
+	//}
 }
 
 func (xmp *XMP) setDescription(attr Attribute) {
-	if attr.ns == tiffNS {
-		switch attr.name {
+	if attr.ns.Space() == xmlname.Tiff {
+		switch attr.ns.Name() {
 		case xmlname.Make:
 			xmp.Tiff.Make = string(attr.value)
 		case xmlname.Model:
 			xmp.Tiff.Model = string(attr.value)
 		case xmlname.Orientation:
-			xmp.Tiff.Orientation = attr.parseUint8()
+			//xmp.Tiff.Orientation = attr.parseUint8()
 		case xmlname.ImageWidth:
-			xmp.Tiff.ImageWidth = attr.parseUint16()
+			//xmp.Tiff.ImageWidth = attr.parseUint16()
 		case xmlname.ImageLength:
-			xmp.Tiff.ImageLength = attr.parseUint16()
+			//xmp.Tiff.ImageLength = attr.parseUint16()
 		default:
 			fmt.Println("Not supported:", attr)
 		}
 	}
 }
 
-func (xmp *XMP) readTag(br *bufio.Reader) (tag Tag, err error) {
-	_, err = readUntilByte(br, startTag)
-	if err != nil {
+func (xmp *XMP) decodeTag(parentNS xmlname.Namespace) (t Tag, err error) {
+	t.parent = parentNS
+	if _, err = xmp.br.ReadSlice(startTag); err != nil {
 		return
 	}
 
-	// Read Tag
-	if err = tag.readNS(br); err != nil {
-		return
-	}
-	if err = tag.readName(br); err != nil {
+	if t.raw, err = xmp.br.ReadSlice(endTag); err != nil {
 		return
 	}
 
-	var buf []byte
-	buf, err = br.ReadSlice(endTag)
-	if err != nil {
+	// StopTag
+	if t.raw[0] == forwardSlash {
+		t.t = StopTag     // set type StopTag
+		t.raw = t.raw[1:] // remove forward slash
+
+		t.readNamespace()
 		return
 	}
-	var attr Attribute
-	for len(buf) > 0 {
-		if buf[0] == space {
-			buf = buf[1:]
-			continue
-		}
-		if buf[0] == []byte("\n")[0] {
-			buf = buf[1:]
-			continue
-		}
-		buf, attr = readAttr(buf)
-		xmp.setValue(tag, attr)
-		//fmt.Println(attr)
-		if buf[0] == endTag {
-			break
-		}
+
+	// StartTag or Solo Tag
+	if t.raw[len(t.raw)-2] == forwardSlash {
+		t.t = SoloTag // set type SoloTag
+	} else {
+		t.t = StartTag
 	}
+
+	// Read Namespace
+	t.readNamespace()
 	return
 }
 
-// ns is an XML Namespace
-type ns uint8
-
-const (
-	unknownNS ns = iota
-	xNS
-	xmlnsNS
-	xmpNS
-	xmpMMNS
-	tiffNS
-	exifNS
-	exifEXNS
-	dcNS
-	auxNS
-	photoshopNS
-	crsNS
-	lrNS
-	rdfNS
-)
-
-func identifyNS(buf []byte) (n ns) {
-	return mapStringNS[string(buf)]
-}
-
-func identifyName(buf []byte) (n xmlname.Name) {
-	return xmlname.MapStringName[string(buf)]
-}
-
-var mapStringNS = map[string]ns{
-	"Unknown":   unknownNS,
-	"x":         xNS,
-	"xmlns":     xmlnsNS,
-	"xmp":       xmpNS,
-	"xmpMM":     xmpMMNS,
-	"tiff":      tiffNS,
-	"exif":      exifNS,
-	"exifEX":    exifEXNS,
-	"dc":        dcNS,
-	"aux":       auxNS,
-	"photoshop": photoshopNS,
-	"crs":       crsNS,
-	"lr":        lrNS,
-	"rdf":       rdfNS,
-}
-
-var mapNSString = map[ns]string{
-	unknownNS:   "Unknown",
-	xNS:         "x",
-	xmlnsNS:     "xmlns",
-	xmpNS:       "xmp",
-	xmpMMNS:     "xmpMM",
-	tiffNS:      "tiff",
-	exifNS:      "exif",
-	exifEXNS:    "exifEX",
-	dcNS:        "dc",
-	auxNS:       "aux",
-	photoshopNS: "photoshop",
-	crsNS:       "crs",
-	lrNS:        "lr",
-	rdfNS:       "rdf",
+func (xmp *XMP) handleTag(t Tag) {
+	//switch t.name {
+	//case xmlname.Flash:
+	//	//xmp.Exif.Flash.read(t)
+	//	//fmt.Println(t)
+	//	// Read Flash
+	//default:
+	//	// if seg, bag, or alt
+	//	// read Attributes
+	//	var attr Attribute
+	//	for t.nextAttr() {
+	//		attr, _ = t.attr()
+	//		_ = attr
+	//		//fmt.Println(attr)
+	//	}
+	//}
 }

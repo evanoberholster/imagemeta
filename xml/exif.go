@@ -4,7 +4,46 @@ import (
 	"encoding/xml"
 	"fmt"
 	"time"
+
+	"github.com/evanoberholster/image-meta/xml/xmlname"
 )
+
+// XMPFlash represents exif:Flash
+// Based on: https://exiftool.org/TagNames/XMP.html
+type XMPFlash struct {
+	Fired      bool
+	Mode       uint8
+	RedEyeMode bool
+	Return     uint8
+}
+
+func (xmpFlash *XMPFlash) read(t Tag) (err error) {
+	var attr Attribute
+	if t.t == SoloTag {
+		for t.nextAttr() {
+			attr, _ = t.attr()
+			switch attr.ns.Name() {
+			case xmlname.Fired:
+				xmpFlash.Fired = parseBool(attr.value)
+			case xmlname.Return:
+				xmpFlash.Return = uint8(parseUint32(string(attr.value)))
+			case xmlname.Mode:
+				xmpFlash.Mode = uint8(parseUint32(string(attr.value)))
+			case xmlname.Function:
+				//xmpFlash.Function = parseBool(attr.value)
+			case xmlname.RedEyeMode:
+				xmpFlash.RedEyeMode = parseBool(attr.value)
+			default:
+			}
+			_ = attr
+			//fmt.Println(attr)
+		}
+	} else if t.t == StartTag {
+
+	}
+
+	return
+}
 
 // Exif attributes of an XMP Packet.
 //	 Exif 2.21 or later: xmlns:exifEX="http://cipa.jp/exif/1.0/"
@@ -21,6 +60,7 @@ type Exif struct {
 	ShutterSpeedValue string
 	ExposureProgram   string
 	ISOSpeedRatings   uint32
+	Flash             XMPFlash
 }
 
 func (exif *Exif) decodeElement(decoder *xml.Decoder, start *xml.StartElement) {
