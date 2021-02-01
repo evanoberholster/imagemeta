@@ -6,9 +6,9 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-// XMPFlash represents exif:Flash
+// Flash represents exif:Flash
 // Based on: https://exiftool.org/TagNames/XMP.html
-type XMPFlash struct {
+type Flash struct {
 	Fired      bool
 	Mode       uint8
 	RedEyeMode bool
@@ -16,7 +16,7 @@ type XMPFlash struct {
 	Return     uint8
 }
 
-func (xmpFlash *XMPFlash) parse(p property) (err error) {
+func (xmpFlash *Flash) parse(p property) (err error) {
 	switch p.Name() {
 	case xmpns.Fired:
 		xmpFlash.Fired = parseBool(p.val)
@@ -49,7 +49,7 @@ type Exif struct {
 	ShutterSpeedValue string
 	ExposureProgram   string
 	ISOSpeedRatings   uint32
-	Flash             XMPFlash
+	Flash             Flash
 }
 
 func (exif *Exif) decode(tag Tag) (err error) {
