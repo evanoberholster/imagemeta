@@ -50,6 +50,18 @@ type Exif struct {
 	ExposureProgram   string
 	ISOSpeedRatings   uint32
 	Flash             Flash
+	// MeteringMode
+	// ExposureMode
+	// ExposureProgram
+	// ExposureBias
+	// FocalLength
+	// Aperture Value
+	// ShutterSpeedValue
+	// ExposureTime
+	// FNumber
+	// GPSLatitude
+	// GPSLongitude
+
 }
 
 func (exif *Exif) decode(tag Tag) (err error) {
@@ -57,6 +69,7 @@ func (exif *Exif) decode(tag Tag) (err error) {
 		return exif.Flash.parse(tag.property)
 	}
 	switch tag.Name() {
+
 	case xmpns.ISOSpeedRatings:
 		exif.ISOSpeedRatings = uint32(parseUint(tag.val))
 	case xmpns.Flash:

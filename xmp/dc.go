@@ -17,12 +17,14 @@ package xmp
 import (
 	"time"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
 func (dc *DublinCore) decode(p property) (err error) {
 	switch p.Name() {
 	case xmpns.Format:
+		dc.Format = imagetype.FromString(string(p.val))
 		//fmt.Println("Format: ", p.val)
 	case xmpns.Creator:
 		dc.Creator = append(dc.Creator, parseString(p.val))
@@ -34,6 +36,7 @@ func (dc *DublinCore) decode(p property) (err error) {
 		// Subject
 		// Contributor
 		// Description
+
 	}
 	return nil
 }
@@ -66,7 +69,7 @@ type DublinCore struct {
 	// XMP usage is a list of textual descriptions of the content of the resource, given in various languages.
 	Description []string `xml:"description"`
 	// XMP usage is a MIME type.
-	Format string `xml:"format"`
+	Format imagetype.ImageType `xml:"format"`
 	// An unambiguous reference to the resource within a given context.
 	Identifier string `xml:"identifier"`
 

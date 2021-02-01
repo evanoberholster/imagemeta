@@ -77,14 +77,16 @@ func (xmp *XMP) decodeTag(tag Tag) (err error) {
 	switch tag.Namespace() {
 	case xmpns.AuxNS:
 		return xmp.Aux.decode(tag.property)
+	case xmpns.CrsNS:
+		return xmp.CRS.decode(tag.property)
+	case xmpns.DcNS:
+		return xmp.DC.decode(tag.property)
 	case xmpns.ExifNS:
 		return xmp.Exif.decode(tag)
 	case xmpns.TiffNS:
 		return xmp.Tiff.decode(tag.self, tag.val)
 	case xmpns.XmpNS:
 		return xmp.Basic.decode(tag.property)
-	case xmpns.DcNS:
-		return xmp.DC.decode(tag.property)
 	case xmpns.RdfNS:
 		switch tag.Name() {
 		case xmpns.Description:
@@ -111,6 +113,8 @@ func (xmp *XMP) decodeAttr(attr Attribute) (err error) {
 	case xmpns.XMLnsNS, xmpns.RdfNS:
 		// Null operation
 		return
+	case xmpns.CrsNS:
+		return xmp.CRS.decode(attr.property)
 	case xmpns.DcNS:
 		return xmp.DC.decode(attr.property)
 	case xmpns.AuxNS:

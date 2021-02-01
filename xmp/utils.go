@@ -48,6 +48,23 @@ func parseDate(buf []byte) (t time.Time, err error) {
 //	return uint32(u64)
 //}
 
+// parseInt parses a []byte of a string representation of an int32 value and returns the value
+func parseInt(buf []byte) (i int32) {
+	var neg bool
+	if buf[0] == '-' {
+		buf = buf[1:]
+		neg = true
+	}
+	for j := 0; j < len(buf); j++ {
+		i *= 10
+		i += int32(buf[j] - '0')
+	}
+	if neg {
+		i *= -1
+	}
+	return
+}
+
 // parseUint parses a []byte of a string representation of a uint64 value and returns the value.
 func parseUint(buf []byte) (u uint64) {
 	for i := 0; i < len(buf); i++ {

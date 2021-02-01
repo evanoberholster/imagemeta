@@ -19,7 +19,9 @@ func (crs *CRS) decode(p property) (err error) {
 	case xmpns.RawFileName:
 		crs.RawFileName = parseString(p.val)
 	// Null Operation
-	case xmpns.ToneCurve, xmpns.ToneCurveRed, xmpns.ToneCurveBlue, xmpns.ToneCurveGreen:
+	case xmpns.ToneCurve, xmpns.ToneCurveRed, xmpns.ToneCurveGreen, xmpns.ToneCurveBlue:
+		return
+	case xmpns.ToneCurvePV2012, xmpns.ToneCurvePV2012Red, xmpns.ToneCurvePV2012Green, xmpns.ToneCurvePV2012Blue:
 		return
 	}
 	return ErrPropertyNotSet
