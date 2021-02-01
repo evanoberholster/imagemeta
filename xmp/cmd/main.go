@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/xml"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 const (
@@ -14,20 +14,16 @@ const (
 )
 
 func main() {
-	xml.DebugMode = true
+	xmp.DebugMode = true
 	f, err := os.Open(dir2 + name)
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	xmp, err := xml.Read(f)
+	xmp, err := xmp.Read(f)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(xmp)
-}
-
-func main2() {
-	fmt.Println([]byte(":"))
 }
