@@ -1,0 +1,128 @@
+<?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?>
+<x:xmpmeta xmlns:x='adobe:ns:meta/' x:xmptk='Image::ExifTool 10.40'>
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+ <rdf:Description rdf:about=''
+  xmlns:acdsee='http://ns.acdsee.com/iptc/1.0/'>
+  <acdsee:categories>(none)</acdsee:categories>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:aux='http://ns.adobe.com/exif/1.0/aux/'>
+  <aux:Lens>5.2 - 26.0 mm</aux:Lens>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:exif='http://ns.adobe.com/exif/1.0/'>
+  <exif:ApertureValue>5357/1482</exif:ApertureValue>
+  <exif:ColorSpace>1</exif:ColorSpace>
+  <exif:ComponentsConfiguration>
+   <rdf:Seq>
+    <rdf:li>1</rdf:li>
+    <rdf:li>2</rdf:li>
+    <rdf:li>3</rdf:li>
+    <rdf:li>0</rdf:li>
+   </rdf:Seq>
+  </exif:ComponentsConfiguration>
+  <exif:CompressedBitsPerPixel>3/1</exif:CompressedBitsPerPixel>
+  <exif:Contrast>0</exif:Contrast>
+  <exif:CustomRendered>0</exif:CustomRendered>
+  <exif:DateTimeOriginal>2014-07-06T16:47:00</exif:DateTimeOriginal>
+  <exif:DigitalZoomRatio>1/1</exif:DigitalZoomRatio>
+  <exif:ExifVersion>0230</exif:ExifVersion>
+  <exif:ExposureBiasValue>0/1</exif:ExposureBiasValue>
+  <exif:ExposureMode>1</exif:ExposureMode>
+  <exif:ExposureTime>2/5</exif:ExposureTime>
+  <exif:FNumber>7/2</exif:FNumber>
+  <exif:FileSource>3</exif:FileSource>
+  <exif:Flash rdf:parseType='Resource'>
+   <exif:Fired>True</exif:Fired>
+   <exif:Function>False</exif:Function>
+   <exif:Mode>1</exif:Mode>
+   <exif:RedEyeMode>True</exif:RedEyeMode>
+   <exif:Return>0</exif:Return>
+  </exif:Flash>
+  <exif:FlashpixVersion>0100</exif:FlashpixVersion>
+  <exif:FocalLength>26/5</exif:FocalLength>
+  <exif:FocalPlaneResolutionUnit>2</exif:FocalPlaneResolutionUnit>
+  <exif:FocalPlaneXResolution>604811/44</exif:FocalPlaneXResolution>
+  <exif:FocalPlaneYResolution>1000000/73</exif:FocalPlaneYResolution>
+  <exif:GPSVersionID>2.3.0.0</exif:GPSVersionID>
+  <exif:ISOSpeedRatings>
+   <rdf:Seq>
+    <rdf:li>80</rdf:li>
+   </rdf:Seq>
+  </exif:ISOSpeedRatings>
+  <exif:ImageUniqueID>ebafd21a97e0228357493581af239d48</exif:ImageUniqueID>
+  <exif:MaxApertureValue>13166/7763</exif:MaxApertureValue>
+  <exif:MeteringMode>3</exif:MeteringMode>
+  <exif:PixelXDimension>4000</exif:PixelXDimension>
+  <exif:PixelYDimension>3000</exif:PixelYDimension>
+  <exif:Saturation>0</exif:Saturation>
+  <exif:SceneCaptureType>0</exif:SceneCaptureType>
+  <exif:SensingMethod>2</exif:SensingMethod>
+  <exif:Sharpness>0</exif:Sharpness>
+  <exif:ShutterSpeedValue>16729/12655</exif:ShutterSpeedValue>
+  <exif:UserComment>
+   <rdf:Alt>
+    <rdf:li xml:lang='x-default'/>
+   </rdf:Alt>
+  </exif:UserComment>
+  <exif:WhiteBalance>1</exif:WhiteBalance>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:exifEX='http://cipa.jp/exif/1.0/'>
+  <exifEX:CameraOwnerName/>
+  <exifEX:InteroperabilityIndex>R98</exifEX:InteroperabilityIndex>
+  <exifEX:SensitivityType>4</exifEX:SensitivityType>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:pmi='http://prismstandard.org/namespaces/pmi/2.2/'>
+  <pmi:sequenceNumber>0</pmi:sequenceNumber>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:tiff='http://ns.adobe.com/tiff/1.0/'>
+  <tiff:Artist/>
+  <tiff:BitsPerSample>
+   <rdf:Seq>
+    <rdf:li>8</rdf:li>
+    <rdf:li>8</rdf:li>
+    <rdf:li>8</rdf:li>
+   </rdf:Seq>
+  </tiff:BitsPerSample>
+  <tiff:Compression>6</tiff:Compression>
+  <tiff:Copyright>
+   <rdf:Alt>
+    <rdf:li xml:lang='x-default'/>
+   </rdf:Alt>
+  </tiff:Copyright>
+  <tiff:ImageDescription>
+   <rdf:Alt>
+    <rdf:li xml:lang='x-default'>                               </rdf:li>
+   </rdf:Alt>
+  </tiff:ImageDescription>
+  <tiff:ImageLength>1200</tiff:ImageLength>
+  <tiff:ImageWidth>1600</tiff:ImageWidth>
+  <tiff:Make>Canon</tiff:Make>
+  <tiff:Model>Canon PowerShot S120</tiff:Model>
+  <tiff:Orientation>1</tiff:Orientation>
+  <tiff:PhotometricInterpretation>2</tiff:PhotometricInterpretation>
+  <tiff:PlanarConfiguration>1</tiff:PlanarConfiguration>
+  <tiff:ResolutionUnit>2</tiff:ResolutionUnit>
+  <tiff:SamplesPerPixel>3</tiff:SamplesPerPixel>
+  <tiff:XResolution>180/1</tiff:XResolution>
+  <tiff:YResolution>180/1</tiff:YResolution>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:xmp='http://ns.adobe.com/xap/1.0/'>
+  <xmp:CreateDate>2014-07-06T16:47:00</xmp:CreateDate>
+  <xmp:ModifyDate>2014-07-06T16:47:00</xmp:ModifyDate>
+  <xmp:Rating>0</xmp:Rating>
+ </rdf:Description>
+</rdf:RDF>
+</x:xmpmeta>
+<?xpacket end='w'?>

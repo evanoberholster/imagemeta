@@ -1,0 +1,115 @@
+<?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?>
+<x:xmpmeta xmlns:x='adobe:ns:meta/' x:xmptk='Image::ExifTool 10.40'>
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+ <rdf:Description rdf:about=''
+  xmlns:aux='http://ns.adobe.com/exif/1.0/aux/'>
+  <aux:Lens>180.0 mm</aux:Lens>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:crs='http://ns.adobe.com/camera-raw-settings/1.0/'>
+  <crs:Temperature>5200</crs:Temperature>
+  <crs:ToneCurve>
+   <rdf:Seq>
+    <rdf:li>Standard</rdf:li>
+   </rdf:Seq>
+  </crs:ToneCurve>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:exif='http://ns.adobe.com/exif/1.0/'>
+  <exif:ApertureValue>5357/1482</exif:ApertureValue>
+  <exif:ColorSpace>65535</exif:ColorSpace>
+  <exif:ComponentsConfiguration>
+   <rdf:Seq>
+    <rdf:li>0</rdf:li>
+    <rdf:li>0</rdf:li>
+    <rdf:li>0</rdf:li>
+    <rdf:li>0</rdf:li>
+   </rdf:Seq>
+  </exif:ComponentsConfiguration>
+  <exif:Contrast>0</exif:Contrast>
+  <exif:CustomRendered>0</exif:CustomRendered>
+  <exif:DateTimeOriginal>2005-04-04T16:58:39</exif:DateTimeOriginal>
+  <exif:ExifVersion>0221</exif:ExifVersion>
+  <exif:ExposureBiasValue>0/1</exif:ExposureBiasValue>
+  <exif:ExposureMode>0</exif:ExposureMode>
+  <exif:ExposureProgram>2</exif:ExposureProgram>
+  <exif:ExposureTime>1/200</exif:ExposureTime>
+  <exif:FNumber>7/2</exif:FNumber>
+  <exif:Flash rdf:parseType='Resource'>
+   <exif:Fired>False</exif:Fired>
+   <exif:Function>False</exif:Function>
+   <exif:Mode>2</exif:Mode>
+   <exif:RedEyeMode>False</exif:RedEyeMode>
+   <exif:Return>0</exif:Return>
+  </exif:Flash>
+  <exif:FlashpixVersion>0100</exif:FlashpixVersion>
+  <exif:FocalLength>180/1</exif:FocalLength>
+  <exif:FocalPlaneResolutionUnit>2</exif:FocalPlaneResolutionUnit>
+  <exif:FocalPlaneXResolution>1728000/437</exif:FocalPlaneXResolution>
+  <exif:FocalPlaneYResolution>384000/97</exif:FocalPlaneYResolution>
+  <exif:ISOSpeedRatings>
+   <rdf:Seq>
+    <rdf:li>200</rdf:li>
+   </rdf:Seq>
+  </exif:ISOSpeedRatings>
+  <exif:MeteringMode>5</exif:MeteringMode>
+  <exif:PixelXDimension>3456</exif:PixelXDimension>
+  <exif:PixelYDimension>2304</exif:PixelYDimension>
+  <exif:Saturation>0</exif:Saturation>
+  <exif:SceneCaptureType>0</exif:SceneCaptureType>
+  <exif:Sharpness>0</exif:Sharpness>
+  <exif:ShutterSpeedValue>15303/2002</exif:ShutterSpeedValue>
+  <exif:UserComment>
+   <rdf:Alt>
+    <rdf:li xml:lang='x-default'/>
+   </rdf:Alt>
+  </exif:UserComment>
+  <exif:WhiteBalance>0</exif:WhiteBalance>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:exifEX='http://cipa.jp/exif/1.0/'>
+  <exifEX:BodySerialNumber>0330130702</exifEX:BodySerialNumber>
+  <exifEX:CameraOwnerName>Jakob Rohrbach, CH-4144</exifEX:CameraOwnerName>
+  <exifEX:InteroperabilityIndex>R98</exifEX:InteroperabilityIndex>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:pmi='http://prismstandard.org/namespaces/pmi/2.2/'>
+  <pmi:sequenceNumber>0</pmi:sequenceNumber>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:tiff='http://ns.adobe.com/tiff/1.0/'>
+  <tiff:BitsPerSample>
+   <rdf:Seq>
+    <rdf:li>8</rdf:li>
+    <rdf:li>8</rdf:li>
+    <rdf:li>8</rdf:li>
+   </rdf:Seq>
+  </tiff:BitsPerSample>
+  <tiff:Compression>6</tiff:Compression>
+  <tiff:ImageLength>1024</tiff:ImageLength>
+  <tiff:ImageWidth>1536</tiff:ImageWidth>
+  <tiff:Make>Canon</tiff:Make>
+  <tiff:Model>Canon EOS 350D DIGITAL</tiff:Model>
+  <tiff:Orientation>1</tiff:Orientation>
+  <tiff:PhotometricInterpretation>2</tiff:PhotometricInterpretation>
+  <tiff:PlanarConfiguration>1</tiff:PlanarConfiguration>
+  <tiff:ResolutionUnit>2</tiff:ResolutionUnit>
+  <tiff:SamplesPerPixel>3</tiff:SamplesPerPixel>
+  <tiff:XResolution>72/1</tiff:XResolution>
+  <tiff:YResolution>72/1</tiff:YResolution>
+ </rdf:Description>
+
+ <rdf:Description rdf:about=''
+  xmlns:xmp='http://ns.adobe.com/xap/1.0/'>
+  <xmp:CreateDate>2005-04-04T16:58:39</xmp:CreateDate>
+  <xmp:ModifyDate>2005-04-04T16:58:39</xmp:ModifyDate>
+ </rdf:Description>
+</rdf:RDF>
+</x:xmpmeta>
+<?xpacket end='w'?>

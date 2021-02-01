@@ -1,0 +1,113 @@
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>asset-info</key>
+    <dict>
+        <key>file-size</key>
+        <integer>1584969202</integer>
+        <key>flavor</key>
+        <string>4:640x480LC-128</string>
+        <key>screen-format</key>
+        <string>widescreen</string>
+        <key>soundtrack</key>
+        <string>DD,DS</string>
+    </dict>
+    <key>cast</key>
+    <array>
+        <dict>
+            <key>adamId</key>
+            <integer>203640295</integer>
+            <key>name</key>
+            <string>Christoph Waltz</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>291645461</integer>
+            <key>name</key>
+            <string>Melanie Thierry</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>209206752</integer>
+            <key>name</key>
+            <string>David Thewlis</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>189031776</integer>
+            <key>name</key>
+            <string>Matt Damon</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>189071034</integer>
+            <key>name</key>
+            <string>Tilda Swinton</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>296378475</integer>
+            <key>name</key>
+            <string>Ben Whishaw</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>60662924</integer>
+            <key>name</key>
+            <string>Peter Stormare</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>129493734</integer>
+            <key>name</key>
+            <string>Sanjeev Bhaskar</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>725110365</integer>
+            <key>name</key>
+            <string>Lucas Hedges</string>
+        </dict>
+    </array>
+    <key>codirectors</key>
+    <array/>
+    <key>copy-warning</key>
+    <string>&amp;nbsp;</string>
+    <key>directors</key>
+    <array>
+        <dict>
+            <key>adamId</key>
+            <integer>189051747</integer>
+            <key>name</key>
+            <string>Terry Gilliam</string>
+        </dict>
+    </array>
+    <key>producers</key>
+    <array>
+        <dict>
+            <key>adamId</key>
+            <integer>336975093</integer>
+            <key>name</key>
+            <string>Nicolas Chartier</string>
+        </dict>
+        <dict>
+            <key>adamId</key>
+            <integer>295432464</integer>
+            <key>name</key>
+            <string>Dean Zanuck</string>
+        </dict>
+    </array>
+    <key>screenwriters</key>
+    <array>
+        <dict>
+            <key>adamId</key>
+            <integer>826954872</integer>
+            <key>name</key>
+            <string>Pat Rushin</string>
+        </dict>
+    </array>
+    <key>studio</key>
+    <string>Voltage Pictures/Zanuck Independent</string>
+</dict>
+</plist>
