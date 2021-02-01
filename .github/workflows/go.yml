@@ -21,20 +21,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
             
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
       - name: Checkout code
-      - uses: actions/setup-go@v1
-        with:
-          go-version: ${{ matrix.go }}
-      - uses: actions/checkout@v2
-      - run: go test -v -coverprofile=profile.cov ./...
+        uses: actions/checkout@v2
         
-      - name: Send coverage
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
-          
       - name: Test
         run: go test ./...
           
@@ -45,18 +39,11 @@ jobs:
         run: |
           go get -u honnef.co/go/tools/cmd/staticcheck
           staticcheck -checks all ./...
-
       - name: Review security
         run: go get github.com/securego/gosec/cmd/gosec; gosec ./...
 
       - name: Test build
         run: go build .
         
-  # notifies that all test jobs are finished.
-  finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: shogo82148/actions-goveralls@v1
-        with:
-          parallel-finished: true
+      - name: actions-goveralls
+        uses: shogo82148/actions-goveralls@v1.4.0
