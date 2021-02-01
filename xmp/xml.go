@@ -31,8 +31,7 @@ func Read(r io.Reader) (XMP, error) {
 		br: bufio.NewReaderSize(r, 1024*6),
 	}
 	// find start of XML
-	_, err = xmp.readRootTag()
-	if err != nil {
+	if err = xmp.readRootTag(); err != nil {
 		return xmp, err
 	}
 
@@ -52,7 +51,7 @@ func Read(r io.Reader) (XMP, error) {
 }
 
 // Needs optimization
-func (xmp *XMP) readRootTag() (discarded uint, err error) {
+func (xmp *XMP) readRootTag() (err error) {
 	var buf []byte
 	for {
 		if buf, err = xmp.br.Peek(10); err != nil {
@@ -68,8 +67,9 @@ func (xmp *XMP) readRootTag() (discarded uint, err error) {
 				return
 			}
 		}
-		discarded++
-		xmp.br.Discard(1)
+		if _, err = xmp.br.Discard(1); err != nil {
+			return
+		}
 	}
 }
 
@@ -156,7 +156,9 @@ func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 				for child.nextAttr() {
 					attr, _ = child.attr()
 					attr.SetParent(tag.parent)
-					xmp.decodeAttr(attr)
+					if err := xmp.decodeAttr(attr); err != nil && DebugMode {
+						fmt.Println("Attr NotSet:", attr)
+					}
 				}
 			}
 			if child.isStartTag() {

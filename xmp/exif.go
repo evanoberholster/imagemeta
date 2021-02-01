@@ -63,7 +63,8 @@ func (exif *Exif) decode(tag Tag) (err error) {
 		var attr Attribute
 		for tag.nextAttr() {
 			attr, _ = tag.attr()
-			exif.Flash.parse(attr.property)
+			// Needs error reporting
+			_ = exif.Flash.parse(attr.property)
 		}
 	default:
 		return ErrPropertyNotSet

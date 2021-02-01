@@ -19,7 +19,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+
+	defer func() {
+		fmt.Println(f.Close())
+	}()
 
 	xmp, err := xmp.Read(f)
 	if err != nil {
