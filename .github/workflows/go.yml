@@ -27,7 +27,7 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: Checkout code
-      - uses: actions/checkout@v2
+        uses: actions/checkout@v2
       
       - name: Test coverage
         run: go test -v -coverprofile=profile.cov ./...
