@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 
-	"github.com/evanoberholster/image-meta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
 // property -

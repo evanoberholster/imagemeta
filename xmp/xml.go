@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/evanoberholster/image-meta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
 // xmpRootTag starts with "<x:xmpmeta"

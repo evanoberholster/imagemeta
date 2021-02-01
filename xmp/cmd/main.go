@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evanoberholster/image-meta/xml"
+	"github.com/evanoberholster/imagemeta/xml"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evanoberholster/image-meta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
 // XMPFlash represents exif:Flash

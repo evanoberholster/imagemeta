@@ -17,7 +17,7 @@ package xmp
 import (
 	"time"
 
-	"github.com/evanoberholster/image-meta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
 func (dc *DublinCore) decode(p property) (err error) {
