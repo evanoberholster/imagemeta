@@ -10,7 +10,7 @@ This package provides for performance oriented decoding of exif and tiff encoded
 
 ## Documentation
 
-See [Documentation](https://godoc.org/github.com/evanoberholster/exiftool) for more information.
+See [Documentation](https://godoc.org/github.com/evanoberholster/imagemeta) for more information.
 
 ## Example Usage
 
@@ -26,7 +26,7 @@ import (
    "os"
    "time"
 
-   "github.com/evanoberholster/exiftool"
+   "github.com/evanoberholster/imagemeta"
 )
 
 const testFilename = "image.jpg"
@@ -41,14 +41,14 @@ func main() {
    defer f.Close()
 
    start := time.Now()
-   e, err := exiftool.ScanExif(f)
-   if err != nil && err != exiftool.ErrNoExif {
+   e, err := imagemeta.ScanExif(f)
+   if err != nil && err != imagemeta.ErrNoExif {
       panic(err)
    }
    elapsed := time.Since(start)
    fmt.Println(elapsed)
 
-   if err == exiftool.ErrNoExif {
+   if err == imagemeta.ErrNoExif {
       fmt.Println(e.XMLPacket())
       fmt.Println(e.Dimensions())
       return
@@ -123,9 +123,9 @@ BenchmarkScanExif100/hero6.gpr-8                 31630        38285 ns/op      1
 
 ## Imagetype Identification
 
-Images can be identified with: "github.com/evanoberholster/exiftool/imagetype" package.
+Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" package.
 
-Benchmarks can be found with the exiftool/imagetype package
+Benchmarks can be found with the imagemeta/imagetype package
 
 Example:
 
@@ -136,7 +136,7 @@ import (
    "fmt"
    "os"
 
-   "github.com/evanoberholster/exiftool/imagetype"
+   "github.com/evanoberholster/imagemeta/imagetype"
 )
 
 const imageFilename = "../../test/img/1.CR2"
@@ -183,11 +183,11 @@ Copyright (c) 2019, Dustin Oprea
 
 [License-Url]: https://opensource.org/licenses/MIT
 [License-Image]: https://img.shields.io/badge/License-MIT-blue.svg?maxAge=2592000
-[Godoc-Url]: https://godoc.org/github.com/evanoberholster/exiftool
-[Godoc-Image]: https://godoc.org/github.com/evanoberholster/exiftool?status.svg
-[ReportCard-Url]: https://goreportcard.com/report/github.com/evanoberholster/exiftool
-[ReportCard-Image]: https://goreportcard.com/badge/github.com/evanoberholster/exiftool
-[Coverage-Image]: https://coveralls.io/repos/github/evanoberholster/exiftool/badge.svg?branch=master
-[Coverage-Url]: https://coveralls.io/github/evanoberholster/exiftool?branch=master
-[Build-Status-Url]: https://github.com/evanoberholster/exiftool/actions?query=branch%3Amaster
-[Build-Status-Image]: https://github.com/evanoberholster/exiftool/workflows/Build/badge.svg?branch=master
+[Godoc-Url]: https://godoc.org/github.com/evanoberholster/imagemeta
+[Godoc-Image]: https://godoc.org/github.com/evanoberholster/imagemeta?status.svg
+[ReportCard-Url]: https://goreportcard.com/report/github.com/evanoberholster/imagemeta
+[ReportCard-Image]: https://goreportcard.com/badge/github.com/evanoberholster/imagemeta
+[Coverage-Image]: https://coveralls.io/repos/github/evanoberholster/imagemeta/badge.svg?branch=master
+[Coverage-Url]: https://coveralls.io/github/evanoberholster/imagemeta?branch=master
+[Build-Status-Url]: https://github.com/evanoberholster/imagemeta/actions?query=branch%3Amaster
+[Build-Status-Image]: https://github.com/evanoberholster/imagemeta/workflows/Build/badge.svg?branch=master

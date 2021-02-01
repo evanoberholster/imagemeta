@@ -1,12 +1,12 @@
-package exiftool
+package imagemeta
 
 import (
 	"encoding/binary"
 	"errors"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/ifds/mknote"
-	"github.com/evanoberholster/exiftool/tag"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/ifds/mknote"
+	"github.com/evanoberholster/imagemeta/tag"
 )
 
 // Errors

@@ -1,12 +1,12 @@
-package exiftool
+package imagemeta
 
 import (
 	"errors"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/imagetype"
-	"github.com/evanoberholster/exiftool/meta"
-	"github.com/evanoberholster/exiftool/tag"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/tag"
 )
 
 // API Errors

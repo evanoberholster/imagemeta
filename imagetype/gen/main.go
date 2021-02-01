@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evanoberholster/exiftool/imagetype"
+	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
 var (

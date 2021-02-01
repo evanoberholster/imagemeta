@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/exiftool/imagetype"
+	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
 // Errors
