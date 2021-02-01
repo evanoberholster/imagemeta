@@ -22,11 +22,14 @@ jobs:
             ${{ runner.os }}-go-
             
       - name: Checkout code
-      - uses: actions/setup-go@v1
+        uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
+
       - uses: actions/checkout@v2
-      - run: go test -v -coverprofile=profile.cov ./...
+        
+      - name: Test coverage
+        run: go test -v -coverprofile=profile.cov ./...
         
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1
