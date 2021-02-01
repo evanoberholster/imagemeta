@@ -19,3 +19,4 @@ xml/test*
 testImages/gen.go
 testImages/*.html
 meta/cmd/*
+xmp/test/samples/*
