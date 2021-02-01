@@ -1,11 +1,11 @@
-package exiftool
+package imagemeta
 
 import (
 	"encoding/binary"
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/exiftool/meta"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // ExifReader -

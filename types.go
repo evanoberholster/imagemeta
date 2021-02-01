@@ -1,4 +1,4 @@
-package exiftool
+package imagemeta
 
 import (
 	"fmt"

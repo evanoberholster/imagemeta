@@ -1,13 +1,13 @@
-// Package exiftool provides functions for scanning for Exif Information and extracting it
-package exiftool
+// Package imagemeta provides functions for scanning for Exif Information and extracting it
+package imagemeta
 
 import (
 	"bufio"
 	"io"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/imagetype"
-	"github.com/evanoberholster/exiftool/meta"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Errors

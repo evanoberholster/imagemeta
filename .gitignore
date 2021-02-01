@@ -15,6 +15,7 @@
 *.out
 
 samples/*
+xml/test*
 testImages/gen.go
 testImages/*.html
 meta/cmd/*

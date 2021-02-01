@@ -1,4 +1,4 @@
-package exiftool
+package imagemeta
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/ifds/exififd"
-	"github.com/evanoberholster/exiftool/tag"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/tag"
 )
 
 // Errors for Parsing of Time

@@ -1,10 +1,10 @@
-package exiftool
+package imagemeta
 
 import (
 	"strings"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/ifds/exififd"
 )
 
 // CameraMake convenience func. "IFD" Make

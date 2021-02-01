@@ -2,7 +2,7 @@
 package mknote
 
 import (
-	"github.com/evanoberholster/exiftool/tag"
+	"github.com/evanoberholster/imagemeta/tag"
 )
 
 // CanonMKnoteIFD TagIDs

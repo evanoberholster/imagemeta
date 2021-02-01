@@ -1,4 +1,4 @@
-package exiftool
+package imagemeta
 
 // Exif is an interface representation of Exif Information
 type Exif interface {
