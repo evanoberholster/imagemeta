@@ -17,67 +17,67 @@ func IdentifyNamespace(buf []byte) (n Namespace) {
 
 // XML Namespaces supported
 const (
-	UnknownNS Namespace = iota
-	Aux                 // xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
-	Crs                 // xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
-	Darktable           // xmlns:darktable="http://darktable.sf.net/
-	Dc                  // xmlns:dc="http://purl.org/dc/elements/1.1/"
-	Exif                // xmlns:exif="http://ns.adobe.com/exif/1.0/"
-	ExifEX              // xmlns:exifEX="http://cipa.jp/exif/1.0/"
-	Lr                  // xmlns:lr="http://ns.adobe.com/lightroom/1.0/"
-	Photoshop           // xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
-	Pmi                 // xmlns:pmi='http://prismstandard.org/namespaces/pmi/2.2/'
-	Rdf                 // xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	StEvt               // xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
-	StRef               // xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
-	Tiff                // xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
-	X                   // xmlns:x="adobe:ns:meta/"
-	XML
-	XMLns
-	Xmp   // xmlns:xmp="http://ns.adobe.com/xap/1.0/"
-	XmpMM // xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
+	UnknownNS   Namespace = iota
+	AuxNS                 // xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
+	CrsNS                 // xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+	DarktableNS           // xmlns:darktable="http://darktable.sf.net/
+	DcNS                  // xmlns:dc="http://purl.org/dc/elements/1.1/"
+	ExifNS                // xmlns:exif="http://ns.adobe.com/exif/1.0/"
+	ExifEXNS              // xmlns:exifEX="http://cipa.jp/exif/1.0/"
+	LrNS                  // xmlns:lr="http://ns.adobe.com/lightroom/1.0/"
+	PhotoshopNS           // xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+	PmiNS                 // xmlns:pmi='http://prismstandard.org/namespaces/pmi/2.2/'
+	RdfNS                 // xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	StEvtNS               // xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
+	StRefNS               // xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
+	TiffNS                // xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+	XNS                   // xmlns:x="adobe:ns:meta/"
+	XMLNS
+	XMLnsNS
+	XmpNS   // xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+	XmpMMNS // xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
 )
 
 var mapStringNS = map[string]Namespace{
 	"Unknown":   UnknownNS,
-	"aux":       Aux,
-	"crs":       Crs,
-	"darktable": Darktable,
-	"dc":        Dc,
-	"exif":      Exif,
-	"exifEX":    ExifEX,
-	"lr":        Lr,
-	"photoshop": Photoshop,
-	"pmi":       Pmi,
-	"rdf":       Rdf,
-	"stEvt":     StEvt,
-	"stRef":     StRef,
-	"tiff":      Tiff,
-	"x":         X,
-	"xml":       XML,
-	"xmlns":     XMLns,
-	"xmp":       Xmp,
-	"xmpMM":     XmpMM,
+	"aux":       AuxNS,
+	"crs":       CrsNS,
+	"darktable": DarktableNS,
+	"dc":        DcNS,
+	"exif":      ExifNS,
+	"exifEX":    ExifEXNS,
+	"lr":        LrNS,
+	"photoshop": PhotoshopNS,
+	"pmi":       PmiNS,
+	"rdf":       RdfNS,
+	"stEvt":     StEvtNS,
+	"stRef":     StRefNS,
+	"tiff":      TiffNS,
+	"x":         XNS,
+	"xml":       XMLNS,
+	"xmlns":     XMLnsNS,
+	"xmp":       XmpNS,
+	"xmpMM":     XmpMMNS,
 }
 
 var mapNSString = map[Namespace]string{
-	UnknownNS: "Unknown",
-	Aux:       "aux",
-	Crs:       "crs",
-	Darktable: "darktable",
-	Dc:        "dc",
-	Exif:      "exif",
-	ExifEX:    "exifEX",
-	Lr:        "lr",
-	Photoshop: "photoshop",
-	Pmi:       "pmi",
-	Rdf:       "rdf",
-	StEvt:     "stEvt",
-	StRef:     "stRef",
-	Tiff:      "tiff",
-	X:         "x",
-	XML:       "xml",
-	XMLns:     "xmlns",
-	Xmp:       "xmp",
-	XmpMM:     "xmpMM",
+	UnknownNS:   "Unknown",
+	AuxNS:       "aux",
+	CrsNS:       "crs",
+	DarktableNS: "darktable",
+	DcNS:        "dc",
+	ExifNS:      "exif",
+	ExifEXNS:    "exifEX",
+	LrNS:        "lr",
+	PhotoshopNS: "photoshop",
+	PmiNS:       "pmi",
+	RdfNS:       "rdf",
+	StEvtNS:     "stEvt",
+	StRefNS:     "stRef",
+	TiffNS:      "tiff",
+	XNS:         "x",
+	XMLNS:       "xml",
+	XMLnsNS:     "xmlns",
+	XmpNS:       "xmp",
+	XmpMMNS:     "xmpMM",
 }

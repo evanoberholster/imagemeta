@@ -4,13 +4,15 @@ import "fmt"
 
 var (
 	// XMPRootProperty is the root Property for an XMP file
-	XMPRootProperty = NewProperty(X, XmpMeta)
+	XMPRootProperty = NewProperty(XNS, XmpMeta)
+	// RDFDescription is the rdf:Description Property
+	RDFDescription = NewProperty(RdfNS, Description)
 	// RDFSeq is the rdf:Seq Property
-	RDFSeq = NewProperty(Rdf, Seq)
+	RDFSeq = NewProperty(RdfNS, Seq)
 	// RDFAlt is the rdf:Alt Property
-	RDFAlt = NewProperty(Rdf, Alt)
+	RDFAlt = NewProperty(RdfNS, Alt)
 	// RDFLi is the rdf:Li Property
-	RDFLi = NewProperty(Rdf, Li)
+	RDFLi = NewProperty(RdfNS, Li)
 )
 
 // Property is an XMP Namespace with the associated Property Name
@@ -22,8 +24,8 @@ func NewProperty(ns Namespace, name Name) Property {
 }
 
 // Equals returns true if one property is equal to the other.
-func (p1 Property) Equals(p2 Property) bool {
-	return p1[0] == p2[0] && p1[1] == p2[1]
+func (p Property) Equals(p1 Property) bool {
+	return p[0] == p1[0] && p[1] == p1[1]
 }
 
 // IdentifyProperty returns a Property correspondent to the "space" and "name" byte values.
