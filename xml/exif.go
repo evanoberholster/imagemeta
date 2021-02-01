@@ -14,34 +14,25 @@ type XMPFlash struct {
 	Fired      bool
 	Mode       uint8
 	RedEyeMode bool
+	Function   bool
 	Return     uint8
 }
 
-func (xmpFlash *XMPFlash) read(t Tag) (err error) {
-	var attr Attribute
-	if t.t == SoloTag {
-		for t.nextAttr() {
-			attr, _ = t.attr()
-			switch attr.Name() {
-			case xmpns.Fired:
-				xmpFlash.Fired = parseBool(attr.value)
-			case xmpns.Return:
-				xmpFlash.Return = uint8(parseUint32(string(attr.value)))
-			case xmpns.Mode:
-				xmpFlash.Mode = uint8(parseUint32(string(attr.value)))
-			case xmpns.Function:
-				//xmpFlash.Function = parseBool(attr.value)
-			case xmpns.RedEyeMode:
-				xmpFlash.RedEyeMode = parseBool(attr.value)
-			default:
-			}
-			_ = attr
-			//fmt.Println(attr)
-		}
-	} else if t.t == StartTag {
-
+func (xmpFlash *XMPFlash) parse(p property) (err error) {
+	switch p.Name() {
+	case xmpns.Fired:
+		xmpFlash.Fired = parseBool(p.val)
+	case xmpns.Return:
+		xmpFlash.Return = uint8(parseUint(p.val))
+	case xmpns.Mode:
+		xmpFlash.Mode = uint8(parseUint(p.val))
+	case xmpns.Function:
+		xmpFlash.Function = parseBool(p.val)
+	case xmpns.RedEyeMode:
+		xmpFlash.RedEyeMode = parseBool(p.val)
+	default:
+		return ErrPropertyNotSet
 	}
-
 	return
 }
 
@@ -63,20 +54,23 @@ type Exif struct {
 	Flash             XMPFlash
 }
 
-func (exif *Exif) decodeElement(decoder *xml.Decoder, start *xml.StartElement) {
-	switch start.Name.Local {
-	case "ISOSpeedRatings":
-		arr := decodeRDF(decoder, start)
-		if len(arr) > 0 {
-			exif.ISOSpeedRatings = parseUint32(arr[len(arr)-1])
-		}
-	// TODO: Add support for flash
-	//case "Flash":
-	default:
-		if DebugMode {
-			fmt.Println("My Name is: ", start.Name.Local)
-		}
+func (exif *Exif) decode(tag Tag) (err error) {
+	if tag.parent.Name() == xmpns.Flash {
+		return exif.Flash.parse(tag.property)
 	}
+	switch tag.Name() {
+	case xmpns.ISOSpeedRatings:
+		exif.ISOSpeedRatings = uint32(parseUint(tag.val))
+	case xmpns.Flash:
+		var attr Attribute
+		for tag.nextAttr() {
+			attr, _ = tag.attr()
+			exif.Flash.parse(attr.property)
+		}
+	default:
+		return ErrPropertyNotSet
+	}
+	return
 }
 
 func (exif *Exif) decodeAttr(attr xml.Attr) (err error) {
@@ -109,14 +103,20 @@ type Aux struct {
 	Firmware                 string
 }
 
-func (aux *Aux) decodeAttr(attr xml.Attr) (err error) {
-	switch attr.Name.Local {
-	case "SerialNumber":
-		aux.SerialNumber = attr.Value
-	case "Lens":
-		aux.Lens = attr.Value
+func (aux *Aux) decode(p property) (err error) {
+	switch p.Name() {
+	case xmpns.SerialNumber:
+		aux.SerialNumber = parseString(p.val)
+	case xmpns.Lens:
+		aux.Lens = parseString(p.val)
+	case xmpns.LensInfo:
+		aux.LensInfo = parseString(p.val)
+	case xmpns.LensID:
+		aux.LensID = uint32(parseUint(p.val))
+	case xmpns.LensSerialNumber:
+		aux.LensSerialNumber = parseString(p.val)
 	default:
-		err = fmt.Errorf("unknown: %s: %s", attr.Name, attr.Value)
+		return ErrPropertyNotSet
 	}
-	return err
+	return
 }

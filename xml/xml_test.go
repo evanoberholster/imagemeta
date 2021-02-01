@@ -9,6 +9,8 @@ var (
 	dir = "test/samples/CanonEOS7DII.xmp"
 )
 
+// BenchmarkXMPRead200 	   27654	     45272 ns/op	    6784 B/op	      16 allocs/op
+// BenchmarkXMPRead200 	   28819	     42524 ns/op	    6368 B/op	       8 allocs/op
 // BenchmarkXMPRead200 	   28201	     42819 ns/op	    6240 B/op	       2 allocs/op
 // BenchmarkXMPRead200 	   33976	     34644 ns/op	    6240 B/op	       2 allocs/op
 

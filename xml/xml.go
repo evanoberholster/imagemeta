@@ -14,11 +14,11 @@ var xmpRootTag = [10]byte{60, 120, 58, 120, 109, 112, 109, 101, 116, 97}
 
 const (
 	newLine      byte = 10   // "\n"
-	colon        byte = 58   // ":"
-	startTag     byte = 60   // "<"
-	equals       byte = 61   // "="
-	endTag       byte = 62   // ">"
-	space        byte = 0x20 // " "
+	markerCo     byte = 58   // ":"
+	markerLt     byte = 60   // "<"
+	markerEq     byte = 61   // "="
+	markerGt     byte = 62   // ">"
+	markerSp     byte = 0x20 // " "
 	quotesAlt    byte = 0x27 // "'"
 	quotes       byte = 0x22 // """
 	forwardSlash byte = 0x2f // "/"
@@ -50,6 +50,8 @@ func Read(r io.Reader) (XMP, error) {
 
 	return xmp, err
 }
+
+// Needs optimization
 func (xmp *XMP) readRootTag() (discarded uint, err error) {
 	var buf []byte
 	for {
@@ -59,60 +61,114 @@ func (xmp *XMP) readRootTag() (discarded uint, err error) {
 			}
 			return
 		}
-		//if buf[0] == xmpRootTag[0] {
-		//
-		//}
-		if bytes.EqualFold(xmpRootTag[:], buf) {
-			// Read until end of the StartTag (RootTag)
-			_, err = readUntilByte(xmp.br, endTag)
-			return
+		if buf[0] == xmpRootTag[0] {
+			if bytes.EqualFold(xmpRootTag[:], buf) {
+				// Read until end of the StartTag (RootTag)
+				_, err = readUntilByte(xmp.br, markerGt)
+				return
+			}
 		}
 		discarded++
 		xmp.br.Discard(1)
 	}
 }
 
-func (xmp *XMP) decodeSeq(property xmpns.Property, val []byte) (err error) {
-
-	switch property.Name() {
-	case xmpns.ISOSpeedRatings:
-		xmp.Exif.ISOSpeedRatings = uint32(parseUint(val))
-	case xmpns.Creator:
-		xmp.DC.Creator = append(xmp.DC.Creator, string(val))
-	case xmpns.Rights:
-		xmp.DC.Rights = append(xmp.DC.Rights, string(val))
-	case xmpns.Title:
-		xmp.DC.Title = append(xmp.DC.Rights, string(val))
+func (xmp *XMP) decodeTag(tag Tag) (err error) {
+	switch tag.Namespace() {
+	case xmpns.AuxNS:
+		return xmp.Aux.decode(tag.property)
+	case xmpns.ExifNS:
+		return xmp.Exif.decode(tag)
+	case xmpns.TiffNS:
+		return xmp.Tiff.decode(tag.self, tag.val)
+	case xmpns.XmpNS:
+		return xmp.Basic.decode(tag.property)
+	case xmpns.DcNS:
+		return xmp.DC.decode(tag.property)
+	case xmpns.RdfNS:
+		switch tag.Name() {
+		case xmpns.Description:
+			// decode Attributes
+			var attr Attribute
+			for tag.nextAttr() {
+				attr, err = tag.attr()
+				if err := xmp.decodeAttr(attr); err != nil {
+					if err == ErrPropertyNotSet && DebugMode {
+						fmt.Println("Attr NotSet:", attr)
+					}
+				}
+			}
+			return nil
+		}
+	default:
+		return ErrPropertyNotSet
 	}
-	//fmt.Println("Seq:", string(val))
 	return
+}
+
+func (xmp *XMP) decodeAttr(attr Attribute) (err error) {
+	switch attr.Namespace() {
+	case xmpns.XMLnsNS, xmpns.RdfNS:
+		// Null operation
+		return
+	case xmpns.DcNS:
+		return xmp.DC.decode(attr.property)
+	case xmpns.AuxNS:
+		return xmp.Aux.decode(attr.property)
+	case xmpns.XmpNS:
+		return xmp.Basic.decode(attr.property)
+	case xmpns.TiffNS:
+		return xmp.Tiff.decode(attr.self, attr.val)
+	}
+	return ErrPropertyNotSet
+}
+
+func (xmp *XMP) decodeSeq(p property) (err error) {
+	switch p.Namespace() {
+	case xmpns.CrsNS:
+		return xmp.CRS.decode(p)
+	case xmpns.DcNS:
+		return xmp.DC.decode(p)
+	case xmpns.ExifNS:
+		switch p.Name() {
+		case xmpns.ISOSpeedRatings: // Needs fixing
+			xmp.Exif.ISOSpeedRatings = uint32(parseUint(p.val))
+			return
+		}
+	}
+	return ErrPropertyNotSet
 }
 
 func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 	var err error
-	if (tag.self.Equals(xmpns.RDFSeq) || tag.self.Equals(xmpns.RDFAlt)) && tag.TagType() == StartTag {
+	if tag.isStartTag() && (tag.Is(xmpns.RDFSeq) || tag.Is(xmpns.RDFAlt)) {
 		//fmt.Println(tag.parent)
 		// Read till end of sequence
 		var child Tag
 		for {
 			// Start Tag
-			if child, err = xmp.decodeTag(tag.parent); err != nil {
+			if child, err = xmp.readTagHeader(tag.parent); err != nil {
 				return Tag{}, err
 			}
-			if child.t == SoloTag {
+			if !child.isStopTag() {
 				// read Attributes
-			}
-			if child.t == StartTag {
-				if err = child.readVal(xmp.br); err != nil {
-					return tag, err
+				var attr Attribute
+				for child.nextAttr() {
+					attr, _ = child.attr()
+					attr.SetParent(tag.parent)
+					xmp.decodeAttr(attr)
 				}
+			}
+			if child.isStartTag() {
 				// ISOSpeed
-				if err = xmp.decodeSeq(tag.parent, child.val); err != nil {
-					fmt.Println(err)
+				if err = xmp.decodeSeq(property{self: tag.parent, val: child.val}); err != nil {
+					if err == ErrPropertyNotSet && DebugMode {
+						fmt.Println("Seq NotSet:", tag.Parent(), string(child.val))
+					}
 				}
 				continue
 			}
-			if child.isEndTag(xmpns.RDFSeq) || child.isEndTag(xmpns.RDFAlt) {
+			if child.isStopTag() && child.Is(tag.self) {
 				//fmt.Println(tag)
 				return tag, nil
 			}
@@ -122,7 +178,8 @@ func (xmp *XMP) readRdfSeq(tag Tag) (Tag, error) {
 }
 
 func (xmp *XMP) readTag(parent xmpns.Property) (Tag, error) {
-	t, err := xmp.decodeTag(parent)
+	// Read Tag Header
+	tag, err := xmp.readTagHeader(parent)
 	if err != nil {
 		if err != io.EOF {
 			fmt.Println("Error Here", err)
@@ -130,120 +187,78 @@ func (xmp *XMP) readTag(parent xmpns.Property) (Tag, error) {
 		return Tag{}, err
 	}
 
-	var attr Attribute
-	for t.nextAttr() {
-		attr, _ = t.attr()
-		_ = attr
-		//fmt.Println(attr)
+	if tag.isStopTag() {
+		return tag, nil
 	}
 
-	if err = t.readVal(xmp.br); err != nil {
-		return t, err
+	// DebugMode
+	if DebugMode == true {
+		fmt.Println(tag)
 	}
 
-	//fmt.Println(t)
+	// Process Tag
+	if err := xmp.decodeTag(tag); err != nil {
+		if err != ErrPropertyNotSet {
+			return tag, err
+		}
+		if DebugMode {
+			fmt.Println("Tag NotSet:", tag)
+		}
+	}
 
-	// read Next Tag
-	// if tag is start Tag, read next tag
-	if t.TagType() == StartTag {
-		switch {
-		case t.isRDFSeq(), t.isRDFAlt():
-			return xmp.readRdfSeq(t)
-		default:
-			var child Tag
-			for {
-				if child, err = xmp.readTag(t.self); err != nil {
-					fmt.Println("Tags here", err)
-					break
-				}
-				if child.isEndTag(t.self) {
-					break
-				}
+	// Process Sequential Tags
+	if tag.Namespace() == xmpns.RdfNS {
+		if tag.Is(xmpns.RDFSeq) || tag.Is(xmpns.RDFAlt) {
+			return xmp.readRdfSeq(tag)
+		}
+	}
+
+	// Process Child tags
+	if tag.isStartTag() {
+		var child Tag
+		for {
+			if child, err = xmp.readTag(tag.self); err != nil {
+				return tag, err
+			}
+			if child.isEndTag(tag.self) {
+				break
 			}
 		}
 	}
-	//if t.TagType() != StopTag {
-	//xmp.readTag(br, t)
-	//}
-
-	return t, err
+	return tag, err
 }
 
-func (xmp *XMP) setValue(t Tag, attr Attribute) {
-	//if t.ns == xmlname.Rdf {
-	//	switch t.name {
-	//	case xmlname.Description:
-	//		xmp.setDescription(attr)
-	//	default:
-	//		return
-	//	}
-	//}
-}
-
-func (xmp *XMP) setDescription(attr Attribute) {
-	if attr.Namespace() == xmpns.Tiff {
-		switch attr.Name() {
-		case xmpns.Make:
-			xmp.Tiff.Make = string(attr.value)
-		case xmpns.Model:
-			xmp.Tiff.Model = string(attr.value)
-		case xmpns.Orientation:
-			//xmp.Tiff.Orientation = attr.parseUint8()
-		case xmpns.ImageWidth:
-			//xmp.Tiff.ImageWidth = attr.parseUint16()
-		case xmpns.ImageLength:
-			//xmp.Tiff.ImageLength = attr.parseUint16()
-		default:
-			fmt.Println("Not supported:", attr)
-		}
-	}
-}
-
-func (xmp *XMP) decodeTag(p xmpns.Property) (t Tag, err error) {
-	t.parent = p
-	if _, err = xmp.br.ReadSlice(startTag); err != nil {
+func (xmp *XMP) readTagHeader(parent xmpns.Property) (t Tag, err error) {
+	t.SetParent(parent)
+	if _, err = xmp.br.ReadSlice(markerLt); err != nil {
 		return
 	}
 
-	if t.raw, err = xmp.br.ReadSlice(endTag); err != nil {
+	if t.raw, err = xmp.br.ReadSlice(markerGt); err != nil {
 		return
 	}
 
 	// StopTag
 	if t.raw[0] == forwardSlash {
-		t.t = StopTag     // set type StopTag
+		t.t = stopTag     // set type StopTag
 		t.raw = t.raw[1:] // remove forward slash
 
+		// Read Namespace
 		t.readNamespace()
 		return
 	}
 
 	// StartTag or Solo Tag
 	if t.raw[len(t.raw)-2] == forwardSlash {
-		t.t = SoloTag // set type SoloTag
+		t.t = soloTag // set type SoloTag
 	} else {
-		t.t = StartTag
+		t.t = startTag
 	}
 
 	// Read Namespace
 	t.readNamespace()
-	return
-}
 
-func (xmp *XMP) handleTag(t Tag) {
-	//switch t.name {
-	//case xmlname.Flash:
-	//	//xmp.Exif.Flash.read(t)
-	//	//fmt.Println(t)
-	//	// Read Flash
-	//default:
-	//	// if seg, bag, or alt
-	//	// read Attributes
-	//	var attr Attribute
-	//	for t.nextAttr() {
-	//		attr, _ = t.attr()
-	//		_ = attr
-	//		//fmt.Println(attr)
-	//	}
-	//}
+	// Read Tag Value
+	err = t.readVal(xmp.br)
+	return
 }

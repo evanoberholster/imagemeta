@@ -1,8 +1,7 @@
 package xml
 
 import (
-	"encoding/xml"
-	"fmt"
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
 // Tiff attributes of an XMP Packet.
@@ -19,6 +18,24 @@ type Tiff struct {
 	Orientation      uint8
 }
 
+func (t *Tiff) decode(p xmpns.Property, val []byte) error {
+	switch p.Name() {
+	case xmpns.Make:
+		t.Make = parseString(val)
+	case xmpns.Model:
+		t.Model = parseString(val)
+	case xmpns.ImageWidth:
+		t.ImageWidth = uint16(parseUint(val))
+	case xmpns.ImageLength:
+		t.ImageLength = uint16(parseUint(val))
+	case xmpns.Orientation:
+		t.Orientation = uint8(parseUint(val))
+	default:
+		return ErrPropertyNotSet
+	}
+	return nil
+}
+
 // Orientation represents image orientation
 type Orientation uint8
 
@@ -30,20 +47,3 @@ type Orientation uint8
 //6 = Rotate 90 CW
 //7 = Mirror horizontal and rotate 90 CW
 //8 = Rotate 270 CW
-
-// CRS is Camera Raw Settings. Photoshop Camera Raw namespace tags.
-//	 xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
-// This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#crs
-type CRS struct {
-	RawFileName string
-}
-
-func (crs *CRS) decodeAttr(attr xml.Attr) (err error) {
-	switch attr.Name.Local {
-	case "RawFileName":
-		crs.RawFileName = attr.Value
-	default:
-		err = fmt.Errorf("unknown: %s: %s", attr.Name, attr.Value)
-	}
-	return err
-}

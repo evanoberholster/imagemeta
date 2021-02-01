@@ -15,37 +15,27 @@ package xml
 // under the License.
 
 import (
-	"encoding/xml"
 	"time"
+
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
-func (dc *DublinCore) decodeAttr(attr xml.Attr) (err error) {
-	switch attr.Name.Local {
-	case "format":
-		dc.Format = attr.Value
-	default:
-		//fmt.Printf("unknown DC: %s: %s", attr.Name, attr.Value)
-		//err = fmt.Errorf("unknown DC: %s: %s", attr.Name, attr.Value)
+func (dc *DublinCore) decode(p property) (err error) {
+	switch p.Name() {
+	case xmpns.Format:
+		//fmt.Println("Format: ", p.val)
+	case xmpns.Creator:
+		dc.Creator = append(dc.Creator, parseString(p.val))
+	case xmpns.Rights:
+		dc.Rights = append(dc.Rights, parseString(p.val))
+	case xmpns.Title:
+		dc.Title = append(dc.Rights, parseString(p.val))
+		// Rights
+		// Subject
+		// Contributor
+		// Description
 	}
-	return err
-}
-
-func (dc *DublinCore) decode(decoder *xml.Decoder, start *xml.StartElement) (err error) {
-	switch start.Name.Local {
-	case "creator":
-		dc.Creator = decodeRDF(decoder, start)
-	case "rights":
-		dc.Rights = decodeRDF(decoder, start)
-	case "subject":
-		dc.Subject = decodeRDF(decoder, start)
-	case "contributor":
-		dc.Contributor = decodeRDF(decoder, start)
-	case "description":
-		dc.Description = decodeRDF(decoder, start)
-	case "title":
-		dc.Title = decodeRDF(decoder, start)
-	}
-	return err
+	return nil
 }
 
 // DublinCore is the "dc:" namespace often seen in xmp meta.

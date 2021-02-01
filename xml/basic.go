@@ -1,69 +1,32 @@
 package xml
 
 import (
-	"encoding/xml"
-	"fmt"
-	"strconv"
 	"time"
+
+	"github.com/evanoberholster/image-meta/xml/xmpns"
 )
 
-type namespace interface {
-	decodeAttr(attr xml.Attr) (err error)
-}
-
-func (xmp *XMP) decodeNS(ns namespace, attr xml.Attr) {
-	if err := ns.decodeAttr(attr); err != nil {
-		// log error if debug
-		if DebugMode {
-			fmt.Println(err)
-		}
-	}
-}
-
-// XMPDescription -
-func (xmp *XMP) XMPDescription(decoder *xml.Decoder, start *xml.StartElement) {
-	for _, i := range start.Attr {
-		switch i.Name.Space {
-		case "aux":
-			xmp.decodeNS(&xmp.Aux, i)
-		case "exif":
-			xmp.decodeNS(&xmp.Exif, i)
-		case "tiff":
-			//xmp.decodeNS(&xmp.Tiff, i)
-		case "xmp":
-			xmp.decodeNS(&xmp.Basic, i)
-		case "dc":
-			xmp.decodeNS(&xmp.DC, i)
-		case "crs":
-			xmp.decodeNS(&xmp.CRS, i)
-		default:
-			if DebugMode {
-				fmt.Println("Unsupported: ", i.Name, i.Value)
-			}
-		}
-	}
-}
-
-func (basic *Basic) decodeAttr(attr xml.Attr) (err error) {
-	switch attr.Name.Local {
-	case "CreateDate":
-		basic.CreateDate, err = parseDate(attr.Value)
-	case "CreatorTool":
-		basic.CreatorTool = attr.Value
-	case "Label":
-		basic.Label = attr.Value
-	case "MetadataDate":
-		basic.MetadataDate, err = parseDate(attr.Value)
-	case "ModifyDate":
-		basic.ModifyDate, err = parseDate(attr.Value)
-	case "Rating":
-		var r float64
-		r, err = strconv.ParseFloat(attr.Value, 32)
-		basic.Rating = float32(r)
+func (basic *Basic) decode(p property) (err error) {
+	switch p.Name() {
+	case xmpns.CreateDate:
+		basic.CreateDate, err = parseDate(p.val)
+	case xmpns.CreatorTool:
+		//fmt.Println("Creator Tool: ", p)
+		basic.CreatorTool = parseString(p.val)
+	case xmpns.Label:
+		basic.Label = parseString(p.val)
+		//fmt.Println("Label: ", p)
+		//basic.Label = attr.Value
+	case xmpns.MetadataDate:
+		basic.MetadataDate, err = parseDate(p.val)
+	case xmpns.ModifyDate:
+		basic.ModifyDate, err = parseDate(p.val)
+	case xmpns.Rating:
+		basic.Rating = float32(parseUint(p.val))
 	default:
-		err = fmt.Errorf("unknown: %s: %s", attr.Name, attr.Value)
+		return ErrPropertyNotSet
 	}
-	return err
+	return
 }
 
 // Basic - the XMP basic namespace contains properties that provide basic descriptive information.

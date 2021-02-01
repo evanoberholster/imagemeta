@@ -34,6 +34,7 @@ const (
 	Contrast
 	CreateDate
 	Creator
+	CreatorTool
 	CustomRendered
 	DateCreated
 	DateTimeDigitized
@@ -74,6 +75,7 @@ const (
 	InstanceID
 	InteroperabilityIndex
 	ISOSpeedRatings
+	Label
 	Lang
 	LegacyIPTCDigest
 	Lens
@@ -148,6 +150,7 @@ var mapNameString = map[Name]string{
 	Contrast:                 "Contrast",
 	CreateDate:               "CreateDate",
 	Creator:                  "creator",
+	CreatorTool:              "CreatorTool",
 	CustomRendered:           "CustomRendered",
 	DateCreated:              "DateCreated",
 	DateTimeDigitized:        "DateTimeDigitized",
@@ -188,6 +191,7 @@ var mapNameString = map[Name]string{
 	InstanceID:               "InstanceID",
 	InteroperabilityIndex:    "InteroperabilityIndex",
 	ISOSpeedRatings:          "ISOSpeedRatings",
+	Label:                    "Label",
 	Lang:                     "lang",
 	LegacyIPTCDigest:         "LegacyIPTCDigest",
 	Lens:                     "Lens",
@@ -261,6 +265,7 @@ var mapStringName = map[string]Name{
 	"Contrast":                 Contrast,
 	"CreateDate":               CreateDate,
 	"creator":                  Creator,
+	"CreatorTool":              CreatorTool,
 	"CustomRendered":           CustomRendered,
 	"DateCreated":              DateCreated,
 	"DateTimeDigitized":        DateTimeDigitized,
@@ -301,6 +306,7 @@ var mapStringName = map[string]Name{
 	"InstanceID":               InstanceID,
 	"InteroperabilityIndex":    InteroperabilityIndex,
 	"ISOSpeedRatings":          ISOSpeedRatings,
+	"Label":                    Label,
 	"lang":                     Lang,
 	"LegacyIPTCDigest":         LegacyIPTCDigest,
 	"Lens":                     Lens,

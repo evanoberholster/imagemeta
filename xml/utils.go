@@ -3,7 +3,6 @@ package xml
 import (
 	"bufio"
 	"bytes"
-	"encoding/xml"
 	"strconv"
 	"time"
 )
@@ -24,38 +23,16 @@ func readUntilByte(br *bufio.Reader, end byte) (n int, err error) {
 
 func readUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
 	for i := 0; i < len(buf); i++ {
-		if buf[i] == delimiter || buf[i] == endTag {
+		if buf[i] == delimiter || buf[i] == markerGt {
 			return buf[:i], buf[i+1:]
 		}
 	}
 	return nil, nil
 }
 
-func decodeRDF(decoder *xml.Decoder, start *xml.StartElement) (strs []string) {
-	var t xml.Token
-	var err error
-ReadLbl:
-	if t, err = decoder.RawToken(); err != nil {
-		panic(err)
-	}
-	switch x := t.(type) {
-	case xml.StartElement:
-		goto ReadLbl
-	case xml.EndElement:
-		if x.Name != start.Name {
-			goto ReadLbl
-		}
-	case xml.CharData:
-		if x[0] == 10 || x[0] == 32 {
-			goto ReadLbl
-		}
-		strs = append(strs, string(x))
-		goto ReadLbl
-	}
-	return strs
-}
-
-func parseDate(str string) (t time.Time, err error) {
+// parseDate
+func parseDate(buf []byte) (t time.Time, err error) {
+	str := string(buf)
 	if t, err = time.Parse("2006-01-02T15:04:05Z07:00", str); err != nil {
 		if t, err = time.Parse("2006-01-02T15:04:05.00", str); err != nil {
 			t, err = time.Parse("2006-01-02T15:04:05", str)
@@ -81,6 +58,12 @@ func parseUint(buf []byte) (u uint64) {
 	return
 }
 
+// parseBool
 func parseBool(buf []byte) bool {
 	return bytes.EqualFold(buf, []byte("True"))
+}
+
+// parseString parses a []byte and returns a string
+func parseString(buf []byte) string {
+	return string(buf)
 }
