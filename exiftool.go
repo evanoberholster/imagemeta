@@ -1,4 +1,4 @@
-// Package exiftool provides functions for scanning for Exif Information and extracting it
+// Package imagemeta provides functions for scanning for Exif Information and extracting it
 package imagemeta
 
 import (
