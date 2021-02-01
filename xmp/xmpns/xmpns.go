@@ -18,25 +18,45 @@ func IdentifyNamespace(buf []byte) (n Namespace) {
 
 // XML Namespaces supported
 const (
-	UnknownNS   Namespace = iota
-	AuxNS                 // xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
-	CrsNS                 // xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
-	DarktableNS           // xmlns:darktable="http://darktable.sf.net/
-	DcNS                  // xmlns:dc="http://purl.org/dc/elements/1.1/"
-	ExifNS                // xmlns:exif="http://ns.adobe.com/exif/1.0/"
-	ExifEXNS              // xmlns:exifEX="http://cipa.jp/exif/1.0/"
-	LrNS                  // xmlns:lr="http://ns.adobe.com/lightroom/1.0/"
-	PhotoshopNS           // xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
-	PmiNS                 // xmlns:pmi='http://prismstandard.org/namespaces/pmi/2.2/'
-	RdfNS                 // xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	StEvtNS               // xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
-	StRefNS               // xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
-	TiffNS                // xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
-	XNS                   // xmlns:x="adobe:ns:meta/"
+	UnknownNS Namespace = iota
+	// xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
+	AuxNS
+	// xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+	CrsNS
+	// xmlns:darktable="http://darktable.sf.net/"
+	DarktableNS
+	// xmlns:dc="http://purl.org/dc/elements/1.1/"
+	DcNS
+	// xmlns:exif="http://ns.adobe.com/exif/1.0/"
+	ExifNS
+	// xmlns:exifEX="http://cipa.jp/exif/1.0/"
+	ExifEXNS
+	// xmlns:lr="http://ns.adobe.com/lightroom/1.0/"
+	LrNS
+	// xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+	PhotoshopNS
+	// xmlns:pmi="http://prismstandard.org/namespaces/pmi/2.2/"
+	PmiNS
+	// xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	RdfNS
+	// xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
+	StEvtNS
+	// xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
+	StRefNS
+	// xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+	TiffNS
+	// xmlns:x="adobe:ns:meta/"
+	XNS
+	// xmlns:xap="http://ns.adobe.com/xap/1.0/"
+	XapNS
+	// xmlns:xapMM="http://ns.adobe.com/xap/1.0/mm/"
+	XapMMNS
 	XMLNS
 	XMLnsNS
-	XmpNS   // xmlns:xmp="http://ns.adobe.com/xap/1.0/"
-	XmpMMNS // xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
+	// xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+	XmpNS
+	// xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
+	XmpMMNS
 )
 
 var mapStringNS = map[string]Namespace{
@@ -55,6 +75,8 @@ var mapStringNS = map[string]Namespace{
 	"stRef":     StRefNS,
 	"tiff":      TiffNS,
 	"x":         XNS,
+	"xap":       XapNS,
+	"xapMM":     XapMMNS,
 	"xml":       XMLNS,
 	"xmlns":     XMLnsNS,
 	"xmp":       XmpNS,
@@ -77,6 +99,8 @@ var mapNSString = map[Namespace]string{
 	StRefNS:     "stRef",
 	TiffNS:      "tiff",
 	XNS:         "x",
+	XapNS:       "xap",
+	XapMMNS:     "xapMM",
 	XMLNS:       "xml",
 	XMLnsNS:     "xmlns",
 	XmpNS:       "xmp",

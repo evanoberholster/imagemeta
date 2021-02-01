@@ -82,9 +82,9 @@ func (xmp *XMP) decodeTag(tag Tag) (err error) {
 	case xmpns.DcNS:
 		return xmp.DC.decode(tag.property)
 	case xmpns.ExifNS:
-		return xmp.Exif.decode(tag)
+		return xmp.Exif.decodeTag(tag)
 	case xmpns.TiffNS:
-		return xmp.Tiff.decode(tag.self, tag.val)
+		return xmp.Tiff.decode(tag.property)
 	case xmpns.XmpNS:
 		return xmp.Basic.decode(tag.property)
 	case xmpns.RdfNS:
@@ -113,16 +113,20 @@ func (xmp *XMP) decodeAttr(attr Attribute) (err error) {
 	case xmpns.XMLnsNS, xmpns.RdfNS:
 		// Null operation
 		return
+	case xmpns.AuxNS:
+		return xmp.Aux.decode(attr.property)
 	case xmpns.CrsNS:
 		return xmp.CRS.decode(attr.property)
 	case xmpns.DcNS:
 		return xmp.DC.decode(attr.property)
-	case xmpns.AuxNS:
-		return xmp.Aux.decode(attr.property)
-	case xmpns.XmpNS:
+	case xmpns.ExifNS:
+		return xmp.Exif.decode(attr.property)
+	case xmpns.XmpNS, xmpns.XapNS:
 		return xmp.Basic.decode(attr.property)
+	case xmpns.XmpMMNS, xmpns.XapMMNS:
+		return xmp.MM.decode(attr.property)
 	case xmpns.TiffNS:
-		return xmp.Tiff.decode(attr.self, attr.val)
+		return xmp.Tiff.decode(attr.property)
 	}
 	return ErrPropertyNotSet
 }

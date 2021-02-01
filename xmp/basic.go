@@ -4,7 +4,16 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	uuid "github.com/satori/go.uuid"
 )
+
+// UUID is a [16]byte Universally Unique Identifier (UUID).
+// Based on github.com/satori/go.uuid
+type UUID uuid.UUID
+
+func (u UUID) String() string {
+	return uuid.UUID(u).String()
+}
 
 func (basic *Basic) decode(p property) (err error) {
 	switch p.Name() {
@@ -20,6 +29,20 @@ func (basic *Basic) decode(p property) (err error) {
 		basic.ModifyDate, err = parseDate(p.val)
 	case xmpns.Rating:
 		basic.Rating = int8(parseInt(p.val))
+	default:
+		return ErrPropertyNotSet
+	}
+	return
+}
+
+func (mm *XMPMM) decode(p property) (err error) {
+	switch p.Name() {
+	case xmpns.DocumentID:
+		mm.DocumentID, _ = parseUUID(p.val)
+	case xmpns.OriginalDocumentID:
+		mm.OriginalDocumentID, _ = parseUUID(p.val)
+	case xmpns.InstanceID:
+		mm.InstanceID, _ = parseUUID(p.val)
 	default:
 		return ErrPropertyNotSet
 	}
@@ -53,20 +76,17 @@ type Basic struct {
 // XMPMM - The XMP Media Management namespace contains properties that provide information
 // regarding the identification, composition, and history of a resource.
 // XMP spec Section 8.6
+// Incomplete
 type XMPMM struct {
-	// DerivedFrom is a reference to the resource from which this was derived.
-	// This should be a minimal reference, in which missing components can be
-	// assumed to be unchanged.
-	DerivedFrom string
 	// DocumentId is the common identifier for all versions and renditions of a resource.
-	DocumentID string
+	DocumentID UUID
 	// InstanceId is an identifier for a specific incarnation of a resource,
 	// updated each time a file is saved.
-	InstanceID string
+	InstanceID UUID
 	// OriginalDocumentId is the common identifier for the original resource from which the current
 	// resource is derived. For example, if you save a resource to a different format,
 	// then save that one to another format, each save operation should generate a new
 	// xmpMM:DocumentID that uniquely identifies the resource in that format,
 	// but should retain the ID of the source file here.
-	OriginalDocumentID string
+	OriginalDocumentID UUID
 }
