@@ -1,8 +1,6 @@
 package xmp
 
 import (
-	"encoding/xml"
-	"fmt"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
@@ -71,22 +69,6 @@ func (exif *Exif) decode(tag Tag) (err error) {
 		return ErrPropertyNotSet
 	}
 	return
-}
-
-func (exif *Exif) decodeAttr(attr xml.Attr) (err error) {
-	switch attr.Name.Local {
-	case "ExifVersion":
-		exif.ExifVersion = attr.Value
-	case "PixelXDimension":
-		exif.PixelXDimension = parseUint32(attr.Value)
-	case "PixelYDimension":
-		exif.PixelYDimension = parseUint32(attr.Value)
-	case "ExposureMode":
-		exif.ExposureMode = uint8(parseUint32(attr.Value))
-	default:
-		err = fmt.Errorf("unknown: %s: %s", attr.Name, attr.Value)
-	}
-	return err
 }
 
 // Aux attributes of an XMP Packet. These are Adobe-defined auxiliary EXIF tags.

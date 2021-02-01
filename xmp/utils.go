@@ -3,7 +3,6 @@ package xmp
 import (
 	"bufio"
 	"bytes"
-	"strconv"
 	"time"
 )
 
@@ -41,13 +40,13 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	return
 }
 
-func parseUint32(s string) uint32 {
-	u64, err := strconv.ParseUint(s, 10, 32)
-	if err != nil {
-		return 0
-	}
-	return uint32(u64)
-}
+//func parseUint32(s string) uint32 {
+//	u64, err := strconv.ParseUint(s, 10, 32)
+//	if err != nil {
+//		return 0
+//	}
+//	return uint32(u64)
+//}
 
 // parseUint parses a []byte of a string representation of a uint64 value and returns the value.
 func parseUint(buf []byte) (u uint64) {

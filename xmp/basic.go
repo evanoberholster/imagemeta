@@ -70,17 +70,17 @@ type XMPMM struct {
 	// TODO - this is actually a "ResourceRef" type
 	DerivedFrom string
 	// DocumentId is the common identifier for all versions and renditions of a resource.
-	DocumentId string
+	DocumentID string
 	// InstanceId is an identifier for a specific incarnation of a resource,
 	// updated each time a file is saved.
 	// TODO - this is actually a GUID type
-	InstanceId string
+	InstanceID string
 	// OriginalDocumentId is the common identifier for the original resource from which the current
 	// resource is derived. For example, if you save a resource to a different format,
 	// then save that one to another format, each save operation should generate a new
 	// xmpMM:DocumentID that uniquely identifies the resource in that format,
 	// but should retain the ID of the source file here.
-	OriginalDocumentId string
+	OriginalDocumentID string
 	// The rendition class name for this resource. This property should be absent or
 	// set to 'default' for a resource that is not a derived rendition.
 	// See definitions of rendition (3.7) and version (3.9).

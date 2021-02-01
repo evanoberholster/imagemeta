@@ -163,7 +163,6 @@ func (t *Tag) readVal(br *bufio.Reader) (err error) {
 // Attribute -
 type Attribute struct {
 	property
-	raw []byte
 }
 
 func (attr Attribute) String() string {
@@ -172,22 +171,6 @@ func (attr Attribute) String() string {
 
 // Tags
 // ---------------------------------------------------
-
-func (t Tag) isRDFSeq() bool {
-	return t.self.Equals(xmpns.RDFSeq)
-}
-
-func (t Tag) isRDFAlt() bool {
-	return t.self.Equals(xmpns.RDFAlt)
-}
-
-func (t Tag) isRDFLi() bool {
-	return t.self.Equals(xmpns.RDFLi)
-}
-
-func (t Tag) isSoloTag() bool {
-	return t.t == soloTag
-}
 
 func (t Tag) isStartTag() bool {
 	return t.t == startTag
@@ -229,6 +212,6 @@ var mapTagTypeString = map[tagType]string{
 
 // tagType returns the Tag's type.
 // Either startTag, soloTag or stopTag.
-func (t Tag) tagType() tagType {
-	return t.t
-}
+//func (t Tag) tagType() tagType {
+//	return t.t
+//}

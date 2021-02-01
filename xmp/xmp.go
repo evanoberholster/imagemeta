@@ -1,3 +1,4 @@
+// Package xmp provides functions for decoding .xmp sidecar files
 package xmp
 
 import "bufio"

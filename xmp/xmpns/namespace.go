@@ -1,3 +1,4 @@
+// Package xmpns provides XMP Namespace information
 package xmpns
 
 import "fmt"

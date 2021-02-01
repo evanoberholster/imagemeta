@@ -91,7 +91,7 @@ func (xmp *XMP) decodeTag(tag Tag) (err error) {
 			// decode Attributes
 			var attr Attribute
 			for tag.nextAttr() {
-				attr, err = tag.attr()
+				attr, _ = tag.attr()
 				if err := xmp.decodeAttr(attr); err != nil {
 					if err == ErrPropertyNotSet && DebugMode {
 						fmt.Println("Attr NotSet:", attr)
@@ -192,7 +192,7 @@ func (xmp *XMP) readTag(parent xmpns.Property) (Tag, error) {
 	}
 
 	// DebugMode
-	if DebugMode == true {
+	if DebugMode {
 		fmt.Println(tag)
 	}
 
