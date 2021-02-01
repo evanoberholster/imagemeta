@@ -31,13 +31,6 @@ jobs:
       
       - name: Test coverage
         run: go test -v -coverprofile=profile.cov ./...
-        
-      - name: Send coverage
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
           
       - name: Test
         run: go test ./...
@@ -55,6 +48,13 @@ jobs:
 
       - name: Test build
         run: go build .
+     
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go }}
+          parallel: true
         
   # notifies that all test jobs are finished.
   finish:
