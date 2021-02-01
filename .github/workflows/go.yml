@@ -32,9 +32,6 @@ jobs:
       - name: Test coverage
         run: go test -v -coverprofile=profile.cov ./...
           
-      - name: Test
-        run: go test ./...
-          
       - name: go vet
         run: go vet ./...
 
