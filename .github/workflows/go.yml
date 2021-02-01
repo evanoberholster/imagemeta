@@ -46,5 +46,12 @@ jobs:
       - name: Test build
         run: go build .
         
-      - name: actions-goveralls
-        uses: shogo82148/actions-goveralls@v1.4.0
+        
+  # notifies that all test jobs are finished.
+  finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
