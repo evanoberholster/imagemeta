@@ -1,7 +1,7 @@
 // Package gpsifd provides types for "RootIfd/GPSIfd"
 package gpsifd
 
-import "github.com/evanoberholster/exiftool/tag"
+import "github.com/evanoberholster/imagemeta/tag"
 
 // TagIDMap is a Map of tag.ID to string for the GPSIfd tags
 var TagIDMap = map[tag.ID]string{

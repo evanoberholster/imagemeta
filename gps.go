@@ -1,13 +1,13 @@
-package exiftool
+package imagemeta
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/evanoberholster/exiftool/ifds"
-	"github.com/evanoberholster/exiftool/ifds/gpsifd"
-	"github.com/evanoberholster/exiftool/tag"
+	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/ifds/gpsifd"
+	"github.com/evanoberholster/imagemeta/tag"
 	"github.com/golang/geo/s2"
 )
 

@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/evanoberholster/exiftool"
+	"github.com/evanoberholster/imagemeta"
 )
 
 const testFilename = "../../test/img/2.CR2"
@@ -25,14 +25,14 @@ func main() {
 	reader := bytes.NewReader(buf)
 
 	start := time.Now()
-	e, err := exiftool.ScanExif(reader)
-	if err != nil && err != exiftool.ErrNoExif {
+	e, err := imagemeta.ScanExif(reader)
+	if err != nil && err != imagemeta.ErrNoExif {
 		panic(err)
 	}
 	elapsed := time.Since(start)
 	fmt.Println(elapsed)
 
-	if err == exiftool.ErrNoExif {
+	if err == imagemeta.ErrNoExif {
 		fmt.Println(e.XMLPacket())
 		fmt.Println(e.Dimensions())
 		return

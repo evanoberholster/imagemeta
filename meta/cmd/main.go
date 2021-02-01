@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/evanoberholster/exiftool/imagetype"
-	"github.com/evanoberholster/exiftool/meta"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 const testFilename = "../../../../test/img/6.jpg"

@@ -1,4 +1,4 @@
-package exiftool
+package imagemeta
 
 // Thumbnail convenience func.
 func (e *ExifData) Thumbnail() (offset uint32, size uint32, err error) {
