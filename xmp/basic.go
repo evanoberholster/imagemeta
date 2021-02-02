@@ -15,6 +15,20 @@ func (u UUID) String() string {
 	return uuid.UUID(u).String()
 }
 
+// MarshalText implements the TextMarshaler interface that is
+// used by encoding/json
+func (u UUID) MarshalText() (text []byte, err error) {
+	return uuid.UUID(u).MarshalText()
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (u *UUID) UnmarshalText(text []byte) (err error) {
+	uid, err := uuid.FromString(string(text))
+	*u = UUID(uid)
+	return err
+}
+
 func (basic *Basic) decode(p property) (err error) {
 	switch p.Name() {
 	case xmpns.CreateDate:
@@ -38,11 +52,11 @@ func (basic *Basic) decode(p property) (err error) {
 func (mm *XMPMM) decode(p property) (err error) {
 	switch p.Name() {
 	case xmpns.DocumentID:
-		mm.DocumentID, _ = parseUUID(p.val)
+		mm.DocumentID = parseUUID(p.val)
 	case xmpns.OriginalDocumentID:
-		mm.OriginalDocumentID, _ = parseUUID(p.val)
+		mm.OriginalDocumentID = parseUUID(p.val)
 	case xmpns.InstanceID:
-		mm.InstanceID, _ = parseUUID(p.val)
+		mm.InstanceID = parseUUID(p.val)
 	default:
 		return ErrPropertyNotSet
 	}

@@ -300,6 +300,7 @@ var mapStringName = map[string]Name{
 	"DateTimeOriginal":          DateTimeOriginal,
 	"DerivedFrom":               DerivedFrom,
 	"Description":               Description,
+	"description":               Description,
 	"DigitalZoomRatio":          DigitalZoomRatio,
 	"DocumentID":                DocumentID,
 	"EmbeddedXMPDigest":         EmbeddedXMPDigest,

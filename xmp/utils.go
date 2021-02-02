@@ -3,6 +3,7 @@ package xmp
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -42,13 +43,16 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	return
 }
 
-func parseUUID(buf []byte) (u UUID, err error) {
+func parseUUID(buf []byte) UUID {
 	_, b := readUntil(buf, ':')
 	if len(b) > 0 {
 		buf = b
 	}
 	a, err := uuid.FromString(string(buf))
-	return UUID(a), err
+	if DebugMode {
+		fmt.Println("Parse UUID error: ", err)
+	}
+	return UUID(a)
 }
 
 //func parseUint32(s string) uint32 {
