@@ -7,7 +7,7 @@ import (
 
 const (
 	// searchHeaderLength is the number of bytes to read while searching for an Image Header
-	searchHeaderLength = 16
+	searchHeaderLength = 24
 )
 
 // Scan is a conveninence function for ScanBuf
@@ -20,12 +20,6 @@ func Scan(reader io.Reader) (imageType ImageType, err error) {
 // ScanBuf -
 // TODO: Documentation
 func ScanBuf(reader *bufio.Reader) (imageType ImageType, err error) {
-	defer func() {
-		if state := recover(); state != nil {
-			err = state.(error)
-		}
-	}()
-
 	// Parse Header for an ImageType
 	imageType = parseHeader(reader)
 
@@ -36,10 +30,7 @@ func ScanBuf(reader *bufio.Reader) (imageType ImageType, err error) {
 func parseHeader(br *bufio.Reader) ImageType {
 	buf, err := br.Peek(searchHeaderLength)
 	if err != nil {
-		if err == io.EOF {
-			return ImageUnknown
-		}
-		panic(err)
+		return ImageUnknown
 	}
 
 	//if len(buf) < searchHeaderLength {
@@ -71,9 +62,16 @@ func parseHeader(br *bufio.Reader) ImageType {
 		return ImageCR3
 	}
 
-	// Heif Header
-	if isHeif(buf) {
-		return ImageHEIF
+	// ISOBMFF Header
+	if isFTYPBox(buf) {
+		// AVIF Header
+		if isAVIF(buf) {
+			return ImageAVIF
+		}
+		// Heif Header
+		if isHeif(buf) {
+			return ImageHEIF
+		}
 	}
 
 	// Panasonic/Leica Raw Header
