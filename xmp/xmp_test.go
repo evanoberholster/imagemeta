@@ -1,3 +1,5 @@
+// +build !windows
+
 package xmp
 
 import (
@@ -14,11 +16,10 @@ var testMap = map[string]string{
 	"XMP.xmp":  "{\"Aux\":{\"SerialNumber\":\"1234567890abcd\",\"LensInfo\":\"16/1 35/1 0/0 0/0\",\"Lens\":\"EF16-35mm f/4L IS USM\",\"LensID\":507,\"LensSerialNumber\":\"987654321\",\"ImageNumber\":0,\"ApproximateFocusDistance\":\"\",\"FlashCompensation\":\"\",\"Firmware\":\"\"},\"Exif\":{\"ExifVersion\":\"\",\"PixelXDimension\":0,\"PixelYDimension\":0,\"DateTimeOriginal\":\"2015-10-01T06:42:43Z\",\"CreateDate\":\"0001-01-01T00:00:00Z\",\"ExposureTime\":\"\",\"ExposureMode\":0,\"ShutterSpeedValue\":\"\",\"ExposureProgram\":\"\",\"ISOSpeedRatings\":100,\"Flash\":{\"Fired\":false,\"Mode\":2,\"RedEyeMode\":false,\"Function\":false,\"Return\":0}},\"Tiff\":{\"Make\":\"Canon\",\"Model\":\"Canon EOS 6D\",\"Software\":\"\",\"Copyright\":null,\"ImageDescription\":null,\"ImageWidth\":5472,\"ImageLength\":3648,\"Orientation\":1},\"Basic\":{\"CreateDate\":\"2015-10-01T06:42:43Z\",\"CreatorTool\":\"\",\"Label\":\"\",\"MetadataDate\":\"2015-10-01T17:51:39+03:00\",\"ModifyDate\":\"2015-10-01T06:42:43Z\",\"Rating\":0},\"DC\":{\"Contributor\":null,\"Coverage\":\"\",\"Creator\":[\"\",\"Artist Name\"],\"Date\":\"0001-01-01T00:00:00Z\",\"Description\":null,\"Format\":\"image/x-canon-cr2\",\"Identifier\":\"\",\"Language\":null,\"Rights\":[\"\",\"Copyright Name\"],\"Source\":\"\",\"Subject\":null,\"Title\":null},\"CRS\":{\"RawFileName\":\"IMG_0001.CR2\"},\"MM\":{\"DocumentID\":\"00000000-0000-0000-0000-000000000000\",\"InstanceID\":\"00000000-0000-0000-0000-000000000000\",\"OriginalDocumentID\":\"00000000-0000-0000-0000-000000000000\"}}",
 }
 
-// +build !windows
 func TestImageJpeg(t *testing.T) {
 	f, err := os.Open("test" + string(os.PathSeparator) + "jpeg.xmp")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	defer func() {
