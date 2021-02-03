@@ -15,4 +15,5 @@ type XMP struct {
 	Basic Basic      // xmlns:xmp="http://ns.adobe.com/xap/1.0/"
 	DC    DublinCore // xmlns:dc="http://purl.org/dc/elements/1.1/"
 	CRS   CRS
+	MM    XMPMM
 }

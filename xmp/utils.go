@@ -3,7 +3,10 @@ package xmp
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func readUntilByte(br *bufio.Reader, end byte) (n int, err error) {
@@ -26,7 +29,7 @@ func readUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
 			return buf[:i], buf[i+1:]
 		}
 	}
-	return nil, nil
+	return buf, nil
 }
 
 // parseDate
@@ -38,6 +41,18 @@ func parseDate(buf []byte) (t time.Time, err error) {
 		}
 	}
 	return
+}
+
+func parseUUID(buf []byte) UUID {
+	_, b := readUntil(buf, ':')
+	if len(b) > 0 {
+		buf = b
+	}
+	a, err := uuid.FromString(string(buf))
+	if DebugMode {
+		fmt.Println("Parse UUID error: ", err)
+	}
+	return UUID(a)
 }
 
 //func parseUint32(s string) uint32 {

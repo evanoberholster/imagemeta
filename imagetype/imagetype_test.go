@@ -16,8 +16,11 @@ func TestSearchImageType(t *testing.T) {
 		{"../testImages/NEF.exif", ImageTiff},
 		{"../testImages/CR2.exif", ImageCR2},
 		{"../testImages/Heic.exif", ImageHEIF},
+		{"../testImages/AVIF.avif", ImageAVIF},
+		{"../testImages/AVIF.AVIF", ImageAVIF},
 		{"../testImages/CRW.CRW", ImageCRW},
 		{"../testImages/XMP.xmp", ImageXMP},
+		{"../testImages/Unknown.exif", ImageUnknown},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {
@@ -58,8 +61,18 @@ func TestImageTypeFunc(t *testing.T) {
 		t.Errorf("Incorrect Imagetype Marshall wanted %s got %s", str, string(itbuf))
 	}
 
-	if it2 := FromString(str); it2 != it {
+	it2 := FromString(str)
+	if it2 != it {
 		t.Errorf("Incorrect Imagetype FromString wanted %s got %s", str, it2.String())
+	}
+
+	err = it.UnmarshalText(itbuf)
+	if err != nil {
+		t.Errorf("Error Imagetype could not be unmarshalled")
+	}
+
+	if it2 != it {
+		t.Errorf("Incorrect Imagetype Unmarshal wanted %s got %s", str, it.String())
 	}
 }
 

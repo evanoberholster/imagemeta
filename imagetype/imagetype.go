@@ -39,10 +39,19 @@ func (it ImageType) MarshalText() (text []byte, err error) {
 	return []byte(imageTypeStrings[it]), nil
 }
 
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (it *ImageType) UnmarshalText(text []byte) (err error) {
+	*it = imageTypeValues[string(text)]
+	return nil
+	//return []byte(imageTypeStrings[it]), nil
+}
+
 func (it ImageType) String() string {
 	return imageTypeStrings[it]
 }
 
+// FromString returns an ImageType for the given string
 func FromString(str string) ImageType {
 	return imageTypeValues[str]
 }
@@ -68,6 +77,7 @@ const (
 	ImageCR2
 	ImagePSD
 	ImageXMP
+	ImageAVIF
 )
 
 // ImageTypeStrings - Map accepting ImageType and returning string
@@ -91,6 +101,7 @@ var imageTypeStrings = map[ImageType]string{
 	ImageCR2:     "image/x-canon-cr2",
 	ImagePSD:     "image/vnd.adobe.photoshop",
 	ImageXMP:     "application/rdf+xml",
+	ImageAVIF:    "image/avif",
 }
 
 // ImageTypeValues - Map accepting string and returning Image Type
@@ -114,6 +125,7 @@ var imageTypeValues = map[string]ImageType{
 	"image/x-canon-cr2":         ImageCR2,
 	"image/vnd.adobe.photoshop": ImagePSD,
 	"application/rdf+xml":       ImageXMP,
+	"image/avif":                ImageAVIF,
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
@@ -194,16 +206,9 @@ func isCR3(buf []byte) bool {
 
 // isHeif returns true if the header matches the start of a HEIF file.
 // TODO: missing major brand and minor brand
-// ftyp
+// TODO: Implement better ISOBMFF Box identification
 func isHeif(buf []byte) bool {
-	return buf[0] == 0x0 &&
-		buf[1] == 0x0 &&
-		buf[2] == 0x0 &&
-		//(buf[3] == 0x18 || buf[3] == 0x20) &&
-		buf[4] == 0x66 &&
-		buf[5] == 0x74 &&
-		buf[6] == 0x79 &&
-		buf[7] == 0x70 &&
+	return isFTYPBox(buf) &&
 		((buf[8] == 0x68 &&
 			buf[9] == 0x65 &&
 			buf[10] == 0x69 &&
@@ -212,7 +217,36 @@ func isHeif(buf []byte) bool {
 				buf[9] == 0x69 &&
 				buf[10] == 0x66 &&
 				buf[11] == 0x31))
+}
 
+// isFTYPBox returns true if the header matches an ftyp box.
+// This indicates an ISO Base Media File Format.
+func isFTYPBox(buf []byte) bool {
+	return buf[0] == 0x0 &&
+		buf[1] == 0x0 &&
+		buf[2] == 0x0 &&
+		// buf[3]
+		buf[4] == 0x66 &&
+		buf[5] == 0x74 &&
+		buf[6] == 0x79 &&
+		buf[7] == 0x70
+}
+
+// isAVIF returns true if the header matches an ftyp box and
+// an avif box.
+// TODO: Implement better ISOBMFF Box identification
+func isAVIF(buf []byte) bool {
+	return isFTYPBox(buf) && (buf[8] == 0x61 &&
+		buf[9] == 0x76 &&
+		buf[10] == 0x69 &&
+		buf[11] == 0x66) || (buf[16] == 0x6d &&
+		buf[17] == 0x69 &&
+		buf[18] == 0x66 &&
+		buf[19] == 0x31 &&
+		buf[20] == 0x61 &&
+		buf[21] == 0x76 &&
+		buf[22] == 0x69 &&
+		buf[23] == 0x66)
 }
 
 // isBMP returns true if the header matches the start of a BMP file

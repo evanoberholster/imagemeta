@@ -64,7 +64,17 @@ type Exif struct {
 
 }
 
-func (exif *Exif) decode(tag Tag) (err error) {
+func (exif *Exif) decode(p property) (err error) {
+	switch p.Name() {
+	case xmpns.DateTimeOriginal:
+		exif.DateTimeOriginal, _ = parseDate(p.val)
+	default:
+		return ErrPropertyNotSet
+	}
+	return
+}
+
+func (exif *Exif) decodeTag(tag Tag) (err error) {
 	if tag.parent.Name() == xmpns.Flash {
 		return exif.Flash.parse(tag.property)
 	}

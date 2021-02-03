@@ -18,18 +18,18 @@ type Tiff struct {
 	Orientation      uint8
 }
 
-func (t *Tiff) decode(p xmpns.Property, val []byte) error {
+func (t *Tiff) decode(p property) error {
 	switch p.Name() {
 	case xmpns.Make:
-		t.Make = parseString(val)
+		t.Make = parseString(p.val)
 	case xmpns.Model:
-		t.Model = parseString(val)
+		t.Model = parseString(p.val)
 	case xmpns.ImageWidth:
-		t.ImageWidth = uint16(parseUint(val))
+		t.ImageWidth = uint16(parseUint(p.val))
 	case xmpns.ImageLength:
-		t.ImageLength = uint16(parseUint(val))
+		t.ImageLength = uint16(parseUint(p.val))
 	case xmpns.Orientation:
-		t.Orientation = uint8(parseUint(val))
+		t.Orientation = uint8(parseUint(p.val))
 	default:
 		return ErrPropertyNotSet
 	}
