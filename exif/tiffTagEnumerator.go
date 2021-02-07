@@ -19,7 +19,7 @@ var (
 )
 
 type ifdTagEnumerator struct {
-	exifReader *ExifReader
+	exifReader *reader
 	byteOrder  binary.ByteOrder
 	ifdOffset  uint32
 	offset     uint32
@@ -27,7 +27,7 @@ type ifdTagEnumerator struct {
 }
 
 // scan moves through an ifd at the specified offset and enumerates over the IfdTags
-func scan(er *ExifReader, e *ExifData, ifd ifds.IFD, offset uint32) (err error) {
+func scan(er *reader, e *ExifData, ifd ifds.IFD, offset uint32) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -51,7 +51,7 @@ func scan(er *ExifReader, e *ExifData, ifd ifds.IFD, offset uint32) (err error) 
 }
 
 // scanSubIfds moves through the subIfds at the specified offsetes and enumerates over their IfdTags
-func scanSubIfds(er *ExifReader, e *ExifData, t tag.Tag) (err error) {
+func scanSubIfds(er *reader, e *ExifData, t tag.Tag) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -89,7 +89,7 @@ func (ite *ifdTagEnumerator) Read(p []byte) (n int, err error) {
 	return
 }
 
-func getTagEnumerator(offset uint32, er *ExifReader) *ifdTagEnumerator {
+func getTagEnumerator(offset uint32, er *reader) *ifdTagEnumerator {
 	return &ifdTagEnumerator{
 		exifReader: er,
 		byteOrder:  er.ByteOrder(),
@@ -114,7 +114,7 @@ func (ite *ifdTagEnumerator) rawValueOffset() (rawValueOffset tag.RawValueOffset
 // Makernotes and AdobeDNGData
 func (ite *ifdTagEnumerator) parseUndefinedIfds(e *ExifData, ifd ifds.IFD) bool {
 	if ifd == ifds.MknoteIFD {
-		switch e.Make {
+		switch e.make {
 		case "Canon":
 			// Canon Makernotes do not have a Makernote Header
 			// offset 0

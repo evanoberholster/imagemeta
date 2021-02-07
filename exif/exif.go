@@ -25,18 +25,18 @@ var (
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
+	var it imagetype.ImageType
 	er := newExifReader(r, nil, 0)
 	br := bufio.NewReader(er)
 
 	// Identify Image Type
-	t, err := imagetype.ScanBuf(br)
-	if err != nil {
+	if it, err = imagetype.ScanBuf(br); err != nil {
 		return
 	}
 
 	// Search Image for Metadata Header using
 	// Imagetype information
-	m, err := meta.ScanBuf(br, t)
+	m, err := meta.ScanBuf(br, it)
 	if err != nil {
 		if err != ErrNoExif {
 			return
@@ -44,7 +44,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 	}
 
 	// ExifData with an ExifReader attached
-	e = newExifData(er, t)
+	e = newExifData(er, it)
 	e.SetMetadata(m)
 
 	if err == nil {

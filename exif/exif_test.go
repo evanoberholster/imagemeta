@@ -45,11 +45,11 @@ func TestParseExif(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			if e.Make != wantedExif.make {
-				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.Make)
+			if e.CameraMake() != wantedExif.make {
+				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.CameraMake())
 			}
-			if e.Model != wantedExif.model {
-				t.Errorf("Incorrect Exif Model wanted %s got %s", wantedExif.model, e.Model)
+			if e.CameraModel() != wantedExif.model {
+				t.Errorf("Incorrect Exif Model wanted %s got %s", wantedExif.model, e.CameraModel())
 			}
 			isoSpeed, err := e.ISOSpeed()
 			if err != nil || isoSpeed != wantedExif.ISOSpeed {

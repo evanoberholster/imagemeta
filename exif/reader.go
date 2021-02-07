@@ -8,8 +8,13 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
-// ExifReader -
-type ExifReader struct {
+// reader errors
+var (
+	ErrReadNegativeOffset = errors.New("error read at negative offset")
+)
+
+// reader -
+type reader struct {
 	reader io.ReaderAt
 
 	// Exif Header
@@ -22,16 +27,16 @@ type ExifReader struct {
 }
 
 // newExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
-func newExifReader(reader io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *ExifReader {
-	return &ExifReader{
-		reader:     reader,
+func newExifReader(r io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *reader {
+	return &reader{
+		reader:     r,
 		byteOrder:  byteOrder,
 		exifOffset: int64(exifOffset),
 	}
 }
 
 // Read reads from ExifReader and moves the placement marker
-func (er *ExifReader) Read(p []byte) (n int, err error) {
+func (er *reader) Read(p []byte) (n int, err error) {
 	// Buffer is empty
 	if len(p) == 0 {
 		return 0, nil
@@ -43,22 +48,22 @@ func (er *ExifReader) Read(p []byte) (n int, err error) {
 }
 
 // ReadAt reads from ExifReader at the given offset
-func (er ExifReader) ReadAt(p []byte, off int64) (n int, err error) {
+func (er reader) ReadAt(p []byte, off int64) (n int, err error) {
 	if off < 0 {
-		return 0, errors.New("ExifReader.ReadAt: negative offset")
+		return 0, ErrReadNegativeOffset
 	}
 	n, err = er.reader.ReadAt(p, er.exifOffset+off)
 	return
 }
 
 // ByteOrder returns the ExifReader's byteOrder
-func (er *ExifReader) ByteOrder() binary.ByteOrder {
+func (er *reader) ByteOrder() binary.ByteOrder {
 	return er.byteOrder
 }
 
 // SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
 // from a TiffHeader and sets the ExifReader read offset to 0
-func (er *ExifReader) SetHeader(header meta.TiffHeader) error {
+func (er *reader) SetHeader(header meta.TiffHeader) error {
 	if !header.IsValid() {
 		return ErrInvalidHeader
 	}

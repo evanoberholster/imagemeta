@@ -10,12 +10,12 @@ import (
 
 // CameraMake convenience func. "IFD" Make
 func (e *ExifData) CameraMake() (make string) {
-	return e.Make
+	return e.make
 }
 
 // CameraModel convenience func. "IFD" Model
 func (e *ExifData) CameraModel() (model string) {
-	return e.Model
+	return e.model
 }
 
 // Artist convenience func. "IFD" Artist
@@ -125,7 +125,7 @@ func (e *ExifData) XMLPacket() (str string, err error) {
 	}()
 
 	if len(e.XMP) > 0 {
-		str = strings.Replace(e.XMP, "\n", "", -1)
+		str = strings.Replace(string(e.XMP), "\n", "", -1)
 		return strings.Replace(str, "   ", "", -1), nil
 		//return xmlfmt.FormatXML(e.XMP, "\t", "  "), nil
 	}

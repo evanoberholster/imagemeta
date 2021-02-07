@@ -16,28 +16,25 @@ var (
 
 // ExifData struct contains the parsed Exif information
 type ExifData struct {
-	exifReader *ExifReader
+	exifReader *reader
 	rootIfd    []ifds.TagMap
 	subIfd     []ifds.TagMap
 	exifIfd    ifds.TagMap
 	gpsIfd     ifds.TagMap
 	mkNote     ifds.TagMap
-	Make       string
-	Model      string
-	XMP        string
+	make       string
+	model      string
+	XMP        []byte
 	width      uint16
 	height     uint16
 	ImageType  imagetype.ImageType
 }
 
 // newExifData creates a new initialized Exif object
-func newExifData(exifReader *ExifReader, it imagetype.ImageType) *ExifData {
+func newExifData(er *reader, it imagetype.ImageType) *ExifData {
 	return &ExifData{
-		exifReader: exifReader,
+		exifReader: er,
 		ImageType:  it,
-		//exifIfd:    make(ifds.TagMap),
-		//gpsIfd:     make(ifds.TagMap),
-		//mkNote:     make(ifds.TagMap),
 	}
 }
 
@@ -47,7 +44,7 @@ func (e *ExifData) SetMetadata(m meta.Metadata) {
 	e.width, e.height = m.Size()
 
 	// Set Exif XMP form Metadata XML
-	e.XMP = m.XML()
+	e.XMP = []byte(m.XML())
 
 }
 
@@ -79,9 +76,9 @@ func (e *ExifData) AddTag(ifd ifds.IFD, ifdIndex int, t tag.Tag) {
 		// Add Make and Model to Exif struct for future decoding of Makernotes
 		switch t.TagID {
 		case ifds.Make:
-			e.Make, _ = t.ASCIIValue(e.exifReader)
+			e.make, _ = t.ASCIIValue(e.exifReader)
 		case ifds.Model:
-			e.Model, _ = t.ASCIIValue(e.exifReader)
+			e.model, _ = t.ASCIIValue(e.exifReader)
 		}
 	}
 	switch ifd {

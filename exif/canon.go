@@ -9,7 +9,7 @@ import (
 // CanonCameraSettings convenience func. "IFD/Exif/Makernotes.Canon" CanonCameraSettings
 // Canon Camera Settings from the Makernote
 func (e *ExifData) CanonCameraSettings() (canon.CameraSettings, error) {
-	if e.Make != "Canon" {
+	if e.make != "Canon" {
 		return canon.CameraSettings{}, ErrEmptyTag
 	}
 	t, err := e.GetTag(ifds.MknoteIFD, 0, mknote.CanonCameraSettings)
