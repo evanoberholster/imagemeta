@@ -50,9 +50,6 @@ func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 // that identify the imagetype. Returns an ImageType. Returns ImageUnknown
 // when imagetype was not identified.
 func parseBuffer(buf []byte) ImageType {
-	if len(buf) < searchHeaderLength {
-		return ImageUnknown
-	}
 
 	// JPEG Header
 	if isJPEG(buf) {

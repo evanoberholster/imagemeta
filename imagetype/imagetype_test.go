@@ -2,6 +2,7 @@ package imagetype
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"testing"
 )
@@ -138,7 +139,7 @@ func TestScanImageType(t *testing.T) {
 	}
 
 	// Image Unknown
-	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop12345")))
+	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop1234567890abcdefghijklmnopqrs")))
 	if err != ErrImageTypeNotFound {
 		t.Fatal(err)
 	}
@@ -149,7 +150,7 @@ func TestScanImageType(t *testing.T) {
 
 	//  Image Unknown - Empty ByteSlice
 	imageType, err = Scan(bytes.NewReader([]byte("")))
-	if err != ErrImageTypeNotFound {
+	if err != io.EOF {
 		t.Fatal(err)
 	}
 
