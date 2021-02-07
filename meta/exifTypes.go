@@ -36,11 +36,13 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 	var f float64
 	if len(text) > 0 {
 		if text[len(text)-1] == sufFocalLength[1] && text[len(text)-2] == sufFocalLength[0] {
-			f, err = strconv.ParseFloat(string(text[:len(text)-2]), 32)
-			*fl = FocalLength(f)
+			text = text[:len(text)-2]
 		}
+		f, err = strconv.ParseFloat(string(text), 32)
+		*fl = FocalLength(f)
+		return
 	}
-	return nil
+	return err
 }
 
 // MeteringMode - Mode in which the image was metered.
@@ -138,10 +140,10 @@ type FlashMode uint8
 // Flash Modes
 const (
 	NoFlash           FlashMode = 0
-	FlashFired                  = 1
-	FlashOffNotFired            = 16
-	FlashAutoNotFired           = 24
-	FlashAutoFired              = 25
+	FlashFired        FlashMode = 1
+	FlashOffNotFired  FlashMode = 16
+	FlashAutoNotFired FlashMode = 24
+	FlashAutoFired    FlashMode = 25
 )
 
 // String - Return string for FlashMode
