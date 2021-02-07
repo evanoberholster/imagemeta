@@ -13,7 +13,8 @@ const (
 // Scan is a conveninence function for ScanBuf
 func Scan(reader io.Reader) (imageType ImageType, err error) {
 	// Parse Header for an ImageType
-	br := bufio.NewReader(reader)
+	//br := bufio.NewReader(reader)
+	br := bufio.NewReaderSize(reader, 64)
 	return ScanBuf(br)
 }
 

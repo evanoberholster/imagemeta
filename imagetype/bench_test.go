@@ -16,6 +16,7 @@ var (
 		{".CR3", "1.CR3"},
 		{".JPG/GPS", "17.jpg"},
 		{".HEIC", "1.heic"},
+		{".AVIF", "image1.avif"},
 		{".GoPro/6", "hero6.jpg"},
 		{".NEF/Nikon", "2.NEF"},
 		{".ARW/Sony", "2.ARW"},
