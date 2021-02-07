@@ -26,7 +26,7 @@ import (
    "os"
    "time"
 
-   "github.com/evanoberholster/imagemeta"
+   "github.com/evanoberholster/imagemeta/exif"
 )
 
 const testFilename = "image.jpg"
