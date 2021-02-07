@@ -3,8 +3,8 @@ package exif
 import (
 	"strings"
 
-	"github.com/evanoberholster/imagemeta/ifds"
-	"github.com/evanoberholster/imagemeta/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 

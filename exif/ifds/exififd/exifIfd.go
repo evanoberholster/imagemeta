@@ -1,7 +1,7 @@
 // Package exififd provides types for "RootIfd/ExifIfd"
 package exififd
 
-import "github.com/evanoberholster/imagemeta/tag"
+import "github.com/evanoberholster/imagemeta/exif/tag"
 
 // TagIDMap is a Map of tag.ID to string for the ExifIfd tags
 var TagIDMap = map[tag.ID]string{

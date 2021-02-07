@@ -1,6 +1,6 @@
 package ifds
 
-import "github.com/evanoberholster/imagemeta/tag"
+import "github.com/evanoberholster/imagemeta/exif/tag"
 
 // RootIfdTagIDMap is a Map of tag.ID to string for the RootIfd tags
 var RootIfdTagIDMap = map[tag.ID]string{

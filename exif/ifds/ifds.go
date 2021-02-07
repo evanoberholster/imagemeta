@@ -4,9 +4,9 @@ package ifds
 import (
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/ifds/exififd"
-	"github.com/evanoberholster/imagemeta/ifds/gpsifd"
-	"github.com/evanoberholster/imagemeta/tag"
+	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
+	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
 // IFD -

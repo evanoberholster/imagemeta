@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/ifds"
-	"github.com/evanoberholster/imagemeta/ifds/gpsifd"
-	"github.com/evanoberholster/imagemeta/tag"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
+	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/golang/geo/s2"
 )
 

@@ -1,8 +1,8 @@
 package exif
 
 import (
-	"github.com/evanoberholster/imagemeta/ifds"
-	"github.com/evanoberholster/imagemeta/ifds/mknote"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/meta/canon"
 )
 

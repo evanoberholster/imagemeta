@@ -1,70 +1,100 @@
+// Package exif provides functions for parsing and extracting Exif Information.
 package exif
 
-import "github.com/evanoberholster/imagemeta/meta"
+import (
+	"bufio"
+	"io"
 
-// Exif is an interface representation of Exif Information
-type Exif interface {
-	// Aperture convenience func. "IFD/Exif" FNumber
-	Aperture() (float32, error)
+	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
+)
 
-	// Artist convenience func. "IFD" Artist
-	Artist() (artist string, err error)
+// Errors
+var (
+	// Alias to meta Errors
+	ErrInvalidHeader = meta.ErrInvalidHeader
+	ErrNoExif        = meta.ErrNoExif
+)
 
-	// CameraSerial convenience func. "IFD/Exif" BodySerialNumber
-	CameraSerial() (serial string, err error)
+// ScanExif identifies the imageType based on magic bytes and
+// searches for exif headers, then it parses the io.ReaderAt for exif
+// information and returns it.
+// Sets exif imagetype from magicbytes, if not found sets imagetype
+// to imagetypeUnknown.
+//
+// If no exif information is found ScanExif will return ErrNoExif.
+func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
+	er := newExifReader(r, nil, 0)
+	br := bufio.NewReader(er)
 
-	// CameraMake convenience func. "IFD" Make
-	CameraMake() (make string)
+	// Identify Image Type
+	t, err := imagetype.ScanBuf(br)
+	if err != nil {
+		return
+	}
 
-	// CameraModel convenience func. "IFD" Model
-	CameraModel() (model string)
+	// Search Image for Metadata Header using
+	// Imagetype information
+	m, err := meta.ScanBuf(br, t)
+	if err != nil {
+		if err != ErrNoExif {
+			return
+		}
+	}
 
-	// Copyright convenience func. "IFD" Copyright
-	Copyright() (copyright string, err error)
+	// ExifData with an ExifReader attached
+	e = newExifData(er, t)
+	e.SetMetadata(m)
 
-	// Dimensions convenience func. "IFD" Dimensions
-	Dimensions() (width, height uint16, err error)
+	if err == nil {
+		header := m.Header()
+		// Set TiffHeader sets the ExifReader and checks
+		// the header validity.
+		// Returns ErrInvalidHeader if header is not valid.
+		if err = er.SetHeader(header); err != nil {
+			return
+		}
 
-	// ExposureBias convenience func. "IFD/Exif" ExposureBiasValue
-	ExposureBias() (string, error)
+		// Scan the RootIFD with the FirstIfdOffset from the ExifReader
+		err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
+	}
+	return
+}
 
-	// ExposureProgram convenience func. "IFD/Exif" ExposureProgram
-	ExposureProgram() (meta.ExposureMode, error)
+// ParseExif parses a tiff header from the io.ReaderAt and
+// returns exif and an error.
+// Sets exif imagetype as imageTypeUnknown
+//
+// If the header is invalid ParseExif will return ErrInvalidHeader.
+func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
+	er := newExifReader(r, nil, 0)
+	br := bufio.NewReader(er)
 
-	// Flash convenience func. "IFD/Exif" Flash
-	Flash() (meta.FlashMode, error)
+	// Search Image for Metadata Header using
+	// Imagetype information
+	m, err := meta.ScanBuf(br, imagetype.ImageUnknown)
+	if err != nil {
+		if err != ErrNoExif {
+			return
+		}
+	}
 
-	// FocalLength convenience func. "IFD/Exif" FocalLength
-	// Lens Focal Length in mm
-	FocalLength() (fl meta.FocalLength, err error)
+	// ExifData with an ExifReader attached
+	e = newExifData(er, imagetype.ImageUnknown)
+	e.SetMetadata(m)
 
-	// FocalLengthIn35mmFilm convenience func. "IFD/Exif" FocalLengthIn35mmFilm
-	// Lens Focal Length Equivalent for 35mm sensor in mm
-	FocalLengthIn35mmFilm() (fl meta.FocalLength, err error)
+	if err == nil {
+		header := m.Header()
+		// Set TiffHeader sets the ExifReader and checks
+		// the header validity.
+		// Returns ErrInvalidHeader if header is not valid.
+		if err = er.SetHeader(header); err != nil {
+			return
+		}
 
-	// ISOSpeed convenience func. "IFD/Exif" ISOSpeed
-	ISOSpeed() (iso int, err error)
-
-	// LensMake convenience func. "IFD/Exif" LensMake
-	LensMake() (make string, err error)
-
-	// LensModel convenience func. "IFD/Exif" LensModel
-	LensModel() (model string, err error)
-
-	// LensSerial convenience func. "IFD/Exif" LensSerialNumber
-	LensSerial() (serial string, err error)
-
-	// MeteringMode convenience func. "IFD/Exif" MeteringMode
-	MeteringMode() (meta.MeteringMode, error)
-
-	// Orientation convenience func. "IFD" Orientation
-	Orientation() (string, error)
-
-	// ShutterSpeed convenience func. "IFD/Exif" ExposureTime
-	ShutterSpeed() (meta.ShutterSpeed, error)
-
-	// XMLPacket convenience func. that returns XMP metadata
-	// from a JPEG image or XMP Packet from "IFD" XMLPacket.
-	// Whichever is present.
-	XMLPacket() (str string, err error)
+		// Scan the RootIFD with the FirstIfdOffset from the ExifReader
+		err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
+	}
+	return
 }

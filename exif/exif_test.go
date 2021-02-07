@@ -11,28 +11,29 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
-// TODO: write tests for ParseExif
+// TODO: write more tests for ParseExif
+
+var exifTests = []struct {
+	filename    string
+	make        string
+	model       string
+	ISOSpeed    int
+	aperture    float32
+	focalLength meta.FocalLength
+	width       uint16
+	height      uint16
+	createdDate time.Time
+}{
+	{"../testImages/ARW.exif", "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
+	{"../testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
+	{"../testImages/CR2.exif", "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
+	{"../testImages/Heic.exif", "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
+}
 
 func TestParseExif(t *testing.T) {
-	exifTests := []struct {
-		filename    string
-		make        string
-		model       string
-		ISOSpeed    int
-		aperture    float32
-		focalLength meta.FocalLength
-		width       uint16
-		height      uint16
-		createdDate time.Time
-	}{
-		{"testImages/ARW.exif", "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
-		{"testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
-		{"testImages/CR2.exif", "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
-		{"testImages/Heic.exif", "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
-	}
 	for _, wantedExif := range exifTests {
 		t.Run(wantedExif.filename, func(t *testing.T) {
-			//zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+
 			// Open file
 			f, err := os.Open(wantedExif.filename)
 			if err != nil {

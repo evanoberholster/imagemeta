@@ -41,8 +41,7 @@ func (t *Tag) ASCIIValue(tagReader TagReader) (value string, err error) {
 	if t.TagType.IsValid() {
 		// Needs Typecheck
 		var rawBytes []byte
-		rawBytes, err = t.RawEncodedBytes(tagReader)
-		if err != nil {
+		if rawBytes, err = t.RawEncodedBytes(tagReader); err != nil {
 			return
 		}
 
@@ -64,27 +63,23 @@ func (t *Tag) ASCIIValue(tagReader TagReader) (value string, err error) {
 func (t *Tag) Uint16Value(tagReader TagReader) (value uint16, err error) {
 	if t.TagType == TypeShort {
 		var rawBytes []byte
-		rawBytes, err = t.RawEncodedBytes(tagReader)
-		if err != nil {
+		if rawBytes, err = t.RawEncodedBytes(tagReader); err != nil {
 			return 0, err
 		}
 		if len(rawBytes) < 2 {
-			err = ErrEmptyTag
-			return
+			return 0, ErrEmptyTag
 		}
 		value = tagReader.ByteOrder().Uint16(rawBytes[:2])
 
 		return
 	}
-	err = ErrTagTypeNotValid
-	return
+	return 0, ErrTagTypeNotValid
 }
 
 // Uint16Values returns the Short value of the tag as a uint16 array
 // and returns an error if it encounters one.
 func (t *Tag) Uint16Values(tagReader TagReader) (value []uint16, err error) {
 	if t.TagType == TypeShort {
-
 		var rawBytes []byte
 		if rawBytes, err = t.RawEncodedBytes(tagReader); err != nil {
 			return nil, err
@@ -104,8 +99,7 @@ func (t *Tag) Uint16Values(tagReader TagReader) (value []uint16, err error) {
 
 		return
 	}
-	err = ErrTagTypeNotValid
-	return
+	return nil, ErrTagTypeNotValid
 }
 
 // Uint32Values returns the Long value of the tag as a uint32 array
@@ -113,7 +107,6 @@ func (t *Tag) Uint16Values(tagReader TagReader) (value []uint16, err error) {
 //
 func (t *Tag) Uint32Values(tagReader TagReader) (value []uint32, err error) {
 	if t.TagType == TypeLong {
-
 		var rawBytes []byte
 		if rawBytes, err = t.RawEncodedBytes(tagReader); err != nil {
 			return nil, err
@@ -133,8 +126,7 @@ func (t *Tag) Uint32Values(tagReader TagReader) (value []uint32, err error) {
 
 		return
 	}
-	err = ErrTagTypeNotValid
-	return
+	return nil, ErrTagTypeNotValid
 }
 
 // RationalValues returns a list of unsignedRationals
@@ -165,8 +157,7 @@ func (t *Tag) RationalValues(tagReader TagReader) (value []Rational, err error) 
 
 		return
 	}
-	err = ErrTagTypeNotValid
-	return
+	return nil, ErrTagTypeNotValid
 }
 
 ////

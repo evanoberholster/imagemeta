@@ -3,10 +3,10 @@ package exif
 import (
 	"errors"
 
-	"github.com/evanoberholster/imagemeta/ifds"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tag"
 )
 
 // API Errors
