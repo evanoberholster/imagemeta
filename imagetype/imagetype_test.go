@@ -32,8 +32,10 @@ func TestSearchImageType(t *testing.T) {
 			defer f.Close()
 			// Search for Image Type
 			imageType, err := Scan(f)
-			if err != nil {
-				t.Fatal(err)
+			if header.imageType == ImageUnknown {
+				if err != ErrImageTypeNotFound {
+					t.Fatal(err)
+				}
 			}
 
 			if header.imageType != imageType {
@@ -137,18 +139,20 @@ func TestScanImageType(t *testing.T) {
 
 	// Image Unknown
 	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop12345")))
-	if err != nil {
+	if err != ErrImageTypeNotFound {
 		t.Fatal(err)
 	}
+
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 
 	//  Image Unknown - Empty ByteSlice
 	imageType, err = Scan(bytes.NewReader([]byte("")))
-	if err != nil {
+	if err != ErrImageTypeNotFound {
 		t.Fatal(err)
 	}
+
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}

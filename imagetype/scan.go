@@ -2,7 +2,13 @@ package imagetype
 
 import (
 	"bufio"
+	"errors"
 	"io"
+)
+
+var (
+	// ErrImageTypeNotFound is an error that represents an imagetype not being found.
+	ErrImageTypeNotFound = errors.New("error imagetype not found")
 )
 
 const (
@@ -10,33 +16,43 @@ const (
 	searchHeaderLength = 24
 )
 
-// Scan is a conveninence function for ScanBuf
+// Scan reads from the reader and returns an imageType based on
+// underlying rules. Returns ErrImageTypeNotFound if imageType was not
+// identified.
 func Scan(reader io.Reader) (imageType ImageType, err error) {
 	// Parse Header for an ImageType
-	//br := bufio.NewReader(reader)
-	br := bufio.NewReaderSize(reader, 64)
+	br := bufio.NewReaderSize(reader, searchHeaderLength)
 	return ScanBuf(br)
 }
 
-// ScanBuf -
-// TODO: Documentation
-func ScanBuf(reader *bufio.Reader) (imageType ImageType, err error) {
-	// Parse Header for an ImageType
-	imageType = parseHeader(reader)
+// ScanBuf peeks at a bufio.Reader and returns an imageType based on
+// underlying rules. Returns ErrImageTypeNotFound if imageType was not
+// identified.
+func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
+	var buf []byte
 
+	// Peek into the bufio.Reader for the length of searchHeaderLength bytes
+	if buf, err = br.Peek(searchHeaderLength); err != nil {
+		return ImageUnknown, err
+	}
+
+	// Parse Header for an ImageType
+	imageType = parseBuffer(buf)
+
+	// Check if ImageType is Unknown
+	if imageType == ImageUnknown {
+		err = ErrImageTypeNotFound
+	}
 	return
 }
 
-// parseHeader
-func parseHeader(br *bufio.Reader) ImageType {
-	buf, err := br.Peek(searchHeaderLength)
-	if err != nil {
+// parseBuffer parses the []byte for image magic numbers
+// that identify the imagetype. Returns an ImageType. Returns ImageUnknown
+// when imagetype was not identified.
+func parseBuffer(buf []byte) ImageType {
+	if len(buf) < searchHeaderLength {
 		return ImageUnknown
 	}
-
-	//if len(buf) < searchHeaderLength {
-	//	panic(ErrDataLength)
-	//}
 
 	// JPEG Header
 	if isJPEG(buf) {

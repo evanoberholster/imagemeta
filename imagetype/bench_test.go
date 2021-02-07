@@ -25,7 +25,7 @@ var (
 	}
 )
 
-func BenchmarkScan200(b *testing.B) {
+func BenchmarkScan100(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -36,7 +36,9 @@ func BenchmarkScan200(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
 				f.Seek(0, 0)
+				b.StartTimer()
 				if _, err := Scan(f); err != nil {
 					b.Fatal(err)
 				}
