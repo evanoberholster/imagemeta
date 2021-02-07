@@ -5,6 +5,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/ifds"
 	"github.com/evanoberholster/imagemeta/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // CameraMake convenience func. "IFD" Make
@@ -140,7 +141,7 @@ func (e *ExifData) XMLPacket() (str string, err error) {
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram
-func (e *ExifData) ExposureProgram() (ExposureMode, error) {
+func (e *ExifData) ExposureProgram() (meta.ExposureMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureProgram)
 	if err != nil {
 		return 0, err
@@ -149,11 +150,11 @@ func (e *ExifData) ExposureProgram() (ExposureMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return ExposureMode(ep), err
+	return meta.ExposureMode(ep), err
 }
 
 // MeteringMode convenience func. "IFD/Exif" MeteringMode
-func (e *ExifData) MeteringMode() (MeteringMode, error) {
+func (e *ExifData) MeteringMode() (meta.MeteringMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.MeteringMode)
 	if err != nil {
 		return 0, err
@@ -162,23 +163,23 @@ func (e *ExifData) MeteringMode() (MeteringMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return MeteringMode(mm), err
+	return meta.MeteringMode(mm), err
 }
 
 // ShutterSpeed convenience func. "IFD/Exif" ExposureTime
-func (e *ExifData) ShutterSpeed() (ShutterSpeed, error) {
+func (e *ExifData) ShutterSpeed() (meta.ShutterSpeed, error) {
 	// ShutterSpeedValue
 	// ExposureTime
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureTime)
 	if err != nil {
-		return ShutterSpeed{0, 0}, err
+		return meta.ShutterSpeed{0, 0}, err
 	}
 
 	ss, err := t.RationalValues(e.exifReader)
 	if err != nil {
-		return ShutterSpeed{0, 0}, err
+		return meta.ShutterSpeed{0, 0}, err
 	}
-	return ShutterSpeed{ss[0].Numerator, ss[0].Denominator}, err
+	return meta.ShutterSpeed{uint16(ss[0].Numerator), uint16(ss[0].Denominator)}, err
 }
 
 // Aperture convenience func. "IFD/Exif" FNumber
@@ -199,13 +200,13 @@ func (e *ExifData) Aperture() (float32, error) {
 
 // FocalLength convenience func. "IFD/Exif" FocalLength
 // Lens Focal Length in mm
-func (e *ExifData) FocalLength() (fl FocalLength, err error) {
+func (e *ExifData) FocalLength() (fl meta.FocalLength, err error) {
 	// FocalLength
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.FocalLength)
 	if err == nil {
 		rats, err := t.RationalValues(e.exifReader)
 		if err == nil {
-			fl = FocalLength(float32(rats[0].Numerator) / float32(rats[0].Denominator))
+			fl = meta.FocalLength(float32(rats[0].Numerator) / float32(rats[0].Denominator))
 			if fl > 0.0 {
 				return fl, nil
 			}
@@ -216,13 +217,13 @@ func (e *ExifData) FocalLength() (fl FocalLength, err error) {
 
 // FocalLengthIn35mmFilm convenience func. "IFD/Exif" FocalLengthIn35mmFilm
 // Lens Focal Length Equivalent for 35mm sensor in mm
-func (e *ExifData) FocalLengthIn35mmFilm() (fl FocalLength, err error) {
+func (e *ExifData) FocalLengthIn35mmFilm() (fl meta.FocalLength, err error) {
 	// FocalLengthIn35mmFilm
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.FocalLengthIn35mmFilm)
 	if err == nil {
 		rats, err := t.RationalValues(e.exifReader)
 		if err == nil {
-			fl = FocalLength(float32(rats[0].Numerator) / float32(rats[0].Denominator))
+			fl = meta.FocalLength(float32(rats[0].Numerator) / float32(rats[0].Denominator))
 			if fl > 0.0 {
 				return fl, nil
 			}
@@ -246,7 +247,7 @@ func (e *ExifData) ISOSpeed() (iso int, err error) {
 }
 
 // Flash convenience func. "IFD/Exif" Flash
-func (e *ExifData) Flash() (FlashMode, error) {
+func (e *ExifData) Flash() (meta.FlashMode, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.Flash)
 	if err != nil {
 		return 0, err
@@ -255,7 +256,7 @@ func (e *ExifData) Flash() (FlashMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return FlashMode(f), err
+	return meta.FlashMode(f), err
 }
 
 // Orientation convenience func. "IFD" Orientation
