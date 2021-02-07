@@ -1,4 +1,4 @@
-package imagemeta
+package exif
 
 import "github.com/evanoberholster/imagemeta/meta"
 

@@ -1,5 +1,5 @@
 // Package imagemeta provides functions for scanning for Exif Information and extracting it
-package imagemeta
+package exif
 
 import (
 	"bufio"

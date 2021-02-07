@@ -1,4 +1,4 @@
-package imagemeta
+package exif
 
 import (
 	"bytes"

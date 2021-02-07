@@ -1,4 +1,4 @@
-package imagemeta
+package exif
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	sampleDir     = "samples/"
+	sampleDir     = "../../test/img/"
 	testFilenames = []string{
 		"honor20.jpg",
 		"hero6.jpg",
