@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // TODO: write tests for ParseExif
@@ -18,7 +20,7 @@ func TestParseExif(t *testing.T) {
 		model       string
 		ISOSpeed    int
 		aperture    float32
-		focalLength FocalLength
+		focalLength meta.FocalLength
 		width       uint16
 		height      uint16
 		createdDate time.Time
