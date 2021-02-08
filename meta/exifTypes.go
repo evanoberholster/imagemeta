@@ -110,14 +110,25 @@ var mapStringMeteringMode = map[string]MeteringMode{
 // ExposureMode is the mode in which the Exposure was taken.
 type ExposureMode uint8
 
-// String - Return Exposure Mode as a string
-func (em ExposureMode) String() string {
-	return exposureModeValues[em]
+// mapExposureModeString -
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
+var mapExposureModeString = map[ExposureMode]string{
+	0: "Auto",
+	1: "Manual",
+	2: "Auto bracket",
 }
 
-// ExposureModeValues -
+// String returns an ExposureMode as a string
+func (em ExposureMode) String() string {
+	return mapExposureModeString[em]
+}
+
+// ExposureProgram is the program in which the image was taken.
+type ExposureProgram uint8
+
+// mapExposureProgramString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-var exposureModeValues = map[ExposureMode]string{
+var mapExposureProgramString = map[ExposureProgram]string{
 	0: "Not Defined",
 	1: "Manual",
 	2: "Program AE",
@@ -130,8 +141,10 @@ var exposureModeValues = map[ExposureMode]string{
 	9: "Bulb",
 }
 
-// ExposureProgram is the program in which the image was taken.
-type ExposureProgram uint8
+// String returns an ExposureProgram as a string
+func (ep ExposureProgram) String() string {
+	return mapExposureProgramString[ep]
+}
 
 // FlashMode - Mode in which a Flash was used.
 // (uint8) - value of FlashMode
@@ -236,34 +249,6 @@ type Aperture [2]uint
 // [0] Numerator [1] Denominator
 type ShutterSpeed [2]uint16
 
-func (ss ShutterSpeed) toBytes() (buf []byte) {
-	if ss[1] != 0 {
-		if ss[0] == 1 {
-			if ss[1] == 1 {
-				return []byte{'1', '.', '0'}
-			}
-			n := 8
-			if ss[1] < 100 {
-				n = 4
-			} else if ss[1] < 1000 {
-				n = 5
-			}
-			buf = make([]byte, 2, n)
-			buf[0] = '1'
-			buf[1] = '/'
-			return strconv.AppendUint(buf, uint64(ss[1]), 10)
-		}
-		if ss[0] > 1 {
-			v := ss[0] / ss[1]
-			r := ss[0] % ss[1]
-			buf = strconv.AppendUint(buf, uint64(v), 10)
-			buf = append(buf, '.')
-			return strconv.AppendUint(buf, uint64(r), 10)
-		}
-	}
-	return []byte{'0'}
-}
-
 // parseShutterSpeed parses a ShutterSpeed time value from []byte.
 // Example: For less than 1 second: (1/250)
 // Example: For more than 1 second: (1.3)
@@ -297,7 +282,31 @@ func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (ss ShutterSpeed) MarshalText() (text []byte, err error) {
-	return ss.toBytes(), nil
+	if ss[1] != 0 {
+		if ss[0] == 1 {
+			if ss[1] == 1 {
+				return []byte{'1', '.', '0'}, nil
+			}
+			n := 8
+			if ss[1] < 100 {
+				n = 4
+			} else if ss[1] < 1000 {
+				n = 5
+			}
+			text = make([]byte, 2, n)
+			text[0] = '1'
+			text[1] = '/'
+			return strconv.AppendUint(text, uint64(ss[1]), 10), nil
+		}
+		if ss[0] > 1 {
+			v := ss[0] / ss[1]
+			r := ss[0] % ss[1]
+			text = strconv.AppendUint(text, uint64(v), 10)
+			text = append(text, '.')
+			return strconv.AppendUint(text, uint64(r), 10), nil
+		}
+	}
+	return []byte{'0'}, nil
 }
 
 // UnmarshalText implements the TextUnmarshaler interface that is
@@ -309,7 +318,8 @@ func (ss *ShutterSpeed) UnmarshalText(text []byte) (err error) {
 
 // String returns a ShutterSpeed as a string
 func (ss ShutterSpeed) String() string {
-	return string(ss.toBytes())
+	buf, _ := ss.MarshalText()
+	return string(buf)
 }
 
 // ExposureBias - [0] Numerator [1] Denominator
@@ -317,11 +327,18 @@ type ExposureBias [2]int16
 
 // String - String value of Exposure Bias
 func (eb ExposureBias) String() string {
-	return strconv.Itoa(int(eb[0])) + "/" + strconv.Itoa(int(eb[1]))
-	//return fmt.Sprintf("%d/%d", eb[0], eb[1])
+	buf, _ := eb.MarshalText()
+	return string(buf)
 }
 
-// MarshalJSON - Custom Marshall JSON
-func (eb ExposureBias) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + eb.String() + "\""), nil
+// MarshalText implements the TextMarshaler interface that is
+// used by encoding/json
+func (eb ExposureBias) MarshalText() (text []byte, err error) {
+	if eb[1] != 0 {
+		text = strconv.AppendInt(text, int64(eb[0]), 10)
+		text = append(text, '/')
+		text = strconv.AppendInt(text, int64(eb[1]), 10)
+		return
+	}
+	return []byte{'0', '/', '0'}, nil
 }

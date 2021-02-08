@@ -1,8 +1,10 @@
-package meta
+package metadata
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
+	"io"
 )
 
 // jpegByteOrder - JPEG always uses a BigEndian Byteorder.
@@ -18,6 +20,7 @@ type SOFHeader struct {
 
 // JPEGMetadata from JPEG files
 type JPEGMetadata struct {
+	Decoder
 	// SOF Header and Tiff Header
 	SOFHeader
 	TiffHeader
@@ -97,7 +100,10 @@ func (m *JPEGMetadata) readAPP1(buf []byte) (err error) {
 		// Set Tiff Header
 		m.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
 
-		//fmt.Println("Exif Tiff Header:", m.tiffHeader)
+		//fmt.Println("Exif Tiff Header:", m.TiffHeader)
+
+		// Read Exif Information
+		//m.EXIFDecodeFn(*m.br)
 
 		// Discard Exif information bytes
 		return m.discard(int(length))
@@ -116,6 +122,13 @@ func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 		return err
 	}
 
+	// Max Read length
+
+	// Use XML Decode Function if not nil
+	if m.xmpDecodeFn != nil {
+		return m.xmpDecodeFn(io.LimitReader(m.br, int64(length)))
+	}
+
 	//fmt.Println("XML Header:", m.discarded, m.pos, length)
 	xmpBuf := make([]byte, length)
 	for i := 0; i < length; {
@@ -125,12 +138,23 @@ func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 		}
 		i += n
 	}
-
-	m.xml = string(xmpBuf)
-	//str := strings.Replace(string(xmpBuf), "\n", "", -1)
-	//m.XML = strings.Replace(str, "   ", "", -1)
-	//m.XML = xmlfmt.FormatXML(string(buf), "\t", "  ")
+	m.xml = string(cleanXMP(xmpBuf))
 	return nil
+}
+
+// cleanXMP returns the same slice with the whitespace after "</x:xmpmeta>" removed.
+func cleanXMP(buf []byte) []byte {
+	for i := len(buf) - 1; i > 12; i-- {
+		if buf[i] == '>' && buf[i-1] == 'a' {
+			// </x:xmpmeta>
+			//fmt.Println(string(buf[i-11 : i+1]))
+			if bytes.Equal([]byte("</x:xmpmeta>"), buf[i-11:i+1]) {
+				buf = buf[:i+1]
+				return buf
+			}
+		}
+	}
+	return buf
 }
 
 // readSOF

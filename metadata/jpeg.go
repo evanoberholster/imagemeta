@@ -1,4 +1,4 @@
-package meta
+package metadata
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ var (
 )
 
 // ScanJPEG -
-func ScanJPEG(r *bufio.Reader) (m JPEGMetadata, err error) {
+func ScanJPEG(r *bufio.Reader, xmpDecodeFn DecodeFn, exifDecodeFn DecodeFn) (m JPEGMetadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -21,6 +21,8 @@ func ScanJPEG(r *bufio.Reader) (m JPEGMetadata, err error) {
 	}()
 
 	m = newMetadata(r)
+	m.xmpDecodeFn = xmpDecodeFn
+	m.exifDecodeFn = exifDecodeFn
 
 	var buf []byte
 	for {

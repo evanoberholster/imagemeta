@@ -6,7 +6,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/metadata"
 )
 
 // API Errors
@@ -27,19 +27,19 @@ type ExifData struct {
 	XMP        []byte
 	width      uint16
 	height     uint16
-	ImageType  imagetype.ImageType
+	imageType  imagetype.ImageType
 }
 
 // newExifData creates a new initialized Exif object
 func newExifData(er *reader, it imagetype.ImageType) *ExifData {
 	return &ExifData{
 		exifReader: er,
-		ImageType:  it,
+		imageType:  it,
 	}
 }
 
 // SetMetadata sets the imagetype metadata in exif
-func (e *ExifData) SetMetadata(m meta.Metadata) {
+func (e *ExifData) SetMetadata(m metadata.Metadata) {
 	// Set Exif Width, Height from Metadata Image Size
 	e.width, e.height = m.Size()
 

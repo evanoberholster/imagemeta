@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/metadata"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
@@ -26,9 +27,15 @@ func main() {
 	}()
 	fmt.Println(testFilename)
 	//buf, _ := ioutil.ReadAll(f)
-	//cb := bytes.NewReader(buf)
+	br := bufio.NewReader(f)
+
+	//xmpDecodeFn := func(r io.Reader) error {
+	//	ioutil.ReadAll(r)
+	//	return nil
+	//}
 	start := time.Now()
-	m, err := meta.Scan(f, imagetype.ImageJPEG)
+	m, err := metadata.ScanBuf2(br, imagetype.ImageJPEG, nil)
+	//m, err := meta.Scan(f, imagetype.ImageJPEG)
 	if err != nil {
 		panic(err)
 	}

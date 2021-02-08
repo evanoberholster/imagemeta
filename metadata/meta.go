@@ -1,6 +1,6 @@
-// Package meta provides a Metadata interface for interpreting metadata
-// from different image types such as JPEG, TIFF, HEIF.
-package meta
+// Package metadata provides a Metadata interface for interpreting metadata
+// from different image types such as JPEG, TIFF, HEIF, and AVIF.
+package metadata
 
 import (
 	"bufio"
@@ -32,8 +32,30 @@ func Scan(reader io.Reader, t imagetype.ImageType) (m Metadata, err error) {
 func ScanBuf(reader *bufio.Reader, t imagetype.ImageType) (m Metadata, err error) {
 	switch t {
 	case imagetype.ImageJPEG:
-		m, err = ScanJPEG(reader)
-		if err != nil {
+		if m, err = ScanJPEG(reader, nil, nil); err != nil {
+			err = ErrNoExif
+		}
+		return
+	case imagetype.ImageWebP:
+		err = ErrMetadataNotSupported
+		return
+	case imagetype.ImageXMP:
+		err = ErrMetadataNotSupported
+		return
+	default:
+		m, err = ScanTiff(reader)
+		if err == ErrNoExif {
+			err = ErrNoExif
+		}
+		return
+	}
+}
+
+// ScanBuf2 -
+func ScanBuf2(reader *bufio.Reader, t imagetype.ImageType, xmpDecodeFn DecodeFn) (m Metadata, err error) {
+	switch t {
+	case imagetype.ImageJPEG:
+		if m, err = ScanJPEG(reader, xmpDecodeFn, nil); err != nil {
 			err = ErrNoExif
 		}
 		return

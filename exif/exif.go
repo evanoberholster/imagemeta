@@ -7,14 +7,14 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/metadata"
 )
 
 // Errors
 var (
 	// Alias to meta Errors
-	ErrInvalidHeader = meta.ErrInvalidHeader
-	ErrNoExif        = meta.ErrNoExif
+	ErrInvalidHeader = metadata.ErrInvalidHeader
+	ErrNoExif        = metadata.ErrNoExif
 )
 
 // ScanExif identifies the imageType based on magic bytes and
@@ -36,7 +36,7 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 
 	// Search Image for Metadata Header using
 	// Imagetype information
-	m, err := meta.ScanBuf(br, it)
+	m, err := metadata.ScanBuf(br, it)
 	if err != nil {
 		if err != ErrNoExif {
 			return
@@ -73,7 +73,7 @@ func ParseExif(r io.ReaderAt) (e *ExifData, err error) {
 
 	// Search Image for Metadata Header using
 	// Imagetype information
-	m, err := meta.ScanBuf(br, imagetype.ImageUnknown)
+	m, err := metadata.ScanBuf(br, imagetype.ImageUnknown)
 	if err != nil {
 		if err != ErrNoExif {
 			return

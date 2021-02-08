@@ -111,7 +111,8 @@ func TestShutterSpeed(t *testing.T) {
 			t.Error(err)
 		}
 
-		assert.Equal(t, bm.ss, b1, "UnmarshalText #%s, wanted: %s got: %s", bm.name, bm.str, b1.toBytes())
+		m, _ := b1.MarshalText()
+		assert.Equal(t, bm.ss, b1, "UnmarshalText #%s, wanted: %s got: %s", bm.name, bm.str, m)
 
 	}
 }
@@ -152,7 +153,6 @@ func TestFlashMode(t *testing.T) {
 		assert.Equal(t, []byte(strconv.Itoa(int(b))), txt, "FlashMode.MarshalText #%s, wanted %d got %d", fm.name, fm.m, strconv.Itoa(int(b)))
 
 		// UnmarshalText
-
 		if err = b.UnmarshalText([]byte(strconv.Itoa(int(fm.m)))); err != nil {
 			t.Errorf("Error FlashMode.UnmarshalText (%s): %s ", fm.name, err.Error())
 		}
@@ -170,4 +170,48 @@ func TestFlashMode(t *testing.T) {
 	b := ParseFlashMode(250)
 	assert.Equal(t, a.Bool(), false, "FlashMode.Bool #%s, wanted %s got %s", "Incorrect FlashMode", false, a.Bool())
 	assert.NotEqual(t, a, b, "FlashMode.ParseFlashMode #%s, wanted %s got %s", "Incorrect FlashMode", b, a)
+}
+
+var ebList = []struct {
+	name string
+	eb   ExposureBias
+	str  string
+}{
+	{"test0", ExposureBias{1, 3}, "1/3"},
+	{"test1", ExposureBias{2, 3}, "2/3"},
+	{"test2", ExposureBias{-4, 3}, "-4/3"},
+	{"test3", ExposureBias{1, 0}, "0/0"},
+}
+
+func TestExposureBias(t *testing.T) {
+	for _, eb := range ebList {
+
+		// TextMarshall
+		txt, err := eb.eb.MarshalText()
+		if err != nil {
+			t.Errorf("Error ExposureBias.MarshallText (%s): %s ", eb.name, err.Error())
+		}
+		assert.Equal(t, []byte(eb.str), txt, "ExposureBias.MarshalText #%s, wanted %d got %d", eb.name, eb.eb, []byte(eb.str))
+
+		// UnmarshalText
+		//if err = b.UnmarshalText([]byte(strconv.Itoa(int(fm.m)))); err != nil {
+		//	t.Errorf("Error FlashMode.UnmarshalText (%s): %s ", fm.name, err.Error())
+		//}
+		//assert.Equal(t, fm.fm, b, "FlashMode.UnmarshalText #%s, wanted %d got %d", fm.name, fm.fm, b)
+
+		// String
+		assert.Equal(t, eb.str, eb.eb.String(), "ExposureBias.String #%s, wanted %s got %s", eb.name, eb.str, eb.eb.String())
+	}
+}
+
+func BenchmarkExposureBias100(b *testing.B) {
+	for _, eb := range ebList {
+		b.Run(eb.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				eb.eb.MarshalText()
+			}
+		})
+	}
 }

@@ -1,4 +1,4 @@
-package meta
+package metadata
 
 type TiffMetadata struct {
 	TiffHeader

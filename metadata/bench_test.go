@@ -1,4 +1,4 @@
-package meta
+package metadata
 
 import (
 	"bufio"
@@ -42,9 +42,11 @@ func BenchmarkScanJPEG200(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
 				cb.Seek(0, 0)
 				br := bufio.NewReader(cb)
-				if _, err := ScanJPEG(br); err != nil {
+				b.StartTimer()
+				if _, err := ScanJPEG(br, nil, nil); err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
 					}
@@ -53,6 +55,19 @@ func BenchmarkScanJPEG200(b *testing.B) {
 		})
 	}
 }
+
+//BenchmarkScanJPEG200/1.jpg         	  249627	      6403 ns/op	   24576 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/2.jpg         	  377977	      2723 ns/op	    8192 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/3.jpg         	  512973	      2318 ns/op	    1792 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/10.jpg        	  218306	      5297 ns/op	   24576 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/13.jpg        	 2174020	       538 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanJPEG200/14.jpg        	 1888692	       688 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanJPEG200/16.jpg        	  198746	      5319 ns/op	   24576 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/17.jpg        	  164886	      6598 ns/op	   27136 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/20.jpg/NoExif 	 4174371	       290 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanJPEG200/21.jpeg       	  589219	      2259 ns/op	    6144 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/24.jpg        	  548211	      2100 ns/op	    6144 B/op	       2 allocs/op
+//BenchmarkScanJPEG200/123.jpg       	 4213646	       298 ns/op	       0 B/op	       0 allocs/op
 
 // BenchmarkScanJPEG200/1.jpg-8         	  659306	      1606 ns/op	    5984 B/op	       4 allocs/op
 // BenchmarkScanJPEG200/2.jpg-8         	  737552	      1730 ns/op	    5984 B/op	       4 allocs/op
