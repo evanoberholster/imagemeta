@@ -14,39 +14,30 @@ const (
 // ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
 // and returns the TiffHeader
 func ScanTiff(reader *bufio.Reader) (m TiffMetadata, err error) {
-	defer func() {
-		if state := recover(); state != nil {
-			err = state.(error)
-		}
-	}()
 	return scanTIFF(reader)
 }
 
 // Search for the beginning of the EXIF information. The EXIF is near the
 // beginning of most Image files, so this likely doesn't have a high cost.
 func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
-	tm = TiffMetadata{}
+	//tm = TiffMetadata{}
 	discarded := 0
 
 	var buf []byte
 
 	for {
-		buf, err = br.Peek(tiffHeaderLength)
-		if err != nil {
+		if buf, err = br.Peek(tiffHeaderLength); err != nil {
 			if err == io.EOF {
 				err = ErrNoExif
-				break
+				return
 			}
-			panic(err)
+			return
 		}
 
 		byteOrder := BinaryOrder(buf)
 		if byteOrder == nil {
 			// Exif not identified. Move forward by one byte.
-			if _, err = br.Discard(1); err != nil {
-				panic(err)
-			}
-
+			_, _ = br.Discard(1)
 			discarded++
 			continue
 		}
@@ -57,8 +48,6 @@ func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
 		tm.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
 		return
 	}
-
-	return
 }
 
 // BinaryOrder returns the binary.ByteOrder for a Tiff Header
@@ -67,15 +56,13 @@ func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
 // CIPA DC-008-2016; JEITA CP-3451D
 // -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
 func BinaryOrder(buf []byte) binary.ByteOrder {
-	if len(buf) < 8 {
-		panic(ErrNoExif)
-	}
-
-	if isTiffBigEndian(buf[:4]) {
-		return binary.BigEndian
-	}
-	if isTiffLittleEndian(buf[:4]) {
-		return binary.LittleEndian
+	if len(buf) == 16 {
+		if isTiffBigEndian(buf[:4]) {
+			return binary.BigEndian
+		}
+		if isTiffLittleEndian(buf[:4]) {
+			return binary.LittleEndian
+		}
 	}
 	return nil
 }

@@ -12,6 +12,6 @@ func (tm TiffMetadata) Header() TiffHeader {
 	return tm.TiffHeader
 }
 
-func (tm TiffMetadata) XML() string {
+func (tm TiffMetadata) XMP() string {
 	return ""
 }

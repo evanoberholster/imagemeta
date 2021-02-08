@@ -1,7 +1,6 @@
 package xmp
 
 import (
-	"bufio"
 	"fmt"
 
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
@@ -139,7 +138,7 @@ func (t *Tag) attr() (attr Attribute, err error) {
 	return
 }
 
-func (t *Tag) readVal(br *bufio.Reader) (err error) {
+func (t *Tag) readVal(br Reader) (err error) {
 	if t.t == startTag {
 		// read TagValue
 		var a []byte

@@ -12,7 +12,6 @@ var jpegByteOrder = binary.BigEndian
 
 // SOFHeader contains height, width and number of components.
 type SOFHeader struct {
-	//offset     uint32
 	height     uint16
 	width      uint16
 	components uint8
@@ -24,10 +23,9 @@ type JPEGMetadata struct {
 	// SOF Header and Tiff Header
 	SOFHeader
 	TiffHeader
-	XMPHeader
 
 	// XML and Exif
-	xml  string
+	xmp  string
 	Exif []byte
 
 	// Reader
@@ -41,9 +39,9 @@ func (m JPEGMetadata) Size() (width, height uint16) {
 	return m.width, m.height
 }
 
-// XML returns the xml in the JPEG Image as a string
-func (m JPEGMetadata) XML() string {
-	return m.xml
+// XMP returns the xmp in the JPEG Image as a string
+func (m JPEGMetadata) XMP() string {
+	return m.xmp
 }
 
 // Header returns the TiffHeader from the JPEG Image
@@ -52,11 +50,14 @@ func (m JPEGMetadata) Header() TiffHeader {
 }
 
 // newMetadata creates a New metadata object from an io.Reader
-func newMetadata(reader *bufio.Reader) JPEGMetadata {
-	return JPEGMetadata{
+func newJPEGMetadata(reader *bufio.Reader, xmpDecodeFn DecodeFn, exifDecodeFn DecodeFn) JPEGMetadata {
+	jm := JPEGMetadata{
 		br:        reader,
 		discarded: 0,
 	}
+	jm.xmpDecodeFn = xmpDecodeFn
+	jm.exifDecodeFn = exifDecodeFn
+	return jm
 }
 
 // readAPP1
@@ -122,14 +123,19 @@ func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 		return err
 	}
 
-	// Max Read length
-
 	// Use XML Decode Function if not nil
 	if m.xmpDecodeFn != nil {
-		return m.xmpDecodeFn(io.LimitReader(m.br, int64(length)))
+		r := io.LimitReader(m.br, int64(length))
+		err = m.xmpDecodeFn(r)
+		remain := r.(*io.LimitedReader).N
+		if remain > 0 {
+			err = m.discard(int(remain))
+		}
+		return
 	}
 
 	//fmt.Println("XML Header:", m.discarded, m.pos, length)
+	// Max Read length
 	xmpBuf := make([]byte, length)
 	for i := 0; i < length; {
 		n, err := m.br.Read(xmpBuf[i:])
@@ -138,7 +144,7 @@ func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 		}
 		i += n
 	}
-	m.xml = string(cleanXMP(xmpBuf))
+	m.xmp = string(cleanXMP(xmpBuf))
 	return nil
 }
 
@@ -147,7 +153,6 @@ func cleanXMP(buf []byte) []byte {
 	for i := len(buf) - 1; i > 12; i-- {
 		if buf[i] == '>' && buf[i-1] == 'a' {
 			// </x:xmpmeta>
-			//fmt.Println(string(buf[i-11 : i+1]))
 			if bytes.Equal([]byte("</x:xmpmeta>"), buf[i-11:i+1]) {
 				buf = buf[:i+1]
 				return buf

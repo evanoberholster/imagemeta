@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -29,21 +29,22 @@ func main() {
 	//buf, _ := ioutil.ReadAll(f)
 	br := bufio.NewReader(f)
 
-	//xmpDecodeFn := func(r io.Reader) error {
-	//	ioutil.ReadAll(r)
-	//	return nil
-	//}
+	var x xmp.XMP
+	xmpDecodeFn := func(r io.Reader) error {
+		var err error
+		x, err = xmp.Read(r)
+		return err
+	}
 	start := time.Now()
-	m, err := metadata.ScanBuf2(br, imagetype.ImageJPEG, nil)
+	m, err := metadata.ScanBuf2(br, imagetype.ImageJPEG, xmpDecodeFn)
 	//m, err := meta.Scan(f, imagetype.ImageJPEG)
 	if err != nil {
 		panic(err)
 	}
 
+	//x, err = xmp.Read(bytes.NewReader([]byte(m.XML())))
 	elapsed := time.Since(start)
-
-	x, err := xmp.Read(bytes.NewReader([]byte(m.XML())))
-	fmt.Println(m.XML())
+	fmt.Println(m.XMP())
 	fmt.Println(m.Size())
 	fmt.Println(m.Header())
 	fmt.Println(elapsed)

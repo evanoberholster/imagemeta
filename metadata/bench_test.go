@@ -29,7 +29,7 @@ var (
 	}
 )
 
-func BenchmarkScanJPEG200(b *testing.B) {
+func BenchmarkScanJPEG100(b *testing.B) {
 	for _, bm := range benchmarksJPEG {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -56,18 +56,18 @@ func BenchmarkScanJPEG200(b *testing.B) {
 	}
 }
 
-//BenchmarkScanJPEG200/1.jpg         	  249627	      6403 ns/op	   24576 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/2.jpg         	  377977	      2723 ns/op	    8192 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/3.jpg         	  512973	      2318 ns/op	    1792 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/10.jpg        	  218306	      5297 ns/op	   24576 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/13.jpg        	 2174020	       538 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanJPEG200/14.jpg        	 1888692	       688 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanJPEG200/16.jpg        	  198746	      5319 ns/op	   24576 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/17.jpg        	  164886	      6598 ns/op	   27136 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/20.jpg/NoExif 	 4174371	       290 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanJPEG200/21.jpeg       	  589219	      2259 ns/op	    6144 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/24.jpg        	  548211	      2100 ns/op	    6144 B/op	       2 allocs/op
-//BenchmarkScanJPEG200/123.jpg       	 4213646	       298 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkScanJPEG100/1.jpg         	  251211	      4848 ns/op	   19200 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/2.jpg         	  393896	      2940 ns/op	    6144 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/3.jpg         	  461436	      2223 ns/op	    1792 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/10.jpg        	  255290	      4926 ns/op	   20480 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/13.jpg        	 2233306	       567 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkScanJPEG100/14.jpg        	 1882832	       593 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkScanJPEG100/16.jpg        	  242924	      5573 ns/op	   19200 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/17.jpg        	  211317	      6126 ns/op	   23040 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/20.jpg/NoExif 	 4142763	       307 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkScanJPEG100/21.jpeg       	  556494	      1958 ns/op	    3840 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/24.jpg        	  554869	      2195 ns/op	    4096 B/op	       2 allocs/op
+// BenchmarkScanJPEG100/123.jpg       	 3695756	       299 ns/op	       0 B/op	       0 allocs/op
 
 // BenchmarkScanJPEG200/1.jpg-8         	  659306	      1606 ns/op	    5984 B/op	       4 allocs/op
 // BenchmarkScanJPEG200/2.jpg-8         	  737552	      1730 ns/op	    5984 B/op	       4 allocs/op
@@ -95,7 +95,8 @@ var (
 		{".GoPro/6", "hero6.jpg"},
 		{".NEF/Nikon", "2.NEF"},
 		{".ARW/Sony", "2.ARW"},
-		{".DNG/Adobe", "1.DNG"},
+		{".WEBP/Webp", "4.webp"},
+		{".DNG/Adobe", "1.dng"},
 		{".JPG/NoExif", "20.jpg"},
 	}
 )
@@ -111,8 +112,10 @@ func BenchmarkScanTiff200(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
+				b.StartTimer()
 				if _, err := ScanTiff(br); err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
@@ -123,13 +126,14 @@ func BenchmarkScanTiff200(b *testing.B) {
 	}
 }
 
-//BenchmarkScanTiff200/.CR2/GPS-8         	  522862	      2255 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.CR2/7D-8          	  544670	      2238 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.CR3-8             	  258202	      4594 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.JPG/GPS-8         	  505470	      2420 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.HEIC-8            	    7010	    169910 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.GoPro/6-8         	  477766	      2389 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.NEF/Nikon-8       	  521940	      2256 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.ARW/Sony-8        	  541036	      2241 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.DNG/Adobe-8       	  549294	      2314 ns/op	    4096 B/op	       1 allocs/op
-//BenchmarkScanTiff200/.JPG/NoExif-8      	     520	   2351142 ns/op	    4096 B/op	       1 allocs/op
+//BenchmarkScanTiff200/.CR2/GPS         	 1422090	       831 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.CR2/7D          	 1672982	       724 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.CR3             	  300817	      4007 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.JPG/GPS         	 1371778	       924 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.HEIC            	   19898	     67681 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.GoPro/6         	 1362571	       926 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.NEF/Nikon       	 1599162	       758 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.ARW/Sony        	 1687218	       693 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.WEBP/Webp       	     621	   1740838 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.DNG/Adobe       	 1743273	       689 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkScanTiff200/.JPG/NoExif      	     398	   3031075 ns/op	       0 B/op	       0 allocs/op

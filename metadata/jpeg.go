@@ -20,9 +20,7 @@ func ScanJPEG(r *bufio.Reader, xmpDecodeFn DecodeFn, exifDecodeFn DecodeFn) (m J
 		}
 	}()
 
-	m = newMetadata(r)
-	m.xmpDecodeFn = xmpDecodeFn
-	m.exifDecodeFn = exifDecodeFn
+	m = newJPEGMetadata(r, xmpDecodeFn, exifDecodeFn)
 
 	var buf []byte
 	for {

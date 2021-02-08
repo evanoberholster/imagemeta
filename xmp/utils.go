@@ -1,7 +1,6 @@
 package xmp
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"time"
@@ -9,7 +8,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func readUntilByte(br *bufio.Reader, end byte) (n int, err error) {
+func readUntilByte(br Reader, end byte) (n int, err error) {
 	var b byte
 	for {
 		b, err = br.ReadByte()

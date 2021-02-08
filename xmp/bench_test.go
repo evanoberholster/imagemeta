@@ -1,6 +1,8 @@
 package xmp
 
 import (
+	"bytes"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -13,6 +15,8 @@ var (
 // BenchmarkXMPRead200 	   28819	     42524 ns/op	    6368 B/op	       8 allocs/op
 // BenchmarkXMPRead200 	   28201	     42819 ns/op	    6240 B/op	       2 allocs/op
 // BenchmarkXMPRead200 	   33976	     34644 ns/op	    6240 B/op	       2 allocs/op
+
+// BenchmarkXMPRead200 	   23542	     50447 ns/op	    7248 B/op	      29 allocs/op
 
 // Walk
 // BenchmarkXMPRead200 	    6062	    191794 ns/op	   23920 B/op	     425 allocs/op
@@ -35,13 +39,16 @@ func BenchmarkXMPRead200(b *testing.B) {
 	}
 	defer f.Close()
 
+	a, _ := ioutil.ReadAll(f)
+	r2 := bytes.NewReader(a)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		f.Seek(0, 0)
+		r2.Seek(0, 0)
 		b.StartTimer()
-		if _, err := Read(f); err != nil {
+		if _, err := Read(r2); err != nil {
 			b.Fatal(err)
 		}
 	}
