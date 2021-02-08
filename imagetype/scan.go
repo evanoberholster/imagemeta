@@ -71,13 +71,12 @@ func parseBuffer(buf []byte) ImageType {
 		return ImageCR2
 	}
 
-	// Canon CR3 Header
-	if isCR3(buf) {
-		return ImageCR3
-	}
-
 	// ISOBMFF Header
 	if isFTYPBox(buf) {
+		// Canon CR3 Header
+		if isCR3(buf) {
+			return ImageCR3
+		}
 		// AVIF Header
 		if isAVIF(buf) {
 			return ImageAVIF

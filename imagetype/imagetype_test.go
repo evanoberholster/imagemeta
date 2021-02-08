@@ -8,7 +8,7 @@ import (
 )
 
 // Tests
-func TestSearchImageType(t *testing.T) {
+func TestScan(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename  string
 		imageType ImageType
@@ -46,7 +46,7 @@ func TestSearchImageType(t *testing.T) {
 	}
 }
 
-func TestImageTypeFunc(t *testing.T) {
+func TestImageType(t *testing.T) {
 
 	str := "image/jpeg"
 	it := ImageJPEG
