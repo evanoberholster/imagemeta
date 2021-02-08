@@ -10,26 +10,83 @@ import (
 // ErrUnknownBox is returned by Box.Parse for unrecognized box types.
 var ErrUnknownBox = errors.New("heif: unknown box")
 
+// BoxType is an ISOBMFF box
+type BoxType uint8
+
 // Common box types.
-var (
-	TypeFtyp = BoxType{'f', 't', 'y', 'p'}
-	TypeMeta = BoxType{'m', 'e', 't', 'a'}
+const (
+	TypeUnknown BoxType = iota
+	TypeFtyp            // 'ftyp'
+	TypeMeta            // 'meta'
+	TypeInfe            // 'infe'
+	TypeDinf            // 'dinf'
+	TypeHdlr            // 'hdlr'
+	TypeIinf            // 'iinf'
+	TypePitm            // 'pitm'
+	TypeIref            // 'iref'
+	TypeIprp            // 'iprp'
+	TypeIdat            // 'idat'
+	TypeIloc            // 'iloc'
+	TypeUUID            // 'uuid'
+	TypeImag            // 'Imag'
 )
 
-// BoxType is an ISOBMFF box
-type BoxType [4]byte
-
-func (t BoxType) String() string {
-	return string(t[:])
+var mapStringBoxType = map[string]BoxType{
+	"ftyp": TypeFtyp,
+	"meta": TypeMeta,
+	"infe": TypeInfe,
+	"dinf": TypeDinf,
+	"hdlr": TypeHdlr,
+	"iinf": TypeIinf,
+	"pitm": TypePitm,
+	"iref": TypeIref,
+	"iprp": TypeIprp,
+	"idat": TypeIdat,
+	"iloc": TypeIloc,
+	"uuid": TypeUUID,
+	"Imag": TypeImag,
 }
 
-var boxTypeUnknown = BoxType{0, 0, 0, 0}
+var mapBoxTypeString = map[BoxType]string{
+	TypeFtyp: "ftyp",
+	TypeMeta: "meta",
+	TypeInfe: "infe",
+	TypeDinf: "dinf",
+	TypeHdlr: "hdlr",
+	TypeIinf: "iinf",
+	TypePitm: "pitm",
+	TypeIref: "iref",
+	TypeIprp: "iprp",
+	TypeIdat: "idat",
+	TypeIloc: "iloc",
+	TypeUUID: "uuid",
+	TypeImag: "Imag",
+}
 
-func boxType(s string) BoxType {
-	if len(s) == 4 {
-		return BoxType{s[0], s[1], s[2], s[3]}
+func (t BoxType) String() string {
+	str, ok := mapBoxTypeString[t]
+	if ok {
+		return str
 	}
-	return boxTypeUnknown
+	return "nnnn"
+}
+
+func boxType(buf []byte) BoxType {
+	if buf[0] == 'i' {
+		if buf[1] == 'n' && buf[2] == 'f' && buf[3] == 'e' {
+			return TypeInfe
+		}
+	}
+	if len(buf) == 4 {
+		b, ok := mapStringBoxType[string(buf)]
+		if ok {
+			return b
+		}
+	}
+	if Debug {
+		fmt.Println(string(buf))
+	}
+	return TypeUnknown
 }
 
 type box struct {
@@ -37,8 +94,8 @@ type box struct {
 	//r       *bufio.Reader
 	size    int64 // 0 means unknown, will read to end of file (box container)
 	err     error
-	boxType BoxType
 	parsed  Box // if non-nil, the Parsed result
+	boxType BoxType
 }
 
 func (b box) String() string {
@@ -72,25 +129,25 @@ var parsers map[BoxType]parserFunc
 
 func init() {
 	parsers = map[BoxType]parserFunc{
-		boxType("dinf"): parseDataInformationBox,
+		TypeDinf: parseDataInformationBox,
 		//boxType("dref"): parseDataReferenceBox,
-		boxType("ftyp"): parseFileTypeBox,
-		boxType("hdlr"): parseHandlerBox,
-		//boxType("iinf"): parseItemInfoBox,
-		//boxType("infe"): parseItemInfoEntry,
+		TypeFtyp: parseFileTypeBox,
+		TypeHdlr: parseHandlerBox,
+		TypeIinf: parseItemInfoBox,
+		TypeInfe: parseItemInfoEntry,
 		//boxType("iloc"): parseItemLocationBox,
 		//boxType("ipco"): parseItemPropertyContainerBox,
 		//boxType("ipma"): parseItemPropertyAssociation,
 		//boxType("iprp"): parseItemPropertiesBox,
 		//boxType("irot"): parseImageRotation,
 		//boxType("ispe"): parseImageSpatialExtentsProperty,
-		boxType("meta"): parseMetaBox,
-		boxType("pitm"): parsePrimaryItemBox,
+		TypeMeta: parseMetaBox,
+		TypePitm: parsePrimaryItemBox,
 	}
 }
 
 type FullBox struct {
-	*box
+	box
 	Version uint8
 	Flags   uint32 // 24 bits
 }
@@ -99,7 +156,7 @@ type MetaBox struct {
 	FullBox
 	Handler     HandlerBox
 	PrimaryItem PrimaryItemBox
-	//ItemInfo       ItemInfoBox
+	ItemInfo    ItemInfoBox
 	//ItemProperties ItemPropertiesBox
 	//ItemLocation   ItemLocationBox
 	Children []Box
@@ -116,8 +173,8 @@ func (mb *MetaBox) setBox(b Box) error {
 		mb.Handler = v
 	case PrimaryItemBox:
 		mb.PrimaryItem = v
-	//case *bmff.ItemInfoBox:
-	//	meta.ItemInfo = v
+	case ItemInfoBox:
+		mb.ItemInfo = v
 	//case *bmff.ItemPropertiesBox:
 	//	meta.Properties = v
 	//case *bmff.ItemLocationBox:
@@ -129,7 +186,7 @@ func (mb *MetaBox) setBox(b Box) error {
 }
 
 func readFullBox(outer *box) (fb FullBox, err error) {
-	fb.box = outer
+	fb.box = *outer
 	// Parse FullBox header.
 	buf, err := fb.box.r.Peek(4)
 	if err != nil {
@@ -161,14 +218,17 @@ func parseMetaBox(outer *box, br bufReader) (Box, error) {
 		}
 		p, err := inner.Parse()
 		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		mb.setBox(p)
-		mb.r.remain -= inner.size
-		//boxr.br.discard(int(inner.r.remain))
+			boxr.br.discard(int(inner.r.remain))
+			//fmt.Println(err, inner.r.remain)
 
-		fmt.Println(inner, mb.r.remain, inner.r.remain, inner.size)
+		} else {
+			mb.setBox(p)
+		}
+		mb.r.remain -= inner.size
+
+		if Debug {
+			fmt.Println(inner, mb.r.remain, inner.r.remain, inner.size)
+		}
 	}
 	//mb.Children, err = fb.parseAppendBoxes()
 	//fmt.Println(mb, mb.r.remain)

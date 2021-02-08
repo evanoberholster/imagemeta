@@ -51,6 +51,10 @@ func (br *bufReader) readString() (string, error) {
 		return "", err
 	}
 	br.remain -= int64(len(s0))
+	if s0[len(s0)-1] == '\x00' {
+		s0 = s0[:len(s0)-1]
+		return string(s0), nil
+	}
 	s := strings.TrimSuffix(s0, "\x00")
 	if len(s) == len(s0) {
 		err = fmt.Errorf("unexpected non-null terminated string")
@@ -80,7 +84,7 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 	}
 
 	if br.remain < 4 {
-		err = errors.New("bufReader brand insufficient length error")
+		err = errors.New("bufReader error: brand insufficient length")
 		br.err = err
 		return
 	}
@@ -89,4 +93,22 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 		return
 	}
 	return brand(buf[:4]), br.discard(4)
+}
+
+func (br *bufReader) readItemType() (it ItemType, err error) {
+	if br.remain < 4 {
+		err = errors.New("bufReader error: itemType infufficient length")
+		br.err = err
+	}
+	buf, err := br.Peek(5)
+	if err != nil {
+		return ItemTypeUnknown, err
+	}
+
+	it = itemType(buf[:4])
+	if buf[4] != '\x00' {
+		err = errors.New("bufReader error: itemType doesn't end on whitespace")
+	}
+
+	return it, br.discard(5)
 }

@@ -71,9 +71,9 @@ func (r *Reader) ReadBox() (b box, err error) {
 	b = box{
 		r:       r.br,
 		size:    int64(binary.BigEndian.Uint32(buf[:4])),
-		boxType: boxType(string(buf[4:8])),
+		boxType: boxType(buf[4:8]),
 	}
-	//r.br.Discard(8)
+
 	if err = r.br.discard(8); err != nil {
 		return
 	}
@@ -93,7 +93,6 @@ func (r *Reader) ReadBox() (b box, err error) {
 			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
 		}
 		remain = b.size - 2*4 - 8
-		r.br.Discard(8)
 		if err = r.br.discard(8); err != nil {
 			return
 		}
@@ -105,66 +104,6 @@ func (r *Reader) ReadBox() (b box, err error) {
 	}
 	b.r.remain = remain
 	return b, nil
-}
-
-// ReadBox reads the next box.
-//
-// If the previously read box was not read to completion, ReadBox consumes
-// the rest of its data.
-//
-// At the end, the error is io.EOF.
-func (r *Reader) ReadBox2() (Box, error) {
-	if r.noMoreBoxes {
-		return nil, io.EOF
-	}
-	var buf [8]byte
-
-	_, err := io.ReadFull(r.br, buf[:4])
-	if err != nil {
-		return nil, err
-	}
-	box := &box{
-		size: int64(binary.BigEndian.Uint32(buf[:4])),
-	}
-
-	_, err = io.ReadFull(r.br, box.boxType[:]) // 4 more bytes
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(box.boxType)
-	// Special cases for size:
-	var remain int64
-	switch box.size {
-	case 1:
-		// 1 means it's actually a 64-bit size, after the type.
-		_, err = io.ReadFull(r.br, buf[:8])
-		if err != nil {
-			return nil, err
-		}
-		box.size = int64(binary.BigEndian.Uint64(buf[:8]))
-		if box.size < 0 {
-			// Go uses int64 for sizes typically, but BMFF uses uint64.
-			// We assume for now that nobody actually uses boxes larger
-			// than int64.
-			return nil, fmt.Errorf("unexpectedly large box %q", box.boxType)
-		}
-		remain = box.size - 2*4 - 8
-	case 0:
-		// 0 means unknown & to read to end of file. No more boxes.
-		r.noMoreBoxes = true
-	default:
-		remain = box.size - 2*4
-	}
-	if remain < 0 {
-		return nil, fmt.Errorf("Box header for %q has size %d, suggesting %d (negative) bytes remain", box.boxType, box.size, remain)
-	}
-	if box.size > 0 {
-		//box.body = io.LimitReader(r.br, remain)
-	} else {
-		//box.body = r.br
-	}
-	r.lastBox = box
-	return box, nil
 }
 
 // Box represents a BMFF box.
