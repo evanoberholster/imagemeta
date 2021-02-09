@@ -134,7 +134,7 @@ func init() {
 		TypeHdlr: parseHandlerBox,
 		TypeIinf: parseItemInfoBox,
 		TypeInfe: parseItemInfoEntry,
-		//boxType("iloc"): parseItemLocationBox,
+		TypeIloc: parseItemLocationBox,
 		//boxType("ipco"): parseItemPropertyContainerBox,
 		//boxType("ipma"): parseItemPropertyAssociation,
 		//boxType("iprp"): parseItemPropertiesBox,
@@ -308,6 +308,11 @@ type PrimaryItemBox struct {
 }
 
 // Size returns the size of the PrimaryItemBox
+func (pitm PrimaryItemBox) String() string {
+	return fmt.Sprintf("(Box) pitm | Flags: %d, Version: %d, ItemID: %d", pitm.Flags.Flags(), pitm.Flags.Version(), pitm.ItemID)
+}
+
+// Size returns the size of the PrimaryItemBox
 func (pitm PrimaryItemBox) Size() int64 {
 	return 0
 }
@@ -319,7 +324,6 @@ func (pitm PrimaryItemBox) Type() BoxType {
 
 func parsePrimaryItemBox(outer *box) (Box, error) {
 	flags, err := outer.r.readFlags()
-	//fb, err := readFullBox(gen)
 	if err != nil {
 		return nil, err
 	}
@@ -327,6 +331,9 @@ func parsePrimaryItemBox(outer *box) (Box, error) {
 	pib.ItemID, err = outer.r.readUint16()
 	if !outer.r.ok() {
 		return nil, outer.r.err
+	}
+	if Debug {
+		fmt.Println(pib)
 	}
 	return pib, nil
 }

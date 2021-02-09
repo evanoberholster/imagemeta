@@ -20,16 +20,18 @@ const (
 	ItemTypeExif
 )
 
+func isItemHvc1(buf []byte) bool {
+	return buf[0] == 'h' && buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1'
+}
+
 func (it ItemType) String() string {
 	return mapItemTypeString[it]
 }
 
 func itemType(buf []byte) ItemType {
-	//if buf[0] == 'h' {
-	//	if buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1' {
-	//		return ItemTypeHvc1
-	//	}
-	//}
+	if isItemHvc1(buf) {
+		return ItemTypeHvc1
+	}
 	t, found := mapStringItemType[string(buf)]
 	if found {
 		return t
@@ -182,7 +184,7 @@ func (infe ItemInfoEntry) Type() BoxType {
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf("ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.Size())
+	return fmt.Sprintf(" \t ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.Size())
 }
 
 func parseItemInfoEntry(outer *box) (Box, error) {

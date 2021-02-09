@@ -68,6 +68,9 @@ func (br *bufReader) readUint16() (uint16, error) {
 	if br.err != nil {
 		return 0, br.err
 	}
+	if br.remain < 2 {
+		return 0, ErrBufReaderLength
+	}
 	buf, err := br.Peek(2)
 	if err != nil {
 		br.err = err
@@ -75,6 +78,38 @@ func (br *bufReader) readUint16() (uint16, error) {
 	}
 	v := binary.BigEndian.Uint16(buf[:2])
 	return v, br.discard(2)
+}
+
+func (br *bufReader) readUintN(bits uint8) (uint64, error) {
+	if br.err != nil {
+		return 0, br.err
+	}
+	if br.remain < int64(bits/8) {
+		return 0, ErrBufReaderLength
+	}
+	if bits == 0 {
+		return 0, nil
+	}
+	nbyte := bits / 8
+	buf, err := br.Peek(int(nbyte))
+	if err != nil {
+		br.err = err
+		return 0, err
+	}
+	defer br.discard(int(nbyte))
+	switch bits {
+	case 8:
+		return uint64(buf[0]), nil
+	case 16:
+		return uint64(binary.BigEndian.Uint16(buf[:2])), nil
+	case 32:
+		return uint64(binary.BigEndian.Uint32(buf[:4])), nil
+	case 64:
+		return binary.BigEndian.Uint64(buf[:8]), nil
+	default:
+		br.err = fmt.Errorf("invalid uintn read size")
+		return 0, br.err
+	}
 }
 
 func (br *bufReader) readBrand() (b Brand, err error) {
