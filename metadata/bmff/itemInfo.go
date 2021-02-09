@@ -5,7 +5,8 @@ import (
 	"io"
 )
 
-// ItemType
+// ItemType is
+// always 4 bytes
 type ItemType uint8
 
 // ItemTypes
@@ -59,7 +60,6 @@ var mapStringItemType = map[string]ItemType{
 
 // ItemInfoBox represents an "iinf" box.
 type ItemInfoBox struct {
-	//FullBox
 	size  int64
 	Flags Flags
 	Count uint16
@@ -92,23 +92,28 @@ func (iinf ItemInfoBox) Type() BoxType {
 }
 
 func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
-	fb, err := readFullBox(outer)
+	// Read Flags
+	flags, err := outer.r.readFlags()
 	if err != nil {
 		return nil, err
 	}
-	ib := ItemInfoBox{
-		size:  fb.size,
-		Flags: fb.F}
-	boxr := fb.newReader(fb.r.remain)
-
-	ib.Count, err = boxr.br.readUint16()
+	// Read Item count
+	count, err := outer.r.readUint16()
 	if err != nil {
 		return
 	}
-	ib.ItemInfos = make([]ItemInfoEntry, 0, int(ib.Count))
+
+	// New ItemInfoBox
+	ib := ItemInfoBox{
+		size:      outer.size,
+		Flags:     flags,
+		Count:     count,
+		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
+
+	boxr := outer.newReader(outer.r.remain)
 
 	var inner box
-	for fb.r.remain > 4 {
+	for outer.r.remain > 4 {
 		inner, err = boxr.ReadBox()
 		if err != nil {
 			if err == io.EOF {
@@ -123,13 +128,15 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 			boxr.br.discard(int(inner.r.remain))
 			return ib, fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
 		}
-		ib.setBox(p)
+		if err = ib.setBox(p); err != nil {
+			boxr.br.discard(int(inner.r.remain))
+		}
 
-		fb.r.remain -= inner.size
-		//fmt.Println(p.(ItemInfoEntry), fb.r.remain, inner.r.remain, boxr.br.remain)
+		outer.r.remain -= inner.size
+		//fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
 	}
 	//fmt.Println(int(ib.r.remain))
-	//ib.r.discard(int(ib.r.remain))
+	//boxr.br.discard(int(fb.r.remain))
 	if !br.ok() {
 		return FullBox{}, br.err
 	}
@@ -153,9 +160,8 @@ type ItemInfoEntry struct {
 	// If Type == "uri ":
 	ItemURIType string
 
-	size int16
-	//Version  uint8
-	ItemType ItemType // always 4 bytes
+	size     int16
+	ItemType ItemType
 }
 
 func (infe ItemInfoEntry) Size() int64 {
@@ -171,40 +177,42 @@ func (infe ItemInfoEntry) String() string {
 }
 
 func parseItemInfoEntry(outer *box, br bufReader) (Box, error) {
-	fb, err := readFullBox(outer)
+	// Read Flags
+	flags, err := outer.r.readFlags()
 	if err != nil {
 		return nil, err
 	}
-	if fb.F.Version() != 2 {
-		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now.", fb.F.Version())
-	}
-	ie := ItemInfoEntry{
-		Flags: fb.F,
-		size:  int16(fb.size),
+	if flags.Version() != 2 {
+		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now.", flags.Version())
 	}
 
-	ie.ItemID, _ = fb.r.readUint16()
-	ie.ProtectionIndex, _ = fb.r.readUint16()
+	// New ItemInfoEntry
+	ie := ItemInfoEntry{
+		Flags: flags,
+		size:  int16(outer.size),
+	}
+
+	ie.ItemID, _ = outer.r.readUint16()
+	ie.ProtectionIndex, _ = outer.r.readUint16()
 	if !br.ok() {
 		return nil, br.err
 	}
-	ie.ItemType, err = fb.r.readItemType()
+	ie.ItemType, err = outer.r.readItemType()
 	if err != nil {
-		return ie, fb.r.discard(int(fb.r.remain))
+		return ie, outer.r.discard(int(outer.r.remain))
 	}
 
 	switch ie.ItemType {
 	case ItemTypeMime:
-		ie.ContentType, _ = fb.r.readString()
-		if fb.r.anyRemain() {
-			ie.ContentEncoding, _ = fb.r.readString()
+		ie.ContentType, _ = outer.r.readString()
+		if outer.r.anyRemain() {
+			ie.ContentEncoding, _ = outer.r.readString()
 		}
 	case ItemTypeURI:
-		ie.ItemURIType, _ = fb.r.readString()
+		ie.ItemURIType, _ = outer.r.readString()
 	}
-	//fb.r.discard(int(fb.r.remain))
-	if !fb.r.ok() {
-		return nil, fb.r.err
+	if !outer.r.ok() {
+		return nil, outer.r.err
 	}
 	return ie, nil
 }

@@ -90,8 +90,7 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	r bufReader
-	//r       *bufio.Reader
+	r       bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
 	err     error
 	parsed  Box // if non-nil, the Parsed result
@@ -175,6 +174,8 @@ func (f *Flags) Read(buf []byte) {
 }
 
 type MetaBox struct {
+	size  int64
+	Flags Flags
 	FullBox
 	Handler     HandlerBox
 	PrimaryItem PrimaryItemBox
@@ -215,9 +216,6 @@ func readFullBox(outer *box) (fb FullBox, err error) {
 		return FullBox{}, fmt.Errorf("failed to read 4 bytes of FullBox: %v", err)
 	}
 	fb.F.Read(buf)
-	//fb.Version = buf[0]
-	//buf[0] = 0
-	//fb.Flags = binary.BigEndian.Uint32(buf[:4])
 	err = fb.box.r.discard(4)
 	return fb, err
 }

@@ -112,3 +112,25 @@ func (br *bufReader) readItemType() (it ItemType, err error) {
 
 	return it, br.discard(5)
 }
+
+// Errors
+var (
+	ErrBufReaderLength = errors.New("bufReader error: infufficient length")
+)
+
+func (br *bufReader) readFlags() (f Flags, err error) {
+	if br.remain < 4 {
+		err = ErrBufReaderLength
+		br.err = err
+	}
+
+	// Parse FullBox header.
+	buf, err := br.Peek(4)
+	if err != nil {
+		return f, fmt.Errorf("failed to read 4 bytes of Flags: %v", err)
+	}
+	f.Read(buf)
+
+	err = br.discard(4)
+	return f, err
+}
