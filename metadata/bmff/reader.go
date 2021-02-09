@@ -64,6 +64,22 @@ func (br *bufReader) readString() (string, error) {
 	return s, nil
 }
 
+func (br *bufReader) readUint8() (uint8, error) {
+	if br.err != nil {
+		return 0, br.err
+	}
+	if br.remain < 1 {
+		return 0, ErrBufReaderLength
+	}
+	v, err := br.ReadByte()
+	if err != nil {
+		br.err = err
+		return 0, err
+	}
+	br.remain -= 1
+	return v, nil
+}
+
 func (br *bufReader) readUint16() (uint16, error) {
 	if br.err != nil {
 		return 0, br.err
@@ -78,6 +94,22 @@ func (br *bufReader) readUint16() (uint16, error) {
 	}
 	v := binary.BigEndian.Uint16(buf[:2])
 	return v, br.discard(2)
+}
+
+func (br *bufReader) readUint32() (uint32, error) {
+	if br.err != nil {
+		return 0, br.err
+	}
+	if br.remain < 4 {
+		return 0, ErrBufReaderLength
+	}
+	buf, err := br.Peek(4)
+	if err != nil {
+		br.err = err
+		return 0, err
+	}
+	v := binary.BigEndian.Uint32(buf[:4])
+	return v, br.discard(4)
 }
 
 func (br *bufReader) readUintN(bits uint8) (uint64, error) {

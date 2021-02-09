@@ -15,6 +15,7 @@ const (
 	ItemTypeInfe
 	ItemTypeMime
 	ItemTypeURI
+	ItemTypeAv01
 	ItemTypeHvc1
 	ItemTypeGrid
 	ItemTypeExif
@@ -24,6 +25,10 @@ func isItemHvc1(buf []byte) bool {
 	return buf[0] == 'h' && buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1'
 }
 
+func isItemAv01(buf []byte) bool {
+	return buf[0] == 'a' && buf[1] == 'v' && buf[2] == '0' && buf[3] == '1'
+}
+
 func (it ItemType) String() string {
 	return mapItemTypeString[it]
 }
@@ -31,6 +36,9 @@ func (it ItemType) String() string {
 func itemType(buf []byte) ItemType {
 	if isItemHvc1(buf) {
 		return ItemTypeHvc1
+	}
+	if isItemAv01(buf) {
+		return ItemTypeAv01
 	}
 	t, found := mapStringItemType[string(buf)]
 	if found {
@@ -46,6 +54,7 @@ var mapItemTypeString = map[ItemType]string{
 	ItemTypeInfe: "infe",
 	ItemTypeMime: "mime",
 	ItemTypeURI:  "uri ",
+	ItemTypeAv01: "av01",
 	ItemTypeHvc1: "hvc1",
 	ItemTypeGrid: "grid",
 	ItemTypeExif: "Exif",
@@ -55,6 +64,7 @@ var mapStringItemType = map[string]ItemType{
 	"infe": ItemTypeInfe,
 	"mime": ItemTypeMime,
 	"uri ": ItemTypeURI,
+	"av01": ItemTypeAv01,
 	"hvc1": ItemTypeHvc1,
 	"grid": ItemTypeGrid,
 	"Exif": ItemTypeExif,
@@ -67,7 +77,7 @@ type ItemInfoBox struct {
 	Count uint16
 
 	Exif      ItemInfoEntry
-	XMP       MimeItemInfoEntry
+	XMP       ItemInfoEntry
 	ItemInfos []ItemInfoEntry
 }
 
@@ -76,17 +86,17 @@ func (iinf *ItemInfoBox) setBox(b Box) error {
 		switch infe.ItemType {
 		case ItemTypeExif:
 			iinf.Exif = infe
+		case ItemTypeMime:
+			iinf.XMP = infe
 		default:
 			iinf.ItemInfos = append(iinf.ItemInfos, infe)
 		}
 	}
-	if infe, ok := b.(MimeItemInfoEntry); ok {
-		switch infe.ItemType {
-		case ItemTypeMime:
-			iinf.XMP = infe
-		}
-	}
 	return nil
+}
+
+func (iinf ItemInfoBox) String() string {
+	return fmt.Sprintf("iinf | ItemCount: %d, Flags: %d, Version: %d", len(iinf.ItemInfos), iinf.Flags.Flags(), iinf.Flags.Version())
 }
 
 // Size returns the size of the ItemInfoBox
@@ -119,7 +129,6 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
 	boxr := outer.newReader(outer.r.remain)
-
 	var p Box
 	var inner box
 	for outer.r.remain > 4 {
@@ -150,27 +159,18 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 		outer.r.remain -= inner.size
 		boxr.br.discard(int(inner.r.remain))
 		if Debug {
-			if infe, ok := p.(ItemInfoEntry); ok {
-				fmt.Println(infe, outer.r.remain, inner.r.remain, boxr.br.remain)
-			}
-			if infe, ok := p.(MimeItemInfoEntry); ok {
-				fmt.Println(infe, outer.r.remain, inner.r.remain, boxr.br.remain)
-			}
-
+			//fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
 		}
 	}
 	//fmt.Println(int(ib.r.remain))
 	//boxr.br.discard(int(fb.r.remain))
 	if !outer.r.ok() {
-		return FullBox{}, outer.r.err
+		return ib, outer.r.err
+	}
+	if Debug {
+		fmt.Println(ib)
 	}
 	return ib, nil
-}
-
-type MimeItemInfoEntry struct {
-	ItemInfoEntry
-	ContentType     string
-	ContentEncoding string
 }
 
 // ItemInfoEntry represents an "infe" box.
@@ -184,8 +184,8 @@ type ItemInfoEntry struct {
 	//Name string
 
 	// If Type == "mime":
-	//ContentType     string
-	//ContentEncoding string
+	ContentType     string
+	ContentEncoding string
 
 	// If Type == "uri ":
 	ItemURIType string
@@ -236,15 +236,10 @@ func parseItemInfoEntry(outer *box) (Box, error) {
 
 	switch ie.ItemType {
 	case ItemTypeMime:
-		miie := MimeItemInfoEntry{
-			ItemInfoEntry: ie,
-		}
-		miie.ContentType, _ = outer.r.readString()
+		ie.ContentType, _ = outer.r.readString()
 		if outer.r.anyRemain() {
-			miie.ContentEncoding, _ = outer.r.readString()
+			ie.ContentEncoding, _ = outer.r.readString()
 		}
-		//fmt.Println(ie.ContentType, ie.ContentEncoding)
-		return miie, nil
 	case ItemTypeURI:
 		ie.ItemURIType, _ = outer.r.readString()
 	}

@@ -111,7 +111,7 @@ func (r *Reader) readBox() (b box, err error) {
 
 // Box represents a BMFF box.
 type Box interface {
-	Size() int64 // 0 means unknown (will read to end of file)
+	//Size() int64 // 0 means unknown (will read to end of file)
 	Type() BoxType
 
 	// Parses parses the box, populating the fields

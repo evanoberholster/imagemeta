@@ -25,11 +25,11 @@ func handler(buf []byte) HandlerType {
 
 // HandlerBox is a "hdlr" box.
 type HandlerBox struct {
-	FullBox
+	//FullBox
 	Flags       Flags
 	size        uint32
-	HandlerType HandlerType
 	Name        string
+	HandlerType HandlerType
 }
 
 // Size returns the size of the HandlerBox

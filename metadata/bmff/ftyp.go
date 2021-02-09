@@ -94,8 +94,8 @@ func brand(buf []byte) Brand {
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
 	//*box
-	MajorBrand   Brand    // 4 bytes
 	MinorVersion string   // 4 bytes
+	MajorBrand   Brand    // 4 bytes
 	Compatible   [6]Brand // all 4 bytes
 }
 

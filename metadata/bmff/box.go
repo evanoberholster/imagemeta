@@ -16,6 +16,9 @@ type BoxType uint8
 // Common box types.
 const (
 	TypeUnknown BoxType = iota
+	TypeAv01            // 'av01'
+	TypeAv1C            // 'av1C'
+	TypeAuxC            // 'auxC'
 	TypeFtyp            // 'ftyp'
 	TypeMeta            // 'meta'
 	TypeInfe            // 'infe'
@@ -24,14 +27,24 @@ const (
 	TypeIinf            // 'iinf'
 	TypePitm            // 'pitm'
 	TypeIref            // 'iref'
+	TypeIpco            // 'ipco
 	TypeIprp            // 'iprp'
 	TypeIdat            // 'idat'
 	TypeIloc            // 'iloc'
 	TypeUUID            // 'uuid'
-	TypeImag            // 'Imag'
+	TypeColr            // 'colr'
+	TypeHvcC            // 'hvcC'
+	TypeIspe            // 'ispe'
+	TypeIrot            // 'irot'
+	TypePixi            // 'pixi'
+	TypeIpma            // 'ipma'
+	TypePasp            // 'pasp'
 )
 
 var mapStringBoxType = map[string]BoxType{
+	"av01": TypeAv01,
+	"av1C": TypeAv1C,
+	"auxC": TypeAuxC,
 	"ftyp": TypeFtyp,
 	"meta": TypeMeta,
 	"infe": TypeInfe,
@@ -44,10 +57,20 @@ var mapStringBoxType = map[string]BoxType{
 	"idat": TypeIdat,
 	"iloc": TypeIloc,
 	"uuid": TypeUUID,
-	"Imag": TypeImag,
+	"ipco": TypeIpco,
+	"colr": TypeColr,
+	"hvcC": TypeHvcC,
+	"ispe": TypeIspe,
+	"irot": TypeIrot,
+	"pixi": TypePixi,
+	"ipma": TypeIpma,
+	"pasp": TypePasp,
 }
 
 var mapBoxTypeString = map[BoxType]string{
+	TypeAv01: "av01",
+	TypeAv1C: "av1C",
+	TypeAuxC: "auxC",
 	TypeFtyp: "ftyp",
 	TypeMeta: "meta",
 	TypeInfe: "infe",
@@ -60,7 +83,14 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeIdat: "idat",
 	TypeIloc: "iloc",
 	TypeUUID: "uuid",
-	TypeImag: "Imag",
+	TypeIpco: "ipco",
+	TypeColr: "colr",
+	TypeHvcC: "hvcC",
+	TypeIspe: "ispe",
+	TypeIrot: "irot",
+	TypePixi: "pixi",
+	TypeIpma: "ipma",
+	TypePasp: "pasp",
 }
 
 func (t BoxType) String() string {
@@ -105,9 +135,9 @@ func (b box) Size() int64   { return b.size }
 func (b box) Type() BoxType { return b.boxType }
 
 func (b *box) Parse() (Box, error) {
-	//if b.parsed != nil {
-	//	return b.parsed, nil
-	//}
+	if !b.r.anyRemain() {
+		return nil, ErrBufReaderLength
+	}
 	parser, ok := parsers[b.Type()]
 	if !ok {
 		err := fmt.Errorf("Error: Unknown Box %s", b.Type()) //ErrUnknownBox
@@ -135,20 +165,14 @@ func init() {
 		TypeIinf: parseItemInfoBox,
 		TypeInfe: parseItemInfoEntry,
 		TypeIloc: parseItemLocationBox,
-		//boxType("ipco"): parseItemPropertyContainerBox,
-		//boxType("ipma"): parseItemPropertyAssociation,
-		//boxType("iprp"): parseItemPropertiesBox,
-		//boxType("irot"): parseImageRotation,
-		//boxType("ispe"): parseImageSpatialExtentsProperty,
+		TypeIpco: parseItemPropertyContainerBox,
+		TypeIpma: parseItemPropertyAssociation,
+		TypeIprp: parseItemPropertiesBox,
+		TypeIrot: parseImageRotation,
+		TypeIspe: parseImageSpatialExtentsProperty,
 		TypeMeta: parseMetaBox,
 		TypePitm: parsePrimaryItemBox,
 	}
-}
-
-// FullBox is a type of box that contains Flags
-type FullBox struct {
-	box
-	F Flags
 }
 
 // Flags for a FullBox
@@ -178,13 +202,13 @@ func (f *Flags) Read(buf []byte) {
 type MetaBox struct {
 	size  uint32
 	Flags Flags
-	//FullBox
-	Handler     HandlerBox
-	PrimaryItem PrimaryItemBox
-	ItemInfo    ItemInfoBox
-	//ItemProperties ItemPropertiesBox
-	//ItemLocation   ItemLocationBox
-	Children []Box
+
+	Handler    HandlerBox
+	Primary    PrimaryItemBox
+	ItemInfo   ItemInfoBox
+	Properties ItemPropertiesBox
+	Location   ItemLocationBox
+	Children   []Box
 }
 
 // Size returns the size of the MetaBox
@@ -198,7 +222,11 @@ func (mb MetaBox) Type() BoxType {
 }
 
 func (mb MetaBox) String() string {
-	str := fmt.Sprintf("(Box) bmff.Metabox, %d Children", len(mb.Children))
+	str := fmt.Sprintf("(Box) bmff.Metabox, %d Children\n", len(mb.Children))
+	str += "\t" + mb.Primary.String() + "\n"
+	str += "\t" + mb.ItemInfo.String() + "\n"
+	str += "\t" + mb.Properties.String() + "\n"
+	str += "\t" + mb.Location.String() + "\n"
 	return str
 }
 
@@ -207,30 +235,18 @@ func (mb *MetaBox) setBox(b Box) error {
 	case HandlerBox:
 		mb.Handler = v
 	case PrimaryItemBox:
-		mb.PrimaryItem = v
+		mb.Primary = v
 	case ItemInfoBox:
 		mb.ItemInfo = v
-	//case *bmff.ItemPropertiesBox:
-	//	meta.Properties = v
-	//case *bmff.ItemLocationBox:
-	//	meta.ItemLocation = v
+	case ItemPropertiesBox:
+		mb.Properties = v
+	case ItemLocationBox:
+		mb.Location = v
 	default:
-		mb.Children = append(mb.Children, b)
+		//mb.Children = append(mb.Children, b)
 	}
 	return nil
 }
-
-//func readFullBox(outer *box) (fb FullBox, err error) {
-//	fb.box = *outer
-//	// Parse FullBox header.
-//	buf, err := fb.box.r.Peek(4)
-//	if err != nil {
-//		return FullBox{}, fmt.Errorf("failed to read 4 bytes of FullBox: %v", err)
-//	}
-//	fb.F.Read(buf)
-//	err = fb.box.r.discard(4)
-//	return fb, err
-//}
 
 func parseMetaBox(outer *box) (Box, error) {
 	flags, err := outer.r.readFlags()
@@ -260,61 +276,23 @@ func parseMetaBox(outer *box) (Box, error) {
 		}
 		outer.r.remain -= inner.size
 
-		if Debug {
-			fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
-		}
+		//if Debug {
+		//	fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
+		//}
 	}
 	//mb.Children, err = fb.parseAppendBoxes()
-	//fmt.Println(mb, mb.r.remain)
 	return mb, err
-}
-
-func (fb *FullBox) parseAppendBoxes() (dst []Box, err error) {
-	if fb.err != nil {
-		err = fb.err
-		return
-	}
-
-	boxr := fb.newReader(fb.r.remain)
-	var inner box
-	i := 5
-	for i > 0 {
-		if inner, err = boxr.readBox(); err != nil {
-			if err == io.EOF {
-				return dst, nil
-			}
-			boxr.br.err = err
-			return dst, err
-		}
-		i--
-		//fmt.Println("Inner", inner, inner.r.remain)
-		boxr.br.discard(int(inner.r.remain))
-		//slurp, err := ioutil.ReadAll(inner.Body())
-		//if err != nil {
-		//	br.err = err
-		//	return err
-		//}
-		//inner.(*box).slurp = slurp
-		//dst = append(dst, inner)
-	}
-	return
 }
 
 // PrimaryItemBox is a "pitm" box
 type PrimaryItemBox struct {
-	//FullBox
 	Flags  Flags
 	ItemID uint16
 }
 
 // Size returns the size of the PrimaryItemBox
 func (pitm PrimaryItemBox) String() string {
-	return fmt.Sprintf("(Box) pitm | Flags: %d, Version: %d, ItemID: %d", pitm.Flags.Flags(), pitm.Flags.Version(), pitm.ItemID)
-}
-
-// Size returns the size of the PrimaryItemBox
-func (pitm PrimaryItemBox) Size() int64 {
-	return 0
+	return fmt.Sprintf("pitm | ItemID: %d, Flags: %d, Version: %d ", pitm.ItemID, pitm.Flags.Flags(), pitm.Flags.Version())
 }
 
 // Type returns TypePitm
@@ -331,9 +309,6 @@ func parsePrimaryItemBox(outer *box) (Box, error) {
 	pib.ItemID, err = outer.r.readUint16()
 	if !outer.r.ok() {
 		return nil, outer.r.err
-	}
-	if Debug {
-		fmt.Println(pib)
 	}
 	return pib, nil
 }
