@@ -25,6 +25,7 @@ import (
 	"io"
 )
 
+// Debug Flag
 var (
 	Debug = false
 )
@@ -38,6 +39,7 @@ func NewReader(r io.Reader) Reader {
 	return Reader{br: bufReader{Reader: br}}
 }
 
+// Reader is a BMFF reader
 type Reader struct {
 	br          bufReader
 	lastBox     Box  // or nil
@@ -47,7 +49,7 @@ type Reader struct {
 // ReadAndParseBox wraps the ReadBox method, ensuring that the read box is of type typ
 // and parses successfully. It returns the parsed box.
 func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
-	box, err := r.ReadBox()
+	box, err := r.readBox()
 	if err != nil {
 		return nil, fmt.Errorf("error reading %q box: %v", typ, err)
 	}
@@ -61,7 +63,8 @@ func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
 	return pbox, nil
 }
 
-func (r *Reader) ReadBox() (b box, err error) {
+// ReadBox reads a box and returns it
+func (r *Reader) readBox() (b box, err error) {
 	var buf []byte
 	// Read box size and box type
 	if buf, err = r.br.Peek(8); err != nil {

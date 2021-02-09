@@ -20,7 +20,7 @@ type ItemLocationBoxEntry struct {
 	Extents            []OffsetLength
 }
 
-// OffsetLength
+// OffsetLength contains an offset and length
 type OffsetLength struct {
 	Offset, Length uint64
 }

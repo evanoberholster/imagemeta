@@ -25,11 +25,11 @@ func (it ItemType) String() string {
 }
 
 func itemType(buf []byte) ItemType {
-	if buf[0] == 'h' {
-		if buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1' {
-			return ItemTypeHvc1
-		}
-	}
+	//if buf[0] == 'h' {
+	//	if buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1' {
+	//		return ItemTypeHvc1
+	//	}
+	//}
 	t, found := mapStringItemType[string(buf)]
 	if found {
 		return t
@@ -83,15 +83,17 @@ func (iinf *ItemInfoBox) setBox(b Box) error {
 	return nil
 }
 
+// Size returns the size of the ItemInfoBox
 func (iinf ItemInfoBox) Size() int64 {
 	return int64(iinf.size)
 }
 
+// Type returns TypeIinf
 func (iinf ItemInfoBox) Type() BoxType {
 	return TypeIinf
 }
 
-func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
+func parseItemInfoBox(outer *box) (b Box, err error) {
 	// Read Flags
 	flags, err := outer.r.readFlags()
 	if err != nil {
@@ -114,7 +116,7 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 
 	var inner box
 	for outer.r.remain > 4 {
-		inner, err = boxr.ReadBox()
+		inner, err = boxr.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return ib, nil
@@ -125,20 +127,25 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 
 		p, err := inner.Parse()
 		if err != nil {
-			boxr.br.discard(int(inner.r.remain))
-			return ib, fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
+			if Debug {
+				err = fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
+				fmt.Println(err)
+			}
 		}
 		if err = ib.setBox(p); err != nil {
 			boxr.br.discard(int(inner.r.remain))
 		}
 
 		outer.r.remain -= inner.size
-		//fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
+		boxr.br.discard(int(inner.r.remain))
+		if Debug {
+			fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
+		}
 	}
 	//fmt.Println(int(ib.r.remain))
 	//boxr.br.discard(int(fb.r.remain))
-	if !br.ok() {
-		return FullBox{}, br.err
+	if !outer.r.ok() {
+		return FullBox{}, outer.r.err
 	}
 	return ib, nil
 }
@@ -164,26 +171,28 @@ type ItemInfoEntry struct {
 	ItemType ItemType
 }
 
+// Size returns the size of an ItemInfoEntry Box
 func (infe ItemInfoEntry) Size() int64 {
 	return int64(infe.size)
 }
 
+// Type returns TypeInfe
 func (infe ItemInfoEntry) Type() BoxType {
 	return TypeInfe
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf("ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.size)
+	return fmt.Sprintf("ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.Size())
 }
 
-func parseItemInfoEntry(outer *box, br bufReader) (Box, error) {
+func parseItemInfoEntry(outer *box) (Box, error) {
 	// Read Flags
 	flags, err := outer.r.readFlags()
 	if err != nil {
 		return nil, err
 	}
 	if flags.Version() != 2 {
-		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now.", flags.Version())
+		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now", flags.Version())
 	}
 
 	// New ItemInfoEntry
@@ -194,8 +203,8 @@ func parseItemInfoEntry(outer *box, br bufReader) (Box, error) {
 
 	ie.ItemID, _ = outer.r.readUint16()
 	ie.ProtectionIndex, _ = outer.r.readUint16()
-	if !br.ok() {
-		return nil, br.err
+	if !outer.r.ok() {
+		return nil, outer.r.err
 	}
 	ie.ItemType, err = outer.r.readItemType()
 	if err != nil {

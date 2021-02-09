@@ -93,36 +93,44 @@ func brand(buf []byte) Brand {
 
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
-	*box
+	//*box
 	MajorBrand   Brand    // 4 bytes
 	MinorVersion string   // 4 bytes
 	Compatible   [6]Brand // all 4 bytes
 }
 
-func parseFileTypeBox(outer *box, br bufReader) (b Box, err error) {
+func (ftyp FileTypeBox) Size() int64 {
+	return 0
+}
+
+func (ftyp FileTypeBox) Type() BoxType {
+	return TypeFtyp
+}
+
+func parseFileTypeBox(outer *box) (b Box, err error) {
 	var buf []byte
-	if buf, err = br.Peek(8); err != nil {
+	if buf, err = outer.r.Peek(8); err != nil {
 		return nil, err
 	}
 	ft := FileTypeBox{
-		box:          outer,
+		//box:          outer,
 		MajorBrand:   brand(buf[:4]),
 		MinorVersion: string(buf[4:8]),
 	}
-	if err = br.discard(8); err != nil {
+	if err = outer.r.discard(8); err != nil {
 		return
 	}
 	for i := 0; i < 6; i++ {
-		if br.remain < 4 {
+		if outer.r.remain < 4 {
 			break
 		}
 
-		ft.Compatible[i], err = br.readBrand()
+		ft.Compatible[i], err = outer.r.readBrand()
 		if err != nil {
 			break
 		}
 	}
-	return ft, br.discard(int(br.remain))
+	return ft, outer.r.discard(int(outer.r.remain))
 }
 
 func (ftb FileTypeBox) String() string {

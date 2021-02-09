@@ -26,26 +26,41 @@ func handler(buf []byte) HandlerType {
 // HandlerBox is a "hdlr" box.
 type HandlerBox struct {
 	FullBox
+	Flags       Flags
+	size        uint32
 	HandlerType HandlerType
 	Name        string
 }
 
-func parseHandlerBox(gen *box, br bufReader) (Box, error) {
-	fb, err := readFullBox(gen)
+// Size returns the size of the HandlerBox
+func (hdlr HandlerBox) Size() int64 {
+	return int64(hdlr.size)
+}
+
+// Type returns TypeHdlr
+func (hdlr HandlerBox) Type() BoxType {
+	return TypeHdlr
+}
+
+func parseHandlerBox(outer *box) (Box, error) {
+	flags, err := outer.r.readFlags()
+	//fb, err := readFullBox(outer)
 	if err != nil {
 		return nil, err
 	}
 	hb := HandlerBox{
-		FullBox: fb,
+		Flags: flags,
+		size:  uint32(outer.size),
+		//FullBox: fb,
 	}
-	buf, err := fb.r.Peek(20)
+	buf, err := outer.r.Peek(20)
 	if err != nil {
 		return nil, err
 	}
 	hb.HandlerType = handler(buf[4:8])
-	fb.r.discard(20)
+	outer.r.discard(20)
 
-	hb.Name, _ = fb.r.readString()
-	fb.r.discard(int(fb.r.remain))
-	return hb, br.err
+	hb.Name, _ = outer.r.readString()
+	outer.r.discard(int(outer.r.remain))
+	return hb, outer.r.err
 }

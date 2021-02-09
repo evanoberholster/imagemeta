@@ -65,12 +65,12 @@ func BenchmarkReadBox100(b *testing.B) {
 // BenchmarkReadBox100/d         	   13720	     85422 ns/op	   39249 B/op	     314 allocs/op
 // BenchmarkReadBox100/Canon_R6  	   92840	     12604 ns/op	    2752 B/op	      35 allocs/op
 
-// BenchmarkReadBox100/1         	   50086	     23542 ns/op	   11408 B/op	      70 allocs/op
-// BenchmarkReadBox100/2         	  289993	      4054 ns/op	    1200 B/op	      13 allocs/op
-// BenchmarkReadBox100/3         	   37408	     32088 ns/op	   18704 B/op	     112 allocs/op
-// BenchmarkReadBox100/10        	   54189	     24448 ns/op	   11632 B/op	      73 allocs/op
-// BenchmarkReadBox100/d         	   12717	     90201 ns/op	   56978 B/op	     312 allocs/op
-// BenchmarkReadBox100/Canon_R6  	  391518	      3842 ns/op	    1104 B/op	      12 allocs/op
+// BenchmarkReadBox100/1         	   43686	     24866 ns/op	    7776 B/op	      72 allocs/op
+// BenchmarkReadBox100/2         	  128497	      9871 ns/op	    2464 B/op	      35 allocs/op
+// BenchmarkReadBox100/3         	   30134	     37833 ns/op	   13376 B/op	     114 allocs/op
+// BenchmarkReadBox100/10        	   52178	     25404 ns/op	    8192 B/op	      75 allocs/op
+// BenchmarkReadBox100/d         	   12722	     92464 ns/op	   39105 B/op	     314 allocs/op
+// BenchmarkReadBox100/Canon_R6  	  115146	     10804 ns/op	    2608 B/op	      35 allocs/op
 
 // BenchmarkReadBox100/1         	   48442	     22721 ns/op	    7920 B/op	      66 allocs/op
 // BenchmarkReadBox100/2         	  263370	      4366 ns/op	    1136 B/op	      11 allocs/op
@@ -79,9 +79,9 @@ func BenchmarkReadBox100(b *testing.B) {
 // BenchmarkReadBox100/d         	   13585	     89125 ns/op	   39249 B/op	     308 allocs/op
 // BenchmarkReadBox100/Canon_R6  	  266624	      3997 ns/op	    1040 B/op	      10 allocs/op
 
-//BenchmarkReadBox100/1         	   47042	     24266 ns/op	    7920 B/op	      72 allocs/op
-//BenchmarkReadBox100/2         	    7963	    145803 ns/op	    2096 B/op	      22 allocs/op
-//BenchmarkReadBox100/3         	   34891	     35104 ns/op	   13520 B/op	     114 allocs/op
-//BenchmarkReadBox100/10        	   47623	     22224 ns/op	    8336 B/op	      75 allocs/op
-//BenchmarkReadBox100/d         	   10000	    104304 ns/op	   39249 B/op	     314 allocs/op
-//BenchmarkReadBox100/Canon_R6  	  105330	     10634 ns/op	    2752 B/op	      35 allocs/op
+// BenchmarkReadBox100/1         	   49749	     25319 ns/op	    7824 B/op	      72 allocs/op
+// BenchmarkReadBox100/2         	  121746	     10514 ns/op	    2480 B/op	      34 allocs/op
+// BenchmarkReadBox100/3         	   37069	     34981 ns/op	   13424 B/op	     114 allocs/op
+// BenchmarkReadBox100/10        	   48355	     27153 ns/op	    8240 B/op	      75 allocs/op
+// BenchmarkReadBox100/d         	   12219	     97112 ns/op	   39153 B/op	     314 allocs/op
+// BenchmarkReadBox100/Canon_R6  	  105576	     12235 ns/op	    2656 B/op	      35 allocs/op

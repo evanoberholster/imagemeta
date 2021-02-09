@@ -114,15 +114,15 @@ func (b *box) Parse() (Box, error) {
 		return nil, err
 	}
 
-	v, err := parser(b, b.r)
+	v, err := parser(b)
 	if err != nil {
 		return nil, err
 	}
-	b.parsed = v
+	//b.parsed = v
 	return v, nil
 }
 
-type parserFunc func(b *box, br bufReader) (Box, error)
+type parserFunc func(b *box) (Box, error)
 
 var parsers map[BoxType]parserFunc
 
@@ -145,6 +145,7 @@ func init() {
 	}
 }
 
+// FullBox is a type of box that contains Flags
 type FullBox struct {
 	box
 	F Flags
@@ -173,16 +174,27 @@ func (f *Flags) Read(buf []byte) {
 	*f = Flags(binary.BigEndian.Uint32(buf[:4]))
 }
 
+// MetaBox is a 'meta' box
 type MetaBox struct {
-	size  int64
+	size  uint32
 	Flags Flags
-	FullBox
+	//FullBox
 	Handler     HandlerBox
 	PrimaryItem PrimaryItemBox
 	ItemInfo    ItemInfoBox
 	//ItemProperties ItemPropertiesBox
 	//ItemLocation   ItemLocationBox
 	Children []Box
+}
+
+// Size returns the size of the MetaBox
+func (mb MetaBox) Size() int64 {
+	return int64(mb.size)
+}
+
+// Type returns TypeMeta
+func (mb MetaBox) Type() BoxType {
+	return TypeMeta
 }
 
 func (mb MetaBox) String() string {
@@ -208,28 +220,31 @@ func (mb *MetaBox) setBox(b Box) error {
 	return nil
 }
 
-func readFullBox(outer *box) (fb FullBox, err error) {
-	fb.box = *outer
-	// Parse FullBox header.
-	buf, err := fb.box.r.Peek(4)
-	if err != nil {
-		return FullBox{}, fmt.Errorf("failed to read 4 bytes of FullBox: %v", err)
-	}
-	fb.F.Read(buf)
-	err = fb.box.r.discard(4)
-	return fb, err
-}
+//func readFullBox(outer *box) (fb FullBox, err error) {
+//	fb.box = *outer
+//	// Parse FullBox header.
+//	buf, err := fb.box.r.Peek(4)
+//	if err != nil {
+//		return FullBox{}, fmt.Errorf("failed to read 4 bytes of FullBox: %v", err)
+//	}
+//	fb.F.Read(buf)
+//	err = fb.box.r.discard(4)
+//	return fb, err
+//}
 
-func parseMetaBox(outer *box, br bufReader) (Box, error) {
-	fb, err := readFullBox(outer)
+func parseMetaBox(outer *box) (Box, error) {
+	flags, err := outer.r.readFlags()
 	if err != nil {
 		return nil, err
 	}
-	mb := MetaBox{FullBox: fb}
-	boxr := mb.newReader(mb.r.remain)
+	mb := MetaBox{
+		size:  uint32(outer.size),
+		Flags: flags}
+
+	boxr := outer.newReader(outer.r.remain)
 	var inner box
-	for mb.r.remain > 0 {
-		inner, err = boxr.ReadBox()
+	for outer.r.remain > 0 {
+		inner, err = boxr.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return mb, nil
@@ -240,15 +255,13 @@ func parseMetaBox(outer *box, br bufReader) (Box, error) {
 		p, err := inner.Parse()
 		if err != nil {
 			boxr.br.discard(int(inner.r.remain))
-			//fmt.Println(err, inner.r.remain)
-
 		} else {
 			mb.setBox(p)
 		}
-		mb.r.remain -= inner.size
+		outer.r.remain -= inner.size
 
 		if Debug {
-			fmt.Println(inner, mb.r.remain, inner.r.remain, inner.size)
+			fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
 		}
 	}
 	//mb.Children, err = fb.parseAppendBoxes()
@@ -266,7 +279,7 @@ func (fb *FullBox) parseAppendBoxes() (dst []Box, err error) {
 	var inner box
 	i := 5
 	for i > 0 {
-		if inner, err = boxr.ReadBox(); err != nil {
+		if inner, err = boxr.readBox(); err != nil {
 			if err == io.EOF {
 				return dst, nil
 			}
@@ -289,31 +302,51 @@ func (fb *FullBox) parseAppendBoxes() (dst []Box, err error) {
 
 // PrimaryItemBox is a "pitm" box
 type PrimaryItemBox struct {
-	FullBox
+	//FullBox
+	Flags  Flags
 	ItemID uint16
 }
 
-func parsePrimaryItemBox(gen *box, br bufReader) (Box, error) {
-	fb, err := readFullBox(gen)
+// Size returns the size of the PrimaryItemBox
+func (pitm PrimaryItemBox) Size() int64 {
+	return 0
+}
+
+// Type returns TypePitm
+func (pitm PrimaryItemBox) Type() BoxType {
+	return TypePitm
+}
+
+func parsePrimaryItemBox(outer *box) (Box, error) {
+	flags, err := outer.r.readFlags()
+	//fb, err := readFullBox(gen)
 	if err != nil {
 		return nil, err
 	}
-	pib := PrimaryItemBox{FullBox: fb}
-	pib.ItemID, _ = gen.r.readUint16()
-	if !br.ok() {
-		return nil, br.err
+	pib := PrimaryItemBox{Flags: flags}
+	pib.ItemID, err = outer.r.readUint16()
+	if !outer.r.ok() {
+		return nil, outer.r.err
 	}
 	return pib, nil
 }
 
 // DataInformationBox is a "dinf" box
 type DataInformationBox struct {
-	*box
+	//*box
 	Children []Box
 }
 
-func parseDataInformationBox(gen *box, br bufReader) (Box, error) {
-	dib := &DataInformationBox{box: gen}
-	gen.r.discard(int(gen.r.remain))
+func (dinf DataInformationBox) Size() int64 {
+	return 0
+}
+
+func (dinf DataInformationBox) Type() BoxType {
+	return TypeDinf
+}
+
+func parseDataInformationBox(outer *box) (Box, error) {
+	dib := DataInformationBox{}
+	outer.r.discard(int(outer.r.remain))
 	return dib, nil //br.parseAppendBoxes(&dib.Children)
 }
