@@ -148,8 +148,30 @@ func init() {
 
 type FullBox struct {
 	box
-	Version uint8
-	Flags   uint32 // 24 bits
+	F Flags
+}
+
+// Flags for a FullBox
+// 8 bits -> Version
+// 24 bits -> Flags
+type Flags uint32
+
+// Flags returns underlying Flags after removing version.
+// Flags are 24 bits.
+func (f Flags) Flags() uint32 {
+	// Left Shift
+	f = f << 8
+	// Right Shift
+	return uint32(f >> 8)
+}
+
+// Version returns a uint8 version.
+func (f Flags) Version() uint8 {
+	return uint8(f >> 24)
+}
+
+func (f *Flags) Read(buf []byte) {
+	*f = Flags(binary.BigEndian.Uint32(buf[:4]))
 }
 
 type MetaBox struct {
@@ -192,9 +214,10 @@ func readFullBox(outer *box) (fb FullBox, err error) {
 	if err != nil {
 		return FullBox{}, fmt.Errorf("failed to read 4 bytes of FullBox: %v", err)
 	}
-	fb.Version = buf[0]
-	buf[0] = 0
-	fb.Flags = binary.BigEndian.Uint32(buf[:4])
+	fb.F.Read(buf)
+	//fb.Version = buf[0]
+	//buf[0] = 0
+	//fb.Flags = binary.BigEndian.Uint32(buf[:4])
 	err = fb.box.r.discard(4)
 	return fb, err
 }

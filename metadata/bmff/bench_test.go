@@ -58,12 +58,12 @@ func BenchmarkReadBox100(b *testing.B) {
 	}
 }
 
-// BenchmarkReadBox100/1         	  622712	      1926 ns/op	     176 B/op	       3 allocs/op
-// BenchmarkReadBox100/2         	  607876	      1969 ns/op	     176 B/op	       3 allocs/op
-// BenchmarkReadBox100/3         	  653284	      1924 ns/op	     176 B/op	       3 allocs/op
-// BenchmarkReadBox100/10        	  535334	      2050 ns/op	     176 B/op	       3 allocs/op
-// BenchmarkReadBox100/d         	  688734	      1883 ns/op	     176 B/op	       3 allocs/op
-// BenchmarkReadBox100/Canon_R6  	  678283	      1743 ns/op	     176 B/op	       3 allocs/op
+// BenchmarkReadBox100/1         	   50419	     23937 ns/op	    7920 B/op	      72 allocs/op
+// BenchmarkReadBox100/2         	    3604	    434948 ns/op	    2096 B/op	      22 allocs/op
+// BenchmarkReadBox100/3         	   35198	     31366 ns/op	   13520 B/op	     114 allocs/op
+// BenchmarkReadBox100/10        	   55358	     22515 ns/op	    8336 B/op	      75 allocs/op
+// BenchmarkReadBox100/d         	   13720	     85422 ns/op	   39249 B/op	     314 allocs/op
+// BenchmarkReadBox100/Canon_R6  	   92840	     12604 ns/op	    2752 B/op	      35 allocs/op
 
 // BenchmarkReadBox100/1         	   50086	     23542 ns/op	   11408 B/op	      70 allocs/op
 // BenchmarkReadBox100/2         	  289993	      4054 ns/op	    1200 B/op	      13 allocs/op

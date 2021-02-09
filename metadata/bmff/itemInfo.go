@@ -60,10 +60,9 @@ var mapStringItemType = map[string]ItemType{
 // ItemInfoBox represents an "iinf" box.
 type ItemInfoBox struct {
 	//FullBox
-	size    int64
-	Version uint8
-	Count   uint16
-	Flags   uint32
+	size  int64
+	Flags Flags
+	Count uint16
 
 	Exif      ItemInfoEntry
 	XMP       ItemInfoEntry
@@ -98,9 +97,8 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 		return nil, err
 	}
 	ib := ItemInfoBox{
-		size:    fb.size,
-		Version: fb.Version,
-		Flags:   fb.Flags}
+		size:  fb.size,
+		Flags: fb.F}
 	boxr := fb.newReader(fb.r.remain)
 
 	ib.Count, err = boxr.br.readUint16()
@@ -128,7 +126,7 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 		ib.setBox(p)
 
 		fb.r.remain -= inner.size
-		//fmt.Println(p.(ItemInfoEntry), ib.r.remain, inner.r.remain, boxr.br.remain)
+		//fmt.Println(p.(ItemInfoEntry), fb.r.remain, inner.r.remain, boxr.br.remain)
 	}
 	//fmt.Println(int(ib.r.remain))
 	//ib.r.discard(int(ib.r.remain))
@@ -142,7 +140,7 @@ func parseItemInfoBox(outer *box, br bufReader) (b Box, err error) {
 //
 // TODO: currently only parses Version 2 boxes.
 type ItemInfoEntry struct {
-	Flags           uint32 // 24 bits
+	Flags           Flags
 	ItemID          uint16
 	ProtectionIndex uint16
 
@@ -155,8 +153,8 @@ type ItemInfoEntry struct {
 	// If Type == "uri ":
 	ItemURIType string
 
-	size     int16
-	Version  uint8
+	size int16
+	//Version  uint8
 	ItemType ItemType // always 4 bytes
 }
 
@@ -169,11 +167,7 @@ func (infe ItemInfoEntry) Type() BoxType {
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf("ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Version, infe.Flags, infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.size)
-}
-
-func newItemInfoEntry(fb FullBox) ItemInfoEntry {
-	return ItemInfoEntry{Version: fb.Version, Flags: fb.Flags}
+	return fmt.Sprintf("ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.size)
 }
 
 func parseItemInfoEntry(outer *box, br bufReader) (Box, error) {
@@ -181,13 +175,12 @@ func parseItemInfoEntry(outer *box, br bufReader) (Box, error) {
 	if err != nil {
 		return nil, err
 	}
-	if fb.Version != 2 {
-		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now.", fb.Version)
+	if fb.F.Version() != 2 {
+		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now.", fb.F.Version())
 	}
 	ie := ItemInfoEntry{
-		Version: fb.Version,
-		Flags:   fb.Flags,
-		size:    int16(fb.size),
+		Flags: fb.F,
+		size:  int16(fb.size),
 	}
 
 	ie.ItemID, _ = fb.r.readUint16()
