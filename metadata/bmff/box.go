@@ -90,10 +90,10 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	r       bufReader
-	size    int64 // 0 means unknown, will read to end of file (box container)
-	err     error
-	parsed  Box // if non-nil, the Parsed result
+	r    bufReader
+	size int64 // 0 means unknown, will read to end of file (box container)
+	err  error
+	//parsed  Box // if non-nil, the Parsed result
 	boxType BoxType
 }
 
@@ -105,9 +105,9 @@ func (b box) Size() int64   { return b.size }
 func (b box) Type() BoxType { return b.boxType }
 
 func (b *box) Parse() (Box, error) {
-	if b.parsed != nil {
-		return b.parsed, nil
-	}
+	//if b.parsed != nil {
+	//	return b.parsed, nil
+	//}
 	parser, ok := parsers[b.Type()]
 	if !ok {
 		err := fmt.Errorf("Error: Unknown Box %s", b.Type()) //ErrUnknownBox

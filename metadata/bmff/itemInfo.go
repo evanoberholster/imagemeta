@@ -67,7 +67,7 @@ type ItemInfoBox struct {
 	Count uint16
 
 	Exif      ItemInfoEntry
-	XMP       ItemInfoEntry
+	XMP       MimeItemInfoEntry
 	ItemInfos []ItemInfoEntry
 }
 
@@ -76,10 +76,14 @@ func (iinf *ItemInfoBox) setBox(b Box) error {
 		switch infe.ItemType {
 		case ItemTypeExif:
 			iinf.Exif = infe
-		case ItemTypeMime:
-			iinf.XMP = infe
 		default:
 			iinf.ItemInfos = append(iinf.ItemInfos, infe)
+		}
+	}
+	if infe, ok := b.(MimeItemInfoEntry); ok {
+		switch infe.ItemType {
+		case ItemTypeMime:
+			iinf.XMP = infe
 		}
 	}
 	return nil
@@ -116,6 +120,7 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 
 	boxr := outer.newReader(outer.r.remain)
 
+	var p Box
 	var inner box
 	for outer.r.remain > 4 {
 		inner, err = boxr.readBox()
@@ -126,14 +131,18 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 			boxr.br.err = err
 			return ib, err
 		}
-
-		p, err := inner.Parse()
+		//if inner.Type() == TypeInfe {
+		//	p, err = parseItemInfoEntry(&inner)
+		//} else {
+		p, err = inner.Parse()
+		//}
 		if err != nil {
 			if Debug {
 				err = fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
 				fmt.Println(err)
 			}
 		}
+
 		if err = ib.setBox(p); err != nil {
 			boxr.br.discard(int(inner.r.remain))
 		}
@@ -141,7 +150,13 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 		outer.r.remain -= inner.size
 		boxr.br.discard(int(inner.r.remain))
 		if Debug {
-			fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
+			if infe, ok := p.(ItemInfoEntry); ok {
+				fmt.Println(infe, outer.r.remain, inner.r.remain, boxr.br.remain)
+			}
+			if infe, ok := p.(MimeItemInfoEntry); ok {
+				fmt.Println(infe, outer.r.remain, inner.r.remain, boxr.br.remain)
+			}
+
 		}
 	}
 	//fmt.Println(int(ib.r.remain))
@@ -150,6 +165,12 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 		return FullBox{}, outer.r.err
 	}
 	return ib, nil
+}
+
+type MimeItemInfoEntry struct {
+	ItemInfoEntry
+	ContentType     string
+	ContentEncoding string
 }
 
 // ItemInfoEntry represents an "infe" box.
@@ -163,8 +184,8 @@ type ItemInfoEntry struct {
 	//Name string
 
 	// If Type == "mime":
-	ContentType     string
-	ContentEncoding string
+	//ContentType     string
+	//ContentEncoding string
 
 	// If Type == "uri ":
 	ItemURIType string
@@ -215,10 +236,15 @@ func parseItemInfoEntry(outer *box) (Box, error) {
 
 	switch ie.ItemType {
 	case ItemTypeMime:
-		ie.ContentType, _ = outer.r.readString()
-		if outer.r.anyRemain() {
-			ie.ContentEncoding, _ = outer.r.readString()
+		miie := MimeItemInfoEntry{
+			ItemInfoEntry: ie,
 		}
+		miie.ContentType, _ = outer.r.readString()
+		if outer.r.anyRemain() {
+			miie.ContentEncoding, _ = outer.r.readString()
+		}
+		//fmt.Println(ie.ContentType, ie.ContentEncoding)
+		return miie, nil
 	case ItemTypeURI:
 		ie.ItemURIType, _ = outer.r.readString()
 	}
