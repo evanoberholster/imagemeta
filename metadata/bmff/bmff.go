@@ -81,7 +81,7 @@ func (r *Reader) readBox() (b box, err error) {
 		return
 	}
 
-	var remain int64
+	var remain int
 	switch b.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
@@ -95,7 +95,7 @@ func (r *Reader) readBox() (b box, err error) {
 			// than int64.
 			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
 		}
-		remain = b.size - 2*4 - 8
+		remain = int(b.size - 2*4 - 8)
 		if err = r.br.discard(8); err != nil {
 			return
 		}
@@ -103,7 +103,7 @@ func (r *Reader) readBox() (b box, err error) {
 		// 0 means unknown & to read to end of file. No more boxes.
 		r.noMoreBoxes = true
 	default:
-		remain = b.size - 2*4
+		remain = int(b.size - 2*4)
 	}
 	b.r.remain = remain
 	return b, nil

@@ -49,6 +49,7 @@ func parseItemLocationBox(outer *box) (Box, error) {
 
 	ilb.ItemCount = binary.BigEndian.Uint16(buf[2:4])
 	outer.r.discard(4)
+	ilb.Items = make([]ItemLocationBoxEntry, 0, ilb.ItemCount)
 
 	if Debug {
 		fmt.Println(ilb)
@@ -58,18 +59,16 @@ func parseItemLocationBox(outer *box) (Box, error) {
 		var ent ItemLocationBoxEntry
 		ent.ItemID, _ = outer.r.readUint16()
 
-		// Adjust for baseOffset
-		if ilb.baseOffsetSize > 0 {
-			outer.r.discard(int(ilb.baseOffsetSize))
-		}
-
 		if flags.Version() > 0 { // version 1
 			cmeth, _ := outer.r.readUint16()
 			ent.ConstructionMethod = byte(cmeth & 15)
 		}
 		ent.DataReferenceIndex, _ = outer.r.readUint16()
+
+		// Adjust for baseOffset per issue "https://github.com/go4org/go4/issues/47" thanks to petercgrant
 		if outer.r.ok() && ilb.baseOffsetSize > 0 {
-			outer.r.discard(int(ilb.baseOffsetSize) / 8)
+			ent.BaseOffset, _ = outer.r.readUintN(ilb.baseOffsetSize * 8)
+			//outer.r.discard(int(ilb.baseOffsetSize) / 8)
 		}
 
 		// ExtentCount
@@ -91,7 +90,7 @@ func parseItemLocationBox(outer *box) (Box, error) {
 		ilb.Items = append(ilb.Items, ent)
 
 		if Debug {
-			//fmt.Println(ent, outer.r.remain)
+			fmt.Println(ent, outer.r.remain)
 		}
 	}
 	if !outer.r.ok() {

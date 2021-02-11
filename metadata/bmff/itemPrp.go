@@ -8,7 +8,7 @@ import (
 // ItemPropertiesBox is an ISOBMFF "iprp" box
 type ItemPropertiesBox struct {
 	PropertyContainer ItemPropertyContainerBox
-	Associations      []*ItemPropertyAssociation // at least 1
+	Associations      []ItemPropertyAssociation // at least 1
 }
 
 // Type returns TypeIprp
@@ -17,13 +17,15 @@ func (iprp ItemPropertiesBox) Type() BoxType {
 }
 
 func (iprp ItemPropertiesBox) String() string {
-	return fmt.Sprintf("iprp | Item PRops")
+	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations))
 }
 
 func (iprp *ItemPropertiesBox) setBox(b Box) {
 	switch v := b.(type) {
 	case ItemPropertyContainerBox:
 		iprp.PropertyContainer = v
+	case ItemPropertyAssociation:
+		iprp.Associations = append(iprp.Associations, v)
 	default:
 		if Debug {
 			fmt.Printf("(iprp) Notset %T", v)
@@ -36,62 +38,35 @@ func parseItemPropertiesBox(outer *box) (b Box, err error) {
 
 	// New Reader
 	boxr := outer.newReader(outer.r.remain)
-
-	var p Box
 	var inner box
-	for outer.r.remain > 0 {
-		inner, err = boxr.readBox()
-		if err != nil {
-			if err == io.EOF {
-				return ip, nil
-			}
-			boxr.br.err = err
+	for outer.r.remain > 4 {
+		// Read Box
+		if inner, err = boxr.readBox(); err != nil {
 			return ip, err
 		}
-		if inner.boxType == TypeIpma {
-			//inner.r.discard(int(inner.r.remain))
-		}
-		if p, err = inner.Parse(); p != nil {
-			ip.setBox(p)
-		}
-		if Debug {
-			fmt.Printf("(iprp)(%s) %T error: %e Outer: %d, Size: %d, Inner: %d \n", inner.boxType, p, err, outer.r.remain, inner.size, inner.r.remain)
-		}
 
+		if inner.boxType == TypeIpco { // Read ItemPropertyContainerBox
+			ip.PropertyContainer, err = parseItemPropertyContainerBox(&inner)
+			if err != nil {
+				return ip, err
+			}
+		} else if inner.boxType == TypeIpma { // Read ItemPropertyAssociation
+			ipma, err := parseItemPropertyAssociation(&inner)
+			if err != nil {
+				return ipma, err
+			}
+			ip.Associations = append(ip.Associations, ipma)
+		} else {
+			if Debug {
+				fmt.Printf("(iprp) unexpected Type: %s, Size: %d", inner.Type(), inner.size)
+			}
+		}
 		if inner.r.remain > 0 {
-			inner.r.discard(int(inner.r.remain))
+			inner.r.discard(inner.r.remain)
 		}
-		outer.r.remain -= inner.size
+		outer.r.remain -= int(inner.size)
 	}
-	boxr.br.discard(int(outer.r.remain))
-	//if len(boxes) < 2 {
-	//	return nil, fmt.Errorf("expect at least 2 boxes in children; got 0")
-	//}
-
-	//cb, err := boxes[0].Parse()
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to parse first box, %q: %v", boxes[0].Type(), err)
-	//}
-
-	//var ok bool
-	//ip.PropertyContainer, ok = cb.(*ItemPropertyContainerBox)
-	//if !ok {
-	//	return nil, fmt.Errorf("unexpected type %T for ItemPropertieBox.PropertyContainer", cb)
-	//}
-
-	// Association boxes
-	//ip.Associations = make([]*ItemPropertyAssociation, 0, len(boxes)-1)
-	//for _, box := range boxes[1:] {
-	//	boxp, err := box.Parse()
-	//	if err != nil {
-	//		return nil, fmt.Errorf("failed to parse association box: %v", err)
-	//	}
-	//	ipa, ok := boxp.(*ItemPropertyAssociation)
-	//	if !ok {
-	//		return nil, fmt.Errorf("unexpected box %q instead of ItemPropertyAssociation", boxp.Type())
-	//	}
-	//	ip.Associations = append(ip.Associations, ipa)
-	//}
+	boxr.br.discard(outer.r.remain)
 	return ip, nil
 }
 
@@ -106,9 +81,11 @@ func (ipco ItemPropertyContainerBox) Type() BoxType {
 	return TypeIpco
 }
 
-func parseItemPropertyContainerBox(outer *box) (b Box, err error) {
-	ipc := ItemPropertyContainerBox{}
-	// parseAppendBoxes
+func parseIpco(outer *box) (Box, error) {
+	return parseItemPropertyContainerBox(outer)
+}
+
+func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, err error) {
 	// New Reader
 	boxr := outer.newReader(outer.r.remain)
 	var p Box
@@ -131,8 +108,9 @@ func parseItemPropertyContainerBox(outer *box) (b Box, err error) {
 			}
 			fmt.Printf("\n")
 		}
+		ipc.Properties = append(ipc.Properties, p)
 		inner.r.discard(int(inner.r.remain))
-		outer.r.remain -= inner.size
+		outer.r.remain -= int(inner.size)
 	}
 	outer.r.discard(int(outer.r.remain))
 	return ipc, nil
@@ -155,18 +133,23 @@ func (ipma ItemPropertyAssociation) Type() BoxType {
 	return TypeIpma
 }
 
-func parseItemPropertyAssociation(outer *box) (Box, error) {
-	flags, err := outer.r.readFlags()
-	if err != nil {
-		return nil, err
-	}
-	ipa := ItemPropertyAssociation{Flags: flags}
-	count, _ := outer.r.readUint32()
-	ipa.EntryCount = count
+func parseIpma(outer *box) (Box, error) {
+	return parseItemPropertyAssociation(outer)
+}
 
-	for i := uint64(0); i < uint64(count) && outer.r.ok(); i++ {
+func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err error) {
+	ipa.Flags, err = outer.r.readFlags()
+	if err != nil {
+		return ipa, err
+	}
+	ipa.EntryCount, _ = outer.r.readUint32()
+
+	// Entries
+	ipa.Entries = make([]ItemPropertyAssociationItem, 0, ipa.EntryCount)
+
+	for i := uint32(0); i < ipa.EntryCount && outer.r.ok(); i++ {
 		var itemID uint32
-		if flags.Version() < 1 {
+		if ipa.Flags.Version() < 1 {
 			itemID16, _ := outer.r.readUint16()
 			itemID = uint32(itemID16)
 		} else {
@@ -176,6 +159,7 @@ func parseItemPropertyAssociation(outer *box) (Box, error) {
 		ipai := ItemPropertyAssociationItem{
 			ItemID:            itemID,
 			AssociationsCount: int(assocCount),
+			Associations:      make([]ItemProperty, 0, assocCount),
 		}
 		for j := 0; j < int(assocCount) && outer.r.ok(); j++ {
 			first, _ := outer.r.readUint8()
@@ -183,7 +167,7 @@ func parseItemPropertyAssociation(outer *box) (Box, error) {
 			first &^= byte(1 << 7)
 
 			var index uint16
-			if flags.Flags()&1 != 0 {
+			if ipa.Flags.Flags()&1 != 0 {
 				second, _ := outer.r.readUint8()
 				index = uint16(first)<<8 | uint16(second)
 			} else {
@@ -197,7 +181,7 @@ func parseItemPropertyAssociation(outer *box) (Box, error) {
 		ipa.Entries = append(ipa.Entries, ipai)
 	}
 	if !outer.r.ok() {
-		return nil, outer.r.err
+		return ipa, outer.r.err
 	}
 	if Debug {
 		fmt.Println(ipa)
@@ -269,6 +253,8 @@ func (irot ImageRotation) String() string {
 		return fmt.Sprintf("(irot) Angle: 90° Counter-Clockwise")
 	case 2:
 		return fmt.Sprintf("(irot) Angle: 180° Counter-Clockwise")
+	case 3:
+		return fmt.Sprintf("(irot) Angle: 270° Counter-Clockwise")
 	default:
 		return fmt.Sprintf("(irot) Unknown Angle: %d", irot)
 	}

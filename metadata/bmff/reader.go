@@ -8,23 +8,29 @@ import (
 	"strings"
 )
 
+// Errors
+var (
+	ErrItemType        = errors.New("bufReader error: itemType doesn't end on whitespace")
+	ErrBufReaderLength = errors.New("bufReader error: infufficient length")
+)
+
 // bufReader adds some HEIF/BMFF-specific methods around a *bufio.Reader.
 type bufReader struct {
 	*bufio.Reader
 	err    error
-	remain int64
+	remain int
 	// sticky error
 }
 
-func (b box) newReader(size int64) Reader {
+func (b box) newReader(size int) Reader {
 	return Reader{br: bufReader{Reader: b.r.Reader, remain: size}}
 }
 
 func (br *bufReader) discard(n int) error {
-	m, err := br.Discard(n)
-	br.remain -= int64(m)
-	if m != n || err != nil {
-		br.err = errors.New("bufReader discard error")
+	_, err := br.Discard(n)
+	br.remain -= n
+	if err != nil {
+		br.err = fmt.Errorf("bufReader discard error: %v", err)
 		return br.err
 	}
 	return err
@@ -50,7 +56,7 @@ func (br *bufReader) readString() (string, error) {
 		br.err = err
 		return "", err
 	}
-	br.remain -= int64(len(s0))
+	br.remain -= len(s0)
 	if s0[len(s0)-1] == '\x00' {
 		s0 = s0[:len(s0)-1]
 		return string(s0), nil
@@ -76,7 +82,8 @@ func (br *bufReader) readUint8() (uint8, error) {
 		br.err = err
 		return 0, err
 	}
-	br.remain -= 1
+	// remove 1 remaining byte
+	br.remain--
 	return v, nil
 }
 
@@ -116,7 +123,7 @@ func (br *bufReader) readUintN(bits uint8) (uint64, error) {
 	if br.err != nil {
 		return 0, br.err
 	}
-	if br.remain < int64(bits/8) {
+	if br.remain < int(bits/8) {
 		return 0, ErrBufReaderLength
 	}
 	if bits == 0 {
@@ -151,7 +158,7 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 	}
 
 	if br.remain < 4 {
-		err = errors.New("bufReader error: brand insufficient length")
+		err = ErrBufReaderLength
 		br.err = err
 		return
 	}
@@ -164,7 +171,7 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 
 func (br *bufReader) readItemType() (it ItemType, err error) {
 	if br.remain < 4 {
-		err = errors.New("bufReader error: itemType infufficient length")
+		err = ErrBufReaderLength
 		br.err = err
 	}
 	buf, err := br.Peek(5)
@@ -174,30 +181,72 @@ func (br *bufReader) readItemType() (it ItemType, err error) {
 
 	it = itemType(buf[:4])
 	if buf[4] != '\x00' {
-		err = errors.New("bufReader error: itemType doesn't end on whitespace")
+		// Read until whitespace
+		err = ErrItemType // errors.New("bufReader error: itemType doesn't end on whitespace")
 	}
 
 	return it, br.discard(5)
 }
-
-// Errors
-var (
-	ErrBufReaderLength = errors.New("bufReader error: infufficient length")
-)
 
 func (br *bufReader) readFlags() (f Flags, err error) {
 	if br.remain < 4 {
 		err = ErrBufReaderLength
 		br.err = err
 	}
-
-	// Parse FullBox header.
+	// Parse Flags from a FullBox header.
 	buf, err := br.Peek(4)
 	if err != nil {
 		return f, fmt.Errorf("failed to read 4 bytes of Flags: %v", err)
 	}
-	f.Read(buf)
+
+	f = Flags(binary.BigEndian.Uint32(buf[:4]))
 
 	err = br.discard(4)
 	return f, err
+}
+
+func (br *bufReader) readBox() (b box, err error) {
+	var buf []byte
+	// Read box size and box type
+	if buf, err = br.Peek(8); err != nil {
+		return b, err
+	}
+
+	b = box{
+		r:       *br,
+		size:    int64(binary.BigEndian.Uint32(buf[:4])),
+		boxType: boxType(buf[4:8]),
+	}
+
+	if err = br.discard(8); err != nil {
+		return
+	}
+
+	var remain int
+	switch b.size {
+	case 1:
+		// 1 means it's actually a 64-bit size, after the type.
+		if buf, err = br.Peek(8); err != nil {
+			return b, err
+		}
+		b.size = int64(binary.BigEndian.Uint64(buf[:8]))
+		if b.size < 0 {
+			// Go uses int64 for sizes typically, but BMFF uses uint64.
+			// We assume for now that nobody actually uses boxes larger
+			// than int64.
+			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
+		}
+		remain = int(b.size - 2*4 - 8)
+		if err = br.discard(8); err != nil {
+			return
+		}
+	case 0:
+		// 0 means unknown & to read to end of file. No more boxes.
+		// r.noMoreBoxes = true
+		// TODO: error
+	default:
+		remain = int(b.size - 2*4)
+	}
+	b.r.remain = remain
+	return b, nil
 }

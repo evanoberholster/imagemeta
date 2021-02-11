@@ -99,10 +99,6 @@ type FileTypeBox struct {
 	Compatible   [6]Brand // all 4 bytes
 }
 
-func (ftyp FileTypeBox) Size() int64 {
-	return 0
-}
-
 func (ftyp FileTypeBox) Type() BoxType {
 	return TypeFtyp
 }

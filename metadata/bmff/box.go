@@ -1,14 +1,13 @@
 package bmff
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 )
 
 // ErrUnknownBox is returned by Box.Parse for unrecognized box types.
-var ErrUnknownBox = errors.New("heif: unknown box")
+var ErrUnknownBox = errors.New("error no parser for box")
 
 // BoxType is an ISOBMFF box
 type BoxType uint8
@@ -134,22 +133,28 @@ func (b box) String() string {
 func (b box) Size() int64   { return b.size }
 func (b box) Type() BoxType { return b.boxType }
 
+func (b box) isType(t BoxType) bool {
+	return b.boxType == t
+}
+
 func (b *box) Parse() (Box, error) {
 	if !b.r.anyRemain() {
 		return nil, ErrBufReaderLength
 	}
 	parser, ok := parsers[b.Type()]
 	if !ok {
-		err := fmt.Errorf("Error: Unknown Box %s", b.Type()) //ErrUnknownBox
-		return nil, err
+		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownBox //ErrUnknownBox
 	}
 
 	v, err := parser(b)
 	if err != nil {
 		return nil, err
 	}
-	//b.parsed = v
 	return v, nil
+}
+
+func (b *box) discardRemaining(inner box) {
+
 }
 
 type parserFunc func(b *box) (Box, error)
@@ -163,10 +168,10 @@ func init() {
 		TypeFtyp: parseFileTypeBox,
 		TypeHdlr: parseHandlerBox,
 		TypeIinf: parseItemInfoBox,
-		TypeInfe: parseItemInfoEntry,
+		TypeInfe: parseInfe,
 		TypeIloc: parseItemLocationBox,
-		TypeIpco: parseItemPropertyContainerBox,
-		TypeIpma: parseItemPropertyAssociation,
+		TypeIpco: parseIpco,
+		TypeIpma: parseIpma,
 		TypeIprp: parseItemPropertiesBox,
 		TypeIrot: parseImageRotation,
 		TypeIspe: parseImageSpatialExtentsProperty,
@@ -194,9 +199,9 @@ func (f Flags) Version() uint8 {
 	return uint8(f >> 24)
 }
 
-func (f *Flags) Read(buf []byte) {
-	*f = Flags(binary.BigEndian.Uint32(buf[:4]))
-}
+//func (f *Flags) Read(buf []byte) {
+//	*f = Flags(binary.BigEndian.Uint32(buf[:4]))
+//}
 
 // MetaBox is a 'meta' box
 type MetaBox struct {
@@ -274,7 +279,7 @@ func parseMetaBox(outer *box) (Box, error) {
 		} else {
 			mb.setBox(p)
 		}
-		outer.r.remain -= inner.size
+		outer.r.remain -= int(inner.size)
 
 		//if Debug {
 		//	fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
@@ -319,10 +324,7 @@ type DataInformationBox struct {
 	Children []Box
 }
 
-func (dinf DataInformationBox) Size() int64 {
-	return 0
-}
-
+// Type returns TypeDinf
 func (dinf DataInformationBox) Type() BoxType {
 	return TypeDinf
 }

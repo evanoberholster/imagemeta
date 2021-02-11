@@ -2,72 +2,35 @@ package bmff
 
 import (
 	"fmt"
-	"io"
 )
 
 // ItemType is
 // always 4 bytes
-type ItemType uint8
+type ItemType [4]byte
 
-// ItemTypes
-const (
-	ItemTypeUnknown ItemType = iota
-	ItemTypeInfe
-	ItemTypeMime
-	ItemTypeURI
-	ItemTypeAv01
-	ItemTypeHvc1
-	ItemTypeGrid
-	ItemTypeExif
+// Common ItemTypes
+var (
+	ItemTypeInfe    = itemType([]byte("infe"))
+	ItemTypeMime    = itemType([]byte("mime"))
+	ItemTypeURI     = itemType([]byte("uri "))
+	ItemTypeAv01    = itemType([]byte("av01"))
+	ItemTypeHvc1    = itemType([]byte("hvc1"))
+	ItemTypeGrid    = itemType([]byte("grid"))
+	ItemTypeExif    = itemType([]byte("Exif"))
+	ItemTypeUnknown = itemType([]byte("nnnn"))
 )
 
-func isItemHvc1(buf []byte) bool {
-	return buf[0] == 'h' && buf[1] == 'v' && buf[2] == 'c' && buf[3] == '1'
-}
-
-func isItemAv01(buf []byte) bool {
-	return buf[0] == 'a' && buf[1] == 'v' && buf[2] == '0' && buf[3] == '1'
-}
-
 func (it ItemType) String() string {
-	return mapItemTypeString[it]
+	return string(it[:])
 }
 
 func itemType(buf []byte) ItemType {
-	if isItemHvc1(buf) {
-		return ItemTypeHvc1
+	if len(buf) != 4 {
+		// Error
 	}
-	if isItemAv01(buf) {
-		return ItemTypeAv01
-	}
-	t, found := mapStringItemType[string(buf)]
-	if found {
-		return t
-	}
-	if Debug {
-		fmt.Printf("Unknown Item Type: %s\n", buf)
-	}
-	return ItemTypeUnknown
-}
-
-var mapItemTypeString = map[ItemType]string{
-	ItemTypeInfe: "infe",
-	ItemTypeMime: "mime",
-	ItemTypeURI:  "uri ",
-	ItemTypeAv01: "av01",
-	ItemTypeHvc1: "hvc1",
-	ItemTypeGrid: "grid",
-	ItemTypeExif: "Exif",
-}
-
-var mapStringItemType = map[string]ItemType{
-	"infe": ItemTypeInfe,
-	"mime": ItemTypeMime,
-	"uri ": ItemTypeURI,
-	"av01": ItemTypeAv01,
-	"hvc1": ItemTypeHvc1,
-	"grid": ItemTypeGrid,
-	"Exif": ItemTypeExif,
+	it := ItemType{}
+	copy(it[:], buf[:4])
+	return it
 }
 
 // ItemInfoBox represents an "iinf" box.
@@ -81,16 +44,14 @@ type ItemInfoBox struct {
 	ItemInfos []ItemInfoEntry
 }
 
-func (iinf *ItemInfoBox) setBox(b Box) error {
-	if infe, ok := b.(ItemInfoEntry); ok {
-		switch infe.ItemType {
-		case ItemTypeExif:
-			iinf.Exif = infe
-		case ItemTypeMime:
-			iinf.XMP = infe
-		default:
-			iinf.ItemInfos = append(iinf.ItemInfos, infe)
-		}
+func (iinf *ItemInfoBox) setBox(infe ItemInfoEntry) error {
+	switch infe.ItemType {
+	case ItemTypeExif:
+		iinf.Exif = infe
+	case ItemTypeMime:
+		iinf.XMP = infe
+	default:
+		iinf.ItemInfos = append(iinf.ItemInfos, infe)
 	}
 	return nil
 }
@@ -129,22 +90,27 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
 	boxr := outer.newReader(outer.r.remain)
-	var p Box
+
 	var inner box
 	for outer.r.remain > 4 {
 		inner, err = boxr.readBox()
 		if err != nil {
-			if err == io.EOF {
-				return ib, nil
-			}
 			boxr.br.err = err
 			return ib, err
 		}
-		//if inner.Type() == TypeInfe {
-		//	p, err = parseItemInfoEntry(&inner)
-		//} else {
-		p, err = inner.Parse()
-		//}
+		if inner.Type() == TypeInfe {
+			ie, err := parseItemInfoEntry(&inner)
+			if err != nil {
+				boxr.br.discard(int(inner.r.remain))
+			}
+			ib.ItemInfos = append(ib.ItemInfos, ie)
+			//if err = ib.setBox(ie); err != nil {
+			//	boxr.br.discard(int(inner.r.remain))
+			//}
+		} else {
+			// Error here
+			boxr.br.discard(int(inner.r.remain))
+		}
 		if err != nil {
 			if Debug {
 				err = fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
@@ -152,11 +118,7 @@ func parseItemInfoBox(outer *box) (b Box, err error) {
 			}
 		}
 
-		if err = ib.setBox(p); err != nil {
-			boxr.br.discard(int(inner.r.remain))
-		}
-
-		outer.r.remain -= inner.size
+		outer.r.remain -= int(inner.size)
 		boxr.br.discard(int(inner.r.remain))
 		if Debug {
 			//fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
@@ -184,19 +146,14 @@ type ItemInfoEntry struct {
 	//Name string
 
 	// If Type == "mime":
-	ContentType     string
-	ContentEncoding string
+	//ContentType     string
+	//ContentEncoding string
 
 	// If Type == "uri ":
-	ItemURIType string
+	//ItemURIType string
 
-	size     int16
 	ItemType ItemType
-}
-
-// Size returns the size of an ItemInfoEntry Box
-func (infe ItemInfoEntry) Size() int64 {
-	return int64(infe.size)
+	//size     int16
 }
 
 // Type returns TypeInfe
@@ -205,29 +162,33 @@ func (infe ItemInfoEntry) Type() BoxType {
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf(" \t ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s, size: %d", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType, infe.Size())
+	return fmt.Sprintf(" \t ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType)
 }
 
-func parseItemInfoEntry(outer *box) (Box, error) {
+func parseInfe(outer *box) (Box, error) {
+	return parseItemInfoEntry(outer)
+}
+
+func parseItemInfoEntry(outer *box) (ie ItemInfoEntry, err error) {
 	// Read Flags
 	flags, err := outer.r.readFlags()
 	if err != nil {
-		return nil, err
+		return ie, err
 	}
 	if flags.Version() != 2 {
-		return nil, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now", flags.Version())
+		return ie, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now", flags.Version())
 	}
 
 	// New ItemInfoEntry
-	ie := ItemInfoEntry{
+	ie = ItemInfoEntry{
 		Flags: flags,
-		size:  int16(outer.size),
+		//size:  int16(outer.size),
 	}
 
 	ie.ItemID, _ = outer.r.readUint16()
 	ie.ProtectionIndex, _ = outer.r.readUint16()
 	if !outer.r.ok() {
-		return nil, outer.r.err
+		return ie, outer.r.err
 	}
 	ie.ItemType, err = outer.r.readItemType()
 	if err != nil {
@@ -236,15 +197,20 @@ func parseItemInfoEntry(outer *box) (Box, error) {
 
 	switch ie.ItemType {
 	case ItemTypeMime:
-		ie.ContentType, _ = outer.r.readString()
+		_, _ = outer.r.readString()
 		if outer.r.anyRemain() {
-			ie.ContentEncoding, _ = outer.r.readString()
+			_, _ = outer.r.readString()
 		}
+		//ie.ContentType, _ = outer.r.readString()
+		//if outer.r.anyRemain() {
+		//	ie.ContentEncoding, _ = outer.r.readString()
+		//}
 	case ItemTypeURI:
-		ie.ItemURIType, _ = outer.r.readString()
+		_, _ = outer.r.readString()
+		//ie.ItemURIType, _ = outer.r.readString()
 	}
 	if !outer.r.ok() {
-		return nil, outer.r.err
+		return ie, outer.r.err
 	}
 	return ie, nil
 }
