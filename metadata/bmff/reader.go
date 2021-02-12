@@ -40,11 +40,7 @@ func (br *bufReader) discard(n int) error {
 func (br *bufReader) ok() bool { return br.err == nil }
 
 func (br *bufReader) anyRemain() bool {
-	if br.err != nil {
-		return false
-	}
-	_, err := br.Peek(1)
-	return err == nil && br.remain > 0
+	return br.remain > 0 && br.ok()
 }
 
 func (br *bufReader) readString() (string, error) {
@@ -71,10 +67,7 @@ func (br *bufReader) readString() (string, error) {
 }
 
 func (br *bufReader) readUint8() (uint8, error) {
-	if br.err != nil {
-		return 0, br.err
-	}
-	if br.remain < 1 {
+	if !br.anyRemain() {
 		return 0, ErrBufReaderLength
 	}
 	v, err := br.ReadByte()
@@ -200,25 +193,23 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 	}
 
 	f = Flags(binary.BigEndian.Uint32(buf[:4]))
-
 	err = br.discard(4)
+
 	return f, err
 }
 
-func (br *bufReader) readBox() (b box, err error) {
-	var buf []byte
+func (br *bufReader) readInnerBox() (b box, err error) {
+	b = box{r: *br}
+
 	// Read box size and box type
-	if buf, err = br.Peek(8); err != nil {
+	var buf []byte
+	if buf, err = b.r.Peek(8); err != nil {
 		return b, err
 	}
+	b.size = int64(binary.BigEndian.Uint32(buf[:4]))
+	b.boxType = boxType(buf[4:8])
 
-	b = box{
-		r:       *br,
-		size:    int64(binary.BigEndian.Uint32(buf[:4])),
-		boxType: boxType(buf[4:8]),
-	}
-
-	if err = br.discard(8); err != nil {
+	if err = b.r.discard(8); err != nil {
 		return
 	}
 
@@ -226,7 +217,7 @@ func (br *bufReader) readBox() (b box, err error) {
 	switch b.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
-		if buf, err = br.Peek(8); err != nil {
+		if buf, err = b.r.Peek(8); err != nil {
 			return b, err
 		}
 		b.size = int64(binary.BigEndian.Uint64(buf[:8]))
@@ -237,7 +228,8 @@ func (br *bufReader) readBox() (b box, err error) {
 			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
 		}
 		remain = int(b.size - 2*4 - 8)
-		if err = br.discard(8); err != nil {
+		if err = b.r.discard(8); err != nil {
+			// TODO: write error message
 			return
 		}
 	case 0:

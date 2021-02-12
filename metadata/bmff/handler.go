@@ -128,7 +128,7 @@ func (irot ImageRotation) Type() BoxType {
 
 func (irot ImageRotation) String() string {
 	if irot == 0 {
-		return fmt.Sprint("(irot) No Rotation")
+		return "(irot) No Rotation"
 	}
 	if irot >= 1 && irot <= 3 {
 		return fmt.Sprintf("(irot) Angle: %d° Counter-Clockwise", irot*90)
@@ -139,4 +139,38 @@ func (irot ImageRotation) String() string {
 func parseImageRotation(outer *box) (Box, error) {
 	v, err := outer.r.readUint8()
 	return ImageRotation(v & 3), err
+}
+
+// PrimaryItemBox is a "pitm" box.
+//
+// Primary Item Reference pitm allows setting one image as the primary item.
+type PrimaryItemBox struct {
+	Flags  Flags
+	ItemID uint16
+}
+
+// Size returns the size of the PrimaryItemBox
+func (pitm PrimaryItemBox) String() string {
+	return fmt.Sprintf("pitm | ItemID: %d, Flags: %d, Version: %d ", pitm.ItemID, pitm.Flags.Flags(), pitm.Flags.Version())
+}
+
+// Type returns TypePitm
+func (pitm PrimaryItemBox) Type() BoxType {
+	return TypePitm
+}
+
+func parsePitm(outer *box) (Box, error) {
+	return parsePrimaryItemBox(outer)
+}
+
+func parsePrimaryItemBox(outer *box) (pitm PrimaryItemBox, err error) {
+	pitm.Flags, err = outer.r.readFlags()
+	if err != nil {
+		return
+	}
+	pitm.ItemID, err = outer.r.readUint16()
+	if err != nil {
+		return
+	}
+	return pitm, err
 }

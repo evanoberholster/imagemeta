@@ -101,7 +101,7 @@ func (r *Reader) readBox() (b box, err error) {
 		}
 	case 0:
 		// 0 means unknown & to read to end of file. No more boxes.
-		r.noMoreBoxes = true
+		//r.noMoreBoxes = true
 	default:
 		remain = int(b.size - 2*4)
 	}
@@ -129,4 +129,23 @@ type Box interface {
 	// Body will return a new reader at the beginning of the box if the
 	// outer box has already been parsed.
 	//Body() io.Reader
+}
+
+// Flags for a FullBox
+// 8 bits -> Version
+// 24 bits -> Flags
+type Flags uint32
+
+// Flags returns underlying Flags after removing version.
+// Flags are 24 bits.
+func (f Flags) Flags() uint32 {
+	// Left Shift
+	f = f << 8
+	// Right Shift
+	return uint32(f >> 8)
+}
+
+// Version returns a uint8 version.
+func (f Flags) Version() uint8 {
+	return uint8(f >> 24)
 }

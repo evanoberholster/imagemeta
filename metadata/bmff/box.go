@@ -132,7 +132,7 @@ func isBoxinfe(buf []byte) bool {
 }
 
 func boxType(buf []byte) BoxType {
-	if isBoxinfe(buf) {
+	if isBoxinfe(buf) { // inital check for performance reasons, TODO: confirm with benchmarks
 		return TypeInfe
 	}
 	b, ok := mapStringBoxType[string(buf)]
@@ -146,7 +146,7 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	r       bufReader
+	bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
 	err     error
 	boxType BoxType
@@ -204,25 +204,6 @@ func init() {
 	}
 }
 
-// Flags for a FullBox
-// 8 bits -> Version
-// 24 bits -> Flags
-type Flags uint32
-
-// Flags returns underlying Flags after removing version.
-// Flags are 24 bits.
-func (f Flags) Flags() uint32 {
-	// Left Shift
-	f = f << 8
-	// Right Shift
-	return uint32(f >> 8)
-}
-
-// Version returns a uint8 version.
-func (f Flags) Version() uint8 {
-	return uint8(f >> 24)
-}
-
 // MetaBox is a 'meta' box
 type MetaBox struct {
 	size  uint32
@@ -255,24 +236,6 @@ func (mb MetaBox) String() string {
 	return str
 }
 
-func (mb *MetaBox) setBox(b Box) error {
-	switch v := b.(type) {
-	case HandlerBox:
-		mb.Handler = v
-	case PrimaryItemBox:
-		mb.Primary = v
-	case ItemInfoBox:
-		mb.ItemInfo = v
-	case ItemPropertiesBox:
-		mb.Properties = v
-	case ItemLocationBox:
-		mb.Location = v
-	default:
-		mb.Children = append(mb.Children, b)
-	}
-	return nil
-}
-
 func parseMetaBox(outer *box) (Box, error) {
 	flags, err := outer.r.readFlags()
 	if err != nil {
@@ -297,8 +260,8 @@ func parseMetaBox(outer *box) (Box, error) {
 		case TypeIdat, TypeDinf:
 			// Do not read
 			boxr.br.discard(inner.r.remain)
-		case TypeIref:
-			_, err = inner.Parse()
+		//case TypeIref:
+		//	_, err = inner.Parse()
 		case TypePitm:
 			mb.Primary, err = parsePrimaryItemBox(&inner)
 		case TypeIinf:
@@ -310,6 +273,10 @@ func parseMetaBox(outer *box) (Box, error) {
 		case TypeIloc:
 			mb.Location, err = parseItemLocationBox(&inner)
 		default:
+			p, err := inner.Parse()
+			if err == nil {
+				mb.Children = append(mb.Children, p)
+			}
 			boxr.br.discard(inner.r.remain)
 		}
 		if err != nil {
@@ -342,7 +309,7 @@ func parseMetaBox(outer *box) (Box, error) {
 		//	if err != nil {
 		//		boxr.br.discard(int(inner.r.remain))
 		//	} else {
-		//		mb.setBox(p)
+		//
 		//	}
 		//}
 		//
@@ -354,36 +321,6 @@ func parseMetaBox(outer *box) (Box, error) {
 	}
 	boxr.br.discard(outer.r.remain)
 	return mb, err
-}
-
-// PrimaryItemBox is a "pitm" box
-type PrimaryItemBox struct {
-	Flags  Flags
-	ItemID uint16
-}
-
-// Size returns the size of the PrimaryItemBox
-func (pitm PrimaryItemBox) String() string {
-	return fmt.Sprintf("pitm | ItemID: %d, Flags: %d, Version: %d ", pitm.ItemID, pitm.Flags.Flags(), pitm.Flags.Version())
-}
-
-// Type returns TypePitm
-func (pitm PrimaryItemBox) Type() BoxType {
-	return TypePitm
-}
-
-func parsePitm(outer *box) (Box, error) {
-	return parsePrimaryItemBox(outer)
-}
-
-func parsePrimaryItemBox(outer *box) (pitm PrimaryItemBox, err error) {
-	pitm.Flags, err = outer.r.readFlags()
-	if err != nil {
-		return pitm, err
-	}
-	pitm.ItemID, err = outer.r.readUint16()
-
-	return pitm, nil
 }
 
 // DataInformationBox is a "dinf" box

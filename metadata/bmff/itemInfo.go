@@ -87,33 +87,30 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 	}
 
 	// New ItemInfoBox
-	ib := ItemInfoBox{
+	iinf = ItemInfoBox{
 		size:      outer.size,
 		Flags:     flags,
 		Count:     count,
 		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
-	boxr := outer.newReader(outer.r.remain)
-
 	var inner box
-	for outer.r.remain > 4 {
-		inner, err = boxr.readBox()
+	for outer.r.anyRemain() {
+		inner, err = outer.r.readInnerBox()
 		if err != nil {
-			boxr.br.err = err
-			return ib, err
+			return iinf, err
 		}
 		if inner.Type() == TypeInfe {
-			ie, err := parseItemInfoEntry(&inner)
-			if err != nil {
-				boxr.br.discard(int(inner.r.remain))
+			var infe ItemInfoEntry
+			if infe, err = parseItemInfoEntry(&inner); err != nil {
+				outer.r.discard(inner.r.remain)
 			}
-			ib.ItemInfos = append(ib.ItemInfos, ie)
-			//if err = ib.setBox(ie); err != nil {
-			//	boxr.br.discard(int(inner.r.remain))
-			//}
+			iinf.ItemInfos = append(iinf.ItemInfos, infe)
+			if Debug {
+				fmt.Println(infe, outer.r.remain, inner.r.remain, outer.r.remain)
+			}
 		} else {
-			// Error here
-			boxr.br.discard(int(inner.r.remain))
+			// Error here Box Unknown
+			outer.r.discard(inner.r.remain)
 		}
 		if err != nil {
 			if Debug {
@@ -121,22 +118,15 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 				fmt.Println(err)
 			}
 		}
-
 		outer.r.remain -= int(inner.size)
-		boxr.br.discard(int(inner.r.remain))
-		if Debug {
-			//fmt.Println(p.(ItemInfoEntry), outer.r.remain, inner.r.remain, boxr.br.remain)
-		}
-	}
-	//fmt.Println(int(ib.r.remain))
-	//boxr.br.discard(int(fb.r.remain))
-	if !outer.r.ok() {
-		return ib, outer.r.err
+		outer.r.discard(inner.r.remain)
 	}
 	if Debug {
-		fmt.Println(ib)
+		fmt.Println(iinf)
 	}
-	return ib, nil
+
+	err = outer.r.discard(outer.r.remain)
+	return iinf, err
 }
 
 // ItemInfoEntry represents an "infe" box.
