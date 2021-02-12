@@ -70,11 +70,15 @@ func (iinf ItemInfoBox) Type() BoxType {
 	return TypeIinf
 }
 
-func parseItemInfoBox(outer *box) (b Box, err error) {
+func parseIinf(outer *box) (Box, error) {
+	return parseItemInfoBox(outer)
+}
+
+func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 	// Read Flags
 	flags, err := outer.r.readFlags()
 	if err != nil {
-		return nil, err
+		return
 	}
 	// Read Item count
 	count, err := outer.r.readUint16()
@@ -152,8 +156,8 @@ type ItemInfoEntry struct {
 	// If Type == "uri ":
 	//ItemURIType string
 
+	size     int16
 	ItemType ItemType
-	//size     int16
 }
 
 // Type returns TypeInfe
@@ -182,7 +186,7 @@ func parseItemInfoEntry(outer *box) (ie ItemInfoEntry, err error) {
 	// New ItemInfoEntry
 	ie = ItemInfoEntry{
 		Flags: flags,
-		//size:  int16(outer.size),
+		size:  int16(outer.size),
 	}
 
 	ie.ItemID, _ = outer.r.readUint16()

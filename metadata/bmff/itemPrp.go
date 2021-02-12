@@ -20,45 +20,37 @@ func (iprp ItemPropertiesBox) String() string {
 	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations))
 }
 
-func (iprp *ItemPropertiesBox) setBox(b Box) {
-	switch v := b.(type) {
-	case ItemPropertyContainerBox:
-		iprp.PropertyContainer = v
-	case ItemPropertyAssociation:
-		iprp.Associations = append(iprp.Associations, v)
-	default:
-		if Debug {
-			fmt.Printf("(iprp) Notset %T", v)
-		}
-	}
+func parseIprp(outer *box) (Box, error) {
+	return parseItemPropertiesBox(outer)
 }
 
-func parseItemPropertiesBox(outer *box) (b Box, err error) {
-	ip := ItemPropertiesBox{}
-
+func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 	// New Reader
 	boxr := outer.newReader(outer.r.remain)
 	var inner box
 	for outer.r.remain > 4 {
 		// Read Box
 		if inner, err = boxr.readBox(); err != nil {
-			return ip, err
+			// TODO: write error
+			break
 		}
 
 		if inner.boxType == TypeIpco { // Read ItemPropertyContainerBox
 			ip.PropertyContainer, err = parseItemPropertyContainerBox(&inner)
 			if err != nil {
-				return ip, err
+				// TODO: write error
+				break
 			}
 		} else if inner.boxType == TypeIpma { // Read ItemPropertyAssociation
 			ipma, err := parseItemPropertyAssociation(&inner)
 			if err != nil {
-				return ipma, err
+				// TODO: write error
+				break
 			}
 			ip.Associations = append(ip.Associations, ipma)
 		} else {
 			if Debug {
-				fmt.Printf("(iprp) unexpected Type: %s, Size: %d", inner.Type(), inner.size)
+				fmt.Printf("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
 			}
 		}
 		if inner.r.remain > 0 {
@@ -67,7 +59,7 @@ func parseItemPropertiesBox(outer *box) (b Box, err error) {
 		outer.r.remain -= int(inner.size)
 	}
 	boxr.br.discard(outer.r.remain)
-	return ip, nil
+	return ip, err
 }
 
 // ItemPropertyContainerBox is an ISOBMFF "ipco" box
@@ -233,37 +225,4 @@ func parseImageSpatialExtentsProperty(outer *box) (Box, error) {
 		W:     w,
 		H:     h,
 	}, nil
-}
-
-// ImageRotation is a ISOBMFF "irot" rotation property.
-// Represents the Image Rotation Angle.
-// 1 means 90 degrees counter-clockwise, 2 means 180 counter-clockwise
-type ImageRotation uint8
-
-// Type returns TypeIrot
-func (irot ImageRotation) Type() BoxType {
-	return TypeIrot
-}
-
-func (irot ImageRotation) String() string {
-	switch irot {
-	case 0:
-		return fmt.Sprintf("(irot) No Rotation")
-	case 1:
-		return fmt.Sprintf("(irot) Angle: 90° Counter-Clockwise")
-	case 2:
-		return fmt.Sprintf("(irot) Angle: 180° Counter-Clockwise")
-	case 3:
-		return fmt.Sprintf("(irot) Angle: 270° Counter-Clockwise")
-	default:
-		return fmt.Sprintf("(irot) Unknown Angle: %d", irot)
-	}
-}
-
-func parseImageRotation(outer *box) (Box, error) {
-	v, err := outer.r.readUint8()
-	if err != nil {
-		return nil, err
-	}
-	return ImageRotation(v & 3), nil
 }

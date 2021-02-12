@@ -6,8 +6,8 @@ import (
 	"io"
 )
 
-// ErrUnknownBox is returned by Box.Parse for unrecognized box types.
-var ErrUnknownBox = errors.New("error no parser for box")
+// ErrUnknownParser is returned by Box.Parse for unrecognized box parser.
+var ErrUnknownParser = errors.New("error no parser for box")
 
 // BoxType is an ISOBMFF box
 type BoxType uint8
@@ -15,81 +15,108 @@ type BoxType uint8
 // Common box types.
 const (
 	TypeUnknown BoxType = iota
+	TypeAuxC            // 'auxC'
+	TypeAuxl            // 'auxl'
 	TypeAv01            // 'av01'
 	TypeAv1C            // 'av1C'
-	TypeAuxC            // 'auxC'
-	TypeFtyp            // 'ftyp'
-	TypeMeta            // 'meta'
-	TypeInfe            // 'infe'
-	TypeDinf            // 'dinf'
-	TypeHdlr            // 'hdlr'
-	TypeIinf            // 'iinf'
-	TypePitm            // 'pitm'
-	TypeIref            // 'iref'
-	TypeIpco            // 'ipco
-	TypeIprp            // 'iprp'
-	TypeIdat            // 'idat'
-	TypeIloc            // 'iloc'
-	TypeUUID            // 'uuid'
+	TypeCdsc            // 'cdsc'
+	TypeClap            // 'clap'
 	TypeColr            // 'colr'
+	TypeDimg            // 'dimg'
+	TypeDinf            // 'dinf'
+	TypeFtyp            // 'ftyp'
+	TypeHdlr            // 'hdlr'
 	TypeHvcC            // 'hvcC'
-	TypeIspe            // 'ispe'
-	TypeIrot            // 'irot'
-	TypePixi            // 'pixi'
+	TypeIdat            // 'idat'
+	TypeIinf            // 'iinf'
+	TypeIloc            // 'iloc'
+	TypeImir            // 'imir'
+	TypeInfe            // 'infe'
+	TypeIovl            // 'iovl'
+	TypeIpco            // 'ipco
 	TypeIpma            // 'ipma'
+	TypeIprp            // 'iprp'
+	TypeIref            // 'iref'
+	TypeIrot            // 'irot'
+	TypeIspe            // 'ispe'
+	TypeMeta            // 'meta'
+	TypeMoov            // 'moov'
 	TypePasp            // 'pasp'
+	TypePitm            // 'pitm'
+	TypePixi            // 'pixi'
+	TypeThmb            // 'thmb'
+	TypeTrak            // 'trak'
+	TypeUUID            // 'uuid'
 )
 
 var mapStringBoxType = map[string]BoxType{
+	"auxC": TypeAuxC,
+	"auxl": TypeAuxl,
 	"av01": TypeAv01,
 	"av1C": TypeAv1C,
-	"auxC": TypeAuxC,
-	"ftyp": TypeFtyp,
-	"meta": TypeMeta,
-	"infe": TypeInfe,
-	"dinf": TypeDinf,
-	"hdlr": TypeHdlr,
-	"iinf": TypeIinf,
-	"pitm": TypePitm,
-	"iref": TypeIref,
-	"iprp": TypeIprp,
-	"idat": TypeIdat,
-	"iloc": TypeIloc,
-	"uuid": TypeUUID,
-	"ipco": TypeIpco,
+	"cdsc": TypeCdsc,
+	"clap": TypeClap,
 	"colr": TypeColr,
+	"dimg": TypeDimg,
+	"dinf": TypeDinf,
+	"ftyp": TypeFtyp,
+	"hdlr": TypeHdlr,
 	"hvcC": TypeHvcC,
-	"ispe": TypeIspe,
-	"irot": TypeIrot,
-	"pixi": TypePixi,
+	"idat": TypeIdat,
+	"iinf": TypeIinf,
+	"iloc": TypeIloc,
+	"imir": TypeImir,
+	"infe": TypeInfe,
+	"iovl": TypeIovl,
+	"ipco": TypeIpco,
 	"ipma": TypeIpma,
+	"iprp": TypeIprp,
+	"iref": TypeIref,
+	"irot": TypeIrot,
+	"ispe": TypeIspe,
+	"meta": TypeMeta,
+	"moov": TypeMoov,
 	"pasp": TypePasp,
+	"pitm": TypePitm,
+	"pixi": TypePixi,
+	"thmb": TypeThmb,
+	"trak": TypeTrak,
+	"uuid": TypeUUID,
 }
 
 var mapBoxTypeString = map[BoxType]string{
+	TypeAuxC: "auxC",
+	TypeAuxl: "auxl",
 	TypeAv01: "av01",
 	TypeAv1C: "av1C",
-	TypeAuxC: "auxC",
-	TypeFtyp: "ftyp",
-	TypeMeta: "meta",
-	TypeInfe: "infe",
-	TypeDinf: "dinf",
-	TypeHdlr: "hdlr",
-	TypeIinf: "iinf",
-	TypePitm: "pitm",
-	TypeIref: "iref",
-	TypeIprp: "iprp",
-	TypeIdat: "idat",
-	TypeIloc: "iloc",
-	TypeUUID: "uuid",
-	TypeIpco: "ipco",
+	TypeCdsc: "cdsc",
+	TypeClap: "clap",
 	TypeColr: "colr",
+	TypeDimg: "dimg",
+	TypeDinf: "dinf",
+	TypeFtyp: "ftyp",
+	TypeHdlr: "hdlr",
 	TypeHvcC: "hvcC",
-	TypeIspe: "ispe",
-	TypeIrot: "irot",
-	TypePixi: "pixi",
+	TypeIdat: "idat",
+	TypeIinf: "iinf",
+	TypeIloc: "iloc",
+	TypeImir: "imir",
+	TypeInfe: "infe",
+	TypeIovl: "iovl",
+	TypeIpco: "ipco",
 	TypeIpma: "ipma",
+	TypeIprp: "iprp",
+	TypeIref: "iref",
+	TypeIrot: "irot",
+	TypeIspe: "ispe",
+	TypeMeta: "meta",
+	TypeMoov: "moov",
 	TypePasp: "pasp",
+	TypePitm: "pitm",
+	TypePixi: "pixi",
+	TypeThmb: "thmb",
+	TypeTrak: "trak",
+	TypeUUID: "uuid",
 }
 
 func (t BoxType) String() string {
@@ -100,17 +127,17 @@ func (t BoxType) String() string {
 	return "nnnn"
 }
 
+func isBoxinfe(buf []byte) bool {
+	return buf[0] == 'i' && buf[1] == 'n' && buf[2] == 'f' && buf[3] == 'e'
+}
+
 func boxType(buf []byte) BoxType {
-	if buf[0] == 'i' {
-		if buf[1] == 'n' && buf[2] == 'f' && buf[3] == 'e' {
-			return TypeInfe
-		}
+	if isBoxinfe(buf) {
+		return TypeInfe
 	}
-	if len(buf) == 4 {
-		b, ok := mapStringBoxType[string(buf)]
-		if ok {
-			return b
-		}
+	b, ok := mapStringBoxType[string(buf)]
+	if ok {
+		return b
 	}
 	if Debug {
 		fmt.Println(string(buf))
@@ -119,10 +146,9 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	r    bufReader
-	size int64 // 0 means unknown, will read to end of file (box container)
-	err  error
-	//parsed  Box // if non-nil, the Parsed result
+	r       bufReader
+	size    int64 // 0 means unknown, will read to end of file (box container)
+	err     error
 	boxType BoxType
 }
 
@@ -133,17 +159,13 @@ func (b box) String() string {
 func (b box) Size() int64   { return b.size }
 func (b box) Type() BoxType { return b.boxType }
 
-func (b box) isType(t BoxType) bool {
-	return b.boxType == t
-}
-
 func (b *box) Parse() (Box, error) {
 	if !b.r.anyRemain() {
 		return nil, ErrBufReaderLength
 	}
 	parser, ok := parsers[b.Type()]
 	if !ok {
-		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownBox //ErrUnknownBox
+		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownParser //ErrUnknownBox
 	}
 
 	v, err := parser(b)
@@ -157,6 +179,7 @@ func (b *box) discardRemaining(inner box) {
 
 }
 
+// Parsers
 type parserFunc func(b *box) (Box, error)
 
 var parsers map[BoxType]parserFunc
@@ -166,17 +189,18 @@ func init() {
 		TypeDinf: parseDataInformationBox,
 		//boxType("dref"): parseDataReferenceBox,
 		TypeFtyp: parseFileTypeBox,
-		TypeHdlr: parseHandlerBox,
-		TypeIinf: parseItemInfoBox,
+		TypeHdlr: parseHdlr,
+		TypeIinf: parseIinf,
 		TypeInfe: parseInfe,
-		TypeIloc: parseItemLocationBox,
+		TypeIloc: parseIloc,
 		TypeIpco: parseIpco,
 		TypeIpma: parseIpma,
-		TypeIprp: parseItemPropertiesBox,
+		TypeIprp: parseIprp,
+		TypeIref: parseIref,
 		TypeIrot: parseImageRotation,
 		TypeIspe: parseImageSpatialExtentsProperty,
 		TypeMeta: parseMetaBox,
-		TypePitm: parsePrimaryItemBox,
+		TypePitm: parsePitm,
 	}
 }
 
@@ -198,10 +222,6 @@ func (f Flags) Flags() uint32 {
 func (f Flags) Version() uint8 {
 	return uint8(f >> 24)
 }
-
-//func (f *Flags) Read(buf []byte) {
-//	*f = Flags(binary.BigEndian.Uint32(buf[:4]))
-//}
 
 // MetaBox is a 'meta' box
 type MetaBox struct {
@@ -248,7 +268,7 @@ func (mb *MetaBox) setBox(b Box) error {
 	case ItemLocationBox:
 		mb.Location = v
 	default:
-		//mb.Children = append(mb.Children, b)
+		mb.Children = append(mb.Children, b)
 	}
 	return nil
 }
@@ -273,19 +293,66 @@ func parseMetaBox(outer *box) (Box, error) {
 			boxr.br.err = err
 			return mb, err
 		}
-		p, err := inner.Parse()
+		switch inner.boxType {
+		case TypeIdat, TypeDinf:
+			// Do not read
+			boxr.br.discard(inner.r.remain)
+		case TypeIref:
+			_, err = inner.Parse()
+		case TypePitm:
+			mb.Primary, err = parsePrimaryItemBox(&inner)
+		case TypeIinf:
+			mb.ItemInfo, err = parseItemInfoBox(&inner)
+		case TypeHdlr:
+			mb.Handler, err = parseHandlerBox(&inner)
+		case TypeIprp:
+			mb.Properties, err = parseItemPropertiesBox(&inner)
+		case TypeIloc:
+			mb.Location, err = parseItemLocationBox(&inner)
+		default:
+			boxr.br.discard(inner.r.remain)
+		}
 		if err != nil {
-			boxr.br.discard(int(inner.r.remain))
-		} else {
-			mb.setBox(p)
+			boxr.br.discard(inner.r.remain)
 		}
 		outer.r.remain -= int(inner.size)
 
-		//if Debug {
-		//	fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
+		//if inner.boxType == TypeIdat || inner.boxType == TypeIref || inner.boxType == TypeDinf {
+		//	boxr.br.discard(int(inner.r.remain))
+		//	outer.r.remain -= int(inner.size)
+		//	continue
 		//}
+		//if inner.boxType == TypePitm {
+		//	mb.Primary, err = parsePrimaryItemBox(&inner)
+		//	if err != nil {
+		//		break
+		//	}
+		//} else if inner.boxType == TypeIinf {
+		//	mb.ItemInfo, err = parseItemInfoBox(&inner)
+		//	if err != nil {
+		//		break
+		//	}
+		//} else if inner.boxType == TypeHdlr {
+		//	mb.Handler, err = parseHandlerBox(&inner)
+		//	if err != nil {
+		//		break
+		//	}
+		//} else {
+		//	p, err := inner.Parse()
+		//	if err != nil {
+		//		boxr.br.discard(int(inner.r.remain))
+		//	} else {
+		//		mb.setBox(p)
+		//	}
+		//}
+		//
+		//outer.r.remain -= int(inner.size)
+
+		if Debug {
+			fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
+		}
 	}
-	//mb.Children, err = fb.parseAppendBoxes()
+	boxr.br.discard(outer.r.remain)
 	return mb, err
 }
 
@@ -305,22 +372,22 @@ func (pitm PrimaryItemBox) Type() BoxType {
 	return TypePitm
 }
 
-func parsePrimaryItemBox(outer *box) (Box, error) {
-	flags, err := outer.r.readFlags()
+func parsePitm(outer *box) (Box, error) {
+	return parsePrimaryItemBox(outer)
+}
+
+func parsePrimaryItemBox(outer *box) (pitm PrimaryItemBox, err error) {
+	pitm.Flags, err = outer.r.readFlags()
 	if err != nil {
-		return nil, err
+		return pitm, err
 	}
-	pib := PrimaryItemBox{Flags: flags}
-	pib.ItemID, err = outer.r.readUint16()
-	if !outer.r.ok() {
-		return nil, outer.r.err
-	}
-	return pib, nil
+	pitm.ItemID, err = outer.r.readUint16()
+
+	return pitm, nil
 }
 
 // DataInformationBox is a "dinf" box
 type DataInformationBox struct {
-	//*box
 	Children []Box
 }
 

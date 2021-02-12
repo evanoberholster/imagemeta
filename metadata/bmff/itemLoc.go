@@ -28,17 +28,21 @@ func (iloc ItemLocationBox) String() string {
 	return fmt.Sprintf("iloc | ItemCount: %d, Flags: %d, Version: %d, OffsetSize: %d, LengthSize: %d, BaseOffsetSize: %d, indexSize: %d", iloc.ItemCount, iloc.Flags.Flags(), iloc.Flags.Version(), iloc.offsetSize, iloc.lengthSize, iloc.baseOffsetSize, iloc.indexSize)
 }
 
-func parseItemLocationBox(outer *box) (Box, error) {
+func parseIloc(outer *box) (Box, error) {
+	return parseItemLocationBox(outer)
+}
+
+func parseItemLocationBox(outer *box) (ilb ItemLocationBox, err error) {
 	flags, err := outer.r.readFlags()
 	if err != nil {
-		return nil, err
+		return
 	}
-	ilb := ItemLocationBox{
+	ilb = ItemLocationBox{
 		Flags: flags,
 	}
 	buf, err := outer.r.Peek(4)
 	if err != nil {
-		return nil, err
+		return
 	}
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
@@ -78,7 +82,8 @@ func parseItemLocationBox(outer *box) (Box, error) {
 			ol.Offset, _ = outer.r.readUintN(ilb.offsetSize * 8)
 			ol.Length, _ = outer.r.readUintN(ilb.lengthSize * 8)
 			if outer.r.err != nil {
-				return nil, outer.r.err
+				err = outer.r.err
+				return
 			}
 			if j == 0 {
 				ent.FirstExtent = ol
@@ -94,7 +99,8 @@ func parseItemLocationBox(outer *box) (Box, error) {
 		}
 	}
 	if !outer.r.ok() {
-		return nil, outer.r.err
+		err = outer.r.err
+		return
 	}
 	return ilb, nil
 }
