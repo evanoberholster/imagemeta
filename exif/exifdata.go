@@ -44,7 +44,7 @@ func (e *ExifData) SetMetadata(m metadata.Metadata) {
 	e.width, e.height = m.Size()
 
 	// Set Exif XMP form Metadata XML
-	e.XMP = []byte(m.XML())
+	e.XMP = []byte(m.XMP())
 
 }
 

@@ -185,9 +185,8 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 	}
 
 	f = Flags(binary.BigEndian.Uint32(buf[:4]))
-	err = br.discard(4)
 
-	return f, err
+	return f, br.discard(4)
 }
 
 func (br *bufReader) readInnerBox() (b box, err error) {
