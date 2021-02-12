@@ -146,9 +146,8 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	r       bufReader
+	bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
-	err     error
 	boxType BoxType
 }
 
@@ -160,23 +159,20 @@ func (b box) Size() int64   { return b.size }
 func (b box) Type() BoxType { return b.boxType }
 
 func (b *box) Parse() (Box, error) {
-	if !b.r.anyRemain() {
+	if !b.anyRemain() {
 		return nil, ErrBufReaderLength
 	}
 	parser, ok := parsers[b.Type()]
 	if !ok {
-		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownParser //ErrUnknownBox
+		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownParser
 	}
 
 	v, err := parser(b)
 	if err != nil {
+		// Write error with parser
 		return nil, err
 	}
 	return v, nil
-}
-
-func (b *box) discardRemaining(inner box) {
-
 }
 
 // Parsers
@@ -188,7 +184,7 @@ func init() {
 	parsers = map[BoxType]parserFunc{
 		TypeDinf: parseDataInformationBox,
 		//boxType("dref"): parseDataReferenceBox,
-		TypeFtyp: parseFileTypeBox,
+		TypeFtyp: parseFtyp,
 		TypeHdlr: parseHdlr,
 		TypeIinf: parseIinf,
 		TypeInfe: parseInfe,
@@ -199,7 +195,7 @@ func init() {
 		TypeIref: parseIref,
 		TypeIrot: parseImageRotation,
 		TypeIspe: parseImageSpatialExtentsProperty,
-		TypeMeta: parseMetaBox,
+		TypeMeta: parseMeta,
 		TypePitm: parsePitm,
 	}
 }
@@ -236,30 +232,30 @@ func (mb MetaBox) String() string {
 	return str
 }
 
-func parseMetaBox(outer *box) (Box, error) {
-	flags, err := outer.r.readFlags()
-	if err != nil {
-		return nil, err
-	}
-	mb := MetaBox{
-		size:  uint32(outer.size),
-		Flags: flags}
+func parseMeta(outer *box) (Box, error) {
+	return parseMetaBox(outer)
+}
 
-	boxr := outer.newReader(outer.r.remain)
+func parseMetaBox(outer *box) (mb MetaBox, err error) {
+	mb = MetaBox{size: uint32(outer.size)}
+	mb.Flags, err = outer.readFlags()
+	if err != nil {
+		return mb, err
+	}
+
 	var inner box
-	for outer.r.remain > 0 {
-		inner, err = boxr.readBox()
+	for outer.anyRemain() {
+		inner, err = outer.readInnerBox()
 		if err != nil {
 			if err == io.EOF {
 				return mb, nil
 			}
-			boxr.br.err = err
 			return mb, err
 		}
 		switch inner.boxType {
-		case TypeIdat, TypeDinf:
+		case TypeIdat, TypeDinf, TypeUUID, TypeIref:
 			// Do not read
-			boxr.br.discard(inner.r.remain)
+			inner.discard(inner.remain)
 		//case TypeIref:
 		//	_, err = inner.Parse()
 		case TypePitm:
@@ -277,49 +273,18 @@ func parseMetaBox(outer *box) (Box, error) {
 			if err == nil {
 				mb.Children = append(mb.Children, p)
 			}
-			boxr.br.discard(inner.r.remain)
+			inner.discard(inner.remain)
 		}
 		if err != nil {
-			boxr.br.discard(inner.r.remain)
+			outer.discard(inner.remain)
 		}
-		outer.r.remain -= int(inner.size)
-
-		//if inner.boxType == TypeIdat || inner.boxType == TypeIref || inner.boxType == TypeDinf {
-		//	boxr.br.discard(int(inner.r.remain))
-		//	outer.r.remain -= int(inner.size)
-		//	continue
-		//}
-		//if inner.boxType == TypePitm {
-		//	mb.Primary, err = parsePrimaryItemBox(&inner)
-		//	if err != nil {
-		//		break
-		//	}
-		//} else if inner.boxType == TypeIinf {
-		//	mb.ItemInfo, err = parseItemInfoBox(&inner)
-		//	if err != nil {
-		//		break
-		//	}
-		//} else if inner.boxType == TypeHdlr {
-		//	mb.Handler, err = parseHandlerBox(&inner)
-		//	if err != nil {
-		//		break
-		//	}
-		//} else {
-		//	p, err := inner.Parse()
-		//	if err != nil {
-		//		boxr.br.discard(int(inner.r.remain))
-		//	} else {
-		//
-		//	}
-		//}
-		//
-		//outer.r.remain -= int(inner.size)
+		outer.remain -= int(inner.size)
 
 		if Debug {
-			fmt.Println(inner, outer.r.remain, inner.r.remain, inner.size)
+			fmt.Println(inner, outer.remain, inner.remain, inner.size)
 		}
 	}
-	boxr.br.discard(outer.r.remain)
+	outer.discard(outer.remain)
 	return mb, err
 }
 
@@ -335,6 +300,26 @@ func (dinf DataInformationBox) Type() BoxType {
 
 func parseDataInformationBox(outer *box) (Box, error) {
 	dib := DataInformationBox{}
-	outer.r.discard(int(outer.r.remain))
+	outer.discard(outer.remain)
 	return dib, nil //br.parseAppendBoxes(&dib.Children)
+}
+
+// UnknownBox is a box that was unable to be parsed.
+type UnknownBox struct {
+	t BoxType
+	s int64
+}
+
+// Type returns the BoxType of the UnknownBox
+func (ub UnknownBox) Type() BoxType {
+	return ub.t
+}
+
+// Size returns the Size of the UnknownBox
+func (ub UnknownBox) Size() int64 {
+	return ub.s
+}
+
+func (ub UnknownBox) String() string {
+	return fmt.Sprintf(" Type: %s, Size: %d", ub.t, ub.s)
 }

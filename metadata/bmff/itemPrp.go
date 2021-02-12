@@ -26,11 +26,11 @@ func parseIprp(outer *box) (Box, error) {
 
 func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 	// New Reader
-	boxr := outer.newReader(outer.r.remain)
+	//boxr := outer.newReader(outer.remain)
 	var inner box
-	for outer.r.remain > 4 {
+	for outer.remain > 4 {
 		// Read Box
-		if inner, err = boxr.readBox(); err != nil {
+		if inner, err = outer.readInnerBox(); err != nil {
 			// TODO: write error
 			break
 		}
@@ -53,12 +53,12 @@ func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 				fmt.Printf("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
 			}
 		}
-		if inner.r.remain > 0 {
-			inner.r.discard(inner.r.remain)
+		if inner.remain > 0 {
+			inner.discard(inner.remain)
 		}
-		outer.r.remain -= int(inner.size)
+		outer.remain -= int(inner.size)
 	}
-	boxr.br.discard(outer.r.remain)
+	outer.discard(outer.remain)
 	return ip, err
 }
 
@@ -79,33 +79,33 @@ func parseIpco(outer *box) (Box, error) {
 
 func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, err error) {
 	// New Reader
-	boxr := outer.newReader(outer.r.remain)
+	//boxr := outer.newReader(outer.r.remain)
 	var p Box
 	var inner box
-	for outer.r.remain > 4 {
-		inner, err = boxr.readBox()
+	for outer.remain > 4 {
+		inner, err = outer.readInnerBox()
 		if err != nil {
 			if err == io.EOF {
 				return ipc, nil
 			}
-			boxr.br.err = err
+			outer.err = err
 			return ipc, err
 		}
 		p, err = inner.Parse()
 		if Debug {
 			fmt.Printf("(ipco) %T %s ", p, p)
-			fmt.Printf("\t[ Outer: %d, Size: %d, Inner: %d ]", outer.r.remain, inner.size, inner.r.remain)
+			fmt.Printf("\t[ Outer: %d, Size: %d, Inner: %d ]", outer.remain, inner.size, inner.remain)
 			if err != nil {
 				fmt.Printf("error: %s", err)
 			}
 			fmt.Printf("\n")
 		}
 		ipc.Properties = append(ipc.Properties, p)
-		inner.r.discard(int(inner.r.remain))
-		outer.r.remain -= int(inner.size)
+		inner.discard(inner.remain)
+		outer.remain -= int(inner.size)
 	}
-	outer.r.discard(int(outer.r.remain))
-	return ipc, nil
+	err = outer.discard(outer.remain)
+	return ipc, err
 }
 
 // ItemPropertyAssociation is an ISOBMFF "ipma" box
@@ -130,37 +130,41 @@ func parseIpma(outer *box) (Box, error) {
 }
 
 func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err error) {
-	ipa.Flags, err = outer.r.readFlags()
+	ipa.Flags, err = outer.readFlags()
 	if err != nil {
-		return ipa, err
+		return
 	}
-	ipa.EntryCount, _ = outer.r.readUint32()
+	ipa.EntryCount, err = outer.readUint32()
+	if err != nil {
+		// TODO: Error handling
+		return
+	}
 
 	// Entries
 	ipa.Entries = make([]ItemPropertyAssociationItem, 0, ipa.EntryCount)
 
-	for i := uint32(0); i < ipa.EntryCount && outer.r.ok(); i++ {
+	for i := uint32(0); i < ipa.EntryCount && outer.ok(); i++ {
 		var itemID uint32
 		if ipa.Flags.Version() < 1 {
-			itemID16, _ := outer.r.readUint16()
+			itemID16, _ := outer.readUint16()
 			itemID = uint32(itemID16)
 		} else {
-			itemID, _ = outer.r.readUint32()
+			itemID, _ = outer.readUint32()
 		}
-		assocCount, _ := outer.r.readUint8()
+		assocCount, _ := outer.readUint8()
 		ipai := ItemPropertyAssociationItem{
 			ItemID:            itemID,
 			AssociationsCount: int(assocCount),
 			Associations:      make([]ItemProperty, 0, assocCount),
 		}
-		for j := 0; j < int(assocCount) && outer.r.ok(); j++ {
-			first, _ := outer.r.readUint8()
+		for j := 0; j < int(assocCount) && outer.ok(); j++ {
+			first, _ := outer.readUint8()
 			essential := first&(1<<7) != 0
 			first &^= byte(1 << 7)
 
 			var index uint16
 			if ipa.Flags.Flags()&1 != 0 {
-				second, _ := outer.r.readUint8()
+				second, _ := outer.readUint8()
 				index = uint16(first)<<8 | uint16(second)
 			} else {
 				index = uint16(first)
@@ -172,8 +176,8 @@ func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err 
 		}
 		ipa.Entries = append(ipa.Entries, ipai)
 	}
-	if !outer.r.ok() {
-		return ipa, outer.r.err
+	if !outer.ok() {
+		return ipa, outer.err
 	}
 	if Debug {
 		fmt.Println(ipa)
@@ -211,12 +215,12 @@ func (ispe ImageSpatialExtentsProperty) Type() BoxType {
 }
 
 func parseImageSpatialExtentsProperty(outer *box) (Box, error) {
-	flags, err := outer.r.readFlags()
+	flags, err := outer.readFlags()
 	if err != nil {
 		return nil, err
 	}
-	w, _ := outer.r.readUint32()
-	h, err := outer.r.readUint32()
+	w, _ := outer.readUint32()
+	h, err := outer.readUint32()
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ var (
 	ItemTypeHvc1    = itemType([]byte("hvc1"))
 	ItemTypeGrid    = itemType([]byte("grid"))
 	ItemTypeExif    = itemType([]byte("Exif"))
-	ItemTypeUnknown = itemType([]byte("nnnn"))
+	ItemTypeUnknown = itemType([]byte{0, 0, 0, 0})
 )
 
 func (it ItemType) String() string {
@@ -26,7 +26,7 @@ func (it ItemType) String() string {
 
 func itemType(buf []byte) ItemType {
 	if len(buf) != 4 {
-		// Error
+		return ItemType([4]byte{0, 0, 0, 0})
 	}
 	it := ItemType{}
 	copy(it[:], buf[:4])
@@ -39,21 +39,9 @@ type ItemInfoBox struct {
 	Flags Flags
 	Count uint16
 
-	Exif      ItemInfoEntry
-	XMP       ItemInfoEntry
+	//Exif      ItemInfoEntry
+	//XMP       ItemInfoEntry
 	ItemInfos []ItemInfoEntry
-}
-
-func (iinf *ItemInfoBox) setBox(infe ItemInfoEntry) error {
-	switch infe.ItemType {
-	case ItemTypeExif:
-		iinf.Exif = infe
-	case ItemTypeMime:
-		iinf.XMP = infe
-	default:
-		iinf.ItemInfos = append(iinf.ItemInfos, infe)
-	}
-	return nil
 }
 
 func (iinf ItemInfoBox) String() string {
@@ -76,12 +64,12 @@ func parseIinf(outer *box) (Box, error) {
 
 func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 	// Read Flags
-	flags, err := outer.r.readFlags()
+	flags, err := outer.readFlags()
 	if err != nil {
 		return
 	}
 	// Read Item count
-	count, err := outer.r.readUint16()
+	count, err := outer.readUint16()
 	if err != nil {
 		return
 	}
@@ -94,23 +82,23 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
 	var inner box
-	for outer.r.anyRemain() {
-		inner, err = outer.r.readInnerBox()
+	for outer.anyRemain() {
+		inner, err = outer.readInnerBox()
 		if err != nil {
 			return iinf, err
 		}
 		if inner.Type() == TypeInfe {
 			var infe ItemInfoEntry
 			if infe, err = parseItemInfoEntry(&inner); err != nil {
-				outer.r.discard(inner.r.remain)
+				outer.discard(inner.remain)
 			}
 			iinf.ItemInfos = append(iinf.ItemInfos, infe)
 			if Debug {
-				fmt.Println(infe, outer.r.remain, inner.r.remain, outer.r.remain)
+				fmt.Println(infe, outer.remain, inner.remain, outer.remain)
 			}
 		} else {
 			// Error here Box Unknown
-			outer.r.discard(inner.r.remain)
+			outer.discard(inner.remain)
 		}
 		if err != nil {
 			if Debug {
@@ -118,14 +106,14 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 				fmt.Println(err)
 			}
 		}
-		outer.r.remain -= int(inner.size)
-		outer.r.discard(inner.r.remain)
+		outer.remain -= int(inner.size)
+		outer.discard(inner.remain)
 	}
 	if Debug {
 		fmt.Println(iinf)
 	}
 
-	err = outer.r.discard(outer.r.remain)
+	err = outer.discard(outer.remain)
 	return iinf, err
 }
 
@@ -165,7 +153,7 @@ func parseInfe(outer *box) (Box, error) {
 
 func parseItemInfoEntry(outer *box) (ie ItemInfoEntry, err error) {
 	// Read Flags
-	flags, err := outer.r.readFlags()
+	flags, err := outer.readFlags()
 	if err != nil {
 		return ie, err
 	}
@@ -179,32 +167,32 @@ func parseItemInfoEntry(outer *box) (ie ItemInfoEntry, err error) {
 		size:  int16(outer.size),
 	}
 
-	ie.ItemID, _ = outer.r.readUint16()
-	ie.ProtectionIndex, _ = outer.r.readUint16()
-	if !outer.r.ok() {
-		return ie, outer.r.err
+	ie.ItemID, _ = outer.readUint16()
+	ie.ProtectionIndex, _ = outer.readUint16()
+	if !outer.ok() {
+		return ie, outer.err
 	}
-	ie.ItemType, err = outer.r.readItemType()
+	ie.ItemType, err = outer.readItemType()
 	if err != nil {
-		return ie, outer.r.discard(int(outer.r.remain))
+		return ie, outer.discard(outer.remain)
 	}
 
 	switch ie.ItemType {
 	case ItemTypeMime:
-		_, _ = outer.r.readString()
-		if outer.r.anyRemain() {
-			_, _ = outer.r.readString()
+		_, _ = outer.readString()
+		if outer.anyRemain() {
+			_, _ = outer.readString()
 		}
 		//ie.ContentType, _ = outer.r.readString()
 		//if outer.r.anyRemain() {
 		//	ie.ContentEncoding, _ = outer.r.readString()
 		//}
 	case ItemTypeURI:
-		_, _ = outer.r.readString()
+		_, _ = outer.readString()
 		//ie.ItemURIType, _ = outer.r.readString()
 	}
-	if !outer.r.ok() {
-		return ie, outer.r.err
+	if !outer.ok() {
+		return ie, outer.err
 	}
 	return ie, nil
 }

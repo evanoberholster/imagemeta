@@ -93,46 +93,56 @@ func brand(buf []byte) Brand {
 
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
-	//*box
 	MinorVersion string   // 4 bytes
 	MajorBrand   Brand    // 4 bytes
 	Compatible   [6]Brand // all 4 bytes
 }
 
+// Type returns TypeFtyp
 func (ftyp FileTypeBox) Type() BoxType {
 	return TypeFtyp
 }
 
-func parseFileTypeBox(outer *box) (b Box, err error) {
+func parseFtyp(outer *box) (Box, error) {
+	return parseFileTypeBox(outer)
+}
+
+func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
 	var buf []byte
-	if buf, err = outer.r.Peek(8); err != nil {
-		return nil, err
-	}
-	ft := FileTypeBox{
-		//box:          outer,
-		MajorBrand:   brand(buf[:4]),
-		MinorVersion: string(buf[4:8]),
-	}
-	if err = outer.r.discard(8); err != nil {
+	if buf, err = outer.Peek(8); err != nil {
 		return
 	}
+	ftyp.MajorBrand = brand(buf[:4])
+	ftyp.MinorVersion = processString(buf[4:8])
+	if err = outer.discard(8); err != nil {
+		return
+	}
+	// Read maximum 6 Compatible brands
 	for i := 0; i < 6; i++ {
-		if outer.r.remain < 4 {
+		if outer.remain < 4 {
 			break
 		}
 
-		ft.Compatible[i], err = outer.r.readBrand()
+		ftyp.Compatible[i], err = outer.readBrand()
 		if err != nil {
 			break
 		}
 	}
-	return ft, outer.r.discard(int(outer.r.remain))
+	err = outer.discard(outer.remain)
+	return ftyp, err
 }
 
-func (ftb FileTypeBox) String() string {
-	str := fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftb.MajorBrand, "")
-	for _, b := range ftb.Compatible {
+func (ftyp FileTypeBox) String() string {
+	str := fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftyp.MajorBrand, "")
+	for _, b := range ftyp.Compatible {
 		str += b.String() + " "
 	}
 	return str
+}
+
+func processString(buf []byte) string {
+	if buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 0 {
+		return ""
+	}
+	return string(buf)
 }

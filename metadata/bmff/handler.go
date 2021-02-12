@@ -10,17 +10,25 @@ type HandlerType uint8
 const (
 	handlerUnknown HandlerType = iota
 	handlerPict
+	handlerVide
+	handlerMeta
 )
 
 func handler(buf []byte) HandlerType {
-	if isBoxpict(buf) {
+	if isHandler(buf, "pict") {
 		return handlerPict
+	}
+	if isHandler(buf, "vide") {
+		return handlerVide
+	}
+	if isHandler(buf, "meta") {
+		return handlerMeta
 	}
 	return handlerUnknown
 }
 
-func isBoxpict(buf []byte) bool {
-	return buf[0] == 'p' && buf[1] == 'i' && buf[2] == 'c' && buf[3] == 't'
+func isHandler(buf []byte, str string) bool {
+	return buf[0] == str[0] && buf[1] == str[1] && buf[2] == str[2] && buf[3] == str[3]
 }
 
 // HandlerBox is a "hdlr" box.
@@ -49,15 +57,15 @@ func parseHdlr(outer *box) (Box, error) {
 
 func parseHandlerBox(outer *box) (hdlr HandlerBox, err error) {
 	hdlr.size = uint32(outer.size)
-	if hdlr.Flags, err = outer.r.readFlags(); err != nil {
+	if hdlr.Flags, err = outer.readFlags(); err != nil {
 		return
 	}
-	buf, err := outer.r.Peek(20)
+	buf, err := outer.Peek(20)
 	if err != nil {
 		return
 	}
 	hdlr.HandlerType = handler(buf[4:8])
-	if err = outer.r.discard(20); err != nil {
+	if err = outer.discard(20); err != nil {
 		return
 	}
 	if hdlr.HandlerType == handlerUnknown {
@@ -66,8 +74,8 @@ func parseHandlerBox(outer *box) (hdlr HandlerBox, err error) {
 		}
 		// err = Unknown Handler. Cancel Parsing file
 	}
-	hdlr.Name, _ = outer.r.readString()
-	err = outer.r.discard(int(outer.r.remain))
+	hdlr.Name, _ = outer.readString()
+	err = outer.discard(outer.remain)
 	return hdlr, err
 }
 
@@ -92,15 +100,14 @@ func parseIref(outer *box) (Box, error) {
 func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error) {
 
 	iref.size = uint32(outer.size)
-	iref.Flags, err = outer.r.readFlags()
+	iref.Flags, err = outer.readFlags()
 	if err != nil {
 		return
 	}
-	boxr := outer.newReader(outer.r.remain)
 	var inner box
-	for outer.r.remain > 0 {
+	for outer.anyRemain() {
 		// Read Box
-		if inner, err = boxr.readBox(); err != nil {
+		if inner, err = outer.readInnerBox(); err != nil {
 			// TODO: write error
 			break
 		}
@@ -108,12 +115,12 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 		// thmb -> thumbnail
 		// cdsc -> context description ref / exif
 		//fmt.Println(inner, outer.r.remain)
-		if inner.r.remain > 0 {
-			inner.r.discard(inner.r.remain)
+		if inner.remain > 0 {
+			inner.discard(inner.remain)
 		}
-		outer.r.remain -= int(inner.size)
+		outer.remain -= int(inner.size)
 	}
-	outer.r.discard(outer.r.remain)
+	outer.discard(outer.remain)
 	return
 }
 
@@ -137,7 +144,7 @@ func (irot ImageRotation) String() string {
 }
 
 func parseImageRotation(outer *box) (Box, error) {
-	v, err := outer.r.readUint8()
+	v, err := outer.readUint8()
 	return ImageRotation(v & 3), err
 }
 
@@ -164,11 +171,11 @@ func parsePitm(outer *box) (Box, error) {
 }
 
 func parsePrimaryItemBox(outer *box) (pitm PrimaryItemBox, err error) {
-	pitm.Flags, err = outer.r.readFlags()
+	pitm.Flags, err = outer.readFlags()
 	if err != nil {
 		return
 	}
-	pitm.ItemID, err = outer.r.readUint16()
+	pitm.ItemID, err = outer.readUint16()
 	if err != nil {
 		return
 	}

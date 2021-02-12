@@ -10,7 +10,7 @@ import (
 
 // Errors
 var (
-	ErrItemType        = errors.New("bufReader error: itemType doesn't end on whitespace")
+	ErrItemTypeWS      = errors.New("bufReader error: itemType doesn't end on whitespace")
 	ErrBufReaderLength = errors.New("bufReader error: infufficient length")
 )
 
@@ -19,11 +19,13 @@ type bufReader struct {
 	*bufio.Reader
 	err    error
 	remain int
-	// sticky error
 }
 
-func (b box) newReader(size int) Reader {
-	return Reader{br: bufReader{Reader: b.r.Reader, remain: size}}
+// ok reports whether all previous reads have been error-free.
+func (br *bufReader) ok() bool { return br.err == nil }
+
+func (br *bufReader) anyRemain() bool {
+	return br.remain > 0 && br.ok()
 }
 
 func (br *bufReader) discard(n int) error {
@@ -34,13 +36,6 @@ func (br *bufReader) discard(n int) error {
 		return br.err
 	}
 	return err
-}
-
-// ok reports whether all previous reads have been error-free.
-func (br *bufReader) ok() bool { return br.err == nil }
-
-func (br *bufReader) anyRemain() bool {
-	return br.remain > 0 && br.ok()
 }
 
 func (br *bufReader) readString() (string, error) {
@@ -75,8 +70,7 @@ func (br *bufReader) readUint8() (uint8, error) {
 		br.err = err
 		return 0, err
 	}
-	// remove 1 remaining byte
-	br.remain--
+	br.remain-- // remove 1 remaining byte
 	return v, nil
 }
 
@@ -149,11 +143,9 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 		err = br.err
 		return
 	}
-
 	if br.remain < 4 {
-		err = ErrBufReaderLength
-		br.err = err
-		return
+		br.err = ErrBufReaderLength
+		return brandUnknown, br.err
 	}
 	var buf []byte
 	if buf, err = br.Peek(4); err != nil {
@@ -164,8 +156,8 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 
 func (br *bufReader) readItemType() (it ItemType, err error) {
 	if br.remain < 4 {
-		err = ErrBufReaderLength
-		br.err = err
+		br.err = ErrBufReaderLength
+		return ItemTypeUnknown, br.err
 	}
 	buf, err := br.Peek(5)
 	if err != nil {
@@ -175,7 +167,7 @@ func (br *bufReader) readItemType() (it ItemType, err error) {
 	it = itemType(buf[:4])
 	if buf[4] != '\x00' {
 		// Read until whitespace
-		err = ErrItemType // errors.New("bufReader error: itemType doesn't end on whitespace")
+		br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
 	}
 
 	return it, br.discard(5)
@@ -199,17 +191,17 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 }
 
 func (br *bufReader) readInnerBox() (b box, err error) {
-	b = box{r: *br}
+	b = box{bufReader: *br}
 
 	// Read box size and box type
 	var buf []byte
-	if buf, err = b.r.Peek(8); err != nil {
+	if buf, err = b.Peek(8); err != nil {
 		return b, err
 	}
 	b.size = int64(binary.BigEndian.Uint32(buf[:4]))
 	b.boxType = boxType(buf[4:8])
 
-	if err = b.r.discard(8); err != nil {
+	if err = b.discard(8); err != nil {
 		return
 	}
 
@@ -217,7 +209,7 @@ func (br *bufReader) readInnerBox() (b box, err error) {
 	switch b.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
-		if buf, err = b.r.Peek(8); err != nil {
+		if buf, err = b.Peek(8); err != nil {
 			return b, err
 		}
 		b.size = int64(binary.BigEndian.Uint64(buf[:8]))
@@ -228,7 +220,7 @@ func (br *bufReader) readInnerBox() (b box, err error) {
 			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
 		}
 		remain = int(b.size - 2*4 - 8)
-		if err = b.r.discard(8); err != nil {
+		if err = b.discard(8); err != nil {
 			// TODO: write error message
 			return
 		}
@@ -239,6 +231,6 @@ func (br *bufReader) readInnerBox() (b box, err error) {
 	default:
 		remain = int(b.size - 2*4)
 	}
-	b.r.remain = remain
+	b.remain = remain
 	return b, nil
 }

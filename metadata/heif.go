@@ -10,9 +10,8 @@ import (
 type HeifMetadata struct {
 	Decoder
 
-	FileType    bmff.FileTypeBox
-	Handler     *bmff.HandlerBox
-	PrimaryItem *bmff.PrimaryItemBox
+	FileType bmff.FileTypeBox
+	Meta     bmff.MetaBox
 
 	// Reader
 	br        *bufio.Reader
@@ -26,29 +25,19 @@ func NewHeifMetadata(br *bufio.Reader) *HeifMetadata {
 
 func (hm *HeifMetadata) GetMeta() {
 	bmr := bmff.NewReader(hm.br)
-	p, err := bmr.ReadAndParseBox(bmff.TypeFtyp)
+
+	ftyp, err := bmr.ReadFtypBox()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(p.(bmff.FileTypeBox))
-	hm.setBox(p)
+	hm.FileType = ftyp
+	fmt.Println(ftyp)
 
-	p, err = bmr.ReadAndParseBox(bmff.TypeMeta)
+	mb, err := bmr.ReadMetaBox()
 	if err != nil {
 		return
 	}
-	fmt.Println(p.(bmff.MetaBox))
-	hm.setBox(p)
-}
-
-func (hm *HeifMetadata) setBox(b bmff.Box) {
-	switch box := b.(type) {
-	case bmff.FileTypeBox:
-		hm.FileType = box
-	case *bmff.HandlerBox:
-		hm.Handler = box
-	case *bmff.PrimaryItemBox:
-		hm.PrimaryItem = box
-	}
+	hm.Meta = mb
+	fmt.Println(mb)
 }

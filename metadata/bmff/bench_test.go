@@ -31,18 +31,6 @@ var (
 	} //
 )
 
-func BenchmarkBoxType100(b *testing.B) {
-
-	buf := []byte{'i', 'i', 'n', 'f'}
-	b.Run("BoxType1", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_ = boxType(buf)
-		}
-	})
-}
-
 func BenchmarkReadBox100(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
@@ -59,13 +47,12 @@ func BenchmarkReadBox100(b *testing.B) {
 				br := bufio.NewReader(f)
 				b.StartTimer()
 				bmr := NewReader(br)
-				_, err := bmr.ReadAndParseBox(TypeFtyp)
+				_, err := bmr.ReadFtypBox()
 				if err != nil {
 					b.Fatal(err)
 				}
-				//hm.setBox(p)
 
-				_, err = bmr.ReadAndParseBox(TypeMeta)
+				_, err = bmr.ReadMetaBox()
 				if err != nil {
 					b.Fatal(err)
 				}

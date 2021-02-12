@@ -15,7 +15,7 @@
 	limitations under the License.
 */
 
-// Package bmff reads ISO BMFF boxes, as used by HEIF, AVIF, etc.
+// Package bmff reads ISO BMFF boxes, as used by HEIF, AVIF, CR3, etc.
 package bmff
 
 import (
@@ -42,7 +42,7 @@ func NewReader(r io.Reader) Reader {
 // Reader is a BMFF reader
 type Reader struct {
 	br          bufReader
-	lastBox     Box  // or nil
+	brand       Brand
 	noMoreBoxes bool // a box with size 0 (the final box) was seen
 }
 
@@ -63,6 +63,36 @@ func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
 	return pbox, nil
 }
 
+// ReadFtypBox reads an 'ftyp' box from a BMFF file.
+//
+// This should be the first read function called.
+func (r *Reader) ReadFtypBox() (FileTypeBox, error) {
+	b, err := r.br.readInnerBox()
+	if err != nil {
+		return FileTypeBox{}, err
+	}
+	ftyp, err := parseFileTypeBox(&b)
+	r.brand = ftyp.MajorBrand
+	return ftyp, err
+}
+
+// ReadMetaBox reads a 'meta' box from a BMFF file.
+//
+// This should be called in order. First call ReadFtypBox
+func (r *Reader) ReadMetaBox() (MetaBox, error) {
+	if r.brand == brandUnknown {
+		return MetaBox{}, fmt.Errorf("brand not supported")
+	}
+	if r.noMoreBoxes {
+		return MetaBox{}, fmt.Errorf("no more boxes to be parsed")
+	}
+	b, err := r.br.readInnerBox()
+	if err != nil {
+		panic(err)
+	}
+	return parseMetaBox(&b)
+}
+
 // ReadBox reads a box and returns it
 func (r *Reader) readBox() (b box, err error) {
 	var buf []byte
@@ -72,9 +102,9 @@ func (r *Reader) readBox() (b box, err error) {
 	}
 
 	b = box{
-		r:       r.br,
-		size:    int64(binary.BigEndian.Uint32(buf[:4])),
-		boxType: boxType(buf[4:8]),
+		bufReader: r.br,
+		size:      int64(binary.BigEndian.Uint32(buf[:4])),
+		boxType:   boxType(buf[4:8]),
 	}
 
 	if err = r.br.discard(8); err != nil {
@@ -105,7 +135,7 @@ func (r *Reader) readBox() (b box, err error) {
 	default:
 		remain = int(b.size - 2*4)
 	}
-	b.r.remain = remain
+	b.remain = remain
 	return b, nil
 }
 

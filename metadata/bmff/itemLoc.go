@@ -33,56 +33,58 @@ func parseIloc(outer *box) (Box, error) {
 }
 
 func parseItemLocationBox(outer *box) (ilb ItemLocationBox, err error) {
-	flags, err := outer.r.readFlags()
+	ilb.Flags, err = outer.readFlags()
 	if err != nil {
 		return
 	}
-	ilb = ItemLocationBox{
-		Flags: flags,
-	}
-	buf, err := outer.r.Peek(4)
+
+	buf, err := outer.Peek(4)
 	if err != nil {
+		// TODO: Write error handling
 		return
 	}
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if flags.Version() > 0 { // version 1
+	if ilb.Flags.Version() > 0 { // version 1
 		ilb.indexSize = buf[1] & 15
 	}
 
 	ilb.ItemCount = binary.BigEndian.Uint16(buf[2:4])
-	outer.r.discard(4)
+	if err = outer.discard(4); err != nil {
+		// TODO: Write error handling
+		return
+	}
+
 	ilb.Items = make([]ItemLocationBoxEntry, 0, ilb.ItemCount)
 
 	if Debug {
 		fmt.Println(ilb)
 	}
-	for i := 0; outer.r.ok() && outer.r.anyRemain() && i < int(ilb.ItemCount); i++ {
-
+	for i := 0; outer.anyRemain() && i < int(ilb.ItemCount); i++ {
 		var ent ItemLocationBoxEntry
-		ent.ItemID, _ = outer.r.readUint16()
+		ent.ItemID, _ = outer.readUint16()
 
-		if flags.Version() > 0 { // version 1
-			cmeth, _ := outer.r.readUint16()
+		if ilb.Flags.Version() > 0 { // version 1
+			cmeth, _ := outer.readUint16()
 			ent.ConstructionMethod = byte(cmeth & 15)
 		}
-		ent.DataReferenceIndex, _ = outer.r.readUint16()
+		ent.DataReferenceIndex, _ = outer.readUint16()
 
 		// Adjust for baseOffset per issue "https://github.com/go4org/go4/issues/47" thanks to petercgrant
-		if outer.r.ok() && ilb.baseOffsetSize > 0 {
-			ent.BaseOffset, _ = outer.r.readUintN(ilb.baseOffsetSize * 8)
+		if outer.ok() && ilb.baseOffsetSize > 0 {
+			ent.BaseOffset, _ = outer.readUintN(ilb.baseOffsetSize * 8)
 			//outer.r.discard(int(ilb.baseOffsetSize) / 8)
 		}
 
 		// ExtentCount
-		ent.ExtentCount, _ = outer.r.readUint16()
-		for j := 0; outer.r.ok() && j < int(ent.ExtentCount); j++ {
+		ent.ExtentCount, _ = outer.readUint16()
+		for j := 0; outer.ok() && j < int(ent.ExtentCount); j++ {
 			var ol OffsetLength
-			ol.Offset, _ = outer.r.readUintN(ilb.offsetSize * 8)
-			ol.Length, _ = outer.r.readUintN(ilb.lengthSize * 8)
-			if outer.r.err != nil {
-				err = outer.r.err
+			ol.Offset, _ = outer.readUintN(ilb.offsetSize * 8)
+			ol.Length, _ = outer.readUintN(ilb.lengthSize * 8)
+			if outer.err != nil {
+				err = outer.err
 				return
 			}
 			if j == 0 {
@@ -95,11 +97,11 @@ func parseItemLocationBox(outer *box) (ilb ItemLocationBox, err error) {
 		ilb.Items = append(ilb.Items, ent)
 
 		if Debug {
-			fmt.Println(ent, outer.r.remain)
+			fmt.Println(ent, outer.remain)
 		}
 	}
-	if !outer.r.ok() {
-		err = outer.r.err
+	if !outer.ok() {
+		err = outer.err
 		return
 	}
 	return ilb, nil
