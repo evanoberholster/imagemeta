@@ -55,7 +55,9 @@ func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 		}
 
 		outer.remain -= int(inner.size)
-		err = inner.discard(inner.remain)
+		if err = inner.discard(inner.remain); err != nil {
+			break
+		}
 	}
 	err = outer.discard(outer.remain)
 	return ip, err
@@ -102,7 +104,9 @@ func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, er
 		ipc.Properties = append(ipc.Properties, p)
 
 		outer.remain -= int(inner.size)
-		err = inner.discard(inner.remain)
+		if err = inner.discard(inner.remain); err != nil {
+			break
+		}
 	}
 	err = outer.discard(outer.remain)
 	return ipc, err

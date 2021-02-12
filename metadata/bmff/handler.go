@@ -115,13 +115,14 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 		// thmb -> thumbnail
 		// cdsc -> context description ref / exif
 		//fmt.Println(inner, outer.r.remain)
-		if inner.remain > 0 {
-			err = inner.discard(inner.remain)
-		}
+
 		outer.remain -= int(inner.size)
+		if err = inner.discard(inner.remain); err != nil {
+			break
+		}
 	}
 	err = outer.discard(outer.remain)
-	return
+	return iref, err
 }
 
 // ImageRotation is an "irot" - image rotation property.

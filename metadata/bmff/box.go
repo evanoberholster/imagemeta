@@ -274,11 +274,18 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 				mb.Children = append(mb.Children, p)
 			}
 		}
+		if err != nil {
+			if Debug {
+				fmt.Println(err)
+			}
+		}
 		outer.remain -= int(inner.size)
 		if err = inner.discard(inner.remain); err != nil {
 			if Debug {
 				fmt.Println(err)
 			}
+			// TODO: improve error handling
+			break
 		}
 
 		if Debug {

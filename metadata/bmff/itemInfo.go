@@ -110,7 +110,9 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 		}
 
 		outer.remain -= int(inner.size)
-		err = inner.discard(inner.remain)
+		if err = inner.discard(inner.remain); err != nil {
+			break
+		}
 
 	}
 	if Debug {
