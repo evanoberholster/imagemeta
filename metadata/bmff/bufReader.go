@@ -29,6 +29,9 @@ func (br *bufReader) anyRemain() bool {
 }
 
 func (br *bufReader) discard(n int) error {
+	if n == 0 {
+		return nil
+	}
 	_, err := br.Discard(n)
 	br.remain -= n
 	if err != nil {

@@ -254,8 +254,8 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 		}
 		switch inner.boxType {
 		case TypeIdat, TypeDinf, TypeUUID, TypeIref:
-			// Do not read
-			inner.discard(inner.remain)
+			// Do not parse
+
 		//case TypeIref:
 		//	_, err = inner.Parse()
 		case TypePitm:
@@ -273,18 +273,19 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 			if err == nil {
 				mb.Children = append(mb.Children, p)
 			}
-			inner.discard(inner.remain)
-		}
-		if err != nil {
-			inner.discard(inner.remain)
 		}
 		outer.remain -= int(inner.size)
+		if err = inner.discard(inner.remain); err != nil {
+			if Debug {
+				fmt.Println(err)
+			}
+		}
 
 		if Debug {
 			fmt.Println(inner, outer.remain, inner.remain, inner.size)
 		}
 	}
-	outer.discard(outer.remain)
+	err = outer.discard(outer.remain)
 	return mb, err
 }
 
@@ -300,8 +301,8 @@ func (dinf DataInformationBox) Type() BoxType {
 
 func parseDataInformationBox(outer *box) (Box, error) {
 	dib := DataInformationBox{}
-	outer.discard(outer.remain)
-	return dib, nil //br.parseAppendBoxes(&dib.Children)
+	err := outer.discard(outer.remain)
+	return dib, err //br.parseAppendBoxes(&dib.Children)
 }
 
 // UnknownBox is a box that was unable to be parsed.

@@ -21,7 +21,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
 	bmff.Debug = true
 	hm := metadata.NewHeifMetadata(bufio.NewReader(f))
 	hm.GetMeta()

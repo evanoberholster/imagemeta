@@ -53,12 +53,11 @@ func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 				fmt.Printf("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
 			}
 		}
-		if inner.remain > 0 {
-			inner.discard(inner.remain)
-		}
+
 		outer.remain -= int(inner.size)
+		err = inner.discard(inner.remain)
 	}
-	outer.discard(outer.remain)
+	err = outer.discard(outer.remain)
 	return ip, err
 }
 
@@ -101,8 +100,9 @@ func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, er
 			fmt.Printf("\n")
 		}
 		ipc.Properties = append(ipc.Properties, p)
-		inner.discard(inner.remain)
+
 		outer.remain -= int(inner.size)
+		err = inner.discard(inner.remain)
 	}
 	err = outer.discard(outer.remain)
 	return ipc, err

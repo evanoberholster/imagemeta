@@ -91,7 +91,7 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 		if inner.Type() == TypeInfe {
 			var infe ItemInfoEntry
 			if infe, err = parseItemInfoEntry(&inner); err != nil {
-				inner.discard(inner.remain)
+				err = inner.discard(inner.remain)
 			}
 			iinf.ItemInfos = append(iinf.ItemInfos, infe)
 			if Debug {
@@ -110,7 +110,7 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 		}
 
 		outer.remain -= int(inner.size)
-		inner.discard(inner.remain)
+		err = inner.discard(inner.remain)
 
 	}
 	if Debug {

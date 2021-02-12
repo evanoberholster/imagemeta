@@ -116,11 +116,11 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 		// cdsc -> context description ref / exif
 		//fmt.Println(inner, outer.r.remain)
 		if inner.remain > 0 {
-			inner.discard(inner.remain)
+			err = inner.discard(inner.remain)
 		}
 		outer.remain -= int(inner.size)
 	}
-	outer.discard(outer.remain)
+	err = outer.discard(outer.remain)
 	return
 }
 
