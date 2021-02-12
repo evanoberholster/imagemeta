@@ -146,7 +146,7 @@ func boxType(buf []byte) BoxType {
 }
 
 type box struct {
-	bufReader
+	r       bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
 	err     error
 	boxType BoxType
