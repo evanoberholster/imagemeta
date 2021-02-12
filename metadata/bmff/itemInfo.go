@@ -82,37 +82,42 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
 	var inner box
-	for outer.anyRemain() {
+	for outer.remain > 0 {
 		inner, err = outer.readInnerBox()
 		if err != nil {
-			return iinf, err
+			break
 		}
+
 		if inner.Type() == TypeInfe {
 			var infe ItemInfoEntry
 			if infe, err = parseItemInfoEntry(&inner); err != nil {
-				outer.discard(inner.remain)
+				inner.discard(inner.remain)
 			}
 			iinf.ItemInfos = append(iinf.ItemInfos, infe)
 			if Debug {
-				fmt.Println(infe, outer.remain, inner.remain, outer.remain)
+				fmt.Println(infe, outer.remain, inner.remain, outer.size)
 			}
 		} else {
 			// Error here Box Unknown
-			outer.discard(inner.remain)
+			err = inner.discard(inner.remain)
 		}
+
 		if err != nil {
 			if Debug {
 				err = fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
 				fmt.Println(err)
 			}
 		}
+
 		outer.remain -= int(inner.size)
-		outer.discard(inner.remain)
+		if err = inner.discard(inner.remain); err != nil {
+			// Error here discard here
+		}
+
 	}
 	if Debug {
-		fmt.Println(iinf)
+		fmt.Println(iinf, outer.remain)
 	}
-
 	err = outer.discard(outer.remain)
 	return iinf, err
 }

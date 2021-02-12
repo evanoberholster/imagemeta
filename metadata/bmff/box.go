@@ -276,7 +276,7 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 			inner.discard(inner.remain)
 		}
 		if err != nil {
-			outer.discard(inner.remain)
+			inner.discard(inner.remain)
 		}
 		outer.remain -= int(inner.size)
 

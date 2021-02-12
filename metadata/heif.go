@@ -14,9 +14,7 @@ type HeifMetadata struct {
 	Meta     bmff.MetaBox
 
 	// Reader
-	br        *bufio.Reader
-	discarded uint32
-	pos       uint8
+	br *bufio.Reader
 }
 
 func NewHeifMetadata(br *bufio.Reader) *HeifMetadata {

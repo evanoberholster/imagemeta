@@ -156,7 +156,6 @@ type PrimaryItemBox struct {
 	ItemID uint16
 }
 
-// Size returns the size of the PrimaryItemBox
 func (pitm PrimaryItemBox) String() string {
 	return fmt.Sprintf("pitm | ItemID: %d, Flags: %d, Version: %d ", pitm.ItemID, pitm.Flags.Flags(), pitm.Flags.Version())
 }

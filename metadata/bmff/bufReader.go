@@ -164,10 +164,11 @@ func (br *bufReader) readItemType() (it ItemType, err error) {
 		return ItemTypeUnknown, err
 	}
 
-	it = itemType(buf[:4])
+	it = itemType(buf[:5])
 	if buf[4] != '\x00' {
 		// Read until whitespace
-		br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
+		//br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
+		return it, br.discard(4)
 	}
 
 	return it, br.discard(5)
