@@ -8,14 +8,15 @@ import (
 )
 
 const (
-	dir  = "../../test/img/"
-	dir2 = "test/samples/"
-	name = "CanonEOS7DII.xmp"
+	dir   = "../../test/img/"
+	dir2  = "test/samples/"
+	name  = "CanonEOS7DII.xmp"
+	name1 = "jpeg.xmp"
 )
 
 func main() {
 	xmp.DebugMode = true
-	f, err := os.Open(dir2 + "retouch.xmp") //name)
+	f, err := os.Open(dir2 + name) //"retouch.xmp") //name)
 	if err != nil {
 		panic(err)
 	}

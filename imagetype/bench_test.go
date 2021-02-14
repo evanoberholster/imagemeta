@@ -16,15 +16,17 @@ var (
 		{".CR3", "1.CR3"},
 		{".JPG/GPS", "17.jpg"},
 		{".HEIC", "1.heic"},
+		{".AVIF", "image1.avif"},
+		{".WEBP", "4.webp"},
 		{".GoPro/6", "hero6.jpg"},
 		{".NEF/Nikon", "2.NEF"},
 		{".ARW/Sony", "2.ARW"},
-		{".DNG/Adobe", "1.DNG"},
+		{".DNG/Adobe", "1.dng"},
 		{".JPG/NoExif", "20.jpg"},
 	}
 )
 
-func BenchmarkScan200(b *testing.B) {
+func BenchmarkScan100(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -35,7 +37,9 @@ func BenchmarkScan200(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				b.StopTimer()
 				f.Seek(0, 0)
+				b.StartTimer()
 				if _, err := Scan(f); err != nil {
 					b.Fatal(err)
 				}
@@ -44,13 +48,15 @@ func BenchmarkScan200(b *testing.B) {
 	}
 }
 
-// BenchmarkScan200/.CR2/GPS-8         	  368462	      3166 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.CR2/7D-8          	  380390	      3101 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.CR3-8             	  389886	      3103 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.JPG/GPS-8         	  388550	      3047 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.HEIC-8            	  384488	      3126 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.GoPro/6-8         	  397183	      3059 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.NEF/Nikon-8       	  385065	      3175 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.ARW/Sony-8        	  379454	      3594 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.DNG/Adobe-8       	  295646	      3799 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkScan200/.JPG/NoExif-8      	  388678	      3774 ns/op	    4096 B/op	       1 allocs/op
+// BenchmarkScan100/.CR2/GPS         	 1591376	       754 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.CR2/7D          	 1652364	       769 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.CR3             	 1496485	       761 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.JPG/GPS         	 1622518	       714 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.HEIC            	 1560817	       792 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.AVIF            	 1494444	       802 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.WEBP            	 1555882	       744 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.GoPro/6         	 1697720	       757 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.NEF/Nikon       	 1614928	       749 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.ARW/Sony        	 1508358	       823 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.DNG/Adobe       	 1610572	       728 ns/op	      32 B/op	       1 allocs/op
+// BenchmarkScan100/.JPG/NoExif      	 1576730	       718 ns/op	      32 B/op	       1 allocs/op

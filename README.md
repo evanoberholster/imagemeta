@@ -26,7 +26,7 @@ import (
    "os"
    "time"
 
-   "github.com/evanoberholster/imagemeta"
+   "github.com/evanoberholster/imagemeta/exif"
 )
 
 const testFilename = "image.jpg"
@@ -41,14 +41,14 @@ func main() {
    defer f.Close()
 
    start := time.Now()
-   e, err := imagemeta.ScanExif(f)
-   if err != nil && err != imagemeta.ErrNoExif {
+   e, err := exif.ScanExif(f)
+   if err != nil && err != exif.ErrNoExif {
       panic(err)
    }
    elapsed := time.Since(start)
    fmt.Println(elapsed)
 
-   if err == imagemeta.ErrNoExif {
+   if err == exif.ErrNoExif {
       fmt.Println(e.XMLPacket())
       fmt.Println(e.Dimensions())
       return

@@ -2,12 +2,13 @@ package imagetype
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"testing"
 )
 
 // Tests
-func TestSearchImageType(t *testing.T) {
+func TestScan(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename  string
 		imageType ImageType
@@ -32,8 +33,10 @@ func TestSearchImageType(t *testing.T) {
 			defer f.Close()
 			// Search for Image Type
 			imageType, err := Scan(f)
-			if err != nil {
-				t.Fatal(err)
+			if header.imageType == ImageUnknown {
+				if err != ErrImageTypeNotFound {
+					t.Fatal(err)
+				}
 			}
 
 			if header.imageType != imageType {
@@ -43,7 +46,7 @@ func TestSearchImageType(t *testing.T) {
 	}
 }
 
-func TestImageTypeFunc(t *testing.T) {
+func TestImageType(t *testing.T) {
 
 	str := "image/jpeg"
 	it := ImageJPEG
@@ -136,19 +139,21 @@ func TestScanImageType(t *testing.T) {
 	}
 
 	// Image Unknown
-	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop12345")))
-	if err != nil {
+	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop1234567890abcdefghijklmnopqrs")))
+	if err != ErrImageTypeNotFound {
 		t.Fatal(err)
 	}
+
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 
 	//  Image Unknown - Empty ByteSlice
 	imageType, err = Scan(bytes.NewReader([]byte("")))
-	if err != nil {
+	if err != io.EOF {
 		t.Fatal(err)
 	}
+
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}

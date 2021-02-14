@@ -18,5 +18,8 @@ samples/*
 xml/test*
 testImages/gen.go
 testImages/*.html
+test/*.svg
 meta/cmd/*
+bmff/*.txt
 xmp/test/samples/*
+
