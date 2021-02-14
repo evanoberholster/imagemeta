@@ -25,7 +25,7 @@ type JPEGMetadata struct {
 	meta.Decoder
 	// SOF Header and Tiff Header
 	SOFHeader
-	tiff.TiffHeader
+	header tiff.Header
 
 	// XML and Exif
 	xmp  string
@@ -48,8 +48,8 @@ func (m JPEGMetadata) XMP() string {
 }
 
 // Header returns the TiffHeader from the JPEG Image
-func (m JPEGMetadata) Header() tiff.TiffHeader {
-	return m.TiffHeader
+func (m JPEGMetadata) Header() tiff.Header {
+	return m.header
 }
 
 // newMetadata creates a New metadata object from an io.Reader
@@ -102,7 +102,7 @@ func (m *JPEGMetadata) readAPP1(buf []byte) (err error) {
 		exifLength := uint32(length)
 
 		// Set Tiff Header
-		m.TiffHeader = tiff.NewTiffHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
+		m.header = tiff.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
 
 		//fmt.Println("Exif Tiff Header:", m.TiffHeader)
 

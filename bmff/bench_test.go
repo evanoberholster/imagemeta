@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"os"
 	"testing"
-
-	"go4.org/media/heif"
 )
 
 var (
@@ -74,13 +72,13 @@ func BenchmarkReadBoxGo100(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				f.Seek(0, 0)
-				a := heif.Open(f)
-				b.StartTimer()
-
-				_, _ = a.EXIF()
-				if err != nil {
-					b.Fatal(err)
-				}
+				//a := heif.Open(f)
+				//b.StartTimer()
+				//
+				//_, _ = a.EXIF()
+				//if err != nil {
+				//	b.Fatal(err)
+				//}
 			}
 		})
 	}

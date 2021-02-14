@@ -1,3 +1,4 @@
+// Package jpeg reads JPEG metadata information (Exif and XMP)
 package jpeg
 
 import (
@@ -57,7 +58,7 @@ func ScanJPEG(r *bufio.Reader, xmpDecodeFn func(r io.Reader) error, exifDecodeFn
 
 		break
 	}
-	if !m.TiffHeader.IsValid() {
+	if !m.header.IsValid() {
 		err = ErrNoExif
 		return
 	}

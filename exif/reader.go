@@ -63,7 +63,7 @@ func (er *reader) ByteOrder() binary.ByteOrder {
 
 // SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
 // from a TiffHeader and sets the ExifReader read offset to 0
-func (er *reader) SetHeader(header tiff.TiffHeader) error {
+func (er *reader) SetHeader(header tiff.Header) error {
 	if !header.IsValid() {
 		return ErrInvalidHeader
 	}

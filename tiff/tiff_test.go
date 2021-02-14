@@ -30,10 +30,11 @@ func TestScan(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			h, err := ScanTiff(br)
+			tiff, err := ScanTiff(br)
 			if err != nil {
 				t.Fatal(err)
 			}
+			h := tiff.header
 			if h.ByteOrder != header.byteOrder {
 				t.Errorf("Incorrect Byte Order wanted %s got %s", header.byteOrder, h.ByteOrder)
 			}

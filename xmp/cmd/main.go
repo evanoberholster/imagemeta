@@ -11,7 +11,7 @@ const (
 	dir   = "../../test/img/"
 	dir2  = "test/samples/"
 	name  = "CanonEOS7DII.xmp"
-	name1 = "image1.jpeg.xmp"
+	name1 = "jpeg.xmp"
 )
 
 func main() {

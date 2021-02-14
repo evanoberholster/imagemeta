@@ -1,3 +1,4 @@
+// Package tiff reads Tiff Image metadata information from Camera Raw, DNG, and Tiff Image files
 package tiff
 
 import (
@@ -44,10 +45,10 @@ func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
 			continue
 		}
 
-		// Found
+		// Found Tiff Header
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
-		tm.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
+		tm.header = NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0)
 		return
 	}
 }
