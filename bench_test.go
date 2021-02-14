@@ -1,4 +1,4 @@
-package metadata
+package imagemeta
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	dir            = "../../test/img/"
+	dir            = "../test/img/"
 	benchmarksJPEG = []struct {
 		name     string
 		fileName string

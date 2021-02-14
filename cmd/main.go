@@ -1,80 +1,53 @@
-// Package main provides an example command
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
-const testFilename = "../../test/img/2.CR2"
+const testFilename = "../../test/img/10.jpg"
 
 func main() {
-	var err error
-
 	f, err := os.Open(testFilename)
 	if err != nil {
 		panic(err)
 	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	fmt.Println(testFilename)
+	//buf, _ := ioutil.ReadAll(f)
+	br := bufio.NewReader(f)
 
-	buf, _ := ioutil.ReadAll(f)
-	reader := bytes.NewReader(buf)
-
+	var x xmp.XMP
+	xmpDecodeFn := func(r io.Reader) error {
+		var err error
+		x, err = xmp.Read(r)
+		return err
+	}
 	start := time.Now()
-	e, err := exif.ScanExif(reader)
-	if err != nil && err != exif.ErrNoExif {
+	m, err := imagemeta.ScanBuf2(br, imagetype.ImageJPEG, xmpDecodeFn)
+	//m, err := meta.Scan(f, imagetype.ImageJPEG)
+	if err != nil {
 		panic(err)
 	}
+
+	//x, err = xmp.Read(bytes.NewReader([]byte(m.XML())))
 	elapsed := time.Since(start)
+	fmt.Println(m.XMP())
+	fmt.Println(m.Size())
+	fmt.Println(m.Header())
 	fmt.Println(elapsed)
+	fmt.Println(x, err)
 
-	if err == exif.ErrNoExif {
-		fmt.Println(e.XMLPacket())
-		fmt.Println(e.Dimensions())
-		return
-	}
-
-	// Strings
-	fmt.Println(e.CameraMake())
-	fmt.Println(e.CameraModel())
-	fmt.Println(e.Artist())
-	fmt.Println(e.Copyright())
-	fmt.Println(e.LensMake())
-	fmt.Println(e.LensModel())
-	fmt.Println(e.CameraSerial())
-	fmt.Println(e.LensSerial())
-	//
-	fmt.Println(e.Dimensions())
-	fmt.Println(e.XMLPacket())
-	//
-	//// Makernotes
-	fmt.Println(e.CanonCameraSettings())
-	fmt.Println(e.CanonFileInfo())
-	fmt.Println(e.CanonShotInfo())
-	fmt.Println(e.CanonAFInfo())
-	//
-	//// Time
-	fmt.Println(e.ModifyDate())
-	fmt.Println(e.DateTime())
-	fmt.Println(e.GPSTime())
-	//
-	//// GPS
-	fmt.Println(e.GPSInfo())
-	fmt.Println(e.GPSAltitude())
-	//
-	// Metadata
-	fmt.Println(e.ExposureProgram())
-	fmt.Println(e.MeteringMode())
-	fmt.Println(e.ShutterSpeed())
-	fmt.Println(e.Aperture())
-	fmt.Println(e.FocalLength())
-	fmt.Println(e.FocalLengthIn35mmFilm())
-	fmt.Println(e.ISOSpeed())
-	fmt.Println(e.Flash())
-
-	fmt.Println(time.Since(start))
 }

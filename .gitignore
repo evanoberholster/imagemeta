@@ -19,4 +19,5 @@ xml/test*
 testImages/gen.go
 testImages/*.html
 meta/cmd/*
+bmff/*.txt
 xmp/test/samples/*

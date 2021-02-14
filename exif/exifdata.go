@@ -3,10 +3,10 @@ package exif
 import (
 	"errors"
 
+	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/metadata"
 )
 
 // API Errors
@@ -39,7 +39,7 @@ func newExifData(er *reader, it imagetype.ImageType) *ExifData {
 }
 
 // SetMetadata sets the imagetype metadata in exif
-func (e *ExifData) SetMetadata(m metadata.Metadata) {
+func (e *ExifData) SetMetadata(m imagemeta.Metadata) {
 	// Set Exif Width, Height from Metadata Image Size
 	e.width, e.height = m.Size()
 

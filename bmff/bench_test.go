@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	dir        = "../../../test/img/"
+	dir        = "../../test/img/"
 	benchmarks = []struct {
 		name     string
 		fileName string

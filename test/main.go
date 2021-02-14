@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/metadata"
-	"github.com/evanoberholster/imagemeta/metadata/bmff"
+	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/bmff"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 		}
 	}()
 	bmff.Debug = true
-	hm := metadata.NewHeifMetadata(bufio.NewReader(f))
+	hm := imagemeta.NewHeifMetadata(bufio.NewReader(f))
 	hm.GetMeta()
 
 }

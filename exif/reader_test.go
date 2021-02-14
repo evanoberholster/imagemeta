@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/metadata"
+	"github.com/evanoberholster/imagemeta"
 )
 
 // TODO: Write tests for exifReader
@@ -31,14 +31,14 @@ func TestExifReader(t *testing.T) {
 	}
 
 	// SetHeader
-	th := metadata.NewTiffHeader(byteOrder, exifOffset, exifOffset, 0)
+	th := imagemeta.NewTiffHeader(byteOrder, exifOffset, exifOffset, 0)
 	if err := er.SetHeader(th); err != nil {
 		t.Errorf("Error with reader.SetHeader expected no error")
 	}
 
 	// SetHeader (Invalid Header)
-	if err := er.SetHeader(metadata.TiffHeader{}); err != metadata.ErrInvalidHeader {
-		t.Errorf("Error with reader.SetHeader %s, expected %s", err.Error(), metadata.ErrInvalidHeader.Error())
+	if err := er.SetHeader(imagemeta.TiffHeader{}); err != imagemeta.ErrInvalidHeader {
+		t.Errorf("Error with reader.SetHeader %s, expected %s", err.Error(), imagemeta.ErrInvalidHeader.Error())
 	}
 
 	// TODO: test Reader

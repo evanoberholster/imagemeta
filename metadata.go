@@ -1,6 +1,4 @@
-// Package metadata provides a Metadata interface for interpreting metadata
-// from different image types such as JPEG, TIFF, HEIF, and AVIF.
-package metadata
+package imagemeta
 
 import (
 	"bufio"

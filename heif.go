@@ -1,10 +1,10 @@
-package metadata
+package imagemeta
 
 import (
 	"bufio"
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/metadata/bmff"
+	"github.com/evanoberholster/imagemeta/bmff"
 )
 
 type HeifMetadata struct {

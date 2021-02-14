@@ -1,3 +1,3 @@
-package metadata
+package imagemeta
 
 // TODO: Write JPEG test

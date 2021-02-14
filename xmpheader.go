@@ -1,4 +1,4 @@
-package metadata
+package imagemeta
 
 // XMPHeader -
 type XMPHeader struct {
