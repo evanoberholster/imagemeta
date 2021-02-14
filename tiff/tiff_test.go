@@ -1,4 +1,4 @@
-package imagemeta
+package tiff
 
 import (
 	"bufio"

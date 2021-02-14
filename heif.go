@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/evanoberholster/imagemeta/bmff"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 type HeifMetadata struct {
-	Decoder
+	meta.Decoder
 
 	FileType bmff.FileTypeBox
 	Meta     bmff.MetaBox

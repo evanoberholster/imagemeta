@@ -1,10 +1,13 @@
-package imagemeta
+package jpeg
 
 import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
 	"io"
+
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 // jpegByteOrder - JPEG always uses a BigEndian Byteorder.
@@ -19,10 +22,10 @@ type SOFHeader struct {
 
 // JPEGMetadata from JPEG files
 type JPEGMetadata struct {
-	Decoder
+	meta.Decoder
 	// SOF Header and Tiff Header
 	SOFHeader
-	TiffHeader
+	tiff.TiffHeader
 
 	// XML and Exif
 	xmp  string
@@ -45,18 +48,18 @@ func (m JPEGMetadata) XMP() string {
 }
 
 // Header returns the TiffHeader from the JPEG Image
-func (m JPEGMetadata) Header() TiffHeader {
+func (m JPEGMetadata) Header() tiff.TiffHeader {
 	return m.TiffHeader
 }
 
 // newMetadata creates a New metadata object from an io.Reader
-func newJPEGMetadata(reader *bufio.Reader, xmpDecodeFn DecodeFn, exifDecodeFn DecodeFn) JPEGMetadata {
+func newJPEGMetadata(reader *bufio.Reader, xmpDecodeFn meta.DecodeFn, exifDecodeFn meta.DecodeFn) JPEGMetadata {
 	jm := JPEGMetadata{
 		br:        reader,
 		discarded: 0,
 	}
-	jm.xmpDecodeFn = xmpDecodeFn
-	jm.exifDecodeFn = exifDecodeFn
+	jm.XMPDecodeFn = xmpDecodeFn
+	jm.ExifDecodeFn = exifDecodeFn
 	return jm
 }
 
@@ -94,12 +97,12 @@ func (m *JPEGMetadata) readAPP1(buf []byte) (err error) {
 
 		// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
 		// the tiff Header Offset, and the length of the exif information.
-		byteOrder := BinaryOrder(buf)
+		byteOrder := tiff.BinaryOrder(buf)
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		exifLength := uint32(length)
 
 		// Set Tiff Header
-		m.TiffHeader = NewTiffHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
+		m.TiffHeader = tiff.NewTiffHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
 
 		//fmt.Println("Exif Tiff Header:", m.TiffHeader)
 
@@ -124,9 +127,9 @@ func (m *JPEGMetadata) readXMP(buf []byte) (err error) {
 	}
 
 	// Use XML Decode Function if not nil
-	if m.xmpDecodeFn != nil {
+	if m.XMPDecodeFn != nil {
 		r := io.LimitReader(m.br, int64(length))
-		err = m.xmpDecodeFn(r)
+		err = m.XMPDecodeFn(r)
 		remain := r.(*io.LimitedReader).N
 		if remain > 0 {
 			err = m.discard(int(remain))

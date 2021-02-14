@@ -6,6 +6,9 @@ import (
 	"io"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/jpeg"
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 // Errors
@@ -17,7 +20,7 @@ var (
 // Metadata interface
 type Metadata interface {
 	Size() (width uint16, height uint16)
-	Header() TiffHeader
+	Header() tiff.TiffHeader
 	XMP() string
 }
 
@@ -30,7 +33,7 @@ func Scan(reader io.Reader, t imagetype.ImageType) (m Metadata, err error) {
 func ScanBuf(reader *bufio.Reader, t imagetype.ImageType) (m Metadata, err error) {
 	switch t {
 	case imagetype.ImageJPEG:
-		if m, err = ScanJPEG(reader, nil, nil); err != nil {
+		if m, err = jpeg.ScanJPEG(reader, nil, nil); err != nil {
 			err = ErrNoExif
 		}
 		return
@@ -41,7 +44,7 @@ func ScanBuf(reader *bufio.Reader, t imagetype.ImageType) (m Metadata, err error
 		err = ErrMetadataNotSupported
 		return
 	default:
-		m, err = ScanTiff(reader)
+		m, err = tiff.ScanTiff(reader)
 		if err == ErrNoExif {
 			err = ErrNoExif
 		}
@@ -50,10 +53,10 @@ func ScanBuf(reader *bufio.Reader, t imagetype.ImageType) (m Metadata, err error
 }
 
 // ScanBuf2 -
-func ScanBuf2(br *bufio.Reader, t imagetype.ImageType, xmpDecodeFn DecodeFn) (m Metadata, err error) {
+func ScanBuf2(br *bufio.Reader, t imagetype.ImageType, xmpDecodeFn meta.DecodeFn) (m Metadata, err error) {
 	switch t {
 	case imagetype.ImageJPEG:
-		if m, err = ScanJPEG(br, xmpDecodeFn, nil); err != nil {
+		if m, err = jpeg.ScanJPEG(br, xmpDecodeFn, nil); err != nil {
 			err = ErrNoExif
 		}
 		return
@@ -65,7 +68,7 @@ func ScanBuf2(br *bufio.Reader, t imagetype.ImageType, xmpDecodeFn DecodeFn) (m 
 		err = xmpDecodeFn(br)
 		return
 	default:
-		m, err = ScanTiff(br)
+		m, err = tiff.ScanTiff(br)
 		if err == ErrNoExif {
 			err = ErrNoExif
 		}

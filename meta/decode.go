@@ -1,10 +1,10 @@
-package imagemeta
+package meta
 
 import "io"
 
 type Decoder struct {
-	xmpDecodeFn  DecodeFn
-	exifDecodeFn DecodeFn
+	XMPDecodeFn  DecodeFn
+	ExifDecodeFn DecodeFn
 }
 
 type DecodeFn func(r io.Reader) error

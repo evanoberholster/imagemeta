@@ -1,3 +1,3 @@
-package imagemeta
+package jpeg
 
 // TODO: Write JPEG test

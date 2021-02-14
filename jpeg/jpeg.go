@@ -1,19 +1,22 @@
-package imagemeta
+package jpeg
 
 import (
 	"bufio"
 	"errors"
 	"io"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Errors
 var (
+	ErrNoExif       = meta.ErrNoExif
 	ErrNoJPEGMarker = errors.New("no JPEG Marker")
 	ErrEndOfImage   = errors.New("end of Image")
 )
 
 // ScanJPEG -
-func ScanJPEG(r *bufio.Reader, xmpDecodeFn DecodeFn, exifDecodeFn DecodeFn) (m JPEGMetadata, err error) {
+func ScanJPEG(r *bufio.Reader, xmpDecodeFn func(r io.Reader) error, exifDecodeFn func(r io.Reader) error) (m JPEGMetadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)

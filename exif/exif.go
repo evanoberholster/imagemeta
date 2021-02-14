@@ -8,13 +8,14 @@ import (
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Errors
 var (
 	// Alias to meta Errors
-	ErrInvalidHeader = imagemeta.ErrInvalidHeader
-	ErrNoExif        = imagemeta.ErrNoExif
+	ErrInvalidHeader = meta.ErrInvalidHeader
+	ErrNoExif        = meta.ErrNoExif
 )
 
 // ScanExif identifies the imageType based on magic bytes and

@@ -1,14 +1,16 @@
-package imagemeta
+package tiff
 
 import (
 	"bufio"
 	"encoding/binary"
 	"io"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 const (
-	// Tiff Header Length is 8 bytes
-	tiffHeaderLength = 16
+	// TiffHeaderLength is 8 bytes
+	TiffHeaderLength = 16
 )
 
 // ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
@@ -26,9 +28,9 @@ func scanTIFF(br *bufio.Reader) (tm TiffMetadata, err error) {
 	var buf []byte
 
 	for {
-		if buf, err = br.Peek(tiffHeaderLength); err != nil {
+		if buf, err = br.Peek(TiffHeaderLength); err != nil {
 			if err == io.EOF {
-				err = ErrNoExif
+				err = meta.ErrNoExif
 				return
 			}
 			return

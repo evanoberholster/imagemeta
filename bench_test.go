@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/evanoberholster/imagemeta/jpeg"
+	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 var (
@@ -46,7 +49,7 @@ func BenchmarkScanJPEG100(b *testing.B) {
 				cb.Seek(0, 0)
 				br := bufio.NewReader(cb)
 				b.StartTimer()
-				if _, err := ScanJPEG(br, nil, nil); err != nil {
+				if _, err := jpeg.ScanJPEG(br, nil, nil); err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
 					}
@@ -116,7 +119,7 @@ func BenchmarkScanTiff200(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				if _, err := ScanTiff(br); err != nil {
+				if _, err := tiff.ScanTiff(br); err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
 					}
