@@ -10,8 +10,11 @@ import (
 
 // Errors
 var (
-	ErrItemTypeWS      = errors.New("bufReader error: itemType doesn't end on whitespace")
-	ErrBufReaderLength = errors.New("bufReader error: infufficient length")
+	ErrItemTypeWS               = errors.New("bufReader error: itemType doesn't end on whitespace")
+	ErrBufReaderLength          = errors.New("bufReader error: insufficient length")
+	ErrRemainLengthInsufficient = errors.New("bufReader error: remain length insufficient")
+	ErrBufReaderFlags           = errors.New("bufReader error: failed to read 4 bytes of Flags")
+	ErrItemTypeLength           = errors.New("bufReader: insufficient itemType Length")
 )
 
 // bufReader adds some HEIF/BMFF-specific methods around a *bufio.Reader.
@@ -28,11 +31,14 @@ func (br *bufReader) anyRemain() bool {
 	return br.remain > 0 && br.ok()
 }
 
-func (br *bufReader) discard(n int) error {
+func (br *bufReader) discard(n int) (err error) {
 	if n == 0 {
 		return nil
 	}
-	_, err := br.Discard(n)
+	//if br.remain < n {
+	//	return ErrRemainLengthInsufficient
+	//}
+	_, err = br.Discard(n)
 	br.remain -= n
 	if err != nil {
 		br.err = fmt.Errorf("bufReader discard error: %v", err)
@@ -71,61 +77,55 @@ func (br *bufReader) readUint8() (uint8, error) {
 	v, err := br.ReadByte()
 	if err != nil {
 		br.err = err
-		return 0, err
+		return 0, ErrBufReaderLength
 	}
 	br.remain-- // remove 1 remaining byte
 	return v, nil
 }
 
 func (br *bufReader) readUint16() (uint16, error) {
-	if br.err != nil {
-		return 0, br.err
-	}
 	if br.remain < 2 {
 		return 0, ErrBufReaderLength
 	}
 	buf, err := br.Peek(2)
 	if err != nil {
 		br.err = err
-		return 0, err
+		return 0, ErrBufReaderLength
 	}
 	v := binary.BigEndian.Uint16(buf[:2])
 	return v, br.discard(2)
 }
 
 func (br *bufReader) readUint32() (uint32, error) {
-	if br.err != nil {
-		return 0, br.err
-	}
 	if br.remain < 4 {
 		return 0, ErrBufReaderLength
 	}
 	buf, err := br.Peek(4)
 	if err != nil {
 		br.err = err
-		return 0, err
+		return 0, ErrBufReaderLength
 	}
 	v := binary.BigEndian.Uint32(buf[:4])
 	return v, br.discard(4)
 }
 
 func (br *bufReader) readUintN(bits uint8) (uint64, error) {
-	if br.err != nil {
-		return 0, br.err
-	}
-	if br.remain < int(bits/8) {
-		return 0, ErrBufReaderLength
-	}
 	if bits == 0 {
 		return 0, nil
 	}
-	nbyte := bits / 8
-	buf, err := br.Peek(int(nbyte))
+
+	nbyte := int(bits / 8)
+
+	if br.remain < nbyte {
+		return 0, ErrBufReaderLength
+	}
+
+	buf, err := br.Peek(nbyte)
 	if err != nil {
 		br.err = err
-		return 0, err
+		return 0, ErrBufReaderLength
 	}
-	defer br.discard(int(nbyte))
+	defer br.discard(nbyte)
 	switch bits {
 	case 8:
 		return uint64(buf[0]), nil
@@ -142,32 +142,28 @@ func (br *bufReader) readUintN(bits uint8) (uint64, error) {
 }
 
 func (br *bufReader) readBrand() (b Brand, err error) {
-	if br.err != nil {
-		err = br.err
-		return
-	}
 	if br.remain < 4 {
 		br.err = ErrBufReaderLength
 		return brandUnknown, br.err
 	}
-	var buf []byte
-	if buf, err = br.Peek(4); err != nil {
-		return
+	buf, err := br.Peek(4)
+	if err != nil {
+		return brandUnknown, ErrBufReaderLength
 	}
 	return brand(buf[:4]), br.discard(4)
 }
 
 func (br *bufReader) readItemType() (it ItemType, err error) {
-	if br.remain < 4 {
+	if br.remain < 5 {
 		br.err = ErrBufReaderLength
 		return ItemTypeUnknown, br.err
 	}
 	buf, err := br.Peek(5)
 	if err != nil {
-		return ItemTypeUnknown, err
+		return ItemTypeUnknown, ErrBufReaderLength
 	}
 
-	it = itemType(buf[:5])
+	it = itemType(buf[:4])
 	if buf[4] != '\x00' {
 		// Read until whitespace
 		//br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
@@ -185,7 +181,7 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 	// Parse Flags from a FullBox header.
 	buf, err := br.Peek(4)
 	if err != nil {
-		return f, fmt.Errorf("failed to read 4 bytes of Flags: %v", err)
+		return f, ErrBufReaderLength
 	}
 
 	f = Flags(binary.BigEndian.Uint32(buf[:4]))
@@ -199,7 +195,7 @@ func (br *bufReader) readInnerBox() (b box, err error) {
 	// Read box size and box type
 	var buf []byte
 	if buf, err = b.Peek(8); err != nil {
-		return b, err
+		return b, ErrBufReaderLength
 	}
 	b.size = int64(binary.BigEndian.Uint32(buf[:4]))
 	b.boxType = boxType(buf[4:8])
@@ -213,7 +209,7 @@ func (br *bufReader) readInnerBox() (b box, err error) {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
 		if buf, err = b.Peek(8); err != nil {
-			return b, err
+			return b, ErrBufReaderLength
 		}
 		b.size = int64(binary.BigEndian.Uint64(buf[:8]))
 		if b.size < 0 {

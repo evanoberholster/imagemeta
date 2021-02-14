@@ -39,8 +39,6 @@ type ItemInfoBox struct {
 	Flags Flags
 	Count uint16
 
-	//Exif      ItemInfoEntry
-	//XMP       ItemInfoEntry
 	ItemInfos []ItemInfoEntry
 }
 

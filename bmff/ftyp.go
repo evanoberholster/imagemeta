@@ -40,7 +40,6 @@ var mapStringBrand = map[string]Brand{
 	"hevm": brandHevm,
 	"hevs": brandHevs,
 	"hevx": brandHevx,
-	//"MA1B": brandMA1B,
 	"meta": brandMeta,
 	"miaf": brandMiaf,
 	"mif1": brandMif1,
@@ -64,7 +63,6 @@ var mapBrandString = map[Brand]string{
 	brandMeta: "meta",
 	brandMiaf: "miaf",
 	brandMif1: "mif1",
-	//brandMA1B: "MA1B",
 	brandMiHB: "MiHB",
 	brandMiHE: "MiHE",
 	brandMsf1: "msf1",
@@ -123,10 +121,7 @@ func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
 			break
 		}
 
-		ftyp.Compatible[i], err = outer.readBrand()
-		if err != nil {
-			break
-		}
+		ftyp.Compatible[i], _ = outer.readBrand()
 	}
 	err = outer.discard(outer.remain)
 	return ftyp, err

@@ -14,6 +14,19 @@ const (
 	handlerMeta
 )
 
+func (ht HandlerType) String() string {
+	switch ht {
+	case handlerPict:
+		return "pict"
+	case handlerVide:
+		return "vide"
+	case handlerMeta:
+		return "meta"
+	default:
+		return "nnnn"
+	}
+}
+
 func handler(buf []byte) HandlerType {
 	if isHandler(buf, "pict") {
 		return handlerPict
@@ -35,15 +48,10 @@ func isHandler(buf []byte, str string) bool {
 //
 // Handler box hdlr tells the metadata type. For HEIF, it is always ’pict’.
 type HandlerBox struct {
-	Flags       Flags
-	size        uint32
-	Name        string
+	Flags Flags
+	size  uint32
+	//Name        string
 	HandlerType HandlerType
-}
-
-// Size returns the size of the HandlerBox
-func (hdlr HandlerBox) Size() int64 {
-	return int64(hdlr.size)
 }
 
 // Type returns TypeHdlr.
@@ -69,12 +77,10 @@ func parseHandlerBox(outer *box) (hdlr HandlerBox, err error) {
 		return
 	}
 	if hdlr.HandlerType == handlerUnknown {
-		if Debug {
-			fmt.Println("Unknown Handler: Error", string(buf), buf)
-		}
-		// err = Unknown Handler. Cancel Parsing file
+		err = fmt.Errorf("error Handler type unknown: %s", string(buf[4:8]))
+		return
 	}
-	hdlr.Name, _ = outer.readString()
+	//hdlr.Name, _ = outer.readString()
 	err = outer.discard(outer.remain)
 	return hdlr, err
 }

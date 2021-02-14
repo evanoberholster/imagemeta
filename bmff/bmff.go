@@ -20,7 +20,6 @@ package bmff
 
 import (
 	"bufio"
-	"encoding/binary"
 	"fmt"
 	"io"
 )
@@ -95,48 +94,8 @@ func (r *Reader) ReadMetaBox() (MetaBox, error) {
 
 // ReadBox reads a box and returns it
 func (r *Reader) readBox() (b box, err error) {
-	var buf []byte
-	// Read box size and box type
-	if buf, err = r.br.Peek(8); err != nil {
-		return b, err
-	}
-
-	b = box{
-		bufReader: r.br,
-		size:      int64(binary.BigEndian.Uint32(buf[:4])),
-		boxType:   boxType(buf[4:8]),
-	}
-
-	if err = r.br.discard(8); err != nil {
-		return
-	}
-
-	var remain int
-	switch b.size {
-	case 1:
-		// 1 means it's actually a 64-bit size, after the type.
-		if buf, err = r.br.Peek(8); err != nil {
-			return b, err
-		}
-		b.size = int64(binary.BigEndian.Uint64(buf[:8]))
-		if b.size < 0 {
-			// Go uses int64 for sizes typically, but BMFF uses uint64.
-			// We assume for now that nobody actually uses boxes larger
-			// than int64.
-			return b, fmt.Errorf("unexpectedly large box %q", b.boxType)
-		}
-		remain = int(b.size - 2*4 - 8)
-		if err = r.br.discard(8); err != nil {
-			return
-		}
-	case 0:
-		// 0 means unknown & to read to end of file. No more boxes.
-		//r.noMoreBoxes = true
-	default:
-		remain = int(b.size - 2*4)
-	}
-	b.remain = remain
-	return b, nil
+	outer := box{bufReader: r.br}
+	return outer.readInnerBox()
 }
 
 // Box represents a BMFF box.

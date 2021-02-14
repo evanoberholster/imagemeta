@@ -103,10 +103,10 @@ func BenchmarkReadBoxGo100(b *testing.B) {
 // BenchmarkReadBox100/iPhone_12 	   35826	     32786 ns/op	    8064 B/op	      85 allocs/op
 
 // Latest
-// BenchmarkReadBox100/1         	   37662	     29445 ns/op	    7536 B/op	      74 allocs/op
-// BenchmarkReadBox100/2         	  109060	     11420 ns/op	    2256 B/op	      38 allocs/op
-// BenchmarkReadBox100/3         	   23271	     43007 ns/op	   12368 B/op	     114 allocs/op
-// BenchmarkReadBox100/10        	   40869	     29462 ns/op	    7648 B/op	      78 allocs/op
-// BenchmarkReadBox100/d         	    8838	    122178 ns/op	   38768 B/op	     322 allocs/op
-// BenchmarkReadBox100/Canon_R6  	   82357	     12993 ns/op	    2496 B/op	      44 allocs/op
-// BenchmarkReadBox100/iPhone_12 	   42121	     31625 ns/op	    7968 B/op	      82 allocs/op
+// BenchmarkReadBox100/1         	   50270	     25748 ns/op	    7248 B/op	      65 allocs/op
+// BenchmarkReadBox100/2         	  134457	      9425 ns/op	    1744 B/op	      30 allocs/op
+// BenchmarkReadBox100/3         	   30159	     38505 ns/op	   12192 B/op	     105 allocs/op
+// BenchmarkReadBox100/10        	   48042	     26569 ns/op	    7344 B/op	      69 allocs/op
+// BenchmarkReadBox100/d         	   10000	    108446 ns/op	   38976 B/op	     313 allocs/op
+// BenchmarkReadBox100/Canon_R6  	  104004	     10748 ns/op	    1952 B/op	      34 allocs/op
+// BenchmarkReadBox100/iPhone_12 	   39205	     30556 ns/op	    7664 B/op	      73 allocs/op
