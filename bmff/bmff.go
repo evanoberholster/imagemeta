@@ -102,22 +102,6 @@ func (r *Reader) readBox() (b box, err error) {
 type Box interface {
 	//Size() int64 // 0 means unknown (will read to end of file)
 	Type() BoxType
-
-	// Parses parses the box, populating the fields
-	// in the returned concrete type.
-	//
-	// If Parse has already been called, Parse returns nil.
-	// If the box type is unknown, the returned error is ErrUnknownBox
-	// and it's guaranteed that no bytes have been read from the box.
-	//Parse() (Box, error)
-
-	// Body returns the inner bytes of the box, ignoring the header.
-	// The body may start with the 4 byte header of a "Full Box" if the
-	// box's type derives from a full box. Most users will use Parse
-	// instead.
-	// Body will return a new reader at the beginning of the box if the
-	// outer box has already been parsed.
-	//Body() io.Reader
 }
 
 // Flags for a FullBox
