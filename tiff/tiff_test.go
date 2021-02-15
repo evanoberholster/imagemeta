@@ -2,13 +2,16 @@ package tiff
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"os"
 	"testing"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Tests
-func TestScan(t *testing.T) {
+func TestTiff(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename         string
 		byteOrder        binary.ByteOrder
@@ -30,11 +33,10 @@ func TestScan(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			tiff, err := ScanTiff(br)
+			h, err := ScanTiff(br)
 			if err != nil {
 				t.Fatal(err)
 			}
-			h := tiff.header
 			if h.ByteOrder != header.byteOrder {
 				t.Errorf("Incorrect Byte Order wanted %s got %s", header.byteOrder, h.ByteOrder)
 			}
@@ -44,6 +46,16 @@ func TestScan(t *testing.T) {
 			if h.TiffHeaderOffset != header.tiffHeaderOffset {
 				t.Errorf("Incorrect tiff Header Offset wanted 0x%04x got 0x%04x ", header.tiffHeaderOffset, h.TiffHeaderOffset)
 			}
+			if !h.IsValid() {
+				t.Errorf("Wanted valid tiff Header")
+			}
 		})
+	}
+
+	// Error No Tiff Header
+	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	_, err := ScanTiff(bytes.NewReader(buf))
+	if err != meta.ErrNoExif {
+		t.Errorf("Incorrect err wanted %s got %s ", meta.ErrNoExif, err)
 	}
 }
