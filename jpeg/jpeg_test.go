@@ -17,8 +17,8 @@ func TestJPEG(t *testing.T) {
 		width            uint16
 		height           uint16
 	}{
-		{"../testImages/JPEG.jpg", binary.LittleEndian, 13746, 12, 1000, 563},
-		{"../testImages/NoExif.jpg", binary.BigEndian, 8, 30, 50, 50},
+		{"testImages/JPEG.jpg", binary.LittleEndian, 13746, 12, 1000, 563},
+		{"testImages/NoExif.jpg", binary.BigEndian, 8, 30, 50, 50},
 	}
 	for _, jpg := range exifHeaderTests {
 		t.Run(jpg.filename, func(t *testing.T) {
