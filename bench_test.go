@@ -93,8 +93,11 @@ var (
 		{".CR2/GPS", "2.CR2"},
 		{".CR2/7D", "7D2.CR2"},
 		{".CR3", "1.CR3"},
+		{".CR3/R6", "canonR6.cr3"},
 		{".JPG/GPS", "17.jpg"},
 		{".HEIC", "1.heic"},
+		{".HEIC/iPhone11", "iPhone11Pro.heic"},
+		{".HEIC/iPhone12", "iPhone12.heic"},
 		{".GoPro/6", "hero6.jpg"},
 		{".NEF/Nikon", "2.NEF"},
 		{".ARW/Sony", "2.ARW"},
@@ -104,7 +107,7 @@ var (
 	}
 )
 
-func BenchmarkScanTiff200(b *testing.B) {
+func BenchmarkScanTiff100(b *testing.B) {
 	for _, bm := range benchmarksTiff {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -120,8 +123,10 @@ func BenchmarkScanTiff200(b *testing.B) {
 				br := bufio.NewReader(f)
 				b.StartTimer()
 				if _, err := tiff.ScanTiff(br); err != nil {
+
 					if err != ErrNoExif {
-						b.Fatal(err)
+						b.Error(err)
+						//	//b.Fatal(err)
 					}
 				}
 			}

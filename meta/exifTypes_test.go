@@ -26,8 +26,14 @@ func TestFocalLength(t *testing.T) {
 	}
 
 	if fl1 != fl2 {
-		t.Errorf("Incorrect FocalLength.MarshallText wanted %s got %s", fl1, fl2)
+		t.Errorf("Incorrect FocalLength.MarshalText wanted %s got %s", fl1, fl2)
 	}
+	// Insufficient Buffer Length
+	err = fl2.UnmarshalText([]byte(""))
+	if err != nil {
+		t.Errorf("Incorrect Error FocalLength.UnmarshalText wanted %s got %s", "nil", err)
+	}
+
 }
 
 func TestMeteringMode(t *testing.T) {
@@ -53,14 +59,41 @@ func TestMeteringMode(t *testing.T) {
 			t.Errorf("Incorrect MeteringMode.MarshallText wanted %s (%d) got %s (%d)", mm, uint8(mm), mm2, uint8(mm2))
 		}
 
+		if i >= 7 && i != 255 {
+			if mm.String() != "Unknown" {
+				t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", mm)
+			}
+		}
+
 	}
 }
 
-func TextExposureMode(t *testing.T) {
+func TestExposureProgram(t *testing.T) {
+	ep := ExposureProgram(1)
+	str := "Manual"
+	if ep.String() != str {
+		t.Errorf("Incorrect ExposureProgram.String wanted %s got %s", str, ep.String())
+	}
+}
+
+func TestExposureMode(t *testing.T) {
+	items := []struct {
+		str string
+		em  ExposureMode
+	}{
+		{"Auto", 0},
+		{"Manual", 1},
+		{"Auto bracket", 2},
+	}
+	for _, v := range items {
+		if v.em.String() != v.str {
+			t.Errorf("Incorrect ExposureMode.String wanted %s got %s", v.str, v.em.String())
+		}
+	}
 
 }
 
-func BenchmarkShutterSpeed100(b *testing.B) {
+func BenchmarkShutterSpeed(b *testing.B) {
 	for _, bm := range ssList {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
@@ -176,35 +209,47 @@ var ebList = []struct {
 	name string
 	eb   ExposureBias
 	str  string
+	n    int16
+	d    int16
 }{
-	{"test0", ExposureBias{1, 3}, "1/3"},
-	{"test1", ExposureBias{2, 3}, "2/3"},
-	{"test2", ExposureBias{-4, 3}, "-4/3"},
-	{"test3", ExposureBias{1, 0}, "0/0"},
+	{"test0", ExposureBias(259), "+1/3", 1, 3},
+	{"test1", ExposureBias(515), "+2/3", 2, 3},
+	{"test2", ExposureBias(-1021), "-4/3", -4, 3},
+	{"test3", ExposureBias(0), "0/0", 0, 0},
+	{"test4", ExposureBias(1283), "+5/3", 5, 3},
 }
 
 func TestExposureBias(t *testing.T) {
 	for _, eb := range ebList {
+		testEB := ExposureBias(0)
+		err := testEB.UnmarshalText([]byte(eb.str))
+		if testEB != eb.eb || err != nil {
+			t.Errorf("ExposureBias.MarshalText #%s, wanted %d got %d", eb.name, eb.eb, testEB)
+		}
 
 		// TextMarshall
-		txt, err := eb.eb.MarshalText()
+		_, err = eb.eb.MarshalText()
 		if err != nil {
 			t.Errorf("Error ExposureBias.MarshallText (%s): %s ", eb.name, err.Error())
 		}
-		assert.Equal(t, []byte(eb.str), txt, "ExposureBias.MarshalText #%s, wanted %d got %d", eb.name, eb.eb, []byte(eb.str))
+		assert.Equal(t, eb.eb, testEB, "ExposureBias.MarshalText #%s, wanted %d got %d", eb.name, eb.eb, testEB)
 
-		// UnmarshalText
-		//if err = b.UnmarshalText([]byte(strconv.Itoa(int(fm.m)))); err != nil {
-		//	t.Errorf("Error FlashMode.UnmarshalText (%s): %s ", fm.name, err.Error())
-		//}
-		//assert.Equal(t, fm.fm, b, "FlashMode.UnmarshalText #%s, wanted %d got %d", fm.name, fm.fm, b)
-
-		// String
-		assert.Equal(t, eb.str, eb.eb.String(), "ExposureBias.String #%s, wanted %s got %s", eb.name, eb.str, eb.eb.String())
+		if eb.str != eb.eb.String() {
+			t.Errorf("ExposureBias.String #%s, wanted %s got %s", eb.name, eb.str, eb.eb.String())
+		}
+		testEB = NewExposureBias(eb.n, eb.d)
+		if testEB != eb.eb {
+			t.Errorf("NewExposureBias #%s, wanted %s got %s", eb.name, testEB.String(), eb.eb.String())
+		}
+	}
+	str := "6/3"
+	eb2 := NewExposureBias(6, 3)
+	if eb2.String() != "+"+str {
+		t.Errorf("NewExposureBias #%s, wanted %s got %s", "Unsigned test", eb2.String(), "+"+str)
 	}
 }
 
-func BenchmarkExposureBias100(b *testing.B) {
+func BenchmarkExposureBias(b *testing.B) {
 	for _, eb := range ebList {
 		b.Run(eb.name, func(b *testing.B) {
 			b.ReportAllocs()
@@ -214,4 +259,14 @@ func BenchmarkExposureBias100(b *testing.B) {
 			}
 		})
 	}
+	//for _, eb := range ebList {
+	//	b.Run(eb.name, func(b *testing.B) {
+	//		b.ReportAllocs()
+	//		b.ResetTimer()
+	//		for i := 0; i < b.N; i++ {
+	//			testEB := ExposureBias(0)
+	//			testEB.UnmarshalText([]byte(eb.str))
+	//		}
+	//	})
+	//}
 }

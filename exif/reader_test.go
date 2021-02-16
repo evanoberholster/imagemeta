@@ -32,12 +32,12 @@ func TestExifReader(t *testing.T) {
 
 	// SetHeader
 	th := tiff.NewHeader(byteOrder, exifOffset, exifOffset, 0)
-	if err := er.SetHeader(th); err != nil {
+	if err := er.SetHeader(Header(th)); err != nil {
 		t.Errorf("Error with reader.SetHeader expected no error")
 	}
 
 	// SetHeader (Invalid Header)
-	if err := er.SetHeader(tiff.Header{}); err != ErrInvalidHeader {
+	if err := er.SetHeader(Header{}); err != ErrInvalidHeader {
 		t.Errorf("Error with reader.SetHeader %s, expected %s", err.Error(), ErrInvalidHeader.Error())
 	}
 

@@ -9,4 +9,7 @@ var (
 
 	// ErrNoExif is an error for when no exif is found
 	ErrNoExif = errors.New("error no Exif")
+
+	// ErrBufLength
+	ErrBufLength = errors.New("error buffer length insufficient")
 )

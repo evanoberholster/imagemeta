@@ -1,18 +1,18 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
 	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
-const testFilename = "../../test/img/10.jpg"
+const testFilename = "../../test/img/9.jpg"
 
 func main() {
 	f, err := os.Open(testFilename)
@@ -26,28 +26,29 @@ func main() {
 		}
 	}()
 	fmt.Println(testFilename)
-	//buf, _ := ioutil.ReadAll(f)
-	br := bufio.NewReader(f)
-
 	var x xmp.XMP
-	xmpDecodeFn := func(r io.Reader) error {
+	exifDecodeFn := func(r io.Reader, header exif.Header) error {
+		exif, err := exif.ParseExif(f, imagetype.ImageJPEG, header)
+		fmt.Println(exif, err)
+		fmt.Println(header)
+		return nil
+	}
+	xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
+		fmt.Println(header)
 		var err error
 		x, err = xmp.Read(r)
+		fmt.Println(x, err)
 		return err
 	}
 	start := time.Now()
-	m, err := imagemeta.ScanBuf2(br, imagetype.ImageJPEG, xmpDecodeFn)
-	//m, err := meta.Scan(f, imagetype.ImageJPEG)
+	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
 	if err != nil {
 		panic(err)
 	}
 
-	//x, err = xmp.Read(bytes.NewReader([]byte(m.XML())))
 	elapsed := time.Since(start)
-	fmt.Println(m.XMP())
-	fmt.Println(m.Size())
-	fmt.Println(m.Header())
+	//fmt.Println(m.XMP())
+	fmt.Println(m.Dimensions())
 	fmt.Println(elapsed)
-	fmt.Println(x, err)
 
 }

@@ -36,7 +36,7 @@ var (
 	}
 )
 
-func BenchmarkParseExif100(b *testing.B) {
+func BenchmarkScanExif100(b *testing.B) {
 	for _, bm := range testFilenames {
 		b.Run(bm, func(b *testing.B) {
 			f, err := os.Open(sampleDir + bm)
@@ -50,7 +50,7 @@ func BenchmarkParseExif100(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_, err = ParseExif(cb)
+				_, err = ScanExif(cb)
 				if err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
@@ -85,7 +85,7 @@ func BenchmarkParseExif100(b *testing.B) {
 //BenchmarkParseExif100/4.webp-8              	     826	   1536155 ns/op	    4432 B/op	       5 allocs/op
 //BenchmarkParseExif100/20.jpg-8              	     472	   2536924 ns/op	    4432 B/op	       5 allocs/op
 
-func BenchmarkScanExif100(b *testing.B) {
+func BenchmarkParseExif100(b *testing.B) {
 	for _, bm := range testFilenames {
 		b.Run(bm, func(b *testing.B) {
 			f, err := os.Open(sampleDir + bm)

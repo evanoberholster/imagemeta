@@ -58,7 +58,7 @@ func (t *Tag) readNamespace() {
 	var a []byte
 	var b []byte
 	a, t.raw = readUntil(t.raw, markerCo)
-	b, t.raw = readUntil(t.raw, markerSp)
+	b, t.raw = readUntil(t.raw, ' ')
 
 	// Clean up possible new line.
 	if len(b) > 0 {
@@ -73,7 +73,7 @@ func (t *Tag) nextAttr() bool {
 	if !t.isStopTag() {
 		for {
 			if len(t.raw) > 0 {
-				if t.raw[0] == markerSp {
+				if t.raw[0] == ' ' {
 					t.raw = t.raw[1:]
 					continue
 				}
@@ -81,10 +81,10 @@ func (t *Tag) nextAttr() bool {
 					t.raw = t.raw[1:]
 					continue
 				}
-				if t.raw[0] == markerGt {
+				if t.raw[0] == '>' {
 					return false
 				}
-				if t.raw[0] == forwardSlash && t.raw[1] == markerGt {
+				if t.raw[0] == '/' && t.raw[1] == '>' {
 					return false
 				}
 				return true
@@ -101,7 +101,7 @@ func (t *Tag) attr() (attr Attribute, err error) {
 	// Read Space
 	a, t.raw = readUntil(t.raw, markerCo)
 	// Read Name
-	b, t.raw = readUntil(t.raw, markerEq)
+	b, t.raw = readUntil(t.raw, '=')
 
 	// Clean up possible new line.
 	if len(b) > 0 {
@@ -208,9 +208,3 @@ var mapTagTypeString = map[tagType]string{
 	soloTag:  "Solo Tag",
 	stopTag:  "Stop Tag",
 }
-
-// tagType returns the Tag's type.
-// Either startTag, soloTag or stopTag.
-//func (t Tag) tagType() tagType {
-//	return t.t
-//}

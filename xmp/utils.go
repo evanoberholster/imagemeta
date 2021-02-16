@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 func readUntilByte(br Reader, end byte) (n int, err error) {
@@ -24,7 +24,7 @@ func readUntilByte(br Reader, end byte) (n int, err error) {
 
 func readUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
 	for i := 0; i < len(buf); i++ {
-		if buf[i] == delimiter || buf[i] == markerGt {
+		if buf[i] == delimiter || buf[i] == '>' {
 			return buf[:i], buf[i+1:]
 		}
 	}
@@ -42,16 +42,18 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	return
 }
 
-func parseUUID(buf []byte) UUID {
+func parseUUID(buf []byte) (uuid meta.UUID) {
 	_, b := readUntil(buf, ':')
 	if len(b) > 0 {
 		buf = b
 	}
-	a, err := uuid.FromString(string(buf))
-	if DebugMode {
-		fmt.Println("Parse UUID error: ", err)
+	err := uuid.UnmarshalText(buf)
+	if err != nil {
+		if DebugMode {
+			fmt.Println("Parse UUID error: ", err)
+		}
 	}
-	return UUID(a)
+	return
 }
 
 //func parseUint32(s string) uint32 {

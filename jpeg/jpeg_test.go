@@ -34,16 +34,16 @@ func TestJPEG(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if m.Header.ByteOrder != jpg.byteOrder {
-				t.Errorf("Incorrect Byte Order wanted %s got %s", jpg.byteOrder, m.Header.ByteOrder)
+			if m.ExifHeader.ByteOrder != jpg.byteOrder {
+				t.Errorf("Incorrect Byte Order wanted %s got %s", jpg.byteOrder, m.ExifHeader.ByteOrder)
 			}
-			if m.Header.FirstIfdOffset != jpg.firstIfdOffset {
-				t.Errorf("Incorrect first Ifd Offset wanted %d got %d ", jpg.firstIfdOffset, m.Header.FirstIfdOffset)
+			if m.ExifHeader.FirstIfdOffset != jpg.firstIfdOffset {
+				t.Errorf("Incorrect first Ifd Offset wanted %d got %d ", jpg.firstIfdOffset, m.ExifHeader.FirstIfdOffset)
 			}
-			if m.Header.TiffHeaderOffset != jpg.tiffHeaderOffset {
-				t.Errorf("Incorrect tiff Header Offset wanted %d got %d ", jpg.tiffHeaderOffset, m.Header.TiffHeaderOffset)
+			if m.ExifHeader.TiffHeaderOffset != jpg.tiffHeaderOffset {
+				t.Errorf("Incorrect tiff Header Offset wanted %d got %d ", jpg.tiffHeaderOffset, m.ExifHeader.TiffHeaderOffset)
 			}
-			if !m.Header.IsValid() {
+			if !m.ExifHeader.IsValid() {
 				t.Errorf("Wanted valid tiff Header")
 			}
 			width, height := m.Size()

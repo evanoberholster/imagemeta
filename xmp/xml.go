@@ -10,26 +10,34 @@ import (
 )
 
 // xmpRootTag starts with "<x:xmpmeta"
-var xmpRootTag = [10]byte{60, 120, 58, 120, 109, 112, 109, 101, 116, 97}
+var xmpRootTag = [10]byte{'<', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a'}
 
 const (
-	newLine      byte = 10   // "\n"
-	markerCo     byte = 58   // ":"
-	markerLt     byte = 60   // "<"
-	markerEq     byte = 61   // "="
-	markerGt     byte = 62   // ">"
-	markerSp     byte = 0x20 // " "
-	quotesAlt    byte = 0x27 // "'"
-	quotes       byte = 0x22 // """
-	forwardSlash byte = 0x2f // "/"
+	xmpBufferLength = 1024 * 6 // (6kb)
+)
+
+// Read markers
+// TODO: remove
+const (
+	newLine  byte = 10 // "\n"
+	markerCo byte = 58 // ":"
+	markerLt byte = 60 // "<"
+	//markerEq byte = 61 // "="
+	//markerGt     byte = 62   // ">"
+	//markerSp     byte = 0x20 // " "
+	quotesAlt byte = 0x27 // "'"
+	quotes    byte = 0x22 // """
+	//forwardSlash byte = 0x2f // "/"
 )
 
 // Read -
 func Read(r io.Reader) (XMP, error) {
 	var err error
-	xmp := XMP{
-		br: bufio.NewReaderSize(r, 1024*6),
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < xmpBufferLength {
+		br = bufio.NewReaderSize(r, xmpBufferLength)
 	}
+	xmp := XMP{br: br}
 	// find start of XML
 	if err = xmp.readRootTag(); err != nil {
 		return xmp, err
@@ -63,7 +71,7 @@ func (xmp *XMP) readRootTag() (err error) {
 		if buf[0] == xmpRootTag[0] {
 			if bytes.EqualFold(xmpRootTag[:], buf) {
 				// Read until end of the StartTag (RootTag)
-				_, err = readUntilByte(xmp.br, markerGt)
+				_, err = readUntilByte(xmp.br, '>')
 				return
 			}
 		}
@@ -244,12 +252,12 @@ func (xmp *XMP) readTagHeader(parent xmpns.Property) (t Tag, err error) {
 		return
 	}
 
-	if t.raw, err = xmp.br.ReadSlice(markerGt); err != nil {
+	if t.raw, err = xmp.br.ReadSlice('>'); err != nil {
 		return
 	}
 
 	// StopTag
-	if t.raw[0] == forwardSlash {
+	if t.raw[0] == '/' {
 		t.t = stopTag     // set type StopTag
 		t.raw = t.raw[1:] // remove forward slash
 
@@ -259,7 +267,7 @@ func (xmp *XMP) readTagHeader(parent xmpns.Property) (t Tag, err error) {
 	}
 
 	// StartTag or Solo Tag
-	if t.raw[len(t.raw)-2] == forwardSlash {
+	if t.raw[len(t.raw)-2] == '/' {
 		t.t = soloTag // set type SoloTag
 	} else {
 		t.t = startTag

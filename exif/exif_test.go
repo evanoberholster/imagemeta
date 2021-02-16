@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -15,6 +16,7 @@ import (
 
 var exifTests = []struct {
 	filename    string
+	imageType   imagetype.ImageType
 	make        string
 	model       string
 	ISOSpeed    int
@@ -24,10 +26,10 @@ var exifTests = []struct {
 	height      uint16
 	createdDate time.Time
 }{
-	{"../testImages/ARW.exif", "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
-	{"../testImages/NEF.exif", "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
-	{"../testImages/CR2.exif", "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
-	{"../testImages/Heic.exif", "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
+	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
+	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
+	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
+	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
 }
 
 func TestParseExif(t *testing.T) {
@@ -41,7 +43,7 @@ func TestParseExif(t *testing.T) {
 			}
 			buf, _ := ioutil.ReadAll(f)
 			cb := bytes.NewReader(buf)
-			e, err := ParseExif(cb)
+			e, err := ScanExif(cb)
 			if err != nil {
 				fmt.Println(err)
 			}

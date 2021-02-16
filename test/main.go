@@ -1,14 +1,15 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
-	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/bmff"
+	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/heic"
 )
 
 func main() {
@@ -28,7 +29,15 @@ func main() {
 		}
 	}()
 	bmff.Debug = true
-	hm := imagemeta.NewHeifMetadata(bufio.NewReader(f))
-	hm.GetMeta()
-
+	hm := heic.NewMetadata(f)
+	err = hm.GetMeta()
+	if err != nil {
+		fmt.Println(err)
+		// Error retrieving Heic Metadata
+	}
+	hm.ExifDecodeFn = func(r io.Reader, header exif.Header) error {
+		return nil
+	}
+	edata, err := hm.DecodeExif(f)
+	fmt.Println(edata, err)
 }

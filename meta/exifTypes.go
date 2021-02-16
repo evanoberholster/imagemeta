@@ -4,6 +4,8 @@ import (
 	"strconv"
 )
 
+//go:generate msgp
+
 // FocalLength is a Focal Length expressed in tenth of a mm.
 type FocalLength float32
 
@@ -42,7 +44,7 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 		*fl = FocalLength(f)
 		return
 	}
-	return err
+	return nil
 }
 
 // MeteringMode - Mode in which the image was metered.
@@ -79,7 +81,6 @@ func (mm MeteringMode) String() string {
 	case 255:
 		return "Other"
 	}
-	// TODO: Create debug catch
 	return "Unknown"
 }
 
@@ -241,13 +242,59 @@ var flashValues = map[FlashMode]string{
 }
 
 // Aperture contains the F-Number.
-// [0] Numerator [1] Denominator
-type Aperture [2]uint
+type Aperture float32
+
+// NewAperture returns a new Aperture by TextUnmarshal
+// the string. If an aperture was unable to be unmarshaled,
+// it returns 0.
+func NewAperture(aa string) Aperture {
+	return parseAperture([]byte(aa))
+}
+
+func parseAperture(buf []byte) Aperture {
+	// TODO: Improve parsing functionality
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == '/' {
+			if i < len(buf)+1 {
+				n := uint16(parseUint(buf[:i]))
+				d := uint16(parseUint(buf[i+1:]))
+				return Aperture(n / d)
+			}
+		}
+	}
+	return Aperture(0)
+}
+
+func (aa Aperture) String() string {
+	return strconv.FormatFloat(float64(aa), 'f', 2, 32)
+}
+
+// MarshalText implements the TextMarshaler interface that is
+// used by encoding/json
+func (aa Aperture) MarshalText() (text []byte, err error) {
+	buf := make([]byte, 4)
+	buf = strconv.AppendFloat(buf, float64(aa), 'f', 2, 32)
+	return buf, nil
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json.
+func (aa *Aperture) UnmarshalText(text []byte) (err error) {
+	fl, err := strconv.ParseFloat(string(text), 32)
+	*aa = Aperture(fl)
+	return err
+}
 
 // ShutterSpeed contains the shutter speed in seconds.
 // Limit to 1/2 and 1/3 stops
 // [0] Numerator [1] Denominator
 type ShutterSpeed [2]uint16
+
+// NewShutterSpeed creates a new ShutterSpeed with "n" as numerator and
+// "d" as denominator
+func NewShutterSpeed(n uint16, d uint16) ShutterSpeed {
+	return ShutterSpeed{n, d}
+}
 
 // parseShutterSpeed parses a ShutterSpeed time value from []byte.
 // Example: For less than 1 second: (1/250)
@@ -322,10 +369,26 @@ func (ss ShutterSpeed) String() string {
 	return string(buf)
 }
 
-// ExposureBias - [0] Numerator [1] Denominator
-type ExposureBias [2]int16
+// ExposureBias is the Exposure Bias of an image expressed as
+// a positive or negative fraction.
+// Bit1 = Sign
+// Bit2-7 = Numerator
+// Bit8-15 = Denominator
+// Bit16 = Empty
+type ExposureBias int16
 
-// String - String value of Exposure Bias
+// NewExposureBias creates a new Exposure Bias from the provided
+// "n" as numerator and "d" as denominator.
+//
+// To parse a string expressed as a positive or negative fraction.
+// ex: "+1/3" or ex: "-2/3" use ExposureBias.UnmarshalText.
+func NewExposureBias(n int16, d int16) ExposureBias {
+	n = n << 8
+	d = d << 8 >> 8
+	return ExposureBias(n + d)
+}
+
+// String returns the value of Exposure Bias as a string
 func (eb ExposureBias) String() string {
 	buf, _ := eb.MarshalText()
 	return string(buf)
@@ -334,11 +397,44 @@ func (eb ExposureBias) String() string {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (eb ExposureBias) MarshalText() (text []byte, err error) {
-	if eb[1] != 0 {
-		text = strconv.AppendInt(text, int64(eb[0]), 10)
-		text = append(text, '/')
-		text = strconv.AppendInt(text, int64(eb[1]), 10)
+	if eb == 0 {
+		return []byte{'0', '/', '0'}, nil
+	}
+	if eb > 0 {
+		text = make([]byte, 1, 5)
+		text[0] = '+' // Sign
+	} else {
+		text = make([]byte, 0, 5)
+	}
+	text = strconv.AppendInt(text, int64(eb>>8), 10)
+	text = append(text, '/')
+	text = strconv.AppendUint(text, uint64(uint16(eb)<<8>>8), 10)
+	return text, nil
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
+	if text[0] == '0' {
 		return
 	}
-	return []byte{'0', '/', '0'}, nil
+	for i := 0; i < len(text); i++ {
+		if text[i] == '/' {
+			if i < len(text)+1 {
+				var n int16
+				if text[0] == '+' {
+					n = int16(parseUint(text[1:i]))
+				} else if text[0] == '-' {
+					n = int16(parseUint(text[1:i])) * -1
+				} else {
+					n = int16(parseUint(text[:i]))
+				}
+				n = n << 8
+				n += int16(parseUint(text[i+1:]))
+				*eb = ExposureBias(n)
+				return err
+			}
+		}
+	}
+	return
 }

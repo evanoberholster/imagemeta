@@ -22,6 +22,10 @@ func NikonMkNoteHeader(reader io.Reader) (byteOrder binary.ByteOrder, err error)
 	}
 	// Nikon makernote header starts with "Nikon" with the first 5 bytes
 	if isNikonMkNoteHeaderBytes(mknoteHeader[:5]) {
+		//byteOrder := tiff.BinaryOrder(mknoteHeader[10:14])
+		//if byteOrder != nil {
+		//	return byteOrder, nil
+		//}
 		if isTiffBigEndian(mknoteHeader[10:14]) {
 			byteOrder = binary.BigEndian
 			return byteOrder, nil

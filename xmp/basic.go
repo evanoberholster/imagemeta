@@ -3,31 +3,9 @@ package xmp
 import (
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
-	uuid "github.com/satori/go.uuid"
 )
-
-// UUID is a [16]byte Universally Unique Identifier (UUID).
-// Based on github.com/satori/go.uuid
-type UUID uuid.UUID
-
-func (u UUID) String() string {
-	return uuid.UUID(u).String()
-}
-
-// MarshalText implements the TextMarshaler interface that is
-// used by encoding/json
-func (u UUID) MarshalText() (text []byte, err error) {
-	return uuid.UUID(u).MarshalText()
-}
-
-// UnmarshalText implements the TextUnmarshaler interface that is
-// used by encoding/json
-func (u *UUID) UnmarshalText(text []byte) (err error) {
-	uid, err := uuid.FromString(string(text))
-	*u = UUID(uid)
-	return err
-}
 
 func (basic *Basic) decode(p property) (err error) {
 	switch p.Name() {
@@ -93,14 +71,14 @@ type Basic struct {
 // Incomplete
 type XMPMM struct {
 	// DocumentId is the common identifier for all versions and renditions of a resource.
-	DocumentID UUID
+	DocumentID meta.UUID
 	// InstanceId is an identifier for a specific incarnation of a resource,
 	// updated each time a file is saved.
-	InstanceID UUID
+	InstanceID meta.UUID
 	// OriginalDocumentId is the common identifier for the original resource from which the current
 	// resource is derived. For example, if you save a resource to a different format,
 	// then save that one to another format, each save operation should generate a new
 	// xmpMM:DocumentID that uniquely identifies the resource in that format,
 	// but should retain the ID of the source file here.
-	OriginalDocumentID UUID
+	OriginalDocumentID meta.UUID
 }

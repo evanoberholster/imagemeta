@@ -1,4 +1,4 @@
-// Package xmp provides functions for decoding .xmp sidecar files
+// Package xmp provides functions for decoding .xmp sidecar files and XMP embedded within image files
 package xmp
 
 // DebugMode when true would print items not parsed in XMP
