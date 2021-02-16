@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/evanoberholster/imagemeta/xmp"
@@ -204,7 +205,7 @@ func (m *Metadata) readExif(buf []byte) (err error) {
 	exifLength := uint32(length)
 
 	// Set Tiff Header
-	m.ExifHeader = exif.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength)
+	m.ExifHeader = exif.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength, imagetype.ImageJPEG)
 
 	//fmt.Println("Exif Tiff Header:", m.Header)
 	// Read Exif Information

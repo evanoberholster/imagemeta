@@ -38,12 +38,14 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 	// Search Image for Metadata Header using
 	// Imagetype information
 
-	header, err := tiff.ScanTiff(br)
+	header, err := tiff.Scan(br)
 	if err != nil {
 		if err != ErrNoExif {
 			return
 		}
 	}
+	// Update Imagetype in ExifHeader
+	header.ImageType = it
 
 	// ExifData with an ExifReader attached
 	e = newExifData(er, it)

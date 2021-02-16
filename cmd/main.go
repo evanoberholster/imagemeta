@@ -12,7 +12,7 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
-const testFilename = "../../test/img/9.jpg"
+const testFilename = "../../test/img/canonR5.hif"
 
 func main() {
 	f, err := os.Open(testFilename)
@@ -49,6 +49,7 @@ func main() {
 	elapsed := time.Since(start)
 	//fmt.Println(m.XMP())
 	fmt.Println(m.Dimensions())
+	fmt.Println(m)
 	fmt.Println(elapsed)
 
 }

@@ -25,24 +25,42 @@ var (
 	ErrItemNotFound = errors.New("error item not found")
 )
 
+// Metadata is an Heic file's Metadata
 type Metadata struct {
 	// Reader
 	r io.Reader
 	// Custom Decoder interface
 	ExifDecodeFn exif.DecodeFn
+	ExifHeader   exif.Header
 	XmpDecodeFn  xmp.DecodeFn
+	XmpHeader    xmp.Header
 	FileType     bmff.FileTypeBox
 	Meta         bmff.MetaBox
 	//Thumbnail []byte
 	dim meta.Dimensions
 	n   uint16 // Num Images
+	t   imagetype.ImageType
 }
 
-func NewMetadata(r io.Reader) *Metadata {
-	return &Metadata{r: r}
+// NewMetadata returns a new heic.Metadata
+func NewMetadata(r io.Reader) (m *Metadata, err error) {
+	m = &Metadata{r: r, t: imagetype.ImageHEIF}
+	err = m.getMeta()
+	return m, err
 }
 
-func (hm *Metadata) GetMeta() (err error) {
+// Dimensions returns the meta.Dimensions of the
+// Primary Image.
+func (hm Metadata) Dimensions() meta.Dimensions {
+	return hm.dim
+}
+
+// Images returns the number of images.
+func (hm Metadata) Images() uint16 {
+	return hm.n
+}
+
+func (hm *Metadata) getMeta() (err error) {
 	bmr := bmff.NewReader(hm.r)
 
 	hm.FileType, err = bmr.ReadFtypBox()
@@ -53,6 +71,7 @@ func (hm *Metadata) GetMeta() (err error) {
 
 	hm.Meta, err = bmr.ReadMetaBox()
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -97,14 +116,15 @@ func (hm *Metadata) DecodeExif(r meta.Reader) (exif.Exif, error) {
 	if err != nil {
 		return nil, err
 	}
-	header, err := readExifBox(r, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
+	header, err := readExifBox(r, hm.t, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
 	if err != nil {
 		return nil, err
 	}
+
 	return exif.ParseExif(r, imagetype.ImageHEIF, header)
 }
 
-func readExifBox(r meta.Reader, offset uint64, length uint64) (header exif.Header, err error) {
+func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header exif.Header, err error) {
 	// Seek to Exif Box position
 	_, err = r.Seek(int64(offset), 0)
 	if err != nil {
@@ -129,7 +149,7 @@ func readExifBox(r meta.Reader, offset uint64, length uint64) (header exif.Heade
 	byteOrder := tiff.BinaryOrder(buf[:4])
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
 	tiffHeaderOffset := int64(offset) + size + 4
-	return exif.NewHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length)), nil
+	return exif.NewHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), imageType), nil
 }
 
 func readBox(r io.Reader, buf [8]byte, boxType string) (size int64, err error) {

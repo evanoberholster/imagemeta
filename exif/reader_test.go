@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
 
@@ -31,7 +32,7 @@ func TestExifReader(t *testing.T) {
 	}
 
 	// SetHeader
-	th := tiff.NewHeader(byteOrder, exifOffset, exifOffset, 0)
+	th := tiff.NewHeader(byteOrder, exifOffset, exifOffset, 0, imagetype.ImageUnknown)
 	if err := er.SetHeader(Header(th)); err != nil {
 		t.Errorf("Error with reader.SetHeader expected no error")
 	}

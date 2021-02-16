@@ -8,8 +8,6 @@ import (
 
 // TODO: write tests
 
-// TODO: write benchmarks
-
 var (
 	dir            = "../../test/img/"
 	benchmarksHeic = []struct {
@@ -49,8 +47,7 @@ func BenchmarkHeicDecodeExif(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				hm := NewMetadata(br)
-				err = hm.GetMeta()
+				hm, err := NewMetadata(br)
 				if err != nil {
 					b.Fatal(err)
 				}

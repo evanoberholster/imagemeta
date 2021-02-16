@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -14,20 +15,19 @@ const (
 	TiffHeaderLength = 16
 )
 
-// ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
+// Scan searches an io.Reader for a LittleEndian or BigEndian Tiff Header
 // and returns the TiffHeader
-func ScanTiff(r io.Reader) (Header, error) {
+func Scan(r io.Reader) (Header, error) {
 	br, ok := r.(*bufio.Reader)
 	if !ok {
 		br = bufio.NewReader(r)
 	}
-	return scanTIFF(br)
+	return scan(br)
 }
 
-// Search for the beginning of the EXIF information. The EXIF is near the
+// scan searchs for the beginning of the EXIF information. The EXIF is near the
 // beginning of most Image files, so this likely doesn't have a high cost.
-func scanTIFF(br *bufio.Reader) (header Header, err error) {
-	//tm = TiffMetadata{}
+func scan(br *bufio.Reader) (header Header, err error) {
 	discarded := 0
 
 	var buf []byte
@@ -54,7 +54,7 @@ func scanTIFF(br *bufio.Reader) (header Header, err error) {
 		// Found Tiff Header
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
-		return NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0), nil
+		return NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, imagetype.ImageTiff), nil
 	}
 }
 

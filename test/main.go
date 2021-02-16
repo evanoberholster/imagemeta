@@ -29,8 +29,7 @@ func main() {
 		}
 	}()
 	bmff.Debug = true
-	hm := heic.NewMetadata(f)
-	err = hm.GetMeta()
+	hm, err := heic.NewMetadata(f)
 	if err != nil {
 		fmt.Println(err)
 		// Error retrieving Heic Metadata
@@ -38,6 +37,9 @@ func main() {
 	hm.ExifDecodeFn = func(r io.Reader, header exif.Header) error {
 		return nil
 	}
+
 	edata, err := hm.DecodeExif(f)
 	fmt.Println(edata, err)
+
+	fmt.Println(hm.FileType)
 }

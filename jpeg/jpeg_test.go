@@ -17,8 +17,8 @@ func TestJPEG(t *testing.T) {
 		width            uint16
 		height           uint16
 	}{
-		{"testImages/JPEG.jpg", binary.LittleEndian, 13746, 12, 1000, 563},
-		{"testImages/NoExif.jpg", binary.BigEndian, 8, 30, 50, 50},
+		{"../testImages/JPEG.jpg", binary.LittleEndian, 13746, 12, 1000, 563},
+		{"../testImages/NoExif.jpg", binary.BigEndian, 8, 30, 50, 50},
 	}
 	for _, jpg := range exifHeaderTests {
 		t.Run(jpg.filename, func(t *testing.T) {
@@ -53,45 +53,47 @@ func TestJPEG(t *testing.T) {
 			}
 		})
 
-		data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-		r := bytes.NewReader(data)
-		m := newMetadata(bufio.NewReader(r), nil, nil)
+	}
+}
 
-		// Test discard
-		m.discard(0)
-		if m.discarded != 0 {
-			t.Errorf("Incorrect Metadata.discard wanted %d got %d", 0, m.discarded)
-		}
-		// Test Scan Markers
-		buf, _ := m.br.Peek(16)
-		err := m.scanMarkers(buf)
-		if err != nil {
-			t.Errorf("Incorrect Scan Markers error wanted %s got %s", err.Error(), ErrNoJPEGMarker)
-		}
+func TestSubJPEG(t *testing.T) {
+	data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	r := bytes.NewReader(data)
+	m := newMetadata(bufio.NewReader(r), nil, nil)
 
-		data = []byte{markerFirstByte, markerSOI, markerFirstByte, markerEOI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-		r = bytes.NewReader(data)
-		m = newMetadata(bufio.NewReader(r), nil, nil)
+	// Test discard
+	m.discard(0)
+	if m.discarded != 0 {
+		t.Errorf("Incorrect Metadata.discard wanted %d got %d", 0, m.discarded)
+	}
+	// Test Scan Markers
+	buf, _ := m.br.Peek(16)
+	err := m.scanMarkers(buf)
+	if err != nil {
+		t.Errorf("Incorrect Scan Markers error wanted %s got %s", err.Error(), ErrNoJPEGMarker)
+	}
 
-		// Test SOI
-		buf, _ = m.br.Peek(16)
-		err = m.scanMarkers(buf)
-		if m.discarded != 2 || m.pos != 1 || err != nil {
-			t.Errorf("Incorrect JPEG Start of Image error wanted discarded %d got %d", 2, m.discarded)
-		}
+	data = []byte{markerFirstByte, markerSOI, markerFirstByte, markerEOI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	r = bytes.NewReader(data)
+	m = newMetadata(bufio.NewReader(r), nil, nil)
 
-		// Test EOI
-		buf, _ = m.br.Peek(16)
-		err = m.scanMarkers(buf)
-		if m.discarded != 4 || m.pos != 0 || err != nil {
-			t.Errorf("Incorrect JPEG End of Image error wanted discarded %d got %d", 4, m.discarded)
-		}
+	// Test SOI
+	buf, _ = m.br.Peek(16)
+	err = m.scanMarkers(buf)
+	if m.discarded != 2 || m.pos != 1 || err != nil {
+		t.Errorf("Incorrect JPEG Start of Image error wanted discarded %d got %d", 2, m.discarded)
+	}
 
-		// Test Scan JPEG
-		m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), nil, nil)
-		if err != ErrNoJPEGMarker {
-			t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
-		}
+	// Test EOI
+	buf, _ = m.br.Peek(16)
+	err = m.scanMarkers(buf)
+	if m.discarded != 4 || m.pos != 0 || err != nil {
+		t.Errorf("Incorrect JPEG End of Image error wanted discarded %d got %d", 4, m.discarded)
+	}
 
+	// Test Scan JPEG
+	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), nil, nil)
+	if err != ErrNoJPEGMarker {
+		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 	}
 }

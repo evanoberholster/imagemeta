@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
 
@@ -20,7 +21,8 @@ func (h Header) IsValid() bool {
 }
 
 // NewHeader returns a new exif.Header.
-func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32) Header {
+// NewHeader returns a new TiffHeader.
+func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) Header {
 	return Header{
 		ByteOrder:        byteOrder,
 		FirstIfdOffset:   firstIfdOffset,
