@@ -7,34 +7,34 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-func (basic *Basic) decode(p property) (err error) {
-	switch p.Name() {
+func (basic *Basic) parse(p property) (err error) {
+	switch p.Property().Name() {
 	case xmpns.CreateDate:
-		basic.CreateDate, err = parseDate(p.val)
+		basic.CreateDate, err = parseDate(p.Value())
 	case xmpns.CreatorTool:
-		basic.CreatorTool = parseString(p.val)
+		basic.CreatorTool = parseString(p.Value())
 	case xmpns.Label:
-		basic.Label = parseString(p.val)
+		basic.Label = parseString(p.Value())
 	case xmpns.MetadataDate:
-		basic.MetadataDate, err = parseDate(p.val)
+		basic.MetadataDate, err = parseDate(p.Value())
 	case xmpns.ModifyDate:
-		basic.ModifyDate, err = parseDate(p.val)
+		basic.ModifyDate, err = parseDate(p.Value())
 	case xmpns.Rating:
-		basic.Rating = int8(parseInt(p.val))
+		basic.Rating = int8(parseInt(p.Value()))
 	default:
 		return ErrPropertyNotSet
 	}
 	return
 }
 
-func (mm *XMPMM) decode(p property) (err error) {
-	switch p.Name() {
+func (mm *XMPMM) parse(p property) (err error) {
+	switch p.Property().Name() {
 	case xmpns.DocumentID:
-		mm.DocumentID = parseUUID(p.val)
+		mm.DocumentID = parseUUID(p.Value())
 	case xmpns.OriginalDocumentID:
-		mm.OriginalDocumentID = parseUUID(p.val)
+		mm.OriginalDocumentID = parseUUID(p.Value())
 	case xmpns.InstanceID:
-		mm.InstanceID = parseUUID(p.val)
+		mm.InstanceID = parseUUID(p.Value())
 	default:
 		return ErrPropertyNotSet
 	}

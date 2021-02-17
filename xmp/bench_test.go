@@ -2,13 +2,14 @@ package xmp
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 )
 
 var (
-	dir = "test/samples/CanonEOS7DII.xmp"
+	dir = "test/jpeg.xmp"
 )
 
 // BenchmarkXMPRead200 	   27654	     45272 ns/op	    6784 B/op	      16 allocs/op
@@ -16,7 +17,12 @@ var (
 // BenchmarkXMPRead200 	   28201	     42819 ns/op	    6240 B/op	       2 allocs/op
 // BenchmarkXMPRead200 	   33976	     34644 ns/op	    6240 B/op	       2 allocs/op
 
+// 7D MKII
+// BenchmarkXMPRead200 	   22694	     52323 ns/op	    7248 B/op	      29 allocs/op
 // BenchmarkXMPRead200 	   23542	     50447 ns/op	    7248 B/op	      29 allocs/op
+
+// New
+//BenchmarkXMPRead200 	   19147	     58285 ns/op	    8576 B/op	     217 allocs/op
 
 // Walk
 // BenchmarkXMPRead200 	    6062	    191794 ns/op	   23920 B/op	     425 allocs/op
@@ -32,7 +38,10 @@ var (
 // BenchmarkXMPRead200 	  101613	     11894 ns/op	    5024 B/op	      62 allocs/op
 // BenchmarkXMPRead200 	  103136	     10140 ns/op	    5024 B/op	      62 allocs/op
 // BenchmarkXMPRead200 	   96708	     12042 ns/op	    5024 B/op	      62 allocs/op
-func BenchmarkXMPRead200(b *testing.B) {
+
+// BenchmarkXMPRead 	   25029	     43387 ns/op	    1888 B/op	      22 allocs/op
+// BenchmarkXMPRead 	   26578	     49513 ns/op	    2784 B/op	      23 allocs/op
+func BenchmarkXMPRead(b *testing.B) {
 	f, err := os.Open(dir) //+ "6D.xmp")
 	if err != nil {
 		panic(err)
@@ -48,41 +57,12 @@ func BenchmarkXMPRead200(b *testing.B) {
 		b.StopTimer()
 		r2.Seek(0, 0)
 		b.StartTimer()
-		if _, err := Read(r2); err != nil {
-			b.Fatal(err)
+
+		if _, err := ParseXmp(r2); err != nil {
+			if err != io.EOF {
+				b.Fatal(err)
+			}
 		}
 	}
-
-}
-
-// BenchmarkAttribute100/1         	 5594470	       228 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkAttribute100/2         	 5680426	       208 ns/op	       0 B/op	       0 allocs/op
-
-// BenchmarkAttribute100/1         	 5663703	       206 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkAttribute100/2         	 6010375	       202 ns/op	       0 B/op	       0 allocs/op
-func BenchmarkAttribute100(b *testing.B) {
-	tag := Tag{
-		raw: []byte("xmpMM:InstanceID=\"xmp.iid:f43404a9-81d4-4ea2-b1ce-e2ecf2b852e6\""),
-	}
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.Run("1", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			b.StopTimer()
-			tag.raw = []byte("xmpMM:InstanceID=\"xmp.iid:f43404a9-81d4-4ea2-b1ce-e2ecf2b852e6\"")
-			b.StartTimer()
-			tag.nextAttr()
-		}
-	})
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.Run("2", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			b.StopTimer()
-			tag.raw = []byte("xmpMM:InstanceID=\"xmp.iid:f43404a9-81d4-4ea2-b1ce-e2ecf2b852e6\"")
-			b.StartTimer()
-			//tag.readAttr2()
-		}
-	})
 
 }
