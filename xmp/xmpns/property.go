@@ -9,6 +9,8 @@ var (
 	RDFDescription = NewProperty(RdfNS, Description)
 	// RDFSeq is the rdf:Seq Property
 	RDFSeq = NewProperty(RdfNS, Seq)
+	// RDFBag is the rdf:Seq Property
+	RDFBag = NewProperty(RdfNS, Bag)
 	// RDFAlt is the rdf:Alt Property
 	RDFAlt = NewProperty(RdfNS, Alt)
 	// RDFLi is the rdf:Li Property

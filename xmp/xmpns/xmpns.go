@@ -39,6 +39,7 @@ const (
 	PmiNS
 	// xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	RdfNS
+	StDimNS
 	// xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
 	StEvtNS
 	// xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
@@ -55,6 +56,7 @@ const (
 	XMLnsNS
 	// xmlns:xmp="http://ns.adobe.com/xap/1.0/"
 	XmpNS
+	XmpDMNS
 	// xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
 	XmpMMNS
 )
@@ -71,6 +73,7 @@ var mapStringNS = map[string]Namespace{
 	"photoshop": PhotoshopNS,
 	"pmi":       PmiNS,
 	"rdf":       RdfNS,
+	"stDim":     StDimNS,
 	"stEvt":     StEvtNS,
 	"stRef":     StRefNS,
 	"tiff":      TiffNS,
@@ -80,6 +83,7 @@ var mapStringNS = map[string]Namespace{
 	"xml":       XMLNS,
 	"xmlns":     XMLnsNS,
 	"xmp":       XmpNS,
+	"xmpDM":     XmpDMNS,
 	"xmpMM":     XmpMMNS,
 }
 
@@ -95,6 +99,7 @@ var mapNSString = map[Namespace]string{
 	PhotoshopNS: "photoshop",
 	PmiNS:       "pmi",
 	RdfNS:       "rdf",
+	StDimNS:     "stDim",
 	StEvtNS:     "stEvt",
 	StRefNS:     "stRef",
 	TiffNS:      "tiff",
@@ -104,5 +109,6 @@ var mapNSString = map[Namespace]string{
 	XMLNS:       "xml",
 	XMLnsNS:     "xmlns",
 	XmpNS:       "xmp",
+	XmpDMNS:     "xmpDM",
 	XmpMMNS:     "xmpMM",
 }

@@ -19,6 +19,12 @@ func IdentifyName(buf []byte) (n Name) {
 const (
 	UnknownPropertyName Name = iota
 
+	VideoFrameRate
+	VideoPixelDepth
+	VideoPixelAspectRatio
+	VideoFieldOrder
+	TapeName
+	AltTapeName
 	About // about
 	Action
 	AlreadyApplied
@@ -143,11 +149,38 @@ const (
 	XmpMeta
 	XResolution
 	YResolution
+
+	XmpDM
+	StDim
+	Xap
+	Dc
+	VideoFrameSize
+	W
+	H
+	StartTimecode
+	TimeValue
+	AltTimecode
 )
 
 // mapNameString returns Name's value as a string
 var mapNameString = map[Name]string{
 	UnknownPropertyName:       "Unknown",
+	VideoFrameSize:            "videoFrameSize",
+	W:                         "w",
+	H:                         "h",
+	StartTimecode:             "startTimecode",
+	TimeValue:                 "timeValue",
+	AltTimecode:               "altTimecode",
+	XmpDM:                     "xmpDM",
+	StDim:                     "stDim",
+	Xap:                       "xap",
+	Dc:                        "dc",
+	VideoFrameRate:            "videoFrameRate",
+	VideoPixelDepth:           "videoPixelDepth",
+	VideoPixelAspectRatio:     "videoPixelAspectRatio",
+	VideoFieldOrder:           "videoFieldOrder",
+	TapeName:                  "tapeName",
+	AltTapeName:               "altTapeName",
 	About:                     "about",
 	Action:                    "action",
 	AlreadyApplied:            "AlreadyApplied",
@@ -276,6 +309,22 @@ var mapNameString = map[Name]string{
 
 // mapStringName returns string's value as a Name
 var mapStringName = map[string]Name{
+	"videoFrameSize":            VideoFrameSize,
+	"w":                         W,
+	"h":                         H,
+	"startTimecode":             StartTimecode,
+	"timeValue":                 TimeValue,
+	"altTimecode":               AltTimecode,
+	"xmpDM":                     XmpDM,
+	"stDim":                     StDim,
+	"xap":                       Xap,
+	"dc":                        Dc,
+	"videoFrameRate":            VideoFrameRate,
+	"videoPixelDepth":           VideoPixelDepth,
+	"videoPixelAspectRatio":     VideoPixelAspectRatio,
+	"videoFieldOrder":           VideoFieldOrder,
+	"tapeName":                  TapeName,
+	"altTapeName":               AltTapeName,
 	"about":                     About,
 	"action":                    Action,
 	"AlreadyApplied":            AlreadyApplied,
@@ -366,6 +415,7 @@ var mapStringName = map[string]Name{
 	"PlanarConfiguration":       PlanarConfiguration,
 	"Rating":                    Rating,
 	"RawFileName":               RawFileName,
+	"rdf":                       RDF,
 	"RDF":                       RDF,
 	"RecommendedExposureIndex":  RecommendedExposureIndex,
 	"RedEyeMode":                RedEyeMode,
