@@ -272,7 +272,7 @@ func (aa Aperture) String() string {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (aa Aperture) MarshalText() (text []byte, err error) {
-	buf := make([]byte, 4)
+	buf := make([]byte, 0, 4)
 	buf = strconv.AppendFloat(buf, float64(aa), 'f', 2, 32)
 	return buf, nil
 }

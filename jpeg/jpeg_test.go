@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestJPEG(t *testing.T) {
+func TestScanJPEG(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename         string
 		byteOrder        binary.ByteOrder
@@ -56,7 +56,7 @@ func TestJPEG(t *testing.T) {
 	}
 }
 
-func TestSubJPEG(t *testing.T) {
+func TestScanMarkers(t *testing.T) {
 	data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r := bytes.NewReader(data)
 	m := newMetadata(bufio.NewReader(r), nil, nil)
