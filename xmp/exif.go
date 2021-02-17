@@ -65,13 +65,13 @@ func (exif *Exif) parse(p property) (err error) {
 	case xmpns.DateTimeOriginal:
 		exif.DateTimeOriginal, _ = parseDate(p.Value())
 	case xmpns.ExposureTime:
-		exif.ExposureTime.UnmarshalText(p.Value())
+		err = exif.ExposureTime.UnmarshalText(p.Value())
 	case xmpns.ExposureProgram:
 		exif.ExposureProgram = meta.ExposureProgram(uint8(parseUint(p.Value())))
 	case xmpns.ExposureMode:
 		exif.ExposureMode = meta.ExposureMode(uint8(parseUint(p.Value())))
 	case xmpns.ExposureBiasValue:
-		exif.ExposureBias.UnmarshalText(p.Value())
+		err = exif.ExposureBias.UnmarshalText(p.Value())
 	case xmpns.FocalLength:
 		n, d := parseRational(p.Value())
 		exif.FocalLength = meta.FocalLength(float32(n) / float32(d))
