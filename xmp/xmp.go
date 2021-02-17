@@ -74,16 +74,14 @@ func ParseXmp(r io.Reader) (xmp XMP, err error) {
 func (br *bufReader) readTag(xmp *XMP, parent Tag) (tag Tag, err error) {
 	for {
 		if tag, err = br.readTagHeader(parent); err != nil {
-			return
+			break
 		}
 		if tag.isEndTag(parent.self) {
-
-			return
+			break
 		}
 		var attr Attribute
 		for br.hasAttribute() {
-			attr, err = br.readAttribute(&tag)
-			if err != nil {
+			if attr, err = br.readAttribute(&tag); err != nil {
 				return
 			}
 			// Parse Attribute Value
