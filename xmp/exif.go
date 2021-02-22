@@ -54,6 +54,7 @@ type Exif struct {
 	MeteringMode     meta.MeteringMode
 	Aperture         meta.Aperture
 	FocalLength      meta.FocalLength
+	SubjectDistance  float32
 	GPSLatitude      float64
 	GPSLongitude     float64
 	GPSAltitude      float32
@@ -75,6 +76,9 @@ func (exif *Exif) parse(p property) (err error) {
 	case xmpns.FocalLength:
 		n, d := parseRational(p.Value())
 		exif.FocalLength = meta.FocalLength(float32(n) / float32(d))
+	case xmpns.SubjectDistance:
+		n, d := parseRational(p.Value())
+		exif.SubjectDistance = float32(float32(n) / float32(d))
 	case xmpns.MeteringMode:
 		exif.MeteringMode = meta.NewMeteringMode(uint8(parseUint(p.Value())))
 	case xmpns.FNumber:
@@ -97,14 +101,18 @@ type Aux struct {
 	Lens                     string
 	LensID                   uint32
 	LensSerialNumber         string
-	ImageNumber              uint16 // string
-	ApproximateFocusDistance string // rational
-	FlashCompensation        string // rational
+	ImageNumber              uint16
+	ApproximateFocusDistance string            // rational
+	FlashCompensation        meta.ExposureBias // rational
 	Firmware                 string
 }
 
 func (aux *Aux) parse(p property) (err error) {
 	switch p.Name() {
+	case xmpns.FlashCompensation:
+		err = aux.FlashCompensation.UnmarshalText(p.Value())
+	case xmpns.ImageNumber:
+		aux.ImageNumber = uint16(parseUint(p.Value()))
 	case xmpns.SerialNumber:
 		aux.SerialNumber = parseString(p.Value())
 	case xmpns.Lens:

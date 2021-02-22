@@ -84,8 +84,13 @@ func (mm MeteringMode) String() string {
 	return "Unknown"
 }
 
-// MarshalText implements the TextMarshaler interface that is
+// MarshalJSON implements the JSONMarshaler interface that is
 // used by encoding/json
+func (mm MeteringMode) MarshalJSON() (buf []byte, err error) {
+	return strconv.AppendUint(buf, uint64(mm), 10), nil
+}
+
+// MarshalText implements the TextMarshaler interface
 func (mm MeteringMode) MarshalText() (text []byte, err error) {
 	return []byte(mm.String()), nil
 }

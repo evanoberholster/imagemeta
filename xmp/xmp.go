@@ -9,21 +9,6 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-// Common Errors
-var (
-	ErrNoValue      = errors.New("property has no value")
-	ErrNegativeRead = errors.New("error negative read")
-	ErrBufferFull   = bufio.ErrBufferFull
-)
-
-const (
-	maxTagValueSize  = 256
-	maxTagHeaderSize = 64
-)
-
-// DebugMode when true would print items not parsed in XMP
-var DebugMode = false
-
 // XMP contains the XML namespaces represented
 type XMP struct {
 	Aux   Aux        // xmlns:aux="http://ns.adobe.com/exif/1.0/aux/"
@@ -35,12 +20,16 @@ type XMP struct {
 	MM    XMPMM
 }
 
-// Errors
+// Common Errors
 var (
+
 	// ErrNoXMP is returned when no XMP Root Tag is found.
 	ErrNoXMP          = errors.New("xmp: error XMP not found")
 	ErrPropertyNotSet = errors.New("xmp: error property not set")
 )
+
+// DebugMode when true would print items not parsed in XMP
+var DebugMode = false
 
 const (
 	xmpBufferLength = 1024 * (3 / 2) // (1.5kb)
@@ -66,10 +55,9 @@ func ParseXmp(r io.Reader) (xmp XMP, err error) {
 			return xmp, err
 		}
 		if tag.isRootStopTag() {
-			break
+			return
 		}
 	}
-	return xmp, nil
 }
 
 func (br *bufReader) readTag(xmp *XMP, parent Tag) (tag Tag, err error) {
@@ -110,7 +98,9 @@ func (br *bufReader) readTag(xmp *XMP, parent Tag) (tag Tag, err error) {
 				}
 			}
 		}
-
+		if tag.isRootStopTag() {
+			return
+		}
 	}
 	return
 }

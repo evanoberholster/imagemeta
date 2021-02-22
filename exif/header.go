@@ -28,5 +28,6 @@ func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,
+		ImageType:        imageType,
 	}
 }

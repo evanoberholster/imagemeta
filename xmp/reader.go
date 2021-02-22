@@ -13,6 +13,19 @@ import (
 // xmpRootTag starts with "<x:xmpmeta"
 var xmpRootTag = [10]byte{'<', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a'}
 
+// Reader errors
+var (
+	ErrNoValue      = errors.New("property has no value")
+	ErrNegativeRead = errors.New("error negative read")
+	ErrBufferFull   = bufio.ErrBufferFull
+)
+
+// Reader blocksizes
+const (
+	maxTagValueSize  = 256
+	maxTagHeaderSize = 64
+)
+
 type bufReader struct {
 	r *bufio.Reader
 	a bool
@@ -158,6 +171,8 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 				goto end
 			}
 		}
+		// large white spaces in xmp files
+
 		s += maxTagHeaderSize
 	}
 end:

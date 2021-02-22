@@ -160,11 +160,36 @@ const (
 	StartTimecode
 	TimeValue
 	AltTimecode
+
+	PreservedFileName
+	BitsPerSample
+
+	CompressedBitsPerPixel
+	BrightnessValue
+	FocalLengthIn35mmFilm
+	GPSDifferential
+	GPSStatus
+	ImageDescription
+	Software
+	YCbCrPositioning
+
+	instanceID
 )
 
 // mapNameString returns Name's value as a string
 var mapNameString = map[Name]string{
+
 	UnknownPropertyName:       "Unknown",
+	CompressedBitsPerPixel:    "CompressedBitsPerPixel",
+	BrightnessValue:           "BrightnessValue",
+	FocalLengthIn35mmFilm:     "FocalLengthIn35mmFilm",
+	GPSDifferential:           "GPSDifferential",
+	GPSStatus:                 "GPSStatus",
+	ImageDescription:          "ImageDescription",
+	Software:                  "Software",
+	YCbCrPositioning:          "YCbCrPositioning",
+	PreservedFileName:         "PreservedFileName",
+	BitsPerSample:             "BitsPerSample",
 	VideoFrameSize:            "videoFrameSize",
 	W:                         "w",
 	H:                         "h",
@@ -309,7 +334,17 @@ var mapNameString = map[Name]string{
 
 // mapStringName returns string's value as a Name
 var mapStringName = map[string]Name{
+	"CompressedBitsPerPixel":    CompressedBitsPerPixel,
+	"BrightnessValue":           BrightnessValue,
+	"FocalLengthIn35mmFilm":     FocalLengthIn35mmFilm,
+	"GPSDifferential":           GPSDifferential,
+	"GPSStatus":                 GPSStatus,
+	"ImageDescription":          ImageDescription,
+	"Software":                  Software,
+	"YCbCrPositioning":          YCbCrPositioning,
 	"videoFrameSize":            VideoFrameSize,
+	"PreservedFileName":         PreservedFileName,
+	"BitsPerSample":             BitsPerSample,
 	"w":                         W,
 	"h":                         H,
 	"startTimecode":             StartTimecode,
@@ -385,6 +420,7 @@ var mapStringName = map[string]Name{
 	"ImageLength":               ImageLength,
 	"ImageNumber":               ImageNumber,
 	"ImageWidth":                ImageWidth,
+	"instanceID":                InstanceID,
 	"InstanceID":                InstanceID,
 	"InteroperabilityIndex":     InteroperabilityIndex,
 	"ISOSpeedRatings":           ISOSpeedRatings,

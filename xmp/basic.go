@@ -81,4 +81,15 @@ type XMPMM struct {
 	// xmpMM:DocumentID that uniquely identifies the resource in that format,
 	// but should retain the ID of the source file here.
 	OriginalDocumentID meta.UUID
+
+	History []History
+}
+
+// History is an XMPMM History sequence
+type History struct {
+	Changed    string
+	Action     string
+	InstanceID meta.UUID
+	Date       time.Time
+	Software   string // softwareAgent
 }

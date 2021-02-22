@@ -121,7 +121,7 @@ func (hm *Metadata) DecodeExif(r meta.Reader) (exif.Exif, error) {
 		return nil, err
 	}
 
-	return exif.ParseExif(r, imagetype.ImageHEIF, header)
+	return exif.ParseExif(r, header)
 }
 
 func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header exif.Header, err error) {

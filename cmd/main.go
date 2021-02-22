@@ -8,7 +8,6 @@ import (
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
@@ -28,9 +27,8 @@ func main() {
 	fmt.Println(testFilename)
 	var x xmp.XMP
 	exifDecodeFn := func(r io.Reader, header exif.Header) error {
-		exif, err := exif.ParseExif(f, imagetype.ImageJPEG, header)
+		exif, err := exif.ParseExif(f, header)
 		fmt.Println(exif, err)
-		fmt.Println(header)
 		return nil
 	}
 	xmpDecodeFn := func(r io.Reader, header xmp.Header) error {

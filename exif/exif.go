@@ -68,11 +68,11 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 // returns exif and an error.
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt, it imagetype.ImageType, header Header) (e *ExifData, err error) {
+func ParseExif(r io.ReaderAt, header Header) (e *ExifData, err error) {
 	er := newExifReader(r, nil, 0)
 
 	// ExifData with an ExifReader attached
-	e = newExifData(er, it)
+	e = newExifData(er, header.ImageType)
 
 	// Set TiffHeader sets the ExifReader and checks
 	// the header's validity.
