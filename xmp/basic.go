@@ -3,60 +3,38 @@ package xmp
 import (
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
-	uuid "github.com/satori/go.uuid"
 )
 
-// UUID is a [16]byte Universally Unique Identifier (UUID).
-// Based on github.com/satori/go.uuid
-type UUID uuid.UUID
-
-func (u UUID) String() string {
-	return uuid.UUID(u).String()
-}
-
-// MarshalText implements the TextMarshaler interface that is
-// used by encoding/json
-func (u UUID) MarshalText() (text []byte, err error) {
-	return uuid.UUID(u).MarshalText()
-}
-
-// UnmarshalText implements the TextUnmarshaler interface that is
-// used by encoding/json
-func (u *UUID) UnmarshalText(text []byte) (err error) {
-	uid, err := uuid.FromString(string(text))
-	*u = UUID(uid)
-	return err
-}
-
-func (basic *Basic) decode(p property) (err error) {
-	switch p.Name() {
+func (basic *Basic) parse(p property) (err error) {
+	switch p.Property().Name() {
 	case xmpns.CreateDate:
-		basic.CreateDate, err = parseDate(p.val)
+		basic.CreateDate, err = parseDate(p.Value())
 	case xmpns.CreatorTool:
-		basic.CreatorTool = parseString(p.val)
+		basic.CreatorTool = parseString(p.Value())
 	case xmpns.Label:
-		basic.Label = parseString(p.val)
+		basic.Label = parseString(p.Value())
 	case xmpns.MetadataDate:
-		basic.MetadataDate, err = parseDate(p.val)
+		basic.MetadataDate, err = parseDate(p.Value())
 	case xmpns.ModifyDate:
-		basic.ModifyDate, err = parseDate(p.val)
+		basic.ModifyDate, err = parseDate(p.Value())
 	case xmpns.Rating:
-		basic.Rating = int8(parseInt(p.val))
+		basic.Rating = int8(parseInt(p.Value()))
 	default:
 		return ErrPropertyNotSet
 	}
 	return
 }
 
-func (mm *XMPMM) decode(p property) (err error) {
-	switch p.Name() {
+func (mm *XMPMM) parse(p property) (err error) {
+	switch p.Property().Name() {
 	case xmpns.DocumentID:
-		mm.DocumentID = parseUUID(p.val)
+		mm.DocumentID = parseUUID(p.Value())
 	case xmpns.OriginalDocumentID:
-		mm.OriginalDocumentID = parseUUID(p.val)
+		mm.OriginalDocumentID = parseUUID(p.Value())
 	case xmpns.InstanceID:
-		mm.InstanceID = parseUUID(p.val)
+		mm.InstanceID = parseUUID(p.Value())
 	default:
 		return ErrPropertyNotSet
 	}
@@ -93,14 +71,25 @@ type Basic struct {
 // Incomplete
 type XMPMM struct {
 	// DocumentId is the common identifier for all versions and renditions of a resource.
-	DocumentID UUID
+	DocumentID meta.UUID
 	// InstanceId is an identifier for a specific incarnation of a resource,
 	// updated each time a file is saved.
-	InstanceID UUID
+	InstanceID meta.UUID
 	// OriginalDocumentId is the common identifier for the original resource from which the current
 	// resource is derived. For example, if you save a resource to a different format,
 	// then save that one to another format, each save operation should generate a new
 	// xmpMM:DocumentID that uniquely identifies the resource in that format,
 	// but should retain the ID of the source file here.
-	OriginalDocumentID UUID
+	OriginalDocumentID meta.UUID
+
+	History []History
+}
+
+// History is an XMPMM History sequence
+type History struct {
+	Changed    string
+	Action     string
+	InstanceID meta.UUID
+	Date       time.Time
+	Software   string // softwareAgent
 }

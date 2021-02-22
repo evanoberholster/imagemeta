@@ -1,5 +1,7 @@
-// Package canon provides data types and functions for representing canon makernote values
+// Package canon provides data types and functions for representing Canon Camera Makernote values
 package canon
+
+//go:generate msgp
 
 // ContinuousDrive is part of the CanonCameraSettings field
 type ContinuousDrive int16

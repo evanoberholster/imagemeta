@@ -200,16 +200,18 @@ func isCR3(buf []byte) bool {
 // isHeif returns true if the header matches the start of a HEIF file.
 // TODO: missing major brand and minor brand
 // TODO: Implement better ISOBMFF Box identification
+// Major brands: heic, mif1, heix
 func isHeif(buf []byte) bool {
 	return isFTYPBox(buf) &&
-		((buf[8] == 0x68 &&
-			buf[9] == 0x65 &&
-			buf[10] == 0x69 &&
-			buf[11] == 0x63) ||
-			(buf[8] == 0x6D &&
-				buf[9] == 0x69 &&
-				buf[10] == 0x66 &&
-				buf[11] == 0x31))
+		(isFTYPBrand(buf[8:12], "heic") ||
+			isFTYPBrand(buf[8:12], "mif1") ||
+			isFTYPBrand(buf[8:12], "heix"))
+}
+
+// isFTYPBrand returns true if the Brand in []byte matches the brand in str.
+// the Limit is 4 bytes
+func isFTYPBrand(buf []byte, str string) bool {
+	return buf[0] == str[0] && buf[1] == str[1] && buf[2] == str[2] && buf[3] == str[3]
 }
 
 // isFTYPBox returns true if the header matches an ftyp box.

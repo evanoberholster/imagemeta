@@ -14,10 +14,10 @@ type CRS struct {
 	RawFileName string
 }
 
-func (crs *CRS) decode(p property) (err error) {
+func (crs *CRS) parse(p property) (err error) {
 	switch p.Name() {
 	case xmpns.RawFileName:
-		crs.RawFileName = parseString(p.val)
+		crs.RawFileName = parseString(p.Value())
 	// Null Operation
 	case xmpns.ToneCurve, xmpns.ToneCurveRed, xmpns.ToneCurveGreen, xmpns.ToneCurveBlue:
 		return

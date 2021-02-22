@@ -6,7 +6,7 @@
 [![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-This package provides for performance oriented decoding of exif and tiff encoded data.
+Image Metadata (Exif and XMP) extraction for JPEG, HEIC, AVIF, TIFF and Camera Raw in golang. Focus is on providing wide variety of features while being perfomance oriented.
 
 ## Documentation
 
@@ -20,77 +20,98 @@ Example usage:
 package main
 
 import (
-   "bytes"
-   "fmt"
-   "io/ioutil"
-   "os"
-   "time"
+	"fmt"
+	"io"
+	"os"
+	"time"
 
-   "github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 const testFilename = "image.jpg"
 
 func main() {
-   var err error
+	f, err := os.Open(testFilename)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	var x xmp.XMP
+	var e exif.Exif
+   
+   // Exif Decode function
+	exifDecodeFn := func(r io.Reader, header exif.Header) error {
+		e, err = exif.ParseExif(f, header)
+		return nil
+	}
+   // Xmp Decode function
+	xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
+		fmt.Println(header)
+		var err error
+		x, err = xmp.ParseXmp(r)
+		return err
+	}
+	start := time.Now()
+	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
+	if err != nil {
+		panic(err)
+	}
+	elapsed := time.Since(start)
 
-   f, err := os.Open(testFilename)
-   if err != nil {
-      panic(err)
-   }
-   defer f.Close()
+	fmt.Println(m.Dimensions())
+	fmt.Println(m)
+	fmt.Println(elapsed)
 
-   start := time.Now()
-   e, err := exif.ScanExif(f)
-   if err != nil && err != exif.ErrNoExif {
-      panic(err)
-   }
-   elapsed := time.Since(start)
-   fmt.Println(elapsed)
+	// XMP
+	fmt.Println(x)
 
-   if err == exif.ErrNoExif {
-      fmt.Println(e.XMLPacket())
-      fmt.Println(e.Dimensions())
-      return
-   }
+	// Exif
+	fmt.Println(e)
 
-   // Strings
-   fmt.Println(e.CameraMake())
-   fmt.Println(e.CameraModel())
-   fmt.Println(e.Artist())
-   fmt.Println(e.Copyright())
-   fmt.Println(e.LensMake())
-   fmt.Println(e.LensModel())
-   fmt.Println(e.CameraSerial())
-   fmt.Println(e.LensSerial())
-   //
-   fmt.Println(e.Dimensions())
-   fmt.Println(e.XMLPacket())
-   //
-   //// Makernotes
-   fmt.Println(e.CanonCameraSettings())
-   fmt.Println(e.CanonFileInfo())
-   fmt.Println(e.CanonShotInfo())
-   fmt.Println(e.CanonAFInfo())
-   //
-   //// Time
-   fmt.Println(e.ModifyDate())
-   fmt.Println(e.DateTime())
-   fmt.Println(e.GPSTime())
-   //
-   //// GPS
-   fmt.Println(e.GPSInfo())
-   fmt.Println(e.GPSAltitude())
-   //
-   // Metadata
-   fmt.Println(e.ExposureProgram())
-   fmt.Println(e.MeteringMode())
-   fmt.Println(e.ShutterSpeed())
-   fmt.Println(e.Aperture())
-   fmt.Println(e.FocalLength())
-   fmt.Println(e.FocalLengthIn35mmFilm())
-   fmt.Println(e.ISOSpeed())
-   fmt.Println(e.Flash())
+	// Strings
+	fmt.Println(e.CameraMake())
+	fmt.Println(e.CameraModel())
+	fmt.Println(e.Artist())
+	fmt.Println(e.Copyright())
+	fmt.Println(e.LensMake())
+	fmt.Println(e.LensModel())
+	fmt.Println(e.CameraSerial())
+	fmt.Println(e.LensSerial())
+	//
+	fmt.Println(e.Dimensions())
+	fmt.Println(e.XMLPacket())
+	//
+	//// Makernotes
+	fmt.Println(e.CanonCameraSettings())
+	fmt.Println(e.CanonFileInfo())
+	fmt.Println(e.CanonShotInfo())
+	fmt.Println(e.CanonAFInfo())
+	//
+	//// Time
+	fmt.Println(e.ModifyDate())
+	fmt.Println(e.DateTime())
+	fmt.Println(e.GPSTime())
+	//
+	//// GPS
+	fmt.Println(e.GPSInfo())
+	fmt.Println(e.GPSAltitude())
+	//
+	// Metadata
+	fmt.Println(e.ExposureProgram())
+	fmt.Println(e.MeteringMode())
+	fmt.Println(e.ShutterSpeed())
+	fmt.Println(e.Aperture())
+	fmt.Println(e.FocalLength())
+	fmt.Println(e.FocalLengthIn35mmFilm())
+	fmt.Println(e.ISOSpeed())
+	fmt.Println(e.Flash())
 
 }
 ```
@@ -160,7 +181,8 @@ func main() {
 ## TODO
 
 - [x] Update ImageTypes API
-- [x] Write Exif extraction for individual image types (jpg, cr2, tiff)
+- [x] Write Exif extraction for individual image types (jpg, heic, cr2, tiff, dng)
+- [x] Add XMP parsing as "xmp" package
 - [ ] Stabalize API
 - [ ] Write tests
 - [ ] Include support for CRW image type (ciff format images)

@@ -19,9 +19,12 @@ const (
 // Scan reads from the reader and returns an imageType based on
 // underlying rules. Returns ErrImageTypeNotFound if imageType was not
 // identified.
-func Scan(reader io.Reader) (imageType ImageType, err error) {
+func Scan(r io.Reader) (imageType ImageType, err error) {
 	// Parse Header for an ImageType
-	br := bufio.NewReaderSize(reader, searchHeaderLength)
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < searchHeaderLength {
+		br = bufio.NewReaderSize(r, searchHeaderLength)
+	}
 	return ScanBuf(br)
 }
 
@@ -50,7 +53,6 @@ func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 // that identify the imagetype. Returns an ImageType. Returns ImageUnknown
 // when imagetype was not identified.
 func parseBuffer(buf []byte) ImageType {
-
 	// JPEG Header
 	if isJPEG(buf) {
 		return ImageJPEG

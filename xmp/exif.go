@@ -3,6 +3,7 @@ package xmp
 import (
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
@@ -16,79 +17,76 @@ type Flash struct {
 	Return     uint8
 }
 
-func (xmpFlash *Flash) parse(p property) (err error) {
-	switch p.Name() {
-	case xmpns.Fired:
-		xmpFlash.Fired = parseBool(p.val)
-	case xmpns.Return:
-		xmpFlash.Return = uint8(parseUint(p.val))
-	case xmpns.Mode:
-		xmpFlash.Mode = uint8(parseUint(p.val))
-	case xmpns.Function:
-		xmpFlash.Function = parseBool(p.val)
-	case xmpns.RedEyeMode:
-		xmpFlash.RedEyeMode = parseBool(p.val)
-	default:
-		return ErrPropertyNotSet
-	}
-	return
-}
+//func (xmpFlash *Flash) parse(p property) (err error) {
+//	switch p.Name() {
+//	case xmpns.Fired:
+//		xmpFlash.Fired = parseBool(p.val)
+//	case xmpns.Return:
+//		xmpFlash.Return = uint8(parseUint(p.val))
+//	case xmpns.Mode:
+//		xmpFlash.Mode = uint8(parseUint(p.val))
+//	case xmpns.Function:
+//		xmpFlash.Function = parseBool(p.val)
+//	case xmpns.RedEyeMode:
+//		xmpFlash.RedEyeMode = parseBool(p.val)
+//	default:
+//		return ErrPropertyNotSet
+//	}
+//	return
+//}
 
 // Exif attributes of an XMP Packet.
 //	 Exif 2.21 or later: xmlns:exifEX="http://cipa.jp/exif/1.0/"
 //	 Exif 2.2 or earlier: xmlns:exif="http://ns.adobe.com/exif/1.0/"
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#exif
 type Exif struct {
-	ExifVersion       string
-	PixelXDimension   uint32
-	PixelYDimension   uint32
-	DateTimeOriginal  time.Time
-	CreateDate        time.Time // Exif:DateTimeDigitized
-	ExposureTime      string
-	ExposureMode      uint8
-	ShutterSpeedValue string
-	ExposureProgram   string
-	ISOSpeedRatings   uint32
-	Flash             Flash
-	// MeteringMode
-	// ExposureMode
-	// ExposureProgram
-	// ExposureBias
-	// FocalLength
-	// Aperture Value
-	// ShutterSpeedValue
-	// ExposureTime
-	// FNumber
-	// GPSLatitude
-	// GPSLongitude
-
+	ExifVersion      string
+	PixelXDimension  uint32
+	PixelYDimension  uint32
+	DateTimeOriginal time.Time
+	CreateDate       time.Time // Exif:DateTimeDigitized
+	ExposureTime     meta.ShutterSpeed
+	ExposureProgram  meta.ExposureProgram
+	ExposureMode     meta.ExposureMode
+	ExposureBias     meta.ExposureBias
+	ISOSpeedRatings  uint32
+	Flash            Flash
+	MeteringMode     meta.MeteringMode
+	Aperture         meta.Aperture
+	FocalLength      meta.FocalLength
+	SubjectDistance  float32
+	GPSLatitude      float64
+	GPSLongitude     float64
+	GPSAltitude      float32
+	GPSTimestamp     time.Time
 }
 
-func (exif *Exif) decode(p property) (err error) {
+func (exif *Exif) parse(p property) (err error) {
 	switch p.Name() {
 	case xmpns.DateTimeOriginal:
-		exif.DateTimeOriginal, _ = parseDate(p.val)
-	default:
-		return ErrPropertyNotSet
-	}
-	return
-}
-
-func (exif *Exif) decodeTag(tag Tag) (err error) {
-	if tag.parent.Name() == xmpns.Flash {
-		return exif.Flash.parse(tag.property)
-	}
-	switch tag.Name() {
-
+		exif.DateTimeOriginal, err = parseDate(p.Value())
+	case xmpns.ExposureTime:
+		err = exif.ExposureTime.UnmarshalText(p.Value())
+	case xmpns.ExposureProgram:
+		exif.ExposureProgram = meta.ExposureProgram(uint8(parseUint(p.Value())))
+	case xmpns.ExposureMode:
+		exif.ExposureMode = meta.ExposureMode(uint8(parseUint(p.Value())))
+	case xmpns.ExposureBiasValue:
+		err = exif.ExposureBias.UnmarshalText(p.Value())
+	case xmpns.FocalLength:
+		n, d := parseRational(p.Value())
+		exif.FocalLength = meta.FocalLength(float32(n) / float32(d))
+	case xmpns.SubjectDistance:
+		n, d := parseRational(p.Value())
+		exif.SubjectDistance = float32(float32(n) / float32(d))
+	case xmpns.MeteringMode:
+		exif.MeteringMode = meta.NewMeteringMode(uint8(parseUint(p.Value())))
+	case xmpns.FNumber:
+		n, d := parseRational(p.Value())
+		exif.Aperture = meta.Aperture(float32(n) / float32(d))
 	case xmpns.ISOSpeedRatings:
-		exif.ISOSpeedRatings = uint32(parseUint(tag.val))
-	case xmpns.Flash:
-		var attr Attribute
-		for tag.nextAttr() {
-			attr, _ = tag.attr()
-			// Needs error reporting
-			_ = exif.Flash.parse(attr.property)
-		}
+		exif.ISOSpeedRatings = uint32(parseUint(p.val))
+	//case xmpns.Flash:
 	default:
 		return ErrPropertyNotSet
 	}
@@ -103,24 +101,28 @@ type Aux struct {
 	Lens                     string
 	LensID                   uint32
 	LensSerialNumber         string
-	ImageNumber              uint16 // string
-	ApproximateFocusDistance string // rational
-	FlashCompensation        string // rational
+	ImageNumber              uint16
+	ApproximateFocusDistance string            // rational
+	FlashCompensation        meta.ExposureBias // rational
 	Firmware                 string
 }
 
-func (aux *Aux) decode(p property) (err error) {
+func (aux *Aux) parse(p property) (err error) {
 	switch p.Name() {
+	case xmpns.FlashCompensation:
+		err = aux.FlashCompensation.UnmarshalText(p.Value())
+	case xmpns.ImageNumber:
+		aux.ImageNumber = uint16(parseUint(p.Value()))
 	case xmpns.SerialNumber:
-		aux.SerialNumber = parseString(p.val)
+		aux.SerialNumber = parseString(p.Value())
 	case xmpns.Lens:
-		aux.Lens = parseString(p.val)
+		aux.Lens = parseString(p.Value())
 	case xmpns.LensInfo:
-		aux.LensInfo = parseString(p.val)
+		aux.LensInfo = parseString(p.Value())
 	case xmpns.LensID:
-		aux.LensID = uint32(parseUint(p.val))
+		aux.LensID = uint32(parseUint(p.Value()))
 	case xmpns.LensSerialNumber:
-		aux.LensSerialNumber = parseString(p.val)
+		aux.LensSerialNumber = parseString(p.Value())
 	default:
 		return ErrPropertyNotSet
 	}

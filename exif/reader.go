@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-
-	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 // reader errors
@@ -63,7 +61,7 @@ func (er *reader) ByteOrder() binary.ByteOrder {
 
 // SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
 // from a TiffHeader and sets the ExifReader read offset to 0
-func (er *reader) SetHeader(header tiff.Header) error {
+func (er *reader) SetHeader(header Header) error {
 	if !header.IsValid() {
 		return ErrInvalidHeader
 	}

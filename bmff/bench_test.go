@@ -24,7 +24,7 @@ var (
 		{"10", "10.heic"},
 		{"d", "d.heic"},
 		{"Canon R6", "r6.HIF"},
-		//{"iPhone 11", "iPhone11Pro.heic"},
+		{"iPhone 11", "iPhone11Pro.heic"},
 		{"iPhone 12", "iPhone12.heic"},
 	} //
 )
@@ -94,13 +94,14 @@ func BenchmarkReadBoxGo100(b *testing.B) {
 // BenchmarkReadBoxGoMedia100/iPhone_12 	    2265	    506897 ns/op	  480784 B/op	    1332 allocs/op
 
 // Optimized
-// BenchmarkReadBox100/1         	   38785	     38055 ns/op	    7648 B/op	      77 allocs/op
-// BenchmarkReadBox100/2         	   92409	     12364 ns/op	    2352 B/op	      41 allocs/op
-// BenchmarkReadBox100/3         	   28192	     44652 ns/op	   12464 B/op	     117 allocs/op
-// BenchmarkReadBox100/10        	   33835	     34452 ns/op	    7744 B/op	      81 allocs/op
-// BenchmarkReadBox100/d         	    9351	    232209 ns/op	   38864 B/op	     325 allocs/op
-// BenchmarkReadBox100/Canon_R6  	   86648	     18291 ns/op	    2592 B/op	      47 allocs/op
-// BenchmarkReadBox100/iPhone_12 	   35826	     32786 ns/op	    8064 B/op	      85 allocs/op
+// BenchmarkReadBox100/1         	   46464	     26109 ns/op	    7248 B/op	      64 allocs/op
+// BenchmarkReadBox100/2         	  133093	      9789 ns/op	    1744 B/op	      29 allocs/op
+// BenchmarkReadBox100/3         	   26997	     41058 ns/op	   12192 B/op	     104 allocs/op
+// BenchmarkReadBox100/10        	   41847	     29207 ns/op	    7344 B/op	      68 allocs/op
+// BenchmarkReadBox100/d         	    9414	    118801 ns/op	   38976 B/op	     312 allocs/op
+// BenchmarkReadBox100/Canon_R6  	  120914	     11273 ns/op	    1952 B/op	      33 allocs/op
+// BenchmarkReadBox100/iPhone_11 	   45565	     27445 ns/op	    7312 B/op	      67 allocs/op
+// BenchmarkReadBox100/iPhone_12 	   42534	     29444 ns/op	    7664 B/op	      72 allocs/op
 
 // Latest
 // BenchmarkReadBox100/1         	   50270	     25748 ns/op	    7248 B/op	      65 allocs/op

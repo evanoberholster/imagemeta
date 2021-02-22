@@ -21,22 +21,37 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-func (dc *DublinCore) decode(p property) (err error) {
+var xmlLang = xmpns.NewProperty(xmpns.XMLNS, xmpns.Lang)
+
+func (dc *DublinCore) parse(p property) (err error) {
+	if len(p.Value()) == 0 {
+		return ErrPropertyNotSet
+	}
 	switch p.Name() {
 	case xmpns.Format:
-		dc.Format = imagetype.FromString(string(p.val))
-		//fmt.Println("Format: ", p.val)
+		dc.Format = imagetype.FromString(string(p.Value()))
 	case xmpns.Creator:
-		dc.Creator = append(dc.Creator, parseString(p.val))
+		dc.Creator = append(dc.Creator, parseString(p.Value()))
+	case xmpns.Subject:
+		dc.Subject = append(dc.Subject, parseString(p.Value()))
 	case xmpns.Rights:
-		dc.Rights = append(dc.Rights, parseString(p.val))
+		if p.pt == tagPType {
+			dc.Rights = append(dc.Rights, parseString(p.Value()))
+		}
 	case xmpns.Title:
-		dc.Title = append(dc.Rights, parseString(p.val))
-		// Rights
+		if p.pt == tagPType {
+			dc.Title = append(dc.Title, parseString(p.Value()))
+		}
+		if p.Parent() == xmlLang {
+			dc.TitleLang = append(dc.TitleLang, parseString(p.Value()))
+		}
+	case xmpns.Description:
+		dc.Description = append(dc.Description, parseString(p.Value()))
 		// Subject
 		// Contributor
 		// Description
-
+	default:
+		return ErrPropertyNotSet
 	}
 	return nil
 }
@@ -109,7 +124,8 @@ type DublinCore struct {
 	// A name given to the resource.
 	// Typically, a title will be a name by which the resource is formally known.
 	// XMP usage is a title or name, given in various languages.
-	Title []string `xml:"title"`
+	Title     []string `xml:"title"`
+	TitleLang []string
 	// The nature or genre of the resource.
 	// Recommended best practice is to use a controlled vocabulary such as the DCMI Type
 	// Vocabulary [DCMITYPE]. To describe the file format, physical medium, or dimensions of the

@@ -1,5 +1,7 @@
 package meta
 
+import "bytes"
+
 // parseInt parses a []byte of a string representation of an int64 value and returns the value
 //func parseInt(buf []byte) (i int64) {
 //	var neg bool
@@ -38,3 +40,17 @@ func parseUint(buf []byte) (u uint64) {
 //	}
 //	return buf, nil
 //}
+
+// CleanXMPSuffixWhiteSpace returns the same slice with the whitespace after "</x:xmpmeta>" removed.
+func CleanXMPSuffixWhiteSpace(buf []byte) []byte {
+	for i := len(buf) - 1; i > 12; i-- {
+		if buf[i] == '>' && buf[i-1] == 'a' {
+			// </x:xmpmeta>
+			if bytes.Equal([]byte("</x:xmpmeta>"), buf[i-11:i+1]) {
+				buf = buf[:i+1]
+				return buf
+			}
+		}
+	}
+	return buf
+}

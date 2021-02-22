@@ -104,7 +104,6 @@ func parseIref(outer *box) (Box, error) {
 	return parseItemTypeReferenceBox(outer)
 }
 func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error) {
-
 	iref.size = uint32(outer.size)
 	iref.Flags, err = outer.readFlags()
 	if err != nil {

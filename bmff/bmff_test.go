@@ -150,3 +150,14 @@ func TestParseHandler(t *testing.T) {
 		t.Errorf("Handler Box Type Error: got %v, expected %v", handler([]byte("meta")).String(), "meta")
 	}
 }
+
+func TestItemType(t *testing.T) {
+	it := itemType([]byte("infe"))
+	if it.String() != "infe" {
+		t.Errorf("Item Type Error: got %v, expected %v", it.String(), "infe")
+	}
+	// Error for itemType that is too long
+	if itemType([]byte("infe123")).String() != ItemTypeUnknown.String() {
+		t.Errorf("Item Type Error: got %v, expected %v", itemType([]byte("infe123")), ItemTypeUnknown)
+	}
+}

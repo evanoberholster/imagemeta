@@ -3,6 +3,8 @@ package tiff
 import (
 	"encoding/binary"
 	"errors"
+
+	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
 // Errors
@@ -22,10 +24,11 @@ type Header struct {
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
+	ImageType        imagetype.ImageType
 }
 
 // NewHeader returns a new TiffHeader.
-func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32) Header {
+func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) Header {
 	return Header{
 		ByteOrder:        byteOrder,
 		FirstIfdOffset:   firstIfdOffset,

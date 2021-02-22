@@ -3,7 +3,6 @@ package exif
 import (
 	"errors"
 
-	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -36,16 +35,6 @@ func newExifData(er *reader, it imagetype.ImageType) *ExifData {
 		exifReader: er,
 		imageType:  it,
 	}
-}
-
-// SetMetadata sets the imagetype metadata in exif
-func (e *ExifData) SetMetadata(m imagemeta.Metadata) {
-	// Set Exif Width, Height from Metadata Image Size
-	e.width, e.height = m.Size()
-
-	// Set Exif XMP form Metadata XML
-	e.XMP = []byte(m.XMP())
-
 }
 
 // AddIfd adds an Ifd to a TagMap
