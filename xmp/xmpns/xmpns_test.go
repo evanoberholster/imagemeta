@@ -1,27 +1,26 @@
 package xmpns
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestProperty(t *testing.T) {
 	p := NewProperty(XmpNS, RDF)
 
-	if p.Namespace() != XmpNS {
-		t.Errorf("Incorrect Property Namespace wanted %s got %s", XmpNS, p.Namespace())
-	}
+	assert.Equal(t, XmpNS, p.Namespace(), "Property Namespace")
 
-	if p.Name() != RDF {
-		t.Errorf("Incorrect Property Name wanted %s got %s", RDF, p.Name())
-	}
+	assert.Equal(t, RDF, p.Name(), "Property Name")
 
 	p1 := IdentifyProperty([]byte("xmp"), []byte("RDF"))
 
-	if !p.Equals(p1) {
-		t.Errorf("Incorrect Property wanted %s got %s", p, p1)
-	}
+	assert.Equal(t, p, p1, "Property")
 
-	if p.String() != "xmp:RDF" {
-		t.Errorf("Incorrect Property String wanted %s got %s", "xmp:RDF", p.String())
-	}
+	assert.Equal(t, "xmp:RDF", p.String(), "Property String")
+
+	assert.True(t, p.Equals(p1), "Property Equals")
+
 }
 
 func TestName(t *testing.T) {
