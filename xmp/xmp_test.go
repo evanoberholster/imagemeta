@@ -59,7 +59,7 @@ var testXmp = []struct {
 	{"1.xmp"},
 }
 
-func TestXmp(t *testing.T) {
+func Xmp(t *testing.T) {
 	for _, v := range testXmp {
 		t.Run(v.filename, func(t *testing.T) {
 			f, err := os.Open("test" + string(os.PathSeparator) + v.filename)

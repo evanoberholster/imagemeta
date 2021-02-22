@@ -63,7 +63,7 @@ type Exif struct {
 func (exif *Exif) parse(p property) (err error) {
 	switch p.Name() {
 	case xmpns.DateTimeOriginal:
-		exif.DateTimeOriginal, _ = parseDate(p.Value())
+		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case xmpns.ExposureTime:
 		err = exif.ExposureTime.UnmarshalText(p.Value())
 	case xmpns.ExposureProgram:

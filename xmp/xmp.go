@@ -12,7 +12,7 @@ import (
 // Common Errors
 var (
 	ErrNoValue      = errors.New("property has no value")
-	ErrNegativeRead = errors.New("xmp: error negative read")
+	ErrNegativeRead = errors.New("error negative read")
 )
 
 const (

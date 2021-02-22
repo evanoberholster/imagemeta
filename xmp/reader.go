@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
@@ -21,13 +23,13 @@ type bufReader struct {
 func (br *bufReader) readRootTag() (tag Tag, err error) {
 	var buf []byte
 	for {
-		if buf, err = br.Peek(16); err != nil {
+		if buf, err = br.Peek(18); err != nil {
 			if err == io.EOF {
 				err = ErrNoXMP
 			}
 			return
 		}
-		for i := 0; i < 6; i++ {
+		for i := 0; i < 8; i++ {
 			if buf[i] == xmpRootTag[0] {
 				if bytes.Equal(xmpRootTag[:], buf[i:i+10]) {
 					_, err = br.r.ReadSlice('>') // Read until end of the StartTag (RootTag)
@@ -37,7 +39,7 @@ func (br *bufReader) readRootTag() (tag Tag, err error) {
 				}
 			}
 		}
-		if _, err = br.Discard(6); err != nil {
+		if _, err = br.Discard(8); err != nil {
 			return
 		}
 	}
@@ -112,7 +114,7 @@ func (br *bufReader) readAttrValue(tag *Tag) (buf []byte, err error) {
 	s := maxTagValueSize
 	var i int
 	for {
-		if buf, err = br.r.Peek(s); err != nil {
+		if buf, err = br.Peek(s); err != nil {
 			return
 		}
 
@@ -136,7 +138,7 @@ end:
 		tag.t = soloTag
 		br.a = false
 	}
-	if _, err = br.r.Discard(i + 3); err != nil {
+	if _, err = br.Discard(i + 3); err != nil {
 		return
 	}
 	return buf[:i], nil
@@ -146,11 +148,13 @@ end:
 func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 	tag.pt = tagPType
 	tag.parent = parent.self
+
+	// Read Tag Header
 	var buf []byte
 	var i int
-	// Read Tag Header
 	for {
 		if buf, err = br.Peek(maxTagHeaderSize); err != nil {
+			err = errors.Wrap(err, "Tag Header")
 			return
 		}
 
@@ -159,7 +163,8 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 			break
 		}
 
-		if _, err = br.r.Discard(maxTagHeaderSize); err != nil {
+		if _, err = br.Discard(maxTagHeaderSize); err != nil {
+			err = errors.Wrap(err, "Tag Header (discard)")
 			return
 		}
 	}
@@ -177,7 +182,7 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 	buf = buf[i:] // reslice tag
 	var a, b int
 	if a, b = tagNameIndex(buf); a < 0 {
-		err = ErrNegativeRead // Err finding tag name
+		err = errors.Wrap(ErrNegativeRead, "Tag Header (tag name)") // Err finding tag name
 		return
 	}
 	tag.self = xmpns.IdentifyProperty(buf[:a], buf[a+1:b])
@@ -191,7 +196,8 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 		tag.t = soloTag
 		b += 2
 	}
-	if _, err = br.r.Discard(b + i); err != nil {
+	if _, err = br.Discard(b + i); err != nil {
+		err = errors.Wrap(err, "Tag Header (discard)")
 		return // error here
 	}
 	return
@@ -218,7 +224,7 @@ func (br *bufReader) readTagValue() (buf []byte, err error) {
 		}
 		s += maxTagValueSize
 	}
-	if _, err = br.r.Discard(i); err != nil {
+	if _, err = br.Discard(i); err != nil {
 		return nil, err
 	}
 
@@ -257,7 +263,7 @@ func tagNameIndex(buf []byte) (int, int) {
 		}
 	}
 	for ; i < len(buf); i++ {
-		if buf[i] == '>' || buf[i] == ' ' || buf[i] == '\n' {
+		if buf[i] == '>' || buf[i] == ' ' || buf[i] == '\n' || buf[i] == '/' {
 			return a, i
 		}
 	}

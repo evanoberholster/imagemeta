@@ -21,26 +21,7 @@ var (
 // BenchmarkXMPRead200 	   22694	     52323 ns/op	    7248 B/op	      29 allocs/op
 // BenchmarkXMPRead200 	   23542	     50447 ns/op	    7248 B/op	      29 allocs/op
 
-// New
-//BenchmarkXMPRead200 	   19147	     58285 ns/op	    8576 B/op	     217 allocs/op
-
-// Walk
-// BenchmarkXMPRead200 	    6062	    191794 ns/op	   23920 B/op	     425 allocs/op
-
-// Read
-// BenchmarkXMPRead200 	   63470	     19887 ns/op	    4096 B/op	       1 allocs/op - entire file
-// BenchmarkXMPRead200 	   88051	     13714 ns/op	    4096 B/op	       1 allocs/op
-
-// BenchmarkXMPRead200 	   91040	     12859 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkXMPRead200 	   97404	     11858 ns/op	    4128 B/op	       5 allocs/op
-// BenchmarkXMPRead200 	  129619	      9809 ns/op	    4096 B/op	       1 allocs/op
-// BenchmarkXMPRead200 	  121147	      9268 ns/op	    4112 B/op	       3 allocs/op
-// BenchmarkXMPRead200 	  101613	     11894 ns/op	    5024 B/op	      62 allocs/op
-// BenchmarkXMPRead200 	  103136	     10140 ns/op	    5024 B/op	      62 allocs/op
-// BenchmarkXMPRead200 	   96708	     12042 ns/op	    5024 B/op	      62 allocs/op
-
-// BenchmarkXMPRead 	   25029	     43387 ns/op	    1888 B/op	      22 allocs/op
-// BenchmarkXMPRead 	   26578	     49513 ns/op	    2784 B/op	      23 allocs/op
+// BenchmarkXMPRead 	   47311	     26398 ns/op	    2304 B/op	      44 allocs/op
 func BenchmarkXMPRead(b *testing.B) {
 	f, err := os.Open(dir) //+ "6D.xmp")
 	if err != nil {

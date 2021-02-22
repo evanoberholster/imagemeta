@@ -47,7 +47,7 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	str := string(buf)
 	if t, err = time.Parse("2006-01-02T15:04:05Z07:00", str); err != nil {
 		if t, err = time.Parse("2006-01-02T15:04:05.00", str); err != nil {
-			t, err = time.Parse("2006-01-02T15:04:05", str)
+			return time.Parse("2006-01-02T15:04:05", str)
 		}
 	}
 	return
@@ -67,28 +67,13 @@ func parseUUID(buf []byte) (uuid meta.UUID) {
 	return
 }
 
-//func parseUint32(s string) uint32 {
-//	u64, err := strconv.ParseUint(s, 10, 32)
-//	if err != nil {
-//		return 0
-//	}
-//	return uint32(u64)
-//}
-
 // parseInt parses a []byte of a string representation of an int64 value and returns the value
 func parseInt(buf []byte) (i int64) {
-	var neg bool
 	if buf[0] == '-' {
 		buf = buf[1:]
-		neg = true
+		i = -1
 	}
-	for j := 0; j < len(buf); j++ {
-		i *= 10
-		i += int64(buf[j] - '0')
-	}
-	if neg {
-		i *= -1
-	}
+	i *= int64(parseUint(buf))
 	return
 }
 
@@ -106,8 +91,10 @@ func parseString(buf []byte) string {
 	return string(buf)
 }
 
+// parseRational separates a string into a fraction.
+// With "n" as the numerator and "d" as the denominator.
+// TODO: Improve parsing functionality
 func parseRational(buf []byte) (n uint32, d uint32) {
-	// TODO: Improve parsing functionality
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
 			if i < len(buf)+1 {
