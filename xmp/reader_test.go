@@ -12,22 +12,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var readTagHeaderTests = []struct {
-	data   string
-	err    error
-	tag    Tag
-	assert bool
-}{
-	{"", io.EOF, Tag{}, false},
-	{"         ", ErrBufferFull, Tag{}, false},
-	{"<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.RDF), pt: tagPType}, t: startTag}, true},
-	{"<rdf:description/>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: soloTag}, true},
-	{"\n" + "</rdf:Description>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: stopTag}, true},
-	{"<hello >               ", ErrNegativeRead, Tag{}, false},
-	{"<? >               ", io.EOF, Tag{}, false},
-}
-
 func TestReadTagHeader(t *testing.T) {
+	var readTagHeaderTests = []struct {
+		data   string
+		err    error
+		tag    Tag
+		assert bool
+	}{
+		{"", io.EOF, Tag{}, false},
+		{"         ", ErrBufferFull, Tag{}, false},
+		{"<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.RDF), pt: tagPType}, t: startTag}, true},
+		{"<rdf:description/>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: soloTag}, true},
+		{"\n" + "</rdf:Description>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: stopTag}, true},
+		{"<hello >               ", ErrNegativeRead, Tag{}, false},
+		{"<? >               ", io.EOF, Tag{}, false},
+	}
+
 	var err error
 	parentTestTag := Tag{}
 	parentTestTag.self = xmpns.XMPRootProperty
@@ -52,19 +52,19 @@ func TestReadTagHeader(t *testing.T) {
 	}
 }
 
-var readAttributeTests = []struct {
-	data   string
-	err    error
-	attr   Attribute
-	assert bool
-}{
-	{"", io.EOF, Attribute{property: property{}}, false},
-	{"\n" + " xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Attribute{property: property{pt: attrPType, val: []byte("http://www.w3.org/1999/02/22-rdf-syntax-ns#"), self: xmpns.NewProperty(xmpns.XMLnsNS, xmpns.RDF)}}, true},
-	{"  />", io.EOF, Attribute{property: property{}}, false},
-	{"  abc:", ErrNegativeRead, Attribute{property: property{}}, false},
-}
-
 func TestReadAttribute(t *testing.T) {
+	var readAttributeTests = []struct {
+		data   string
+		err    error
+		attr   Attribute
+		assert bool
+	}{
+		{"", io.EOF, Attribute{property: property{}}, false},
+		{"\n" + " xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Attribute{property: property{pt: attrPType, val: []byte("http://www.w3.org/1999/02/22-rdf-syntax-ns#"), self: xmpns.NewProperty(xmpns.XMLnsNS, xmpns.RDF)}}, true},
+		{"  />", io.EOF, Attribute{property: property{}}, false},
+		{"  abc:", ErrNegativeRead, Attribute{property: property{}}, false},
+	}
+	
 	var err error
 	for _, attrTest := range readAttributeTests {
 		var attr Attribute
