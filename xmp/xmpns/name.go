@@ -19,25 +19,24 @@ func IdentifyName(buf []byte) (n Name) {
 const (
 	UnknownPropertyName Name = iota
 
-	VideoFrameRate
-	VideoPixelDepth
-	VideoPixelAspectRatio
-	VideoFieldOrder
-	TapeName
-	AltTapeName
 	About // about
 	Action
 	AlreadyApplied
 	Alt
+	AltTapeName
+	AltTimecode
 	ApertureValue
 	ApproximateFocusDistance
 	Bag
+	BitsPerSample
 	BodySerialNumber
+	BrightnessValue
 	CameraOwnerName
 	Changed
 	ColorMode
 	ColorSpace
 	ComponentsConfiguration
+	CompressedBitsPerPixel
 	Compression
 	Contrast
 	CreateDate
@@ -47,6 +46,7 @@ const (
 	DateCreated
 	DateTimeDigitized
 	DateTimeOriginal
+	Dc
 	DerivedFrom
 	Description
 	DigitalZoomRatio
@@ -65,6 +65,7 @@ const (
 	FlashpixVersion
 	FNumber
 	FocalLength
+	FocalLengthIn35mmFilm
 	FocalPlaneResolutionUnit
 	FocalPlaneXResolution
 	FocalPlaneYResolution
@@ -73,14 +74,18 @@ const (
 	GainControl
 	GPSAltitude
 	GPSAltitudeRef
+	GPSDifferential
 	GPSLatitude
 	GPSLongitude
 	GPSMapDatum
+	GPSStatus
 	GPSTimeStamp
 	GPSVersionID
+	H
 	HierarchicalSubject
 	History
 	ICCProfile
+	ImageDescription
 	ImageLength
 	ImageNumber
 	ImageWidth
@@ -112,6 +117,7 @@ const (
 	PixelXDimension
 	PixelYDimension
 	PlanarConfiguration
+	PreservedFileName
 	Rating
 	RawFileName
 	RDF
@@ -130,10 +136,15 @@ const (
 	Sharpness
 	ShutterSpeedValue
 	SidecarForExtension
+	Software
 	SoftwareAgent
+	StartTimecode
+	StDim
 	Subject
 	SubjectDistance
+	TapeName
 	Temperature
+	TimeValue
 	Title
 	ToneCurve
 	ToneCurveBlue
@@ -144,81 +155,43 @@ const (
 	ToneCurvePV2012Red
 	ToneCurveRed
 	UserComment
+	VideoFieldOrder
+	VideoFrameRate
+	VideoFrameSize
+	VideoPixelAspectRatio
+	VideoPixelDepth
+	W
 	When
 	WhiteBalance
+	Xap
+	XmpDM
 	XmpMeta
 	XResolution
-	YResolution
-
-	XmpDM
-	StDim
-	Xap
-	Dc
-	VideoFrameSize
-	W
-	H
-	StartTimecode
-	TimeValue
-	AltTimecode
-
-	PreservedFileName
-	BitsPerSample
-
-	CompressedBitsPerPixel
-	BrightnessValue
-	FocalLengthIn35mmFilm
-	GPSDifferential
-	GPSStatus
-	ImageDescription
-	Software
 	YCbCrPositioning
-
-	instanceID
+	YResolution
 )
 
 // mapNameString returns Name's value as a string
 var mapNameString = map[Name]string{
-
 	UnknownPropertyName:       "Unknown",
-	CompressedBitsPerPixel:    "CompressedBitsPerPixel",
-	BrightnessValue:           "BrightnessValue",
-	FocalLengthIn35mmFilm:     "FocalLengthIn35mmFilm",
-	GPSDifferential:           "GPSDifferential",
-	GPSStatus:                 "GPSStatus",
-	ImageDescription:          "ImageDescription",
-	Software:                  "Software",
-	YCbCrPositioning:          "YCbCrPositioning",
-	PreservedFileName:         "PreservedFileName",
-	BitsPerSample:             "BitsPerSample",
-	VideoFrameSize:            "videoFrameSize",
-	W:                         "w",
-	H:                         "h",
-	StartTimecode:             "startTimecode",
-	TimeValue:                 "timeValue",
-	AltTimecode:               "altTimecode",
-	XmpDM:                     "xmpDM",
-	StDim:                     "stDim",
-	Xap:                       "xap",
-	Dc:                        "dc",
-	VideoFrameRate:            "videoFrameRate",
-	VideoPixelDepth:           "videoPixelDepth",
-	VideoPixelAspectRatio:     "videoPixelAspectRatio",
-	VideoFieldOrder:           "videoFieldOrder",
-	TapeName:                  "tapeName",
-	AltTapeName:               "altTapeName",
 	About:                     "about",
 	Action:                    "action",
 	AlreadyApplied:            "AlreadyApplied",
 	Alt:                       "Alt",
+	AltTapeName:               "altTapeName",
+	AltTimecode:               "altTimecode",
 	ApertureValue:             "ApertureValue",
 	ApproximateFocusDistance:  "ApproximateFocusDistance",
 	Bag:                       "Bag",
+	BitsPerSample:             "BitsPerSample",
 	BodySerialNumber:          "BodySerialNumber",
+	BrightnessValue:           "BrightnessValue",
 	CameraOwnerName:           "CameraOwnerName",
 	Changed:                   "changed",
 	ColorMode:                 "ColorMode",
 	ColorSpace:                "ColorSpace",
 	ComponentsConfiguration:   "ComponentsConfiguration",
+	CompressedBitsPerPixel:    "CompressedBitsPerPixel",
 	Compression:               "Compression",
 	Contrast:                  "Contrast",
 	CreateDate:                "CreateDate",
@@ -228,6 +201,7 @@ var mapNameString = map[Name]string{
 	DateCreated:               "DateCreated",
 	DateTimeDigitized:         "DateTimeDigitized",
 	DateTimeOriginal:          "DateTimeOriginal",
+	Dc:                        "dc",
 	DerivedFrom:               "DerivedFrom",
 	Description:               "Description",
 	DigitalZoomRatio:          "DigitalZoomRatio",
@@ -246,6 +220,7 @@ var mapNameString = map[Name]string{
 	FlashpixVersion:           "FlashpixVersion",
 	FNumber:                   "FNumber",
 	FocalLength:               "FocalLength",
+	FocalLengthIn35mmFilm:     "FocalLengthIn35mmFilm",
 	FocalPlaneResolutionUnit:  "FocalPlaneResolutionUnit",
 	FocalPlaneXResolution:     "FocalPlaneXResolution",
 	FocalPlaneYResolution:     "FocalPlaneYResolution",
@@ -254,14 +229,18 @@ var mapNameString = map[Name]string{
 	GainControl:               "GainControl",
 	GPSAltitude:               "GPSAltitude",
 	GPSAltitudeRef:            "GPSAltitudeRef",
+	GPSDifferential:           "GPSDifferential",
 	GPSLatitude:               "GPSLatitude",
 	GPSLongitude:              "GPSLongitude",
 	GPSMapDatum:               "GPSMapDatum",
+	GPSStatus:                 "GPSStatus",
 	GPSTimeStamp:              "GPSTimeStamp",
 	GPSVersionID:              "GPSVersionID",
+	H:                         "h",
 	HierarchicalSubject:       "hierarchicalSubject",
 	History:                   "History",
 	ICCProfile:                "ICCProfile",
+	ImageDescription:          "ImageDescription",
 	ImageLength:               "ImageLength",
 	ImageNumber:               "ImageNumber",
 	ImageWidth:                "ImageWidth",
@@ -293,6 +272,7 @@ var mapNameString = map[Name]string{
 	PixelXDimension:           "PixelXDimension",
 	PixelYDimension:           "PixelYDimension",
 	PlanarConfiguration:       "PlanarConfiguration",
+	PreservedFileName:         "PreservedFileName",
 	Rating:                    "Rating",
 	RawFileName:               "RawFileName",
 	RDF:                       "RDF",
@@ -311,10 +291,15 @@ var mapNameString = map[Name]string{
 	Sharpness:                 "Sharpness",
 	ShutterSpeedValue:         "ShutterSpeedValue",
 	SidecarForExtension:       "SidecarForExtension",
+	Software:                  "Software",
 	SoftwareAgent:             "softwareAgent",
+	StartTimecode:             "startTimecode",
+	StDim:                     "stDim",
 	Subject:                   "subject",
 	SubjectDistance:           "SubjectDistance",
+	TapeName:                  "tapeName",
 	Temperature:               "Temperature",
+	TimeValue:                 "timeValue",
 	Title:                     "Title",
 	ToneCurve:                 "ToneCurve",
 	ToneCurveBlue:             "ToneCurveBlue",
@@ -325,54 +310,42 @@ var mapNameString = map[Name]string{
 	ToneCurvePV2012Red:        "ToneCurvePV2012Red",
 	ToneCurveRed:              "ToneCurveRed",
 	UserComment:               "UserComment",
+	VideoFieldOrder:           "videoFieldOrder",
+	VideoFrameRate:            "videoFrameRate",
+	VideoFrameSize:            "videoFrameSize",
+	VideoPixelAspectRatio:     "videoPixelAspectRatio",
+	VideoPixelDepth:           "videoPixelDepth",
+	W:                         "w",
 	When:                      "when",
 	WhiteBalance:              "WhiteBalance",
+	Xap:                       "xap",
+	XmpDM:                     "xmpDM",
 	XmpMeta:                   "xmpmeta",
 	XResolution:               "XResolution",
+	YCbCrPositioning:          "YCbCrPositioning",
 	YResolution:               "YResolution",
 }
 
 // mapStringName returns string's value as a Name
 var mapStringName = map[string]Name{
-	"CompressedBitsPerPixel":    CompressedBitsPerPixel,
-	"BrightnessValue":           BrightnessValue,
-	"FocalLengthIn35mmFilm":     FocalLengthIn35mmFilm,
-	"GPSDifferential":           GPSDifferential,
-	"GPSStatus":                 GPSStatus,
-	"ImageDescription":          ImageDescription,
-	"Software":                  Software,
-	"YCbCrPositioning":          YCbCrPositioning,
-	"videoFrameSize":            VideoFrameSize,
-	"PreservedFileName":         PreservedFileName,
-	"BitsPerSample":             BitsPerSample,
-	"w":                         W,
-	"h":                         H,
-	"startTimecode":             StartTimecode,
-	"timeValue":                 TimeValue,
-	"altTimecode":               AltTimecode,
-	"xmpDM":                     XmpDM,
-	"stDim":                     StDim,
-	"xap":                       Xap,
-	"dc":                        Dc,
-	"videoFrameRate":            VideoFrameRate,
-	"videoPixelDepth":           VideoPixelDepth,
-	"videoPixelAspectRatio":     VideoPixelAspectRatio,
-	"videoFieldOrder":           VideoFieldOrder,
-	"tapeName":                  TapeName,
-	"altTapeName":               AltTapeName,
 	"about":                     About,
 	"action":                    Action,
 	"AlreadyApplied":            AlreadyApplied,
 	"Alt":                       Alt,
+	"altTapeName":               AltTapeName,
+	"altTimecode":               AltTimecode,
 	"ApertureValue":             ApertureValue,
 	"ApproximateFocusDistance":  ApproximateFocusDistance,
 	"Bag":                       Bag,
+	"BitsPerSample":             BitsPerSample,
 	"BodySerialNumber":          BodySerialNumber,
+	"BrightnessValue":           BrightnessValue,
 	"CameraOwnerName":           CameraOwnerName,
 	"changed":                   Changed,
 	"ColorMode":                 ColorMode,
 	"ColorSpace":                ColorSpace,
 	"ComponentsConfiguration":   ComponentsConfiguration,
+	"CompressedBitsPerPixel":    CompressedBitsPerPixel,
 	"Compression":               Compression,
 	"Contrast":                  Contrast,
 	"CreateDate":                CreateDate,
@@ -382,6 +355,7 @@ var mapStringName = map[string]Name{
 	"DateCreated":               DateCreated,
 	"DateTimeDigitized":         DateTimeDigitized,
 	"DateTimeOriginal":          DateTimeOriginal,
+	"dc":                        Dc,
 	"DerivedFrom":               DerivedFrom,
 	"Description":               Description,
 	"description":               Description,
@@ -401,6 +375,7 @@ var mapStringName = map[string]Name{
 	"FlashpixVersion":           FlashpixVersion,
 	"FNumber":                   FNumber,
 	"FocalLength":               FocalLength,
+	"FocalLengthIn35mmFilm":     FocalLengthIn35mmFilm,
 	"FocalPlaneResolutionUnit":  FocalPlaneResolutionUnit,
 	"FocalPlaneXResolution":     FocalPlaneXResolution,
 	"FocalPlaneYResolution":     FocalPlaneYResolution,
@@ -409,14 +384,18 @@ var mapStringName = map[string]Name{
 	"GainControl":               GainControl,
 	"GPSAltitude":               GPSAltitude,
 	"GPSAltitudeRef":            GPSAltitudeRef,
+	"GPSDifferential":           GPSDifferential,
 	"GPSLatitude":               GPSLatitude,
 	"GPSLongitude":              GPSLongitude,
 	"GPSMapDatum":               GPSMapDatum,
+	"GPSStatus":                 GPSStatus,
 	"GPSTimeStamp":              GPSTimeStamp,
 	"GPSVersionID":              GPSVersionID,
+	"h":                         H,
 	"hierarchicalSubject":       HierarchicalSubject,
 	"History":                   History,
 	"ICCProfile":                ICCProfile,
+	"ImageDescription":          ImageDescription,
 	"ImageLength":               ImageLength,
 	"ImageNumber":               ImageNumber,
 	"ImageWidth":                ImageWidth,
@@ -449,6 +428,7 @@ var mapStringName = map[string]Name{
 	"PixelXDimension":           PixelXDimension,
 	"PixelYDimension":           PixelYDimension,
 	"PlanarConfiguration":       PlanarConfiguration,
+	"PreservedFileName":         PreservedFileName,
 	"Rating":                    Rating,
 	"RawFileName":               RawFileName,
 	"rdf":                       RDF,
@@ -468,10 +448,15 @@ var mapStringName = map[string]Name{
 	"Sharpness":                 Sharpness,
 	"ShutterSpeedValue":         ShutterSpeedValue,
 	"SidecarForExtension":       SidecarForExtension,
+	"Software":                  Software,
 	"softwareAgent":             SoftwareAgent,
+	"startTimecode":             StartTimecode,
+	"stDim":                     StDim,
 	"subject":                   Subject,
 	"SubjectDistance":           SubjectDistance,
+	"tapeName":                  TapeName,
 	"Temperature":               Temperature,
+	"timeValue":                 TimeValue,
 	"Title":                     Title,
 	"title":                     Title,
 	"ToneCurve":                 ToneCurve,
@@ -484,9 +469,18 @@ var mapStringName = map[string]Name{
 	"ToneCurveRed":              ToneCurveRed,
 	"Unknown":                   UnknownPropertyName,
 	"UserComment":               UserComment,
+	"videoFieldOrder":           VideoFieldOrder,
+	"videoFrameRate":            VideoFrameRate,
+	"videoFrameSize":            VideoFrameSize,
+	"videoPixelAspectRatio":     VideoPixelAspectRatio,
+	"videoPixelDepth":           VideoPixelDepth,
+	"w":                         W,
 	"when":                      When,
 	"WhiteBalance":              WhiteBalance,
+	"xap":                       Xap,
+	"xmpDM":                     XmpDM,
 	"xmpmeta":                   XmpMeta,
 	"XResolution":               XResolution,
+	"YCbCrPositioning":          YCbCrPositioning,
 	"YResolution":               YResolution,
 }
