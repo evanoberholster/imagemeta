@@ -19,11 +19,12 @@ var readTagHeaderTests = []struct {
 	assert bool
 }{
 	{"", io.EOF, Tag{}, false},
-	{"         ", io.EOF, Tag{}, false},
+	{"         ", ErrBufferFull, Tag{}, false},
 	{"<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.RDF), pt: tagPType}, t: startTag}, true},
 	{"<rdf:description/>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: soloTag}, true},
 	{"\n" + "</rdf:Description>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: stopTag}, true},
 	{"<hello >               ", ErrNegativeRead, Tag{}, false},
+	{"<? >               ", io.EOF, Tag{}, false},
 }
 
 func TestReadTagHeader(t *testing.T) {
@@ -34,7 +35,7 @@ func TestReadTagHeader(t *testing.T) {
 	for _, tagTest := range readTagHeaderTests {
 		var tag Tag
 		br := bufReader{
-			r: bufio.NewReaderSize(bytes.NewReader([]byte(tagTest.data)), 120),
+			r: bufio.NewReaderSize(bytes.NewReader([]byte(tagTest.data)), 1024),
 		}
 		tag, err = br.readTagHeader(parentTestTag)
 		if err != nil {
@@ -51,14 +52,41 @@ func TestReadTagHeader(t *testing.T) {
 	}
 }
 
-var readAttributeTests = []struct{}{}
-
-func TestReadAttribute(t *testing.T) {
-
+var readAttributeTests = []struct {
+	data   string
+	err    error
+	attr   Attribute
+	assert bool
+}{
+	{"", io.EOF, Attribute{property: property{}}, false},
+	{"\n" + " xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Attribute{property: property{pt: attrPType, val: []byte("http://www.w3.org/1999/02/22-rdf-syntax-ns#"), self: xmpns.NewProperty(xmpns.XMLnsNS, xmpns.RDF)}}, true},
+	{"  />", io.EOF, Attribute{property: property{}}, false},
+	{"  abc:", ErrNegativeRead, Attribute{property: property{}}, false},
 }
 
-var readAttrValue = []struct{}{}
+func TestReadAttribute(t *testing.T) {
+	var err error
+	for _, attrTest := range readAttributeTests {
+		var attr Attribute
+		br := bufReader{
+			r: bufio.NewReaderSize(bytes.NewReader([]byte(attrTest.data)), 120),
+			a: true,
+		}
+		if !br.hasAttribute() {
+			t.Error(errors.New("HasAttribute error"))
+		}
+		tagTest := Tag{}
+		attr, err = br.readAttribute(&tagTest)
+		if err != nil {
+			if errors.Cause(err) != attrTest.err {
+				t.Error(err)
+			}
+		}
 
-func TestReadAttrValue(t *testing.T) {
-
+		if attrTest.assert {
+			if !assert.Equal(t, attrTest.attr, attr, attrTest.attr.String()) {
+				fmt.Println(attr, attrTest.data)
+			}
+		}
+	}
 }

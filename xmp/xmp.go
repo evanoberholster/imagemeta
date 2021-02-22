@@ -13,6 +13,7 @@ import (
 var (
 	ErrNoValue      = errors.New("property has no value")
 	ErrNegativeRead = errors.New("error negative read")
+	ErrBufferFull   = bufio.ErrBufferFull
 )
 
 const (

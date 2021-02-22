@@ -70,78 +70,60 @@ func (br *bufReader) readAttribute(tag *Tag) (attr Attribute, err error) {
 	var buf []byte
 	attr.pt = attrPType
 	attr.parent = tag.self
-	if buf, err = br.Peek(maxTagHeaderSize); err != nil {
-		return
-	}
-	var i int
-	for i = 0; i < len(buf); i++ {
-		if buf[i] == ' ' || buf[i] == '\n' {
-			continue
-		}
-		if buf[i] == '>' {
-			br.a = false
-			i++
-			return
-		} else if buf[i] == '/' && buf[i+1] == '>' {
-			br.a = false
-			i += 2
-			tag.t = soloTag
-			return
-		}
-		break
-	}
-	buf = buf[i:]
 
 	// Attribute Name
-	var a, b int
-	if a, b = attrNameIndex(buf); a == -1 {
-		err = ErrNegativeRead
-		return
-	}
-	attr.self = xmpns.IdentifyProperty(buf[:a], buf[a+1:b])
-
-	if _, err = br.r.Discard(i + b); err != nil {
+	if buf, err = br.Peek(maxTagHeaderSize); err != nil {
+		err = errors.Wrap(err, "Attr")
 		return
 	}
 
+	var d int
+	if attr.self, d, err = parseAttrName(buf); err != nil {
+		err = errors.Wrap(ErrNegativeRead, "Attr (name)")
+		return
+	}
+	if _, err = br.Discard(d); err != nil {
+		err = errors.Wrap(err, "Attr (discard)")
+		return
+	}
+
+	// Attribute Value
 	attr.val, err = br.readAttrValue(tag)
+
 	return attr, err
 }
 
 // readAttrValue reada an Attributes value from the Tag.
 func (br *bufReader) readAttrValue(tag *Tag) (buf []byte, err error) {
-	// Attribute Value
-	s := maxTagValueSize
-	var i int
+	d, i := 0, 2
+	s := 64
 	for {
 		if buf, err = br.Peek(s); err != nil {
+			err = errors.Wrap(err, "Attr Value")
 			return
 		}
 
-		var delim byte
-		delim = '"'
-		if buf[0] == '=' {
-			delim = buf[1]
-			buf = buf[2:]
-		}
-		for ; i < len(buf); i++ {
-			if buf[i] == delim {
-				goto end
+		if buf[0] == '=' && (buf[1] == '"' || buf[1] == '\'') {
+			delim := buf[1]
+			if b := bytes.IndexByte(buf[i:], delim); b >= 0 {
+				i += b
+				d = i + 1
+				if buf[i+1] == '>' {
+					d++
+					br.a = false
+				} else if buf[i+1] == '/' && buf[i+2] == '>' {
+					d += 2
+					tag.t = soloTag
+					br.a = false
+				}
+				if _, err = br.Discard(d); err != nil {
+					err = errors.Wrap(err, "Attr Value (discard)")
+				}
+				return buf[2:i], err
 			}
 		}
 		s += maxTagValueSize
 	}
-end:
-	if buf[i+1] == '>' {
-		br.a = false
-	} else if buf[i+1] == '/' && buf[i+2] == '>' {
-		tag.t = soloTag
-		br.a = false
-	}
-	if _, err = br.Discard(i + 3); err != nil {
-		return
-	}
-	return buf[:i], nil
 }
 
 // readTagHeader reads an xmp tag's header and returns the tag.
@@ -149,56 +131,54 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 	tag.pt = tagPType
 	tag.parent = parent.self
 
+	s := maxTagHeaderSize
 	// Read Tag Header
 	var buf []byte
 	var i int
 	for {
-		if buf, err = br.Peek(maxTagHeaderSize); err != nil {
+		if buf, err = br.Peek(s); err != nil {
 			err = errors.Wrap(err, "Tag Header")
 			return
 		}
 
 		// Find Start of Tag
-		if i = bytes.IndexByte(buf, '<'); i >= 0 {
-			break
+		for ; i < len(buf); i++ {
+			if buf[i] == '<' {
+				if buf[i+1] == '/' {
+					tag.t = stopTag
+					i += 2
+				} else if buf[i+1] == '?' {
+					err = io.EOF
+					return
+				} else {
+					tag.t = startTag
+					i++
+				}
+				buf = buf[i:]
+				goto end
+			}
 		}
-
-		if _, err = br.Discard(maxTagHeaderSize); err != nil {
-			err = errors.Wrap(err, "Tag Header (discard)")
-			return
-		}
+		s += maxTagHeaderSize
 	}
-
-	if buf[i+1] == '/' {
-		tag.t = stopTag
-		i += 2
-	} else if buf[i+1] == '?' {
-		err = io.EOF
-		return
-	} else {
-		tag.t = startTag
-		i++
-	}
-	buf = buf[i:] // reslice tag
-	var a, b int
-	if a, b = tagNameIndex(buf); a < 0 {
-		err = errors.Wrap(ErrNegativeRead, "Tag Header (tag name)") // Err finding tag name
+end:
+	var d int
+	tag.self, d, err = parseTagName(buf)
+	if err != nil {
+		err = errors.Wrap(err, "Tag Header (tag name)") // Err finding tag name
 		return
 	}
-	tag.self = xmpns.IdentifyProperty(buf[:a], buf[a+1:b])
-	if buf[b] == '>' {
+	if buf[d] == '>' {
 		br.a = false // No Attributes
-		b++
-	} else if buf[b] == ' ' || buf[b] == '\n' { // Attributes
+		d++
+	} else if buf[d] == ' ' || buf[d] == '\n' { // Attributes
 		br.a = true
-	} else if buf[b] == '/' && buf[b+1] == '>' { // SoloTag
+	} else if buf[d] == '/' && buf[d+1] == '>' { // SoloTag
 		br.a = false // No Attributes
 		tag.t = soloTag
-		b += 2
+		d += 2
 	}
-	if _, err = br.Discard(b + i); err != nil {
+	if _, err = br.Discard(d + i); err != nil {
 		err = errors.Wrap(err, "Tag Header (discard)")
-		return // error here
 	}
 	return
 }
@@ -206,66 +186,74 @@ func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
 // readTagValue reads the Tag's Value from the bufReader. Returns
 // a temporary []byte.
 func (br *bufReader) readTagValue() (buf []byte, err error) {
-	var i int
+	var i, j int
 	s := maxTagValueSize
 	for {
 		if buf, err = br.Peek(s); err != nil {
-			return nil, err
+			err = errors.Wrap(err, "Tag Value")
+			return
 		}
-		if buf[0] == '>' {
-			buf = buf[1:]
-		} else if buf[0] == '/' && buf[1] == '>' {
-			buf = buf[2:]
+		if i == 0 {
+			if buf[i] == '>' {
+				i++
+			} else if buf[i] == '/' && buf[i+1] == '>' {
+				i += 2
+			}
+			// removes white space and new lines prefixes
+			for ; i < len(buf); i++ {
+				if buf[i] == ' ' || buf[i] == '\n' {
+					continue
+				}
+				break
+			}
+			j = i
 		}
 		// Search buffer.
-		if i = bytes.IndexByte(buf, '<'); i >= 0 {
-			buf = buf[:i]
-			break
+		for ; j < len(buf); j++ {
+			if buf[j] == '<' {
+				if _, err = br.Discard(j); err != nil {
+					err = errors.Wrap(err, "Tag Value (discard)")
+					return nil, err
+				}
+				return buf[i:j], nil
+			}
 		}
 		s += maxTagValueSize
 	}
-	if _, err = br.Discard(i); err != nil {
-		return nil, err
-	}
+}
 
-	// Remove white space and new lines prefix
-	for i = 0; i < len(buf); i++ {
-		if buf[i] == ' ' || buf[i] == '\n' {
+func parseAttrName(buf []byte) (xmpns.Property, int, error) {
+	var a, b, c int
+	for ; a < len(buf); a++ {
+		if buf[a] == ' ' || buf[a] == '\n' {
 			continue
 		}
 		break
 	}
-	return buf[i:], nil
-}
-
-func attrNameIndex(buf []byte) (int, int) {
-	var a, i int
-	for ; i < len(buf); i++ {
-		if buf[i] == ':' {
-			a = i
+	for b = a + 1; b < len(buf); b++ {
+		if buf[b] == ':' {
 			break
 		}
 	}
-	for ; i < len(buf); i++ {
-		if buf[i] == '=' || buf[i] == ' ' {
-			return a, i
+	for c = b + 2; c < len(buf); c++ {
+		if buf[c] == '=' || buf[c] == ' ' {
+			return xmpns.IdentifyProperty(buf[a:b], buf[b+1:c]), c, nil
 		}
 	}
-	return -1, -1
+	return xmpns.Property{}, -1, ErrNegativeRead
 }
 
-func tagNameIndex(buf []byte) (int, int) {
-	var a, i int
-	for ; i < len(buf); i++ {
-		if buf[i] == ':' {
-			a = i
+func parseTagName(buf []byte) (xmpns.Property, int, error) {
+	var a, b int
+	for ; a < len(buf); a++ {
+		if buf[a] == ':' {
 			break
 		}
 	}
-	for ; i < len(buf); i++ {
-		if buf[i] == '>' || buf[i] == ' ' || buf[i] == '\n' || buf[i] == '/' {
-			return a, i
+	for b = a + 1; b < len(buf); b++ {
+		if buf[b] == '>' || buf[b] == ' ' || buf[b] == '\n' || buf[b] == '/' {
+			return xmpns.IdentifyProperty(buf[:a], buf[a+1:b]), b, nil
 		}
 	}
-	return -1, -1
+	return xmpns.Property{}, -1, ErrNegativeRead
 }
