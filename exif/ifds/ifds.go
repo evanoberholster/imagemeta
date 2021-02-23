@@ -9,14 +9,23 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
-// IFD -
+// IFD is an Information Directory
 type IFD uint8
 
-// TagMap is a map of Tags
-type TagMap map[tag.ID]tag.Tag
+// Key is a TagMap Key
+type Key uint32
 
-// IfdMap is a map of ifds to an array of tagMaps
-//type IfdMap map[IFD][]tag.TagMap
+// NewKey returns a new TagMap Key
+func NewKey(ifd IFD, ifdIndex uint8, tagID tag.ID) Key {
+	var key uint32
+	key |= (uint32(ifd) << 24)
+	key |= (uint32(ifdIndex) << 16)
+	key |= (uint32(tagID))
+	return Key(key)
+}
+
+// TagMap is a map of Tags
+type TagMap map[Key]tag.Tag
 
 // List of IFDs
 const (

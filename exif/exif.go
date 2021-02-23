@@ -25,7 +25,7 @@ var (
 // to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
+func ScanExif(r io.ReaderAt) (e *Data, err error) {
 	er := newExifReader(r, nil, 0)
 
 	br := bufio.NewReaderSize(er, 64)
@@ -51,11 +51,11 @@ func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
 // returns exif and an error.
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt, header Header) (e *ExifData, err error) {
+func ParseExif(r io.ReaderAt, header Header) (e *Data, err error) {
 	er := newExifReader(r, nil, 0)
 
 	// ExifData with an ExifReader attached
-	e = newExifData(er, header.ImageType)
+	e = newData(er, header.ImageType)
 
 	// Set TiffHeader sets the ExifReader and checks
 	// the header's validity.

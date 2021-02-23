@@ -75,7 +75,7 @@ func TestParseExif(t *testing.T) {
 			}
 			createdDate, err := e.DateTime()
 			if createdDate.Unix() != wantedExif.createdDate.Unix() && err != nil {
-				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.createdDate.Unix(), createdDate.Unix())
+				t.Errorf("Incorrect Unix Time wanted %d got %d", wantedExif.createdDate.Unix(), createdDate.Unix())
 			}
 		})
 	}

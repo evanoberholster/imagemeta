@@ -171,14 +171,12 @@ func valueIsEmbbeded(byteLength uint32) bool {
 
 // trim removes trailing 0x00 and 0x20 from []byte
 func trim(buf []byte) []byte {
-	i := len(buf)
-	for i > 0 {
+	for i := len(buf); i > 0; i-- {
 		if buf[i-1] == 0x0 ||
 			buf[i-1] == 0x20 {
-			i--
-		} else {
-			break
+			continue
 		}
+		return buf[:i]
 	}
-	return buf[:i]
+	return []byte{}
 }
