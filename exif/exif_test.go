@@ -19,11 +19,11 @@ var exifTests = []struct {
 	imageType   imagetype.ImageType
 	make        string
 	model       string
-	ISOSpeed    int
-	aperture    float32
+	ISOSpeed    uint32
+	aperture    meta.Aperture
 	focalLength meta.FocalLength
-	width       uint16
-	height      uint16
+	width       uint32
+	height      uint32
 	createdDate time.Time
 }{
 	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
@@ -65,8 +65,9 @@ func TestParseExif(t *testing.T) {
 			if err != nil || focalLength != wantedExif.focalLength {
 				t.Errorf("Incorrect Focal Length wanted %s got %s", wantedExif.focalLength.String(), focalLength.String())
 			}
-			width, height, _ := e.Dimensions()
-			if wantedExif.width != width {
+			dim, _ := e.Dimensions()
+			width, height := dim.Size()
+			if err != nil || wantedExif.width != width {
 				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.width, width)
 			}
 			if wantedExif.height != height {

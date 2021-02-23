@@ -6,12 +6,19 @@ import (
 
 //go:generate msgp
 
-// FocalLength is a Focal Length expressed in tenth of a mm.
+// FocalLength is a Focal Length expressed in millimeters.
 type FocalLength float32
 
 var (
+	// FocalLength Suffix in millimeters
 	sufFocalLength = []byte{'m', 'm'}
 )
+
+// NewFocalLength returns a new FocalLength by dividing
+// "n" numerator and "d" demoninator
+func NewFocalLength(n, d uint32) FocalLength {
+	return FocalLength(float32(n) / float32(d))
+}
 
 func (fl FocalLength) String() string {
 	return string(fl.toBytes())
@@ -90,6 +97,14 @@ func (mm MeteringMode) MarshalJSON() (buf []byte, err error) {
 	return strconv.AppendUint(buf, uint64(mm), 10), nil
 }
 
+// UnmarshalJSON implements the JSONMarshaler interface that is
+// used by encoding/json
+func (mm *MeteringMode) UnmarshalJSON(buf []byte) error {
+	v, err := strconv.ParseUint(string(buf), 10, 8)
+	*mm = MeteringMode(v)
+	return err
+}
+
 // MarshalText implements the TextMarshaler interface
 func (mm MeteringMode) MarshalText() (text []byte, err error) {
 	return []byte(mm.String()), nil
@@ -116,12 +131,21 @@ var mapStringMeteringMode = map[string]MeteringMode{
 // ExposureMode is the mode in which the Exposure was taken.
 type ExposureMode uint8
 
+// NewExposureMode returns an ExposureMode from the given uint8
+func NewExposureMode(em uint8) ExposureMode {
+	if em < 3 {
+		return ExposureMode(em)
+	}
+	return 255
+}
+
 // mapExposureModeString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
 var mapExposureModeString = map[ExposureMode]string{
-	0: "Auto",
-	1: "Manual",
-	2: "Auto bracket",
+	0:   "Auto",
+	1:   "Manual",
+	2:   "Auto bracket",
+	255: "Unknown",
 }
 
 // String returns an ExposureMode as a string
@@ -249,11 +273,17 @@ var flashValues = map[FlashMode]string{
 // Aperture contains the F-Number.
 type Aperture float32
 
-// NewAperture returns a new Aperture by TextUnmarshal
-// the string. If an aperture was unable to be unmarshaled,
-// it returns 0.
-func NewAperture(aa string) Aperture {
-	return parseAperture([]byte(aa))
+// NewAperture returns a new Aperture by dividing the
+// "n" numerator over the "d" demoninator
+func NewAperture(n uint32, d uint32) Aperture {
+	return Aperture(float32(n) / float32(d))
+}
+
+// ParseString parses a string for an aperture value.
+// ex: 1/100 or 300/100
+func (aa *Aperture) ParseString(buf []byte) error {
+	*aa = parseAperture(buf)
+	return nil
 }
 
 func parseAperture(buf []byte) Aperture {

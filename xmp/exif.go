@@ -66,24 +66,28 @@ func (exif *Exif) parse(p property) (err error) {
 	case xmpns.DateTimeOriginal:
 		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case xmpns.ExposureTime:
-		err = exif.ExposureTime.UnmarshalText(p.Value())
+		n, d := parseRational(p.Value())
+		exif.ExposureTime = meta.NewShutterSpeed(uint16(n), uint16(d))
 	case xmpns.ExposureProgram:
 		exif.ExposureProgram = meta.ExposureProgram(uint8(parseUint(p.Value())))
 	case xmpns.ExposureMode:
-		exif.ExposureMode = meta.ExposureMode(uint8(parseUint(p.Value())))
+		exif.ExposureMode = meta.NewExposureMode(uint8(parseUint(p.Value())))
 	case xmpns.ExposureBiasValue:
 		err = exif.ExposureBias.UnmarshalText(p.Value())
 	case xmpns.FocalLength:
+		// TODO: error
 		n, d := parseRational(p.Value())
-		exif.FocalLength = meta.FocalLength(float32(n) / float32(d))
+		exif.FocalLength = meta.NewFocalLength(n, d)
 	case xmpns.SubjectDistance:
+		// TODO: error
 		n, d := parseRational(p.Value())
 		exif.SubjectDistance = float32(float32(n) / float32(d))
 	case xmpns.MeteringMode:
 		exif.MeteringMode = meta.NewMeteringMode(uint8(parseUint(p.Value())))
 	case xmpns.FNumber:
+		// TODO: error
 		n, d := parseRational(p.Value())
-		exif.Aperture = meta.Aperture(float32(n) / float32(d))
+		exif.Aperture = meta.NewAperture(n, d)
 	case xmpns.ISOSpeedRatings:
 		exif.ISOSpeedRatings = uint32(parseUint(p.val))
 	//case xmpns.Flash:

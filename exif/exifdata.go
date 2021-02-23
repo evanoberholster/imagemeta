@@ -23,7 +23,6 @@ type ExifData struct {
 	mkNote     ifds.TagMap
 	make       string
 	model      string
-	XMP        []byte
 	width      uint16
 	height     uint16
 	imageType  imagetype.ImageType
