@@ -26,42 +26,25 @@ var (
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
-	var it imagetype.ImageType
 	er := newExifReader(r, nil, 0)
-	br := bufio.NewReader(er)
+
+	br := bufio.NewReaderSize(er, 64)
 
 	// Identify Image Type
-	if it, err = imagetype.ScanBuf(br); err != nil {
+	it, err := imagetype.ScanBuf(br)
+	if err != nil {
 		return
 	}
 
-	// Search Image for Metadata Header using
-	// Imagetype information
-
+	// Search Image for Metadata Header using ImageType
 	header, err := tiff.Scan(br)
 	if err != nil {
-		if err != ErrNoExif {
-			return
-		}
+		return
 	}
 	// Update Imagetype in ExifHeader
 	header.ImageType = it
 
-	// ExifData with an ExifReader attached
-	e = newExifData(er, it)
-
-	if err == nil {
-		// Set TiffHeader sets the ExifReader and checks
-		// the header validity.
-		// Returns ErrInvalidHeader if header is not valid.
-		if err = er.SetHeader(Header(header)); err != nil {
-			return
-		}
-
-		// Scan the RootIFD with the FirstIfdOffset from the ExifReader
-		err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-	}
-	return
+	return ParseExif(er, Header(header))
 }
 
 // ParseExif parses Exif metadata from an io.ReaderAt and a tiff.Header and
@@ -83,6 +66,5 @@ func ParseExif(r io.ReaderAt, header Header) (e *ExifData, err error) {
 
 	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
 	err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-
 	return
 }

@@ -1,8 +1,6 @@
 package exif
 
 import (
-	"strings"
-
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -124,20 +122,21 @@ func (e *ExifData) XMLPacket() (str string, err error) {
 		}
 	}()
 
-	if len(e.XMP) > 0 {
-		str = strings.Replace(string(e.XMP), "\n", "", -1)
-		return strings.Replace(str, "   ", "", -1), nil
-		//return xmlfmt.FormatXML(e.XMP, "\t", "  "), nil
-	}
-
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.XMLPacket)
-	if err != nil {
-		return
-	}
-	str, err = t.ASCIIValue(e.exifReader)
-	str = strings.Replace(str, "\n", "", -1)
-	return strings.Replace(str, "   ", "", -1), nil
+	//if len(e.XMP) > 0 {
+	//	str = strings.Replace(string(e.XMP), "\n", "", -1)
+	//	return strings.Replace(str, "   ", "", -1), nil
+	//	//return xmlfmt.FormatXML(e.XMP, "\t", "  "), nil
+	//}
+	//
+	//t, err := e.GetTag(ifds.RootIFD, 0, ifds.XMLPacket)
+	//if err != nil {
+	//	return
+	//}
+	//str, err = t.ASCIIValue(e.exifReader)
+	//str = strings.Replace(str, "\n", "", -1)
+	//return strings.Replace(str, "   ", "", -1), nil
 	//return xmlfmt.FormatXML(str, "\t", "  "), nil
+	return
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram
