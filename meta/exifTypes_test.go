@@ -9,7 +9,7 @@ import (
 
 func TestFocalLength(t *testing.T) {
 	fl1 := FocalLength(100.25)
-	fl2 := FocalLength(0)
+	fl2 := NewFocalLength(0, 0)
 
 	buf, err := fl1.MarshalText()
 	if err != nil {
@@ -173,7 +173,7 @@ var fmList = []struct {
 
 func TestFlashMode(t *testing.T) {
 	for _, fm := range fmList {
-		if a := ParseFlashMode(fm.m); a != fm.fm {
+		if a := NewFlashMode(fm.m); a != fm.fm {
 			assert.Equal(t, fm.fm, a, "FlashMode.ParseFlashMode #%s, wanted %s got %s", fm.name, fm.fm, a)
 		}
 
@@ -182,7 +182,7 @@ func TestFlashMode(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error FlashMode.MarshallText (%s): %s ", fm.name, err.Error())
 		}
-		b := ParseFlashMode(fm.m)
+		b := NewFlashMode(fm.m)
 		assert.Equal(t, []byte(strconv.Itoa(int(b))), txt, "FlashMode.MarshalText #%s, wanted %d got %d", fm.name, fm.m, strconv.Itoa(int(b)))
 
 		// UnmarshalText
@@ -200,7 +200,7 @@ func TestFlashMode(t *testing.T) {
 
 	// Incorrect FlashMode
 	a := FlashMode(250)
-	b := ParseFlashMode(250)
+	b := NewFlashMode(250)
 	assert.Equal(t, a.Bool(), false, "FlashMode.Bool #%s, wanted %s got %s", "Incorrect FlashMode", false, a.Bool())
 	assert.NotEqual(t, a, b, "FlashMode.ParseFlashMode #%s, wanted %s got %s", "Incorrect FlashMode", b, a)
 }

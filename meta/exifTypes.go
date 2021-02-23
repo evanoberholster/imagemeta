@@ -133,7 +133,7 @@ type ExposureMode uint8
 
 // NewExposureMode returns an ExposureMode from the given uint8
 func NewExposureMode(em uint8) ExposureMode {
-	if em < 3 {
+	if em <= 2 {
 		return ExposureMode(em)
 	}
 	return 255
@@ -142,19 +142,30 @@ func NewExposureMode(em uint8) ExposureMode {
 // mapExposureModeString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
 var mapExposureModeString = map[ExposureMode]string{
-	0:   "Auto",
-	1:   "Manual",
-	2:   "Auto bracket",
-	255: "Unknown",
+	0: "Auto",
+	1: "Manual",
+	2: "Auto bracket",
 }
 
 // String returns an ExposureMode as a string
 func (em ExposureMode) String() string {
-	return mapExposureModeString[em]
+	str, ok := mapExposureModeString[em]
+	if ok {
+		return str
+	}
+	return "Unknown"
 }
 
 // ExposureProgram is the program in which the image was taken.
 type ExposureProgram uint8
+
+// NewExposureProgram returns an ExposureProgram from the given uint8
+func NewExposureProgram(ep uint8) ExposureProgram {
+	if ep <= 9 {
+		return ExposureProgram(ep)
+	}
+	return 255
+}
 
 // mapExposureProgramString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
@@ -173,12 +184,21 @@ var mapExposureProgramString = map[ExposureProgram]string{
 
 // String returns an ExposureProgram as a string
 func (ep ExposureProgram) String() string {
-	return mapExposureProgramString[ep]
+	str, ok := mapExposureProgramString[ep]
+	if ok {
+		return str
+	}
+	return "Unknown"
 }
 
 // FlashMode - Mode in which a Flash was used.
 // (uint8) - value of FlashMode
 type FlashMode uint8
+
+// NewFlashMode returns a new FlashMode
+func NewFlashMode(fm uint8) FlashMode {
+	return parseFlashMode(fm)
+}
 
 // Flash Modes
 const (
@@ -205,7 +225,7 @@ func (fm FlashMode) MarshalText() (text []byte, err error) {
 func (fm *FlashMode) UnmarshalText(text []byte) (err error) {
 	var i int
 	i, err = strconv.Atoi(string(text))
-	*fm = ParseFlashMode(uint8(i))
+	*fm = parseFlashMode(uint8(i))
 	return err
 }
 
@@ -220,9 +240,9 @@ func (fm FlashMode) Bool() bool {
 	return false
 }
 
-// ParseFlashMode returns the FlashMode from an Exif flashmode integer
+// parseFlashMode returns the FlashMode from an Exif flashmode integer
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
-func ParseFlashMode(m uint8) FlashMode {
+func parseFlashMode(m uint8) FlashMode {
 	switch m {
 	case 0: // NoFlash
 		return NoFlash
