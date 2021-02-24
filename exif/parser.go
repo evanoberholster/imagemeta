@@ -1,14 +1,15 @@
 package exif
 
 import (
-	"errors"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/exif/tag"
+	"github.com/pkg/errors"
 )
 
 // Parsing Errors
 var (
+	ErrParseBufSize   = errors.New("error parse has insufficient data")
 	ErrParseGPS       = errors.New("error parsing GPS coords")
 	ErrParseTimeStamp = errors.New("error parsing timestamp")
 	ErrParseSubSecond = errors.New("error parsing sub second")
@@ -22,10 +23,14 @@ var (
 // ParseTimeStamp parses a time.Time from 2 ASCII Tag's.
 // ex: 1997:09:01 12:00:00
 // Based on: http://www.cipa.jp/std/documents/e/DC-008-2012_E.pdf (Last checked: 24/02/2021)
-func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag) (t time.Time, err error) {
+func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag, tz *time.Location) (t time.Time, err error) {
 	if date.TagType == tag.TypeASCII {
+		if tz == nil {
+			tz = time.UTC
+		}
 		buf := e.er.rawBuffer[:]
 		if _, err = e.er.ReadAt(buf[:date.Size()], int64(date.ValueOffset)); err != nil {
+			err = errors.Wrap(ErrParseBufSize, "ParseTimeStamp")
 			return
 		}
 		// check recieved value
@@ -41,7 +46,7 @@ func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag) (t time.Time, err er
 
 			sub, _ := e.ParseSubSec(subSec)
 
-			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), int(sub), time.UTC), nil
+			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), int(sub), tz), nil
 		}
 	}
 
@@ -55,19 +60,21 @@ func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag) (t time.Time, err er
 // Optionally add subSec tag from Exif.
 func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *time.Location) (t time.Time, err error) {
 	byteOrder := e.er.byteOrder
-	if ts.UnitCount != 3 || ts.TagType != tag.TypeRational || ds.TagType != tag.TypeASCII {
-		err = ErrParseTimeStamp
+	if !(ts.UnitCount == 3 && ts.TagType == tag.TypeRational && ds.TagType == tag.TypeASCII) {
+		err = errors.Wrap(ErrParseTimeStamp, "ParseGPSTimeStamp TagType")
 		return
-		// TODO: Return error
 	}
 
 	sub, _ := e.ParseSubSec(subSec)
 	buf := e.er.rawBuffer[:]
 
-	// Read GPS DateStamp Tag
-	// The format is "YYYY:MM:DD."
+	// Read GPS DateStamp Tag with the format is "YYYY:MM:DD."
 	if _, err = e.er.ReadAt(buf[:ds.Size()], int64(ds.ValueOffset)); err != nil {
+		err = errors.Wrap(ErrParseBufSize, "ParseGPSTimeStamp DateStamp")
 		return
+	}
+	if tz == nil {
+		tz = time.UTC
 	}
 
 	// check recieved value
@@ -78,6 +85,7 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 
 		// Read GPS TimeStamp Tag
 		if _, err = e.er.ReadAt(buf[:ts.Size()], int64(ts.ValueOffset)); err != nil {
+			err = errors.Wrap(ErrParseBufSize, "ParseGPSTimeStamp TimeStamp")
 			return
 		}
 		hour := int(byteOrder.Uint32(buf[:4]) / byteOrder.Uint32(buf[4:8]))
@@ -94,14 +102,13 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 	buf := e.er.rawBuffer[:coordTag.Size()]
 	byteOrder := e.er.byteOrder
 
-	if !refTag.IsEmbedded() || coordTag.UnitCount != 3 || coordTag.TagType != tag.TypeRational {
-		err = ErrParseGPS
-		return
-		// TODO: Return error
+	if !(refTag.IsEmbedded() && coordTag.UnitCount == 3 && coordTag.TagType == tag.TypeRational) {
+		return 0.0, ErrParseGPS
 	}
 
 	// Read GPS Coord Tag
 	if _, err = e.er.ReadAt(buf, int64(coordTag.ValueOffset)); err != nil {
+		err = errors.Wrap(ErrParseBufSize, "ParseGPSCoord")
 		return
 	}
 	coord = (float64(byteOrder.Uint32(buf[:4])) / float64(byteOrder.Uint32(buf[4:8])))

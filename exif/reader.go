@@ -16,18 +16,15 @@ const rawBufferSize = 24
 // reader -
 type reader struct {
 	reader io.ReaderAt
+	// current reader offset
+	offset int64
 
 	// Exif Header
 	byteOrder  binary.ByteOrder
 	exifOffset int64
-
-	// reader interface offset
-	offset int64
-
-	// Part of Exif Header
 	exifLength uint32
 
-	// Parsing raw buffer
+	// rawBuffer for parsing Tags
 	rawBuffer [rawBufferSize]byte
 }
 
