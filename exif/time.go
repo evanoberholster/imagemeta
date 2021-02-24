@@ -27,9 +27,9 @@ func (e *Data) ModifyDate() (time.Time, error) {
 	return e.getDateTags(ifds.RootIFD, ifds.DateTime, ifds.ExifIFD, exififd.SubSecTime)
 }
 
-// DateTime - the date and time at which the EXIF file was created
+// DateTimeOld - the date and time at which the EXIF file was created
 // with sub-second precision
-func (e *Data) DateTime() (time.Time, error) {
+func (e *Data) DateTimeOld() (time.Time, error) {
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
@@ -52,11 +52,11 @@ func (e *Data) getDateTags(dateIFD ifds.IFD, dateTagID tag.ID, subSecIFD ifds.IF
 	if err != nil {
 		return time.Time{}, ErrEmptyTag
 	}
-	if dateRaw, err := t.ASCIIValue(e.exifReader); err == nil && dateRaw != "" {
+	if dateRaw, err := e.ParseASCIIValue(t); err == nil && dateRaw != "" {
 		var subSecRaw string
 		// "IFD/Exif" SubSecTime
 		if t, err := e.GetTag(subSecIFD, 0, subSecTagID); err != nil {
-			subSecRaw, _ = t.ASCIIValue(e.exifReader)
+			subSecRaw, _ = e.ParseASCIIValue(t)
 		}
 		if dateTime, err := parseExifFullTimestamp(dateRaw, subSecRaw); err == nil && !dateTime.IsZero() {
 			return dateTime, nil

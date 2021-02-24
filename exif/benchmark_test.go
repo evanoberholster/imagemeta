@@ -38,7 +38,7 @@ var (
 		//"20.jpg",
 	}
 	testFilenames2 = []string{
-		"1.CR2",
+		"2.CR2",
 	}
 )
 
@@ -101,20 +101,51 @@ func BenchmarkParseExif100(b *testing.B) {
 			defer f.Close()
 			buf, _ := ioutil.ReadAll(f)
 			cb := bytes.NewReader(buf)
+			e, err := ScanExif(cb)
+			if err != nil {
+				if err != ErrNoExif {
+					b.Fatal(err)
+				}
+			}
 
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_, err = ScanExif(cb)
-				if err != nil {
-					if err != ErrNoExif {
-						b.Fatal(err)
-					}
-				}
+				b.StopTimer()
+				b.StartTimer()
+				e.GPSAltitude()
 			}
 		})
 	}
 }
+
+// GPSDate
+// BenchmarkParseExif100/2.CR2         	 1000000	      1044 ns/op	     176 B/op	       4 allocs/op
+// BenchmarkParseExif100/2.CR2         	 4983446	       272 ns/op	       0 B/op	       0 allocs/op
+
+// GPSCoords
+// BenchmarkParseExif100/2.CR2         	 1340478	       850 ns/op	     224 B/op	       4 allocs/op
+// BenchmarkParseExif100/2.CR2         	 3894754	       303 ns/op	       0 B/op	       0 allocs/op
+
+// Artist
+// BenchmarkParseExif100/0.CR2         	 4855602	       241 ns/op	      16 B/op	       1 allocs/op
+
+// Aperture
+// BenchmarkParseExif100/0.CR2         	10543807	       123 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkParseExif100/0.CR2         	10259781	       116 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkParseExif100/0.CR2         	 3556357	       303 ns/op	      80 B/op	       1 allocs/op
+
+// DateTime
+// BenchmarkParseExif100/0.CR2         	 1000000	      1043 ns/op	     208 B/op	       5 allocs/op
+// BenchmarkParseExif100/0.CR2         	 6169940	       230 ns/op	       0 B/op	       0 allocs/op
+
+// BenchmarkParseExif100/1.CR2         	 5274560	       256 ns/op	      16 B/op	       2 allocs/op
+
+// BenchmarkParseExif100/1.CR2         	12420832	        97.1 ns/op	       0 B/op	       0 allocs/op
+
+// BenchmarkParseExif100/1.CR2         	 5502931	       235 ns/op	      16 B/op	       1 allocs/op
+
+// BenchmarkParseExif100/1.CR2         	   36753	     31716 ns/op	   13120 B/op	      36 allocs/op
 
 // BenchmarkParseExif100/1.CR2         	   31756	     34805 ns/op	   13706 B/op	      38 allocs/op
 
@@ -126,7 +157,7 @@ func BenchmarkParseExif100(b *testing.B) {
 
 func BenchmarkIfdKey(b *testing.B) {
 	tm := make(ifds.TagMap)
-	tagTest := tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 32, 32, tag.RawValueOffset([4]byte{1, 1, 1, 1}))
+	tagTest := tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 32, 32)
 	b.Run("Key/Set", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()

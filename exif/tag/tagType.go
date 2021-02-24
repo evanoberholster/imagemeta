@@ -19,8 +19,8 @@ type Rational struct {
 	Denominator uint32
 }
 
-// SignedRational is a signed rational value
-type SignedRational struct {
+// SRational is a signed rational value
+type SRational struct {
 	Numerator   int32
 	Denominator int32
 }
@@ -47,6 +47,9 @@ const (
 	// TypeUndefined describes an encoded value that has a complex/non-clearcut
 	// interpretation.
 	TypeUndefined Type = 7
+
+	// TypeSignedShort describes an encoded list of signed shorts. (experimental)
+	TypeSignedShort Type = 8
 
 	// TypeSignedLong describes an encoded list of signed longs.
 	TypeSignedLong Type = 9
@@ -94,12 +97,12 @@ func (tagType Type) Size() uint32 {
 
 // IsValid returns true if tagType is a valid type.
 func (tagType Type) IsValid() bool {
-	return tagType == TypeByte ||
-		tagType == TypeASCII ||
-		tagType == TypeASCIINoNul ||
-		tagType == TypeShort ||
+	return tagType == TypeShort ||
 		tagType == TypeLong ||
 		tagType == TypeRational ||
+		tagType == TypeByte ||
+		tagType == TypeASCII ||
+		tagType == TypeASCIINoNul ||
 		tagType == TypeSignedLong ||
 		tagType == TypeSignedRational ||
 		tagType == TypeUndefined
@@ -130,12 +133,12 @@ func (tagType Type) String() string {
 	return "UnknownType"
 }
 
-// TypeFromRaw returns the Type of the Tag or panics
+// NewTagType returns a new TagType and returns an error
 // if the tag type cannot be determined
-func TypeFromRaw(tagTypeRaw uint16) Type {
-	tagType := Type(tagTypeRaw)
+func NewTagType(raw uint16) (Type, error) {
+	tagType := Type(raw)
 	if !tagType.IsValid() {
-		panic(ErrTagTypeNotValid)
+		return 0, ErrTagTypeNotValid
 	}
-	return tagType
+	return tagType, nil
 }

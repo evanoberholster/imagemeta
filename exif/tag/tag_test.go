@@ -1,8 +1,6 @@
 package tag
 
 import (
-	"bytes"
-	"encoding/binary"
 	"testing"
 )
 
@@ -26,8 +24,8 @@ var tagTypeTests = []struct {
 func TestTypeFromRaw(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			ty := TypeFromRaw(tag.rawTagType)
-			if ty != tag.tagType {
+			ty, err := NewTagType(tag.rawTagType)
+			if ty != tag.tagType || err != nil {
 				t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
 			}
 		})
@@ -55,9 +53,7 @@ func TestTagTypeSizeAndString(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	rawValueOffset := RawValueOffset([4]byte{0, 0, 0, 2})
-	valueOffset := binary.BigEndian.Uint32(rawValueOffset[:])
-	tag := NewTag(ID(0x0000), TypeASCII, 1, valueOffset, rawValueOffset)
+	tag := NewTag(ID(0x0000), TypeASCII, 16, 0)
 
 	if tag.TagID != ID(0x0000) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0000), tag.TagID)
@@ -65,14 +61,13 @@ func TestTag(t *testing.T) {
 	if tag.TagType != TypeASCII {
 		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.TagType)
 	}
-	if tag.UnitCount != 1 {
-		t.Errorf("Incorrect Tag UnitCount wanted %d got %d", 1, tag.UnitCount)
+	if tag.UnitCount != 16 {
+		t.Errorf("Incorrect Tag UnitCount wanted %d got %d", 16, tag.UnitCount)
 	}
-	if tag.Offset() != 0x0002 {
-		t.Errorf("Incorrect Tag Offset wanted 0x%04x got 0x%04x", 0x0002, tag.Offset())
+	if tag.ValueOffset != 0x0002 {
+		t.Errorf("Incorrect Tag Offset wanted 0x%04x got 0x%04x", 0x0002, tag.ValueOffset)
 	}
-	if !bytes.Equal(tag.rawValueOffset[:], rawValueOffset[:]) {
-		t.Errorf("Incorrect Tag Type wanted %b got %b", []byte{0, 0, 0, 2}, tag.rawValueOffset[:])
+	if tag.IsEmbedded(){
+		t.Errorf("ValueIsEmbedded is true when equal or less than 4 bytes")
 	}
-
 }

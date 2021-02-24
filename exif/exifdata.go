@@ -15,38 +15,38 @@ var (
 
 // Data struct contains the parsed Exif information
 type Data struct {
-	exifReader *reader
-	ifdMap     ifds.TagMap
-	make       string
-	model      string
-	width      uint16
-	height     uint16
-	imageType  imagetype.ImageType
+	er        *reader
+	ifdMap    ifds.TagMap
+	make      string
+	model     string
+	width     uint16
+	height    uint16
+	imageType imagetype.ImageType
 }
 
 // newData creates a new initialized Exif object
 func newData(er *reader, it imagetype.ImageType) *Data {
 	return &Data{
-		exifReader: er,
-		imageType:  it,
-		ifdMap:     make(ifds.TagMap),
+		er:        er,
+		imageType: it,
+		ifdMap:    make(ifds.TagMap, 20),
 	}
 }
 
-// AddTag adds a Tag to an Ifd -> IfdIndex -> tag.TagMap
-func (e *Data) AddTag(ifd ifds.IFD, ifdIndex int, t tag.Tag) {
+// AddTag adds a Tag to a tag.TagMap
+func (e *Data) AddTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
 	if ifd == ifds.RootIFD {
 		// Add Make and Model to Exif struct for future decoding of Makernotes
 		switch t.TagID {
 		case ifds.Make:
-			e.make, _ = t.ASCIIValue(e.exifReader)
+			e.make, _ = e.ParseASCIIValue(t)
 		case ifds.Model:
-			e.model, _ = t.ASCIIValue(e.exifReader)
+			e.model, _ = e.ParseASCIIValue(t)
 		}
 	}
 	switch ifd {
 	case ifds.RootIFD, ifds.SubIFD, ifds.ExifIFD, ifds.GPSIFD, ifds.MknoteIFD:
-		e.ifdMap[ifds.NewKey(ifd, uint8(ifdIndex), t.TagID)] = t
+		e.ifdMap[ifds.NewKey(ifd, ifdIndex, t.TagID)] = t
 	}
 }
 
@@ -58,6 +58,8 @@ func (e *Data) GetTag(ifd ifds.IFD, ifdIndex uint8, tagID tag.ID) (tag.Tag, erro
 	return tag.Tag{}, ErrEmptyTag
 }
 
+// RangeTags returns a chan tag.Tag for the
+// ranging over tags in exif.Data
 func (e *Data) RangeTags() chan tag.Tag {
 	c := make(chan tag.Tag)
 	go func() {

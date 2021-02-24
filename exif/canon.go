@@ -16,7 +16,7 @@ func (e *Data) CanonCameraSettings() (canon.CameraSettings, error) {
 	if err != nil {
 		return canon.CameraSettings{}, err
 	}
-	ii, err := t.Uint16Values(e.exifReader)
+	ii, err := e.ParseUint16Values(t)
 	if len(ii) < 24 || err != nil {
 		return canon.CameraSettings{}, err
 	}
@@ -39,7 +39,7 @@ func (e *Data) CanonFileInfo() (canon.FileInfo, error) {
 	if err != nil {
 		return canon.FileInfo{}, err
 	}
-	ii, err := t.Uint16Values(e.exifReader)
+	ii, err := e.ParseUint16Values(t)
 	if len(ii) < 21 || err != nil {
 		return canon.FileInfo{}, err
 	}
@@ -59,7 +59,7 @@ func (e *Data) CanonShotInfo() (canon.ShotInfo, error) {
 	if err != nil {
 		return canon.ShotInfo{}, err
 	}
-	si, err := t.Uint16Values(e.exifReader)
+	si, err := e.ParseUint16Values(t)
 	if len(si) < 29 || err != nil {
 		return canon.ShotInfo{}, err
 	}
@@ -86,7 +86,7 @@ func (e *Data) CanonAFInfo() (afInfo canon.AFInfo, err error) {
 	if err != nil {
 		return canon.AFInfo{}, err
 	}
-	af, err := t.Uint16Values(e.exifReader)
+	af, err := e.ParseUint16Values(t)
 	if len(af) < 8 || err != nil {
 		panic(ErrEmptyTag)
 	}
