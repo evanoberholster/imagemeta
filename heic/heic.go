@@ -122,7 +122,6 @@ func (hm *Metadata) DecodeExif(r meta.Reader) error {
 	}
 	if hm.ExifDecodeFn == nil {
 		return nil
-
 	}
 	return hm.ExifDecodeFn(r, header)
 }

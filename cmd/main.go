@@ -10,12 +10,12 @@ import (
 	"github.com/evanoberholster/imagemeta/exif"
 )
 
-const testFilename = "../../test/img/1.heic"
+const testFilename = "../../test/img/0.CR2"
 
-const testFilename2 = "../testImages/Heic.exif"
+//const testFilename2 = "../testImages/Heic.exif"
 
 func main() {
-	f, err := os.Open(testFilename2)
+	f, err := os.Open(testFilename)
 	if err != nil {
 		panic(err)
 	}

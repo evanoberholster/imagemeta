@@ -149,8 +149,8 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 	if m.ExifDecodeFn != nil {
 		err = hm.DecodeExif(m.r)
 	}
-	if m.XmpDecodeFn == nil {
-		return ErrNoXmpDecodeFn
+	if m.XmpDecodeFn != nil {
+		return m.XmpDecodeFn(m.r, hm.XmpHeader)
 	}
 	// Add Support for XMP
 	//hm.DecodeXmp(m.r)
