@@ -6,7 +6,7 @@
 [![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-Image Metadata (Exif and XMP) extraction for JPEG, HEIC, AVIF, TIFF and Camera Raw in golang. Focus is on providing wide variety of features while being perfomance oriented.
+Image Metadata (Exif and XMP) extraction for JPEG, HEIC, WebP, AVIF, TIFF and Camera Raw in golang. Focus is on providing wide variety of features while being perfomance oriented.
 
 ## Documentation
 
@@ -75,7 +75,7 @@ func main() {
 	// Exif
 	fmt.Println(e)
 
-	// Strings
+    // Example Tags
 	fmt.Println(e.CameraMake())
 	fmt.Println(e.CameraModel())
 	fmt.Println(e.Artist())
@@ -84,26 +84,24 @@ func main() {
 	fmt.Println(e.LensModel())
 	fmt.Println(e.CameraSerial())
 	fmt.Println(e.LensSerial())
-	//
 	fmt.Println(e.Dimensions())
-	fmt.Println(e.XMLPacket())
-	//
-	//// Makernotes
+
+	// Makernote Tags
 	fmt.Println(e.CanonCameraSettings())
 	fmt.Println(e.CanonFileInfo())
 	fmt.Println(e.CanonShotInfo())
 	fmt.Println(e.CanonAFInfo())
-	//
-	//// Time
+	
+	// Time Tags
 	fmt.Println(e.ModifyDate())
 	fmt.Println(e.DateTime())
-	fmt.Println(e.GPSTime())
-	//
-	//// GPS
-	fmt.Println(e.GPSInfo())
+	fmt.Println(e.GPSDate(time.UTC))
+	
+	// GPS Tags
+	fmt.Println(e.GPSCoords())
 	fmt.Println(e.GPSAltitude())
-	//
-	// Metadata
+	
+	// Other Tags
 	fmt.Println(e.ExposureProgram())
 	fmt.Println(e.MeteringMode())
 	fmt.Println(e.ShutterSpeed())
@@ -180,12 +178,15 @@ func main() {
 
 ## TODO
 
-- [x] Update ImageTypes API
-- [x] Write Exif extraction for individual image types (jpg, heic, cr2, tiff, dng)
+- [x] Stabilize ImageTypes API
+- [x] Add Exif parsing for individual image types (jpg, heic, cr2, tiff, dng)
 - [x] Add XMP parsing as "xmp" package
-- [ ] Stabalize API
-- [ ] Write tests
-- [ ] Include support for CRW image type (ciff format images)
+- [ ] Add Avif, Heic and CR3 image metadata support (riff format images)
+- [ ] Add Webp image metadata support
+- [ ] Add Canon Exif Makernote support
+- [ ] Add CRW image metadata support (ciff format images)
+- [ ] Stabalize Imagemeta API
+- [ ] Write tests for stable packages
 - [ ] Create Thumbnail API
 - [ ] Documentation
 
