@@ -76,7 +76,7 @@ func (e *Data) DateTime() (time.Time, error) {
 	t1, err := e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal)
 	if err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
-		return e.ParseTimeStamp(t1, t2)
+		return e.ParseTimeStamp(t1, t2, time.UTC)
 	}
 
 	// "IFD/Exif" DateTimeDigitized
@@ -85,7 +85,7 @@ func (e *Data) DateTime() (time.Time, error) {
 	t1, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized)
 	if err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized)
-		return e.ParseTimeStamp(t1, t2)
+		return e.ParseTimeStamp(t1, t2, time.UTC)
 	}
 	return time.Time{}, ErrEmptyTag
 }
@@ -98,7 +98,7 @@ func (e *Data) ModifyDate() (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	return e.ParseTimeStamp(t1, tag.Tag{})
+	return e.ParseTimeStamp(t1, tag.Tag{}, time.UTC)
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake

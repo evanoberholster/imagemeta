@@ -1,6 +1,6 @@
 name: Build
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
    
@@ -8,7 +8,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: ["1.16", "1.15", "1.14"]
+        go-version: ["1.16", "1.15"]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
 
