@@ -50,7 +50,7 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32) Tag {
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("0x%04x \t | %s ", t.TagID, t.TagType)
+	return fmt.Sprintf("0x%04x\t | %s ", t.TagID, t.TagType)
 }
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset
@@ -74,6 +74,7 @@ type Type uint8
 // TagTypes defined
 // Copied from dsoprea/go-exif
 const (
+	TypeUnknown Type = 0
 	// TypeByte describes an encoded list of bytes.
 	TypeByte Type = 1
 
@@ -137,7 +138,8 @@ func (tagType Type) Size() uint32 {
 	case TypeSignedRational:
 		return TypeSignedRationalSize
 	default:
-		panic(fmt.Errorf("can not determine tag-value size for type (%d): [%s]", tagType, tagType.String()))
+		return 0
+		//panic(fmt.Errorf("can not determine tag-value size for type (%d): [%s]", tagType, tagType.String()))
 	}
 }
 

@@ -60,8 +60,7 @@ func TestParseGPSTimeStamp(t *testing.T) {
 	}
 
 	for i, v := range parseGPSTimeStampTests {
-		var buf []byte
-		buf = append(v.ds, v.ts...)
+		buf := append(v.ds, v.ts...)
 		ds := tag.NewTag(gpsifd.GPSDateStamp, tag.TypeASCII, 11, 0)
 		ts := tag.NewTag(gpsifd.GPSTimeStamp, tag.TypeRational, 0x0003, 11)
 

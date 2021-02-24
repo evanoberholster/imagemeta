@@ -2,7 +2,6 @@ package exif
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"time"
 
@@ -299,7 +298,6 @@ func (e *Data) ISOSpeed() (iso uint32, err error) {
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println(t.TagType, t.ValueOffset)
 	i, err := e.ParseUint16Value(t)
 	if err != nil {
 		return 0, err

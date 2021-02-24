@@ -9,23 +9,25 @@ var tagTypeTests = []struct {
 	tagType    Type
 	tagSize    uint32
 	tagString  string
+	err        error
 }{
-	{1, TypeByte, TypeByteSize, "BYTE"},
-	{2, TypeASCII, TypeASCIISize, "ASCII"},
-	{3, TypeShort, TypeShortSize, "SHORT"},
-	{4, TypeLong, TypeLongSize, "LONG"},
-	{5, TypeRational, TypeRationalSize, "RATIONAL"},
-	{7, TypeUndefined, 0, "UNDEFINED"},
-	{9, TypeSignedLong, TypeSignedLongSize, "SLONG"},
-	{10, TypeSignedRational, TypeSignedRationalSize, "SRATIONAL"},
-	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL"},
+	{1, TypeByte, TypeByteSize, "BYTE", nil},
+	{2, TypeASCII, TypeASCIISize, "ASCII", nil},
+	{3, TypeShort, TypeShortSize, "SHORT", nil},
+	{4, TypeLong, TypeLongSize, "LONG", nil},
+	{5, TypeRational, TypeRationalSize, "RATIONAL", nil},
+	{7, TypeUndefined, 0, "UNDEFINED", nil},
+	{9, TypeSignedLong, TypeSignedLongSize, "SLONG", nil},
+	{10, TypeSignedRational, TypeSignedRationalSize, "SRATIONAL", nil},
+	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL", nil},
+	{0, TypeUnknown, 0, "UnknownType", ErrTagTypeNotValid},
 }
 
 func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
 			ty, err := NewTagType(tag.rawTagType)
-			if ty != tag.tagType || err != nil {
+			if ty != tag.tagType || err != tag.err {
 				t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
 			}
 		})
@@ -53,10 +55,10 @@ func TestTagType(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	tag := NewTag(ID(0x0000), TypeASCII, 16, 0x0002)
+	tag := NewTag(ID(0x0010), TypeASCII, 16, 0x0002)
 
-	if tag.TagID != ID(0x0000) {
-		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0000), tag.TagID)
+	if tag.TagID != ID(0x0010) {
+		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.TagID)
 	}
 	if tag.TagType != TypeASCII {
 		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.TagType)
@@ -70,8 +72,10 @@ func TestTag(t *testing.T) {
 	if tag.IsEmbedded() {
 		t.Errorf("ValueIsEmbedded is true when equal or less than 4 bytes")
 	}
-
 	if tag.Size() != 16 {
 		t.Errorf("Incorrect Tag Size wanted %d got %d", 16, tag.Size())
+	}
+	if tag.String() != "0x0010\t | ASCII " {
+		t.Errorf("Incorrect Tag String wanted %v got %v", "0x0010\t | ASCII ", tag.String())
 	}
 }

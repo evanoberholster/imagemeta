@@ -89,16 +89,17 @@ func (ifd IFD) IsChildIfd(t tag.Tag) IFD {
 // TagName returns the tagName for the given IFD and tag.ID
 // if tag name is not known returns uint32 representation
 func (ifd IFD) TagName(id tag.ID) (name string) {
+	var ok bool
 	switch ifd {
 	case RootIFD, SubIFD:
-		name = RootIfdTagIDMap[id]
+		name, ok = RootIfdTagIDMap[id]
 	case ExifIFD:
-		name = exififd.TagIDMap[id]
+		name, ok = exififd.TagIDMap[id]
 	case GPSIFD:
-		name = gpsifd.TagIDMap[id]
+		name, ok = gpsifd.TagIDMap[id]
 	case MknoteIFD:
 	}
-	if name == "" {
+	if !ok {
 		name = fmt.Sprintf("0x%04x", id)
 	}
 	return

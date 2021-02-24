@@ -17,8 +17,8 @@ var (
 // TODO: Exhaustatively Test and refactor
 func NikonMkNoteHeader(reader io.Reader) (byteOrder binary.ByteOrder, err error) {
 	// Nikon Makernotes header is 18 bytes. Move Reader up necessary bytes
-	mknoteHeader := make([]byte, 18)
-	if n, err := reader.Read(mknoteHeader); n < 18 || err != nil {
+	mknoteHeader := [18]byte{}
+	if n, err := reader.Read(mknoteHeader[:]); n < 18 || err != nil {
 		return nil, ErrNikonMkNote
 	}
 	// Nikon makernote header starts with "Nikon" with the first 5 bytes
