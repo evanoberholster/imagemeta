@@ -9,8 +9,10 @@ import (
 
 // Parsing Errors
 var (
+	ErrParseGPS       = errors.New("error parsing GPS coords")
 	ErrParseTimeStamp = errors.New("error parsing timestamp")
 	ErrParseSubSecond = errors.New("error parsing sub second")
+	ErrParseRationals = errors.New("error parsing rationals")
 )
 
 ////
@@ -54,6 +56,8 @@ func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag) (t time.Time, err er
 func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *time.Location) (t time.Time, err error) {
 	byteOrder := e.er.byteOrder
 	if ts.UnitCount != 3 || ts.TagType != tag.TypeRational || ds.TagType != tag.TypeASCII {
+		err = ErrParseTimeStamp
+		return
 		// TODO: Return error
 	}
 
@@ -91,6 +95,8 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 	byteOrder := e.er.byteOrder
 
 	if !refTag.IsEmbedded() || coordTag.UnitCount != 3 || coordTag.TagType != tag.TypeRational {
+		err = ErrParseGPS
+		return
 		// TODO: Return error
 	}
 
@@ -194,7 +200,7 @@ func (e *Data) ParseUint16Value(t tag.Tag) (value uint16, err error) {
 // Warning: it returns only the first value if there are more values
 // use Uint16Values (Short) or Unit32Values (Long) function
 func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
-	if t.TagType == tag.TypeShort || t.TagType == tag.TypeLong {
+	if t.TagType == tag.TypeLong {
 		if t.IsEmbedded() {
 			return t.ValueOffset, nil
 		}
@@ -211,6 +217,13 @@ func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 		}
 		return
 	}
+	if t.TagType == tag.TypeShort {
+		if t.IsEmbedded() {
+			e.er.byteOrder.PutUint32(e.er.rawBuffer[:4], t.ValueOffset)
+			return uint32(e.er.byteOrder.Uint16(e.er.rawBuffer[:2])), nil
+		}
+	}
+
 	return 0, tag.ErrTagTypeNotValid
 }
 
@@ -270,8 +283,9 @@ func (e *Data) ParseUint32Values(t tag.Tag) (value []uint32, err error) {
 // numerator and denominator for a single Unsigned Rational
 func (e *Data) ParseRationalValue(t tag.Tag) (n, d uint32, err error) {
 	if t.TagType == tag.TypeRational || t.TagType == tag.TypeSignedRational {
-		if t.Size() > len(e.er.rawBuffer) {
-			// Error Multiple Rationals
+		if t.Size() > 8 {
+			err = ErrParseRationals
+			return
 		}
 
 		buf := e.er.rawBuffer[:t.Size()]

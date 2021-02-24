@@ -18,8 +18,9 @@ import (
 
 // Errors
 var (
-	ErrNoXmpDecodeFn        = errors.New("error no XmpDecodeFn set")
 	ErrNoExif               = meta.ErrNoExif
+	ErrNoExifDecodeFn       = errors.New("error no Exif Decode Func set")
+	ErrNoXmpDecodeFn        = errors.New("error no Xmp Decode Func set")
 	ErrImageTypeNotFound    = imagetype.ErrImageTypeNotFound
 	ErrMetadataNotSupported = errors.New("error metadata reading not supported for this imagetype")
 )
@@ -140,17 +141,20 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 	if err != nil {
 		return err
 	}
+	hm.ExifDecodeFn = m.ExifDecodeFn
 	m.exifHeader = hm.ExifHeader
 	m.xmpHeader = hm.XmpHeader
 	m.size = hm.Dimensions()
 	m.images = hm.Images()
-
-	//_, err = hm.DecodeExif(m.r)
+	if m.ExifDecodeFn != nil {
+		err = hm.DecodeExif(m.r)
+	}
+	if m.XmpDecodeFn == nil {
+		return ErrNoXmpDecodeFn
+	}
+	// Add Support for XMP
 	//hm.DecodeXmp(m.r)
-	//hm.ExifDecodeFn = m.ExifDecodeFn
-	//err = hm.GetMeta()
-	//item, err := hm.ExifItem()
-	return nil
+	return err
 }
 
 // parseTiff uses the 'tiff' package to identify the metadata and

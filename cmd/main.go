@@ -8,14 +8,14 @@ import (
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
-	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
-const testFilename = "../../test/img/2.CR2"
+const testFilename = "../../test/img/1.heic"
+
+const testFilename2 = "../testImages/Heic.exif"
 
 func main() {
-	f, err := os.Open(testFilename)
+	f, err := os.Open(testFilename2)
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +30,7 @@ func main() {
 	var e *exif.Data
 	exifDecodeFn := func(r io.Reader, header exif.Header) error {
 		e, err = exif.ParseExif(f, header)
-		fmt.Println(e, err)
+		fmt.Println(e, err, header)
 		return nil
 	}
 	//xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
@@ -45,33 +45,42 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	elapsed := time.Since(start)
 	fmt.Println(m.Dimensions())
 	fmt.Println(m)
 	fmt.Println(elapsed)
-	fmt.Println(e.Artist())
-	fmt.Println(e.CameraMake())
-	fmt.Println(e.CameraModel())
-	fmt.Println(e.ISOSpeed())
-	fmt.Println(e.FocalLength())
-	fmt.Println(e.LensModel())
-	fmt.Println(e.Aperture())
-	fmt.Println(e.ShutterSpeed())
+	if e != nil {
+		fmt.Println(e.Artist())
+		fmt.Println(e.CameraMake())
+		fmt.Println(e.CameraModel())
+		fmt.Println(e.ISOSpeed())
+		fmt.Println(e.FocalLength())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.Aperture())
+		fmt.Println(e.ShutterSpeed())
 
-	fmt.Println(e.ExposureValue())
-	fmt.Println(e.ExposureBias())
+		fmt.Println(e.ExposureValue())
+		fmt.Println(e.ExposureBias())
 
-	fmt.Println(e.GPSCoords())
-	fmt.Println(e.DateTime())
-	fmt.Println(e.GPSDate(nil))
+		fmt.Println(e.GPSCoords())
+		fmt.Println(e.DateTime())
+		//fmt.Println(e.ModifyDate())
 
-	//start = time.Now()
-	for t := range e.RangeTags() {
-		//ifds.ExifIFD, 0, exififd.ISOSpeedRatings
-		if t.TagType == tag.TypeRational {
-			fmt.Println(gpsifd.TagIDMap[t.TagID], t.UnitCount, t.ValueOffset)
-		}
+		fmt.Println(e.GPSDate(nil))
+
+		start = time.Now()
+		//for t := range e.RangeTags() {
+		//	//ifds.ExifIFD, 0, exififd.ISOSpeedRatings
+		//	//if t.TagID == exififd.DateTimeDigitized {
+		//	if a, ok := ifds.RootIfdTagIDMap[t.TagID]; ok {
+		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
+		//	} else if a, ok := exififd.TagIDMap[t.TagID]; ok {
+		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
+		//	} else if a, ok := gpsifd.TagIDMap[t.TagID]; ok {
+		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
+		//	}
+		//	//}
+		//}
 	}
 	//elapsed = time.Since(start)
 	//fmt.Println(elapsed)

@@ -34,12 +34,14 @@ func main() {
 		fmt.Println(err)
 		// Error retrieving Heic Metadata
 	}
+	var e *exif.Data
 	hm.ExifDecodeFn = func(r io.Reader, header exif.Header) error {
+		e, err = exif.ParseExif(f, header)
+		fmt.Println(e, err, header)
 		return nil
 	}
-
-	edata, err := hm.DecodeExif(f)
-	fmt.Println(edata, err)
+	err = hm.DecodeExif(f)
+	fmt.Println(e, err)
 
 	fmt.Println(hm.FileType)
 }

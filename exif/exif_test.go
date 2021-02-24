@@ -26,10 +26,10 @@ var exifTests = []struct {
 	height      uint32
 	createdDate time.Time
 }{
-	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
-	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
+	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 4928, 3280, time.Unix(1508673260, 0)},
+	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 160, 120, time.Unix(1378201516, 0)},
 	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
-	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
+	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 3648, 5472, time.Unix(1575608507, 0)},
 }
 
 func TestParseExif(t *testing.T) {
@@ -75,7 +75,7 @@ func TestParseExif(t *testing.T) {
 			}
 			createdDate, err := e.DateTime()
 			if createdDate.Unix() != wantedExif.createdDate.Unix() && err != nil {
-				t.Errorf("Incorrect Unix Time wanted %d got %d", wantedExif.createdDate.Unix(), createdDate.Unix())
+				t.Errorf("Incorrect Unix Time wanted %v got %v", wantedExif.createdDate, createdDate)
 			}
 		})
 	}

@@ -53,7 +53,7 @@ func TestTagTypeSizeAndString(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	tag := NewTag(ID(0x0000), TypeASCII, 16, 0)
+	tag := NewTag(ID(0x0000), TypeASCII, 16, 0x0002)
 
 	if tag.TagID != ID(0x0000) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0000), tag.TagID)
@@ -67,7 +67,11 @@ func TestTag(t *testing.T) {
 	if tag.ValueOffset != 0x0002 {
 		t.Errorf("Incorrect Tag Offset wanted 0x%04x got 0x%04x", 0x0002, tag.ValueOffset)
 	}
-	if tag.IsEmbedded(){
+	if tag.IsEmbedded() {
 		t.Errorf("ValueIsEmbedded is true when equal or less than 4 bytes")
+	}
+
+	if tag.Size() != 16 {
+		t.Errorf("Incorrect Tag Size wanted %d got %d", 16, tag.Size())
 	}
 }

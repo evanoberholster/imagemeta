@@ -2,6 +2,7 @@ package exif
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -67,16 +68,15 @@ func (e *Data) CameraSerial() (serial string, err error) {
 	return
 }
 
-// DateTime returns a time.Time with the date and time at which the EXIF file was created.
+// DateTime returns a time.Time that corresponds with when it was created.
 func (e *Data) DateTime() (time.Time, error) {
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
 	t1, err := e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal)
 	if err == nil {
-		if t2, err := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal); err == nil {
-			return e.ParseTimeStamp(t1, t2)
-		}
+		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
+		return e.ParseTimeStamp(t1, t2)
 	}
 
 	// "IFD/Exif" DateTimeDigitized
@@ -84,11 +84,21 @@ func (e *Data) DateTime() (time.Time, error) {
 	// TODO: "IFD/Exif" OffsetTimeDigitized
 	t1, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized)
 	if err == nil {
-		if t2, err := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized); err == nil {
-			return e.ParseTimeStamp(t1, t2)
-		}
+		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized)
+		return e.ParseTimeStamp(t1, t2)
 	}
 	return time.Time{}, ErrEmptyTag
+}
+
+// ModifyDate returns a time.Time that corresponds with when it was last modified.
+func (e *Data) ModifyDate() (time.Time, error) {
+	// "IFD" DateTime
+	// "IFD/Exif" SubSecTime
+	t1, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return e.ParseTimeStamp(t1, tag.Tag{})
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake
@@ -221,9 +231,12 @@ func (e *Data) ShutterSpeed() (meta.ShutterSpeed, error) {
 func (e *Data) ExposureValue() (ev float32, err error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ShutterSpeedValue)
 	if err != nil {
-		return 0.0, err
+		return
 	}
 	n, d, err := e.ParseRationalValue(t)
+	if err != nil {
+		return
+	}
 	tv := -1 * math.Log2(float64(int32(n))/float64(int32(d)))
 
 	t, err = e.GetTag(ifds.ExifIFD, 0, exififd.ApertureValue)
@@ -231,6 +244,9 @@ func (e *Data) ExposureValue() (ev float32, err error) {
 		return 0.0, err
 	}
 	n1, d2, err := e.ParseRationalValue(t)
+	if err != nil {
+		return
+	}
 	av := 2 * math.Log2(float64(n1)/float64(d2))
 	return float32(av + tv), nil
 }
@@ -283,6 +299,7 @@ func (e *Data) ISOSpeed() (iso uint32, err error) {
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println(t.TagType, t.ValueOffset)
 	i, err := e.ParseUint16Value(t)
 	if err != nil {
 		return 0, err
@@ -326,6 +343,9 @@ func (e *Data) GPSCoords() (lat float64, lng float64, err error) {
 		return
 	}
 	lat, err = e.ParseGPSCoord(t1, t2)
+	if err != nil {
+		return
+	}
 
 	// Ref - "IFD/GPS" GPSLongitudeRef
 	t1, err = e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSLongitudeRef)
@@ -341,6 +361,9 @@ func (e *Data) GPSCoords() (lat float64, lng float64, err error) {
 	}
 
 	lng, err = e.ParseGPSCoord(t1, t2)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -362,7 +385,7 @@ func (e *Data) GPSDate(tz *time.Location) (t time.Time, err error) {
 	}
 	// ignore error for SubSec
 	subSec, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
-	return e.ParseGPSTimeStamp(ds, ts, subSec, time.UTC)
+	return e.ParseGPSTimeStamp(ds, ts, subSec, tz)
 }
 
 // GPSAltitude convenience func. for "IFD/GPS" GPSAltitude and GPSAltitudeRef.
@@ -374,7 +397,7 @@ func (e *Data) GPSAltitude() (alt float32, err error) {
 	}
 	n, d, err := e.ParseRationalValue(t)
 	if err != nil {
-
+		return
 	}
 	alt = float32(n) / float32(d)
 

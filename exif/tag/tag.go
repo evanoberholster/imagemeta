@@ -2,7 +2,6 @@
 package tag
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 )
@@ -20,22 +19,12 @@ type ID uint16
 // Offset for reading data
 type Offset uint32
 
-// RawValueOffset are the 4 bytes after the valueOffset
-type RawValueOffset [4]byte
-
 // Tag is an Exif Tag
 type Tag struct {
 	ValueOffset uint32
 	UnitCount   uint16 // 4 bytes
 	TagID       ID     // 2 bytes
 	TagType     Type   // 1 byte
-}
-
-// TagReader interface
-// Implements the io.ReaderAt interface as well as a ByteOrder interface
-type TagReader interface {
-	ByteOrder() binary.ByteOrder
-	ReadAt(p []byte, off int64) (n int, err error)
 }
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset
