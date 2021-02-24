@@ -21,7 +21,7 @@ var tagTypeTests = []struct {
 	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL"},
 }
 
-func TestTypeFromRaw(t *testing.T) {
+func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
 			ty, err := NewTagType(tag.rawTagType)
@@ -32,7 +32,7 @@ func TestTypeFromRaw(t *testing.T) {
 	}
 }
 
-func TestTagTypeSizeAndString(t *testing.T) {
+func TestTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
 			var s uint32
