@@ -26,7 +26,6 @@ func (fl FocalLength) String() string {
 
 func (fl FocalLength) toBytes() (buf []byte) {
 	f := strconv.AppendFloat(buf, float64(fl), 'f', 2, 32)
-	//f = append(f, sufFocalLength...)
 	buf = make([]byte, len(f)+2)
 	copy(buf[len(buf)-2:], sufFocalLength)
 	copy(buf[:len(buf)-2], f)
@@ -321,6 +320,9 @@ func parseAperture(buf []byte) Aperture {
 }
 
 func (aa Aperture) String() string {
+	if uint32(aa*100.0)%100 == 0 {
+		return strconv.FormatFloat(float64(aa), 'f', 0, 32)
+	}
 	return strconv.FormatFloat(float64(aa), 'f', 2, 32)
 }
 
