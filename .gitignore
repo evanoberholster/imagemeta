@@ -14,12 +14,17 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# Benchmarks
+*.txt
+
+# Coverage
+*.cov
+
 samples/*
 xml/test*
 testImages/gen.go
 testImages/*.html
 test/*.svg
 meta/cmd/*
-bmff/*.txt
 xmp/test/samples/*
 

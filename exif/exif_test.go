@@ -2,7 +2,6 @@ package exif
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -45,7 +44,7 @@ func TestParseExif(t *testing.T) {
 			cb := bytes.NewReader(buf)
 			e, err := ScanExif(cb)
 			if err != nil {
-				fmt.Println(err)
+				t.Error(err)
 			}
 			if e.CameraMake() != wantedExif.make {
 				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.CameraMake())

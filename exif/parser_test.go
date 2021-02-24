@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestParse(t *testing.T) {
+func TestTrim(t *testing.T) {
 	// Test Trim
 	a := []byte{'a', 'b', 'c', 'd', '.', ' '}
 	if !bytes.Equal(trim(a), a[:len(a)-1]) {
