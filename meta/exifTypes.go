@@ -6,12 +6,19 @@ import (
 
 //go:generate msgp
 
-// FocalLength is a Focal Length expressed in tenth of a mm.
+// FocalLength is a Focal Length expressed in millimeters.
 type FocalLength float32
 
 var (
+	// FocalLength Suffix in millimeters
 	sufFocalLength = []byte{'m', 'm'}
 )
+
+// NewFocalLength returns a new FocalLength by dividing
+// "n" numerator and "d" demoninator
+func NewFocalLength(n, d uint32) FocalLength {
+	return FocalLength(float32(n) / float32(d))
+}
 
 func (fl FocalLength) String() string {
 	return string(fl.toBytes())
@@ -19,7 +26,6 @@ func (fl FocalLength) String() string {
 
 func (fl FocalLength) toBytes() (buf []byte) {
 	f := strconv.AppendFloat(buf, float64(fl), 'f', 2, 32)
-	//f = append(f, sufFocalLength...)
 	buf = make([]byte, len(f)+2)
 	copy(buf[len(buf)-2:], sufFocalLength)
 	copy(buf[:len(buf)-2], f)
@@ -90,6 +96,14 @@ func (mm MeteringMode) MarshalJSON() (buf []byte, err error) {
 	return strconv.AppendUint(buf, uint64(mm), 10), nil
 }
 
+// UnmarshalJSON implements the JSONMarshaler interface that is
+// used by encoding/json
+func (mm *MeteringMode) UnmarshalJSON(buf []byte) error {
+	v, err := strconv.ParseUint(string(buf), 10, 8)
+	*mm = MeteringMode(v)
+	return err
+}
+
 // MarshalText implements the TextMarshaler interface
 func (mm MeteringMode) MarshalText() (text []byte, err error) {
 	return []byte(mm.String()), nil
@@ -116,6 +130,14 @@ var mapStringMeteringMode = map[string]MeteringMode{
 // ExposureMode is the mode in which the Exposure was taken.
 type ExposureMode uint8
 
+// NewExposureMode returns an ExposureMode from the given uint8
+func NewExposureMode(em uint8) ExposureMode {
+	if em <= 2 {
+		return ExposureMode(em)
+	}
+	return 255
+}
+
 // mapExposureModeString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
 var mapExposureModeString = map[ExposureMode]string{
@@ -126,11 +148,23 @@ var mapExposureModeString = map[ExposureMode]string{
 
 // String returns an ExposureMode as a string
 func (em ExposureMode) String() string {
-	return mapExposureModeString[em]
+	str, ok := mapExposureModeString[em]
+	if ok {
+		return str
+	}
+	return "Unknown"
 }
 
 // ExposureProgram is the program in which the image was taken.
 type ExposureProgram uint8
+
+// NewExposureProgram returns an ExposureProgram from the given uint8
+func NewExposureProgram(ep uint8) ExposureProgram {
+	if ep <= 9 {
+		return ExposureProgram(ep)
+	}
+	return 255
+}
 
 // mapExposureProgramString -
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
@@ -149,12 +183,21 @@ var mapExposureProgramString = map[ExposureProgram]string{
 
 // String returns an ExposureProgram as a string
 func (ep ExposureProgram) String() string {
-	return mapExposureProgramString[ep]
+	str, ok := mapExposureProgramString[ep]
+	if ok {
+		return str
+	}
+	return "Unknown"
 }
 
 // FlashMode - Mode in which a Flash was used.
 // (uint8) - value of FlashMode
 type FlashMode uint8
+
+// NewFlashMode returns a new FlashMode
+func NewFlashMode(fm uint8) FlashMode {
+	return parseFlashMode(fm)
+}
 
 // Flash Modes
 const (
@@ -181,7 +224,7 @@ func (fm FlashMode) MarshalText() (text []byte, err error) {
 func (fm *FlashMode) UnmarshalText(text []byte) (err error) {
 	var i int
 	i, err = strconv.Atoi(string(text))
-	*fm = ParseFlashMode(uint8(i))
+	*fm = parseFlashMode(uint8(i))
 	return err
 }
 
@@ -196,9 +239,9 @@ func (fm FlashMode) Bool() bool {
 	return false
 }
 
-// ParseFlashMode returns the FlashMode from an Exif flashmode integer
+// parseFlashMode returns the FlashMode from an Exif flashmode integer
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
-func ParseFlashMode(m uint8) FlashMode {
+func parseFlashMode(m uint8) FlashMode {
 	switch m {
 	case 0: // NoFlash
 		return NoFlash
@@ -249,11 +292,17 @@ var flashValues = map[FlashMode]string{
 // Aperture contains the F-Number.
 type Aperture float32
 
-// NewAperture returns a new Aperture by TextUnmarshal
-// the string. If an aperture was unable to be unmarshaled,
-// it returns 0.
-func NewAperture(aa string) Aperture {
-	return parseAperture([]byte(aa))
+// NewAperture returns a new Aperture by dividing the
+// "n" numerator over the "d" demoninator
+func NewAperture(n uint32, d uint32) Aperture {
+	return Aperture(float32(n) / float32(d))
+}
+
+// ParseString parses a string for an aperture value.
+// ex: 1/100 or 300/100
+func (aa *Aperture) ParseString(buf []byte) error {
+	*aa = parseAperture(buf)
+	return nil
 }
 
 func parseAperture(buf []byte) Aperture {
@@ -271,6 +320,9 @@ func parseAperture(buf []byte) Aperture {
 }
 
 func (aa Aperture) String() string {
+	if uint32(aa*100.0)%100 == 0 {
+		return strconv.FormatFloat(float64(aa), 'f', 0, 32)
+	}
 	return strconv.FormatFloat(float64(aa), 'f', 2, 32)
 }
 

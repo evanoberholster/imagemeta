@@ -25,54 +25,37 @@ var (
 // to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r io.ReaderAt) (e *ExifData, err error) {
-	var it imagetype.ImageType
+func ScanExif(r io.ReaderAt) (e *Data, err error) {
 	er := newExifReader(r, nil, 0)
-	br := bufio.NewReader(er)
+
+	br := bufio.NewReaderSize(er, 64)
 
 	// Identify Image Type
-	if it, err = imagetype.ScanBuf(br); err != nil {
+	it, err := imagetype.ScanBuf(br)
+	if err != nil {
 		return
 	}
 
-	// Search Image for Metadata Header using
-	// Imagetype information
-
+	// Search Image for Metadata Header using ImageType
 	header, err := tiff.Scan(br)
 	if err != nil {
-		if err != ErrNoExif {
-			return
-		}
+		return
 	}
 	// Update Imagetype in ExifHeader
 	header.ImageType = it
 
-	// ExifData with an ExifReader attached
-	e = newExifData(er, it)
-
-	if err == nil {
-		// Set TiffHeader sets the ExifReader and checks
-		// the header validity.
-		// Returns ErrInvalidHeader if header is not valid.
-		if err = er.SetHeader(Header(header)); err != nil {
-			return
-		}
-
-		// Scan the RootIFD with the FirstIfdOffset from the ExifReader
-		err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-	}
-	return
+	return ParseExif(er, Header(header))
 }
 
 // ParseExif parses Exif metadata from an io.ReaderAt and a tiff.Header and
 // returns exif and an error.
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt, header Header) (e *ExifData, err error) {
+func ParseExif(r io.ReaderAt, header Header) (e *Data, err error) {
 	er := newExifReader(r, nil, 0)
 
 	// ExifData with an ExifReader attached
-	e = newExifData(er, header.ImageType)
+	e = newData(er, header.ImageType)
 
 	// Set TiffHeader sets the ExifReader and checks
 	// the header's validity.
@@ -83,6 +66,5 @@ func ParseExif(r io.ReaderAt, header Header) (e *ExifData, err error) {
 
 	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
 	err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-
 	return
 }

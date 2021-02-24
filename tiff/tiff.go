@@ -20,7 +20,7 @@ const (
 func Scan(r io.Reader) (Header, error) {
 	br, ok := r.(*bufio.Reader)
 	if !ok {
-		br = bufio.NewReader(r)
+		br = bufio.NewReaderSize(r, 64)
 	}
 	return scan(br)
 }

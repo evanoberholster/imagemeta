@@ -5,7 +5,7 @@ import "github.com/evanoberholster/imagemeta/meta"
 // Exif is an interface representation of Exif Information
 type Exif interface {
 	// Aperture convenience func. "IFD/Exif" FNumber
-	Aperture() (float32, error)
+	Aperture() (meta.Aperture, error)
 
 	// Artist convenience func. "IFD" Artist
 	Artist() (artist string, err error)
@@ -23,13 +23,16 @@ type Exif interface {
 	Copyright() (copyright string, err error)
 
 	// Dimensions convenience func. "IFD" Dimensions
-	Dimensions() (width, height uint16, err error)
+	Dimensions() (dimensions meta.Dimensions, err error)
 
 	// ExposureBias convenience func. "IFD/Exif" ExposureBiasValue
-	ExposureBias() (string, error)
+	ExposureBias() (meta.ExposureBias, error)
 
 	// ExposureProgram convenience func. "IFD/Exif" ExposureProgram
-	ExposureProgram() (meta.ExposureMode, error)
+	ExposureProgram() (meta.ExposureProgram, error)
+
+	// ExposureMode convenience func. "IFD/Exif" ExposureMode
+	ExposureMode() (meta.ExposureMode, error)
 
 	// Flash convenience func. "IFD/Exif" Flash
 	Flash() (meta.FlashMode, error)
@@ -43,7 +46,7 @@ type Exif interface {
 	FocalLengthIn35mmFilm() (fl meta.FocalLength, err error)
 
 	// ISOSpeed convenience func. "IFD/Exif" ISOSpeed
-	ISOSpeed() (iso int, err error)
+	ISOSpeed() (iso uint32, err error)
 
 	// LensMake convenience func. "IFD/Exif" LensMake
 	LensMake() (make string, err error)
@@ -62,9 +65,4 @@ type Exif interface {
 
 	// ShutterSpeed convenience func. "IFD/Exif" ExposureTime
 	ShutterSpeed() (meta.ShutterSpeed, error)
-
-	// XMLPacket convenience func. that returns XMP metadata
-	// from a JPEG image or XMP Packet from "IFD" XMLPacket.
-	// Whichever is present.
-	XMLPacket() (str string, err error)
 }

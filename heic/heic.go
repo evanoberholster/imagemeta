@@ -111,17 +111,19 @@ func (hm *Metadata) ExifItem() (item Item, err error) {
 // If an error occurs returns the error.
 //
 // Utilizes the custom decoder ExifDecodeFn if it is not nil.
-func (hm *Metadata) DecodeExif(r meta.Reader) (exif.Exif, error) {
+func (hm *Metadata) DecodeExif(r meta.Reader) error {
 	item, err := hm.ExifItem()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	header, err := readExifBox(r, hm.t, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return exif.ParseExif(r, header)
+	if hm.ExifDecodeFn == nil {
+		return nil
+	}
+	return hm.ExifDecodeFn(r, header)
 }
 
 func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header exif.Header, err error) {

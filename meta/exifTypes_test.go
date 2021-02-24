@@ -1,15 +1,17 @@
 package meta
 
 import (
+	"bytes"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tinylib/msgp/msgp"
 )
 
 func TestFocalLength(t *testing.T) {
 	fl1 := FocalLength(100.25)
-	fl2 := FocalLength(0)
+	fl2 := NewFocalLength(0, 0)
 
 	buf, err := fl1.MarshalText()
 	if err != nil {
@@ -173,7 +175,7 @@ var fmList = []struct {
 
 func TestFlashMode(t *testing.T) {
 	for _, fm := range fmList {
-		if a := ParseFlashMode(fm.m); a != fm.fm {
+		if a := NewFlashMode(fm.m); a != fm.fm {
 			assert.Equal(t, fm.fm, a, "FlashMode.ParseFlashMode #%s, wanted %s got %s", fm.name, fm.fm, a)
 		}
 
@@ -182,7 +184,7 @@ func TestFlashMode(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error FlashMode.MarshallText (%s): %s ", fm.name, err.Error())
 		}
-		b := ParseFlashMode(fm.m)
+		b := NewFlashMode(fm.m)
 		assert.Equal(t, []byte(strconv.Itoa(int(b))), txt, "FlashMode.MarshalText #%s, wanted %d got %d", fm.name, fm.m, strconv.Itoa(int(b)))
 
 		// UnmarshalText
@@ -200,7 +202,7 @@ func TestFlashMode(t *testing.T) {
 
 	// Incorrect FlashMode
 	a := FlashMode(250)
-	b := ParseFlashMode(250)
+	b := NewFlashMode(250)
 	assert.Equal(t, a.Bool(), false, "FlashMode.Bool #%s, wanted %s got %s", "Incorrect FlashMode", false, a.Bool())
 	assert.NotEqual(t, a, b, "FlashMode.ParseFlashMode #%s, wanted %s got %s", "Incorrect FlashMode", b, a)
 }
@@ -269,4 +271,134 @@ func BenchmarkExposureBias(b *testing.B) {
 	//		}
 	//	})
 	//}
+}
+
+////
+// Automated Tests for MessagePack
+////
+
+func TestApertureMsgPack(t *testing.T) {
+	v := NewAperture(10, 5)
+
+	var buf bytes.Buffer
+	msgp.Encode(&buf, &v)
+
+	m := v.Msgsize()
+	if buf.Len() > m {
+		t.Log("WARNING: TestAperture Msgsize() is inaccurate")
+	}
+
+	vn := NewAperture(0, 0)
+	err := msgp.Decode(&buf, &vn)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf.Reset()
+	msgp.Encode(&buf, &v)
+	err = msgp.NewReader(&buf).Skip()
+	if err != nil {
+		t.Error(err)
+	}
+
+	bts, err := v.MarshalMsg(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	left, err := v.UnmarshalMsg(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
+	}
+
+	left, err = msgp.Skip(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
+	}
+}
+
+type MsgPackInterface interface {
+	//Encode(w io.Writer, e msgp.Encodable) error
+	//Decode(r io.Reader, d msgp.Decodable) error
+	DecodeMsg(dc *msgp.Reader) (err error)
+	EncodeMsg(en *msgp.Writer) (err error)
+	MarshalMsg(b []byte) (o []byte, err error)
+	UnmarshalMsg(bts []byte) (o []byte, err error)
+	//Skip(b []byte) ([]byte, error)
+	Msgsize() (s int)
+}
+
+func TestMsgPack(t *testing.T) {
+	// Aperture
+	a := NewAperture(7, 5)
+	testSerial(t, &a)
+
+	// ShutterSpeed
+	ss := NewShutterSpeed(7, 5)
+	testSerial(t, &ss)
+
+	eb := NewExposureBias(0, 0)
+	testSerial(t, &eb)
+
+	em := NewExposureMode(9)
+	testSerial(t, &em)
+
+	ep := NewExposureProgram(8)
+	testSerial(t, &ep)
+
+	fm := NewFlashMode(8)
+	testSerial(t, &fm)
+
+	fl := NewFocalLength(8, 5)
+	testSerial(t, &fl)
+
+	mm := NewMeteringMode(10)
+	testSerial(t, &mm)
+}
+
+func testSerial(t *testing.T, v MsgPackInterface) {
+	var buf bytes.Buffer
+	msgp.Encode(&buf, v)
+
+	m := v.Msgsize()
+	if buf.Len() > m {
+		t.Log("WARNING: TestAperture Msgsize() is inaccurate")
+	}
+
+	err := msgp.Decode(&buf, v)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf.Reset()
+	msgp.Encode(&buf, v)
+	err = msgp.NewReader(&buf).Skip()
+	if err != nil {
+		t.Error(err)
+	}
+
+	bts, err := v.MarshalMsg(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	left, err := v.UnmarshalMsg(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
+	}
+
+	left, err = msgp.Skip(bts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(left) > 0 {
+		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
+	}
 }

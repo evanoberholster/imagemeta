@@ -11,21 +11,29 @@ var (
 	ErrReadNegativeOffset = errors.New("error read at negative offset")
 )
 
+const rawBufferSize = 24
+
 // reader -
 type reader struct {
 	reader io.ReaderAt
+	// current reader offset
+	offset int64
 
 	// Exif Header
 	byteOrder  binary.ByteOrder
 	exifOffset int64
 	exifLength uint32
 
-	// reader interface offset
-	offset int64
+	// rawBuffer for parsing Tags
+	rawBuffer [rawBufferSize]byte
 }
 
 // newExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
 func newExifReader(r io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *reader {
+	er, ok := r.(*reader)
+	if ok {
+		return er
+	}
 	return &reader{
 		reader:     r,
 		byteOrder:  byteOrder,
@@ -52,6 +60,13 @@ func (er reader) ReadAt(p []byte, off int64) (n int, err error) {
 	}
 	n, err = er.reader.ReadAt(p, er.exifOffset+off)
 	return
+}
+
+// ReadBufferAt reads from ExifReader at the give offset and returns
+// the reader's underlying buffer. Only valid until next read.
+func (er reader) ReadBufferAt(n int, off int64) ([]byte, error) {
+	n, err := er.ReadAt(er.rawBuffer[:n], off)
+	return er.rawBuffer[:n], err
 }
 
 // ByteOrder returns the ExifReader's byteOrder

@@ -8,7 +8,7 @@ import (
 
 // CanonCameraSettings convenience func. "IFD/Exif/Makernotes.Canon" CanonCameraSettings
 // Canon Camera Settings from the Makernote
-func (e *ExifData) CanonCameraSettings() (canon.CameraSettings, error) {
+func (e *Data) CanonCameraSettings() (canon.CameraSettings, error) {
 	if e.make != "Canon" {
 		return canon.CameraSettings{}, ErrEmptyTag
 	}
@@ -16,7 +16,7 @@ func (e *ExifData) CanonCameraSettings() (canon.CameraSettings, error) {
 	if err != nil {
 		return canon.CameraSettings{}, err
 	}
-	ii, err := t.Uint16Values(e.exifReader)
+	ii, err := e.ParseUint16Values(t)
 	if len(ii) < 24 || err != nil {
 		return canon.CameraSettings{}, err
 	}
@@ -34,12 +34,12 @@ func (e *ExifData) CanonCameraSettings() (canon.CameraSettings, error) {
 
 // CanonFileInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonFileInfo
 // Canon Camera File Info from the Makernote
-func (e *ExifData) CanonFileInfo() (canon.FileInfo, error) {
+func (e *Data) CanonFileInfo() (canon.FileInfo, error) {
 	t, err := e.GetTag(ifds.MknoteIFD, 0, mknote.CanonFileInfo)
 	if err != nil {
 		return canon.FileInfo{}, err
 	}
-	ii, err := t.Uint16Values(e.exifReader)
+	ii, err := e.ParseUint16Values(t)
 	if len(ii) < 21 || err != nil {
 		return canon.FileInfo{}, err
 	}
@@ -54,12 +54,12 @@ func (e *ExifData) CanonFileInfo() (canon.FileInfo, error) {
 
 // CanonShotInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonShotInfo
 // Canon Camera Shot Info from the Makernote
-func (e *ExifData) CanonShotInfo() (canon.ShotInfo, error) {
+func (e *Data) CanonShotInfo() (canon.ShotInfo, error) {
 	t, err := e.GetTag(ifds.MknoteIFD, 0, mknote.CanonShotInfo)
 	if err != nil {
 		return canon.ShotInfo{}, err
 	}
-	si, err := t.Uint16Values(e.exifReader)
+	si, err := e.ParseUint16Values(t)
 	if len(si) < 29 || err != nil {
 		return canon.ShotInfo{}, err
 	}
@@ -76,7 +76,7 @@ func (e *ExifData) CanonShotInfo() (canon.ShotInfo, error) {
 
 // CanonAFInfo -
 // Canon Camera AutoFocus Information from the Makernote
-func (e *ExifData) CanonAFInfo() (afInfo canon.AFInfo, err error) {
+func (e *Data) CanonAFInfo() (afInfo canon.AFInfo, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -86,7 +86,7 @@ func (e *ExifData) CanonAFInfo() (afInfo canon.AFInfo, err error) {
 	if err != nil {
 		return canon.AFInfo{}, err
 	}
-	af, err := t.Uint16Values(e.exifReader)
+	af, err := e.ParseUint16Values(t)
 	if len(af) < 8 || err != nil {
 		panic(ErrEmptyTag)
 	}

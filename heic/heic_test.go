@@ -51,7 +51,7 @@ func BenchmarkHeicDecodeExif(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				_, _ = hm.DecodeExif(f)
+				_ = hm.DecodeExif(f)
 			}
 		})
 	}

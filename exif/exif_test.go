@@ -2,7 +2,6 @@ package exif
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -19,17 +18,17 @@ var exifTests = []struct {
 	imageType   imagetype.ImageType
 	make        string
 	model       string
-	ISOSpeed    int
-	aperture    float32
+	ISOSpeed    uint32
+	aperture    meta.Aperture
 	focalLength meta.FocalLength
-	width       uint16
-	height      uint16
+	width       uint32
+	height      uint32
 	createdDate time.Time
 }{
-	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 0, 0, time.Unix(1508673260, 0)},
-	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 0, 0, time.Unix(1378201516, 0)},
+	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 4928, 3280, time.Unix(1508673260, 0)},
+	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 160, 120, time.Unix(1378201516, 0)},
 	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
-	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 0, 0, time.Unix(1575608507, 0)},
+	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 3648, 5472, time.Unix(1575608507, 0)},
 }
 
 func TestParseExif(t *testing.T) {
@@ -45,7 +44,7 @@ func TestParseExif(t *testing.T) {
 			cb := bytes.NewReader(buf)
 			e, err := ScanExif(cb)
 			if err != nil {
-				fmt.Println(err)
+				t.Error(err)
 			}
 			if e.CameraMake() != wantedExif.make {
 				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.CameraMake())
@@ -65,8 +64,9 @@ func TestParseExif(t *testing.T) {
 			if err != nil || focalLength != wantedExif.focalLength {
 				t.Errorf("Incorrect Focal Length wanted %s got %s", wantedExif.focalLength.String(), focalLength.String())
 			}
-			width, height, _ := e.Dimensions()
-			if wantedExif.width != width {
+			dim, _ := e.Dimensions()
+			width, height := dim.Size()
+			if err != nil || wantedExif.width != width {
 				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.width, width)
 			}
 			if wantedExif.height != height {
@@ -74,7 +74,7 @@ func TestParseExif(t *testing.T) {
 			}
 			createdDate, err := e.DateTime()
 			if createdDate.Unix() != wantedExif.createdDate.Unix() && err != nil {
-				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.createdDate.Unix(), createdDate.Unix())
+				t.Errorf("Incorrect Unix Time wanted %v got %v", wantedExif.createdDate, createdDate)
 			}
 		})
 	}
