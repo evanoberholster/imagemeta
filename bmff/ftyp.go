@@ -2,6 +2,7 @@ package bmff
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Brand of ISOBMFF ftyp
@@ -10,19 +11,19 @@ type Brand uint8
 // Major and Minor Brands
 const (
 	brandUnknown Brand = iota // unknown ISOBMFF brand
-	brandAvif                 // 'avif': AVIF
-	brandHeic                 // 'heic': the usual HEIF images
-	brandHeim                 // 'heim': multiview
-	brandHeis                 // 'heis': scalable
-	brandHeix                 // 'heix': 10bit images, or anything that uses h265 with range extension
-	brandHevc                 // 'hevc': brand for image sequences
-	brandHevm                 // 'hevm': multiview sequence
-	brandHevs                 // 'hevs': scalable sequence
-	brandHevx                 // 'hevx': image sequence
-	brandMeta                 // 'meta': meta
 	//brandMA1B                 // 'MA1B': ?
+	brandAvif // 'avif': AVIF
 	brandCrx  // 'crx ' : Canon CR3
+	brandHeic // 'heic': the usual HEIF images
+	brandHeim // 'heim': multiview
+	brandHeis // 'heis': scalable
+	brandHeix // 'heix': 10bit images, or anything that uses h265 with range extension
+	brandHevc // 'hevc': brand for image sequences
+	brandHevm // 'hevm': multiview sequence
+	brandHevs // 'hevs': scalable sequence
+	brandHevx // 'hevx': image sequence
 	brandIsom // 'isom' : ?
+	brandMeta // 'meta': meta
 	brandMiaf // 'miaf' :
 	brandMif1 // 'mif1': image
 	brandMiHB // 'MiHB' :
@@ -32,6 +33,7 @@ const (
 
 var mapStringBrand = map[string]Brand{
 	"avif": brandAvif,
+	"crx ": brandCrx,
 	"heic": brandHeic,
 	"heim": brandHeim,
 	"heis": brandHeis,
@@ -40,18 +42,18 @@ var mapStringBrand = map[string]Brand{
 	"hevm": brandHevm,
 	"hevs": brandHevs,
 	"hevx": brandHevx,
+	"isom": brandIsom,
 	"meta": brandMeta,
 	"miaf": brandMiaf,
 	"mif1": brandMif1,
 	"MiHB": brandMiHB,
 	"MiHE": brandMiHE,
 	"msf1": brandMsf1,
-	"crx ": brandCrx,
-	"isom": brandIsom,
 }
 
 var mapBrandString = map[Brand]string{
 	brandAvif: "avif",
+	brandCrx:  "crx ",
 	brandHeic: "heic",
 	brandHeim: "heim",
 	brandHeis: "heis",
@@ -60,14 +62,13 @@ var mapBrandString = map[Brand]string{
 	brandHevm: "hevm",
 	brandHevs: "hevs",
 	brandHevx: "hevx",
+	brandIsom: "isom",
 	brandMeta: "meta",
 	brandMiaf: "miaf",
 	brandMif1: "mif1",
 	brandMiHB: "MiHB",
 	brandMiHE: "MiHE",
 	brandMsf1: "msf1",
-	brandCrx:  "crx ",
-	brandIsom: "isom",
 }
 
 func (b Brand) String() string {
@@ -106,6 +107,10 @@ func parseFtyp(outer *box) (Box, error) {
 }
 
 func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
+	if outer.boxType != TypeFtyp {
+		err = ErrWrongBoxType
+		return
+	}
 	var buf []byte
 	if buf, err = outer.Peek(8); err != nil {
 		return
@@ -128,11 +133,12 @@ func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
 }
 
 func (ftyp FileTypeBox) String() string {
-	str := fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftyp.MajorBrand, "")
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftyp.MajorBrand, ""))
 	for _, b := range ftyp.Compatible {
-		str += b.String() + " "
+		sb.WriteString(b.String() + " ")
 	}
-	return str
+	return sb.String()
 }
 
 func processString(buf []byte) string {

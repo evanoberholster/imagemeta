@@ -46,6 +46,19 @@ const (
 	TypeThmb            // 'thmb'
 	TypeTrak            // 'trak'
 	TypeUUID            // 'uuid'
+	TypeCCTP            // 'CCTP'
+	TypeCNCV            // 'CNCV'
+	TypeCTBO            // 'CTBO'
+	TypeCMT1            // 'CMT1'
+	TypeCMT2            // 'CMT2'
+	TypeCMT3            // 'CMT3'
+	TypeCMT4            // 'CMT4'
+	TypeTMHB            // 'THMB'
+	TypeMvhd            // 'mvhd'
+	TypePRVW            // 'PRVW'
+	TypeMdat            // 'mdat'
+	TypeFree            // 'free'
+	TypeCCDT            // 'CCDT'
 )
 
 var mapStringBoxType = map[string]BoxType{
@@ -81,6 +94,19 @@ var mapStringBoxType = map[string]BoxType{
 	"thmb": TypeThmb,
 	"trak": TypeTrak,
 	"uuid": TypeUUID,
+	"CCTP": TypeCCTP,
+	"CNCV": TypeCNCV,
+	"CTBO": TypeCTBO,
+	"CMT1": TypeCMT1,
+	"CMT2": TypeCMT2,
+	"CMT3": TypeCMT3,
+	"CMT4": TypeCMT4,
+	"THMB": TypeTMHB,
+	"mvhd": TypeMvhd,
+	"PRVW": TypePRVW,
+	"mdat": TypeMdat,
+	"free": TypeFree,
+	"CCDT": TypeCCDT,
 }
 
 var mapBoxTypeString = map[BoxType]string{
@@ -116,6 +142,19 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeThmb: "thmb",
 	TypeTrak: "trak",
 	TypeUUID: "uuid",
+	TypeCCTP: "CCTP",
+	TypeCNCV: "CNCV",
+	TypeCTBO: "CTBO",
+	TypeCMT1: "CMT1",
+	TypeCMT2: "CMT2",
+	TypeCMT3: "CMT3",
+	TypeCMT4: "CMT4",
+	TypeTMHB: "THMB",
+	TypeMvhd: "mvhd",
+	TypePRVW: "PRVW",
+	TypeMdat: "mdat",
+	TypeFree: "free",
+	TypeCCDT: "CCDT",
 }
 
 func (t BoxType) String() string {
@@ -195,6 +234,7 @@ func init() {
 		TypeIrot: parseImageRotation,
 		TypeIspe: parseImageSpatialExtentsProperty,
 		TypeMeta: parseMeta,
+		TypeMoov: parseMoov,
 		TypePitm: parsePitm,
 	}
 }

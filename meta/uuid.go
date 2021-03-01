@@ -12,6 +12,12 @@ func (u UUID) String() string {
 	return uuid.UUID(u).String()
 }
 
+// UUIDFromBytes returns UUID converted from raw byte slice input. It will return error if the slice isn't 16 bytes long.
+func UUIDFromBytes(buf []byte) (UUID, error) {
+	u, err := uuid.FromBytes(buf)
+	return UUID(u), err
+}
+
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (u UUID) MarshalText() (text []byte, err error) {

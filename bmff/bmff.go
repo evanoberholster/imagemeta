@@ -15,18 +15,26 @@
 	limitations under the License.
 */
 
-// Package bmff reads ISO BMFF boxes, as used by HEIF, AVIF, CR3, etc.
+// Package bmff reads ISO BMFF boxes, as used by HEIF, AVIF, CR3, etc. and other riff based files
 package bmff
 
 import (
 	"bufio"
 	"fmt"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // Debug Flag
 var (
 	Debug = false
+)
+
+// Common Errors
+var (
+	ErrBrandNotSupported = errors.New("error brand not supported")
+	ErrWrongBoxType      = errors.New("error wrong box type")
 )
 
 // NewReader returns a new bmff.Reader
@@ -78,18 +86,39 @@ func (r *Reader) ReadFtypBox() (FileTypeBox, error) {
 // ReadMetaBox reads a 'meta' box from a BMFF file.
 //
 // This should be called in order. First call ReadFtypBox
-func (r *Reader) ReadMetaBox() (MetaBox, error) {
+func (r *Reader) ReadMetaBox() (mb MetaBox, err error) {
 	if r.brand == brandUnknown {
-		return MetaBox{}, fmt.Errorf("brand not supported")
+		err = ErrBrandNotSupported
+		return
 	}
 	if r.noMoreBoxes {
-		return MetaBox{}, fmt.Errorf("no more boxes to be parsed")
+		err = fmt.Errorf("no more boxes to be parsed")
+		return
 	}
 	b, err := r.br.readInnerBox()
 	if err != nil {
-		panic(err)
+		return mb, err
 	}
 	return parseMetaBox(&b)
+}
+
+// ReadMoovBox reads a 'moov' box from a BMFF file.
+//
+// This should be called in order. First call ReadFtypBox
+func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
+	if r.brand == brandUnknown {
+		err = ErrBrandNotSupported
+		return
+	}
+	if r.noMoreBoxes {
+		err = fmt.Errorf("no more boxes to be parsed")
+		return
+	}
+	b, err := r.br.readInnerBox()
+	if err != nil {
+		return moov, err
+	}
+	return parseMoovBox(&b)
 }
 
 // ReadBox reads a box and returns it

@@ -3,6 +3,7 @@ package bmff
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 // MetaBox is a 'meta' box
@@ -29,12 +30,22 @@ func (mb MetaBox) Type() BoxType {
 }
 
 func (mb MetaBox) String() string {
-	str := fmt.Sprintf("(Box) bmff.Metabox, %d Children\n", len(mb.Children))
-	str += "\t" + mb.Primary.String() + "\n"
-	str += "\t" + mb.ItemInfo.String() + "\n"
-	str += "\t" + mb.Properties.String() + "\n"
-	str += "\t" + mb.Location.String() + "\n"
-	return str
+	var sb strings.Builder
+	sb.WriteString("(Box) meta | Children: ")
+	sb.WriteString(fmt.Sprint(len(mb.Children)))
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Primary.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.ItemInfo.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Properties.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Location.String())
+	return sb.String()
 }
 
 func parseMeta(outer *box) (Box, error) {
@@ -42,6 +53,10 @@ func parseMeta(outer *box) (Box, error) {
 }
 
 func parseMetaBox(outer *box) (mb MetaBox, err error) {
+	if outer.boxType != TypeMeta {
+		err = ErrWrongBoxType
+		return
+	}
 	mb = MetaBox{size: uint32(outer.size)}
 	mb.Flags, err = outer.readFlags()
 	if err != nil {

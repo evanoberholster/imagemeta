@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Errors
@@ -187,6 +189,18 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 	f = Flags(binary.BigEndian.Uint32(buf[:4]))
 
 	return f, br.discard(4)
+}
+
+func (br *bufReader) readUUID() (u meta.UUID, err error) {
+	buf, err := br.Peek(16)
+	if err != nil {
+		return
+	}
+	u, err = meta.UUIDFromBytes(buf)
+	if err != nil {
+		return
+	}
+	return u, br.discard(16)
 }
 
 func (br *bufReader) readInnerBox() (b box, err error) {
