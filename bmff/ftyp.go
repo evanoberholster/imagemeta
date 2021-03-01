@@ -120,16 +120,15 @@ func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
 	if err = outer.discard(8); err != nil {
 		return
 	}
+
 	// Read maximum 6 Compatible brands
 	for i := 0; i < 6; i++ {
 		if outer.remain < 4 {
 			break
 		}
-
 		ftyp.Compatible[i], _ = outer.readBrand()
 	}
-	err = outer.discard(outer.remain)
-	return ftyp, err
+	return ftyp, outer.discard(outer.remain)
 }
 
 func (ftyp FileTypeBox) String() string {

@@ -109,7 +109,7 @@ func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
 
 	var inner box
 	for outer.remain > 0 {
-		inner, err = outer.readInnerBox()
+		inner, err = outer.readBox()
 		if err != nil {
 			break
 		}
@@ -385,7 +385,7 @@ func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
 	var inner box
 	for outer.remain > 4 {
 		// Read Box
-		if inner, err = outer.readInnerBox(); err != nil {
+		if inner, err = outer.readBox(); err != nil {
 			// TODO: write error
 			break
 		}
@@ -436,7 +436,7 @@ func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, er
 	var p Box
 	var inner box
 	for outer.remain > 4 {
-		inner, err = outer.readInnerBox()
+		inner, err = outer.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return ipc, nil

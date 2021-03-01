@@ -28,6 +28,7 @@ type CR3MetaBox struct {
 	//mvhd
 }
 
+// Type returns TypeUUID, CR3MetaBox's boxType.
 func (cr3 CR3MetaBox) Type() BoxType {
 	return TypeUUID
 }
@@ -36,11 +37,7 @@ func (cr3 CR3MetaBox) Type() BoxType {
 func parseCR3MetaBox(outer *box) (meta CR3MetaBox, err error) {
 	var inner box
 	for outer.anyRemain() {
-		inner, err = outer.readInnerBox()
-		if err != nil {
-			if err == io.EOF {
-				return
-			}
+		if inner, err = outer.readBox(); err != nil {
 			return
 		}
 		switch inner.boxType {
@@ -57,11 +54,7 @@ func parseCR3MetaBox(outer *box) (meta CR3MetaBox, err error) {
 		fmt.Println(inner)
 		outer.remain -= int(inner.size)
 		if err = inner.discard(inner.remain); err != nil {
-			if Debug {
-				fmt.Println(err)
-			}
-			// TODO: improve error handling
-			break
+			return
 		}
 	}
 	return
@@ -152,7 +145,7 @@ func parseCCTPBox(outer *box) (cctp CCTPBox, err error) {
 
 	var inner box
 	for i := 0; i < int(count) && outer.anyRemain(); i++ {
-		inner, err = outer.readInnerBox()
+		inner, err = outer.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -173,10 +166,11 @@ func parseCCTPBox(outer *box) (cctp CCTPBox, err error) {
 // CTBOBox is a Canon tracks base offsets Box?
 type CTBOBox struct {
 	//size uint32
-	items []CR3Offset
+	items []IndexOffset
 }
 
-type CR3Offset struct {
+// IndexOffset has an index, an offset and a length.
+type IndexOffset struct {
 	offset uint64
 	length uint64
 	idx    uint32
@@ -195,7 +189,7 @@ func parseCTBOBox(outer *box) (ctbo CTBOBox, err error) {
 		return
 	}
 	count := crxBinaryOrder.Uint32(buf[0:4])
-	ctbo.items = make([]CR3Offset, count)
+	ctbo.items = make([]IndexOffset, count)
 
 	for i := 0; i < int(count) && outer.anyRemain(); i++ {
 		// each item is 20 bytes in length
@@ -206,7 +200,7 @@ func parseCTBOBox(outer *box) (ctbo CTBOBox, err error) {
 		if err = outer.discard(20); err != nil {
 			return
 		}
-		ctbo.items[i] = CR3Offset{
+		ctbo.items[i] = IndexOffset{
 			idx:    crxBinaryOrder.Uint32(buf[0:4]),
 			offset: crxBinaryOrder.Uint64(buf[4:12]),
 			length: crxBinaryOrder.Uint64(buf[12:20]),

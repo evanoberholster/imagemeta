@@ -111,7 +111,7 @@ func TestParseHandler(t *testing.T) {
 	}
 	data := []byte{0, 0, 0, 34, 104, 100, 108, 114, 0, 0, 0, 0, 0, 0, 0, 0, 112, 105, 99, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	outer := newTestBox(data)
-	inner, err := outer.readInnerBox()
+	inner, err := outer.readBox()
 	if err != nil {
 		t.Errorf("Error: (%s), %v", "Handler", err)
 	}
@@ -128,7 +128,7 @@ func TestParseHandler(t *testing.T) {
 
 	copy(data[16:20], "nnnn")
 	outer = newTestBox(data)
-	inner, err = outer.readInnerBox()
+	inner, err = outer.readBox()
 	if err != nil {
 		t.Errorf("Error: (%s), %v", "Handler", err)
 	}

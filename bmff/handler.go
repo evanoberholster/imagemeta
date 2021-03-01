@@ -112,7 +112,7 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 	var inner box
 	for outer.anyRemain() {
 		// Read Box
-		if inner, err = outer.readInnerBox(); err != nil {
+		if inner, err = outer.readBox(); err != nil {
 			// TODO: write error
 			break
 		}

@@ -35,6 +35,7 @@ var (
 var (
 	ErrBrandNotSupported = errors.New("error brand not supported")
 	ErrWrongBoxType      = errors.New("error wrong box type")
+	ErrNoMoreBoxes       = errors.New("no more boxes to be parsed")
 )
 
 // NewReader returns a new bmff.Reader
@@ -74,7 +75,7 @@ func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
 //
 // This should be the first read function called.
 func (r *Reader) ReadFtypBox() (FileTypeBox, error) {
-	b, err := r.br.readInnerBox()
+	b, err := r.br.readBox()
 	if err != nil {
 		return FileTypeBox{}, err
 	}
@@ -88,14 +89,12 @@ func (r *Reader) ReadFtypBox() (FileTypeBox, error) {
 // This should be called in order. First call ReadFtypBox
 func (r *Reader) ReadMetaBox() (mb MetaBox, err error) {
 	if r.brand == brandUnknown {
-		err = ErrBrandNotSupported
-		return
+		return mb, ErrBrandNotSupported
 	}
 	if r.noMoreBoxes {
-		err = fmt.Errorf("no more boxes to be parsed")
-		return
+		return mb, ErrNoMoreBoxes
 	}
-	b, err := r.br.readInnerBox()
+	b, err := r.br.readBox()
 	if err != nil {
 		return mb, err
 	}
@@ -111,10 +110,9 @@ func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 		return
 	}
 	if r.noMoreBoxes {
-		err = fmt.Errorf("no more boxes to be parsed")
-		return
+		return moov, ErrNoMoreBoxes
 	}
-	b, err := r.br.readInnerBox()
+	b, err := r.br.readBox()
 	if err != nil {
 		return moov, err
 	}
@@ -124,30 +122,5 @@ func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 // ReadBox reads a box and returns it
 func (r *Reader) readBox() (b box, err error) {
 	outer := box{bufReader: r.br}
-	return outer.readInnerBox()
-}
-
-// Box represents a BMFF box.
-type Box interface {
-	//Size() int64 // 0 means unknown (will read to end of file)
-	Type() BoxType
-}
-
-// Flags for a FullBox
-// 8 bits -> Version
-// 24 bits -> Flags
-type Flags uint32
-
-// Flags returns underlying Flags after removing version.
-// Flags are 24 bits.
-func (f Flags) Flags() uint32 {
-	// Left Shift
-	f = f << 8
-	// Right Shift
-	return uint32(f >> 8)
-}
-
-// Version returns a uint8 version.
-func (f Flags) Version() uint8 {
-	return uint8(f >> 24)
+	return outer.readBox()
 }

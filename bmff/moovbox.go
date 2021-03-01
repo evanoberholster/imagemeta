@@ -7,8 +7,7 @@ import (
 
 // MoovBox is a 'moov' box
 type MoovBox struct {
-	size  uint32
-	Flags Flags
+	size uint32
 }
 
 // Size returns the size of the MoovBox
@@ -33,7 +32,7 @@ func parseMoovBox(outer *box) (moov MoovBox, err error) {
 
 	var inner box
 	for outer.anyRemain() {
-		inner, err = outer.readInnerBox()
+		inner, err = outer.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -68,8 +67,6 @@ func parseUUIDBox(outer *box) (b Box, err error) {
 	}
 	if uuid == CR3MetaBoxUUID {
 		return parseCR3MetaBox(outer)
-	} else {
-
 	}
 	return
 }

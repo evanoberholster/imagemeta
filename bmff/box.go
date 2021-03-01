@@ -183,6 +183,32 @@ func boxType(buf []byte) BoxType {
 	return TypeUnknown
 }
 
+// Box is an interface for different BMFF boxes.
+type Box interface {
+	//Size() int64 // 0 means unknown (will read to end of file)
+	Type() BoxType
+}
+
+// Flags for a FullBox
+// 8 bits -> Version
+// 24 bits -> Flags
+type Flags uint32
+
+// Flags returns underlying Flags after removing version.
+// Flags are 24 bits.
+func (f Flags) Flags() uint32 {
+	// Left Shift
+	f = f << 8
+	// Right Shift
+	return uint32(f >> 8)
+}
+
+// Version returns a uint8 version.
+func (f Flags) Version() uint8 {
+	return uint8(f >> 24)
+}
+
+// Box is a BMFF box
 type box struct {
 	bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
@@ -198,7 +224,7 @@ func (b box) Type() BoxType { return b.boxType }
 
 func (b *box) Parse() (Box, error) {
 	if !b.anyRemain() {
-		return nil, ErrBufReaderLength
+		return nil, ErrBufLength
 	}
 	parser, ok := parsers[b.Type()]
 	if !ok {

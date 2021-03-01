@@ -65,7 +65,7 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 
 	var inner box
 	for outer.anyRemain() {
-		inner, err = outer.readInnerBox()
+		inner, err = outer.readBox()
 		if err != nil {
 			if err == io.EOF {
 				return mb, nil
