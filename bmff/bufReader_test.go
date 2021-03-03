@@ -1,11 +1,13 @@
 package bmff
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,8 +24,8 @@ var testReadBoxData = []struct {
 	err    error
 	assert bool
 }{
-	{"Normal ftyp box", box{size: 120, bufReader: bufReader{remain: 112}, boxType: TypeFtyp}, []byte{0, 0, 0, 120, 'f', 't', 'y', 'p', 0, 0, 0, 0, 0, 0, 0}, nil, true},
-	{"Large Box (64-bit) meta box", box{size: 61563, bufReader: bufReader{remain: 61547}, boxType: TypeMeta}, []byte{0, 0, 0, 1, 'm', 'e', 't', 'a', 0, 0, 0, 0, 0, 0, 240, 123}, nil, true},
+	{"Normal ftyp box", box{size: 120, bufReader: bufReader{remain: 112, offset: 8}, boxType: TypeFtyp}, []byte{0, 0, 0, 120, 'f', 't', 'y', 'p', 0, 0, 0, 0, 0, 0, 0}, nil, true},
+	{"Large Box (64-bit) meta box", box{size: 61563, bufReader: bufReader{remain: 61547, offset: 16}, boxType: TypeMeta}, []byte{0, 0, 0, 1, 'm', 'e', 't', 'a', 0, 0, 0, 0, 0, 0, 240, 123}, nil, true},
 	{"Large Box (64-bit) uint64", box{}, []byte{0, 0, 0, 1, 'm', 'e', 't', 'a', 255, 0, 0, 0, 0, 0, 240, 123}, errLargeBox, false},
 	{"Box too short", box{}, []byte{0, 0, 0, 120, 'm', 'e', 't'}, ErrBufLength, false},
 	{"Large Box too short", box{}, []byte{0, 0, 0, 1, 'm', 'e', 't', 'a'}, ErrBufLength, false},
@@ -32,13 +34,71 @@ var testReadBoxData = []struct {
 func TestBufReaderReadInnerBox(t *testing.T) {
 	for _, v := range testReadBoxData {
 		outer := newTestBox(v.data)
-		inner, err := outer.readBox()
+		inner, err := outer.readInnerBox()
 		assert.ErrorIs(t, err, v.err, v.name)
 
 		inner.bufReader.Reader = nil
 		if v.assert {
 			assert.Equalf(t, v.box, inner, "error message: %s", v.name)
 		}
+	}
+}
+
+func TestCloseInnerBox(t *testing.T) {
+	data := []byte{0, 0, 0, 18, 'c', 'o', 'l', 'r', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b := newTestBox(data)
+	b.boxType = TypeMeta
+	inner, err := b.readInnerBox()
+	if err != nil {
+		t.Error(err)
+	}
+	// expected offset 10, remain 8
+	err = b.closeInnerBox(&inner)
+	assert.ErrorIs(t, err, nil)
+	//assert.ErrorAs(t, nil, err, "TestCloseInnerBox")
+	expected := box{boxType: TypeMeta, size: 18}
+	expected.bufReader = b.bufReader
+	expected.bufReader.offset = 18
+	expected.bufReader.remain = 0
+	assert.Equal(t, expected, b, "TestCloseInnerBox")
+
+	// Should discard 0, because remain is empty
+	err = b.discard(10)
+	assert.ErrorIs(t, err, nil)
+
+	data = []byte{0, 0, 0, 18, 'c', 'o', 'l', 'r', 0, 0, 0, 0, 0, 0, 0, 0}
+	b = newTestBox(data)
+	b.boxType = TypeMeta
+	inner, err = b.readInnerBox()
+	if err != nil {
+		t.Error(err)
+	}
+	// expected offset 10, remain 8
+	err = b.closeInnerBox(&inner)
+	assert.ErrorIs(t, err, io.EOF)
+
+	// Should return err negative count
+	err = b.discard(10)
+	assert.ErrorIs(t, err, bufio.ErrNegativeCount)
+}
+
+func TestBufReaderReadUUID(t *testing.T) {
+	UUIDtests := []struct {
+		name     string
+		buf      []byte
+		expected meta.UUID
+		err      error
+	}{
+		{"CR3 uuid", []byte{133, 192, 182, 135, 130, 15, 17, 224, 129, 17, 244, 206, 70, 43, 106, 72}, CR3MetaBoxUUID, nil},
+		{"Err Length", []byte{0, 0, 0, 0, 0, 0}, meta.NilUUID, ErrBufLength},
+		{"Err UUID", []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}, meta.UUID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, nil},
+	}
+	for _, v := range UUIDtests {
+		b := newTestBox(v.buf)
+		b.boxType = TypeUUID
+		uuid, err := b.readUUID()
+		assert.ErrorIs(t, err, v.err)
+		assert.Equal(t, v.expected, uuid, "TestReadUUID")
 	}
 }
 
@@ -83,17 +143,17 @@ var testReadItemType = []struct {
 	{"ItemType remain too Short", ItemTypeUnknown, []byte{0, 0, 0}, 4, ErrBufLength, false},
 }
 
-func TestBufReaderReadItemType(t *testing.T) {
-	for _, v := range testReadItemType {
-		outer := newTestBox(v.data)
-		outer.remain = v.remain
-		itemType, err := outer.readItemType()
-		assert.ErrorIsf(t, err, v.err, v.name)
-		if v.assert {
-			assert.Equalf(t, v.itemType, itemType, "error message: %s", v.name)
-		}
-	}
-}
+//func TestBufReaderReadItemType(t *testing.T) {
+//	for _, v := range testReadItemType {
+//		outer := newTestBox(v.data)
+//		outer.remain = v.remain
+//		itemType, err := outer.readItemType()
+//		assert.ErrorIsf(t, err, v.err, v.name)
+//		if v.assert {
+//			assert.Equalf(t, v.itemType, itemType, "error message: %s", v.name)
+//		}
+//	}
+//}
 
 var testReadBrand = []struct {
 	name   string

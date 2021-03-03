@@ -177,8 +177,8 @@ func boxType(buf []byte) BoxType {
 	if ok {
 		return b
 	}
-	if Debug {
-		fmt.Println(string(buf))
+	if debugFlag {
+		log.Debug("BoxType '%s' not found", buf)
 	}
 	return TypeUnknown
 }
@@ -208,6 +208,10 @@ func (f Flags) Version() uint8 {
 	return uint8(f >> 24)
 }
 
+func (f Flags) String() string {
+	return fmt.Sprintf("Flags: %d, Version: %d", f.Flags(), f.Version())
+}
+
 // Box is a BMFF box
 type box struct {
 	bufReader
@@ -216,7 +220,7 @@ type box struct {
 }
 
 func (b box) String() string {
-	return fmt.Sprintf("(Box) type: \"%s\", size: %d", b.boxType, b.size)
+	return fmt.Sprintf("(Box) type: \"%s\", offset: %d, size: %d", b.boxType, b.offset, b.size)
 }
 
 func (b box) Size() int64   { return b.size }
@@ -228,15 +232,12 @@ func (b *box) Parse() (Box, error) {
 	}
 	parser, ok := parsers[b.Type()]
 	if !ok {
-		return UnknownBox{t: b.Type(), s: b.size}, ErrUnknownParser
+		if debugFlag {
+			log.Debug("Unknown Parser. Boxtype: '%s', BoxSize: '%d'", b.Type(), b.Size())
+		}
+		return UnknownBox{t: b.Type(), s: b.size}, nil
 	}
-
-	v, err := parser(b)
-	if err != nil {
-		// Write error with parser
-		return nil, err
-	}
-	return v, nil
+	return parser(b)
 }
 
 // Parsers
@@ -262,6 +263,9 @@ func init() {
 		TypeMeta: parseMeta,
 		TypeMoov: parseMoov,
 		TypePitm: parsePitm,
+		TypeHvcC: parseUnknownBox,
+		TypeColr: parseUnknownBox,
+		TypePixi: parseUnknownBox,
 	}
 }
 
@@ -277,8 +281,8 @@ func (dinf DataInformationBox) Type() BoxType {
 
 func parseDataInformationBox(outer *box) (Box, error) {
 	dib := DataInformationBox{}
-	err := outer.discard(outer.remain)
-	return dib, err //br.parseAppendBoxes(&dib.Children)
+	//br.parseAppendBoxes(&dib.Children)
+	return dib, outer.discard(outer.remain)
 }
 
 // UnknownBox is a box that was unable to be parsed.
@@ -298,5 +302,10 @@ func (ub UnknownBox) Size() int64 {
 }
 
 func (ub UnknownBox) String() string {
-	return fmt.Sprintf(" Type: %s, Size: %d", ub.t, ub.s)
+	return fmt.Sprintf("Type: %s, Size: %d", ub.t, ub.s)
+}
+
+// Process Boxes that are not implemented
+func parseUnknownBox(outer *box) (Box, error) {
+	return UnknownBox{outer.boxType, outer.size}, outer.discard(outer.remain)
 }

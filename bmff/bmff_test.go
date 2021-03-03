@@ -89,7 +89,7 @@ func TestFileTypeBox(t *testing.T) {
 	if ftyp.Type() != TypeFtyp {
 		t.Errorf("Expected TypeFtyp")
 	}
-	if processString([]byte("abcd")) != "abcd" {
+	if cleanString([]byte("abcd")) != "abcd" {
 		t.Errorf("Expected complete string")
 	}
 
@@ -111,7 +111,7 @@ func TestParseHandler(t *testing.T) {
 	}
 	data := []byte{0, 0, 0, 34, 104, 100, 108, 114, 0, 0, 0, 0, 0, 0, 0, 0, 112, 105, 99, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	outer := newTestBox(data)
-	inner, err := outer.readBox()
+	inner, err := outer.readInnerBox()
 	if err != nil {
 		t.Errorf("Error: (%s), %v", "Handler", err)
 	}
@@ -128,7 +128,7 @@ func TestParseHandler(t *testing.T) {
 
 	copy(data[16:20], "nnnn")
 	outer = newTestBox(data)
-	inner, err = outer.readBox()
+	inner, err = outer.readInnerBox()
 	if err != nil {
 		t.Errorf("Error: (%s), %v", "Handler", err)
 	}

@@ -32,7 +32,7 @@ func parseMoovBox(outer *box) (moov MoovBox, err error) {
 
 	var inner box
 	for outer.anyRemain() {
-		inner, err = outer.readBox()
+		inner, err = outer.readInnerBox()
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -43,12 +43,12 @@ func parseMoovBox(outer *box) (moov MoovBox, err error) {
 			uBox, err := parseUUIDBox(&inner)
 			fmt.Println(uBox, err)
 		}
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			if Debug {
+
+		if err = outer.closeInnerBox(&inner); err != nil {
+			// Log error
+			if debugFlag {
 				fmt.Println(err)
 			}
-			// TODO: improve error handling
 			break
 		}
 	}
@@ -61,11 +61,12 @@ func parseUUIDBox(outer *box) (b Box, err error) {
 		err = ErrWrongBoxType
 		return
 	}
-	uuid, err := outer.bufReader.readUUID()
+	uuid, err := outer.readUUID()
 	if err != nil {
 		return
 	}
-	if uuid == CR3MetaBoxUUID {
+	switch uuid {
+	case CR3MetaBoxUUID:
 		return parseCR3MetaBox(outer)
 	}
 	return

@@ -81,8 +81,7 @@ func parseHandlerBox(outer *box) (hdlr HandlerBox, err error) {
 		return
 	}
 	//hdlr.Name, _ = outer.readString()
-	err = outer.discard(outer.remain)
-	return hdlr, err
+	return hdlr, outer.discard(outer.remain)
 }
 
 // ItemTypeReferenceBox is an "iref" box.
@@ -112,7 +111,7 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 	var inner box
 	for outer.anyRemain() {
 		// Read Box
-		if inner, err = outer.readBox(); err != nil {
+		if inner, err = outer.readInnerBox(); err != nil {
 			// TODO: write error
 			break
 		}
@@ -126,8 +125,7 @@ func parseItemTypeReferenceBox(outer *box) (iref ItemTypeReferenceBox, err error
 			break
 		}
 	}
-	err = outer.discard(outer.remain)
-	return iref, err
+	return iref, outer.discard(outer.remain)
 }
 
 // ImageRotation is an "irot" - image rotation property.

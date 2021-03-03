@@ -84,8 +84,8 @@ func brand(buf []byte) Brand {
 			return b
 		}
 	}
-	if Debug {
-		fmt.Println("Unknown Brand: ", string(buf), buf)
+	if debugFlag {
+		log.Debug("Brand '%s' not found", buf)
 	}
 	return brandUnknown
 }
@@ -97,38 +97,39 @@ type FileTypeBox struct {
 	Compatible   [6]Brand // all 4 bytes
 }
 
+// IsCR3 returns true if major brand is crx (Canon CR3)
+func (ftyp FileTypeBox) IsCR3() bool {
+	return ftyp.MajorBrand == brandCrx
+}
+
 // Type returns TypeFtyp
 func (ftyp FileTypeBox) Type() BoxType {
 	return TypeFtyp
 }
 
-func parseFtyp(outer *box) (Box, error) {
-	return parseFileTypeBox(outer)
+func parseFtyp(b *box) (Box, error) {
+	return b.parseFileTypeBox()
 }
 
-func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
-	if outer.boxType != TypeFtyp {
-		err = ErrWrongBoxType
-		return
+func (b *box) parseFileTypeBox() (ftyp FileTypeBox, err error) {
+	if b.boxType != TypeFtyp {
+		return ftyp, ErrWrongBoxType
 	}
-	var buf []byte
-	if buf, err = outer.Peek(8); err != nil {
-		return
+	buf, err := b.peek(8)
+	if err != nil {
+		return ftyp, err
 	}
 	ftyp.MajorBrand = brand(buf[:4])
-	ftyp.MinorVersion = processString(buf[4:8])
-	if err = outer.discard(8); err != nil {
+	ftyp.MinorVersion = cleanString(buf[4:8])
+	if err = b.discard(8); err != nil {
 		return
 	}
 
 	// Read maximum 6 Compatible brands
-	for i := 0; i < 6; i++ {
-		if outer.remain < 4 {
-			break
-		}
-		ftyp.Compatible[i], _ = outer.readBrand()
+	for i := 0; i < 6 && b.remain >= 4; i++ {
+		ftyp.Compatible[i], _ = b.readBrand()
 	}
-	return ftyp, outer.discard(outer.remain)
+	return ftyp, b.discard(b.remain)
 }
 
 func (ftyp FileTypeBox) String() string {
@@ -140,7 +141,7 @@ func (ftyp FileTypeBox) String() string {
 	return sb.String()
 }
 
-func processString(buf []byte) string {
+func cleanString(buf []byte) string {
 	if buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 0 {
 		return ""
 	}

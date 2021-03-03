@@ -20,15 +20,9 @@ package bmff
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
-)
-
-// Debug Flag
-var (
-	Debug = false
 )
 
 // Common Errors
@@ -44,7 +38,7 @@ func NewReader(r io.Reader) Reader {
 	if !ok {
 		br = bufio.NewReader(r)
 	}
-	return Reader{br: bufReader{Reader: br}}
+	return Reader{br: bufReader{Reader: br, remain: 8}}
 }
 
 // Reader is a BMFF reader
@@ -59,14 +53,14 @@ type Reader struct {
 func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
 	box, err := r.readBox()
 	if err != nil {
-		return nil, fmt.Errorf("error reading %q box: %v", typ, err)
+		return nil, errors.Errorf("error reading %q box: %v", typ, err)
 	}
 	if box.Type() != typ {
-		return nil, fmt.Errorf("error reading %q box: got box type %q instead", typ, box.Type())
+		return nil, errors.Errorf("error reading %q box: got box type %q instead", typ, box.Type())
 	}
 	pbox, err := box.Parse()
 	if err != nil {
-		return nil, fmt.Errorf("error parsing read %q box: %v", typ, err)
+		return nil, errors.Errorf("error parsing read %q box: %v", typ, err)
 	}
 	return pbox, nil
 }
@@ -75,12 +69,13 @@ func (r *Reader) ReadAndParseBox(typ BoxType) (Box, error) {
 //
 // This should be the first read function called.
 func (r *Reader) ReadFtypBox() (FileTypeBox, error) {
-	b, err := r.br.readBox()
+	b, err := r.readBox()
 	if err != nil {
-		return FileTypeBox{}, err
+		return FileTypeBox{}, errors.Wrapf(err, "ReadFtypBox")
 	}
-	ftyp, err := parseFileTypeBox(&b)
+	ftyp, err := b.parseFileTypeBox()
 	r.brand = ftyp.MajorBrand
+	r.br.offset = b.offset
 	return ftyp, err
 }
 
@@ -94,7 +89,7 @@ func (r *Reader) ReadMetaBox() (mb MetaBox, err error) {
 	if r.noMoreBoxes {
 		return mb, ErrNoMoreBoxes
 	}
-	b, err := r.br.readBox()
+	b, err := r.readBox()
 	if err != nil {
 		return mb, err
 	}
@@ -106,13 +101,12 @@ func (r *Reader) ReadMetaBox() (mb MetaBox, err error) {
 // This should be called in order. First call ReadFtypBox
 func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 	if r.brand == brandUnknown {
-		err = ErrBrandNotSupported
-		return
+		return moov, ErrBrandNotSupported
 	}
 	if r.noMoreBoxes {
 		return moov, ErrNoMoreBoxes
 	}
-	b, err := r.br.readBox()
+	b, err := r.readBox()
 	if err != nil {
 		return moov, err
 	}
@@ -121,6 +115,5 @@ func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 
 // ReadBox reads a box and returns it
 func (r *Reader) readBox() (b box, err error) {
-	outer := box{bufReader: r.br}
-	return outer.readBox()
+	return r.br.readInnerBox()
 }

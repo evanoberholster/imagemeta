@@ -24,15 +24,16 @@ var (
 // bufReader adds some HEIF/BMFF-specific methods around a *bufio.Reader.
 type bufReader struct {
 	*bufio.Reader
-	err    error
+	//err    error
+	offset int
 	remain int
 }
 
 // ok reports whether all previous reads have been error-free.
-func (br *bufReader) ok() bool { return br.err == nil }
+//func (br *bufReader) ok() bool { return br.err == nil }
 
 func (br *bufReader) anyRemain() bool {
-	return br.remain > 0 && br.ok()
+	return br.remain > 0
 }
 
 // peek returns the next n bytes without advancing the reader.
@@ -60,29 +61,30 @@ func (br *bufReader) discard(n int) (err error) {
 	}
 	n, err = br.Discard(n)
 	br.remain -= n
+	br.offset += n
 	if err != nil {
 		return errors.Wrap(err, "bufReader discard")
 	}
 	return err
 }
 
-func (br *bufReader) readString() (string, error) {
-	if br.err != nil {
-		return "", br.err
-	}
+func (br *bufReader) readString() (str string, err error) {
 	s0, err := br.ReadString(0)
 	if err != nil {
-		br.err = err
-		return "", err
+		err = errors.Wrap(err, "readString")
+		return
 	}
-	br.remain -= len(s0)
-	if s0[len(s0)-1] == '\x00' {
-		s0 = s0[:len(s0)-1]
+	length := len(s0)
+	br.remain -= length
+	br.offset += length
+	if s0[length-1] == '\x00' {
+		s0 = s0[:length-1]
 		return string(s0), nil
 	}
 	s := strings.TrimSuffix(s0, "\x00")
-	if len(s) == len(s0) {
-		return "", errors.New("unexpected non-null terminated string")
+	if len(s) == length {
+		err = errors.New("readString: unexpected non-null terminated string")
+		return
 	}
 	return s, nil
 }
@@ -95,7 +97,8 @@ func (br *bufReader) readUint8() (uint8, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "readUint8")
 	}
-	br.remain-- // remove 1 remaining byte
+	br.remain--
+	br.offset++
 	return v, nil
 }
 
@@ -151,21 +154,21 @@ func (br *bufReader) readBrand() (b Brand, err error) {
 	return brand(buf[:4]), br.discard(4)
 }
 
-func (br *bufReader) readItemType() (it ItemType, err error) {
-	buf, err := br.peek(5)
-	if err != nil {
-		return ItemTypeUnknown, errors.Wrap(ErrBufLength, "readItemType")
-	}
-
-	it = itemType(buf[:4])
-	if buf[4] != '\x00' {
-		// Read until whitespace
-		//br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
-		return it, br.discard(4)
-	}
-
-	return it, br.discard(5)
-}
+//func (br *bufReader) readItemType() (it ItemType, err error) {
+//	buf, err := br.peek(5)
+//	if err != nil {
+//		return ItemTypeUnknown, errors.Wrap(ErrBufLength, "readItemType")
+//	}
+//
+//	it = itemType(buf[:4])
+//	if buf[4] != '\x00' {
+//		// Read until whitespace
+//		//br.err = ErrItemTypeWS // errors.New("bufReader error: itemType doesn't end on whitespace")
+//		return it, br.discard(4)
+//	}
+//
+//	return it, br.discard(5)
+//}
 
 // readFlags reads the Flags from a FullBox header.
 func (br *bufReader) readFlags() (f Flags, err error) {
@@ -183,19 +186,18 @@ func (br *bufReader) readFlags() (f Flags, err error) {
 func (br *bufReader) readUUID() (u meta.UUID, err error) {
 	buf, err := br.peek(16)
 	if err != nil {
+		err = errors.Wrap(ErrBufLength, "readUUID")
 		return
 	}
-	u, err = meta.UUIDFromBytes(buf)
-	if err != nil {
-		err = errors.Wrap(err, "readUUID")
-		return
-	}
+	// err not possible here, so we will ignore the error
+	u.UnmarshalBinary(buf)
 	return u, br.discard(16)
 }
 
 // readBox reads the next Box
-func (br *bufReader) readBox() (b box, err error) {
-	b = box{bufReader: *br}
+func (br *bufReader) readInnerBox() (b box, err error) {
+	// set previous bufReader
+	b.bufReader = *br
 
 	// Read box size and box type
 	var buf []byte
@@ -203,6 +205,7 @@ func (br *bufReader) readBox() (b box, err error) {
 		return b, errors.Wrap(ErrBufLength, "readBox")
 	}
 	b.size = int64(binary.BigEndian.Uint32(buf[:4]))
+	b.remain = int(b.size)
 	b.boxType = boxType(buf[4:8])
 
 	switch b.size {
@@ -216,7 +219,7 @@ func (br *bufReader) readBox() (b box, err error) {
 			// Go uses int64 for sizes typically, but BMFF uses uint64.
 			// We assume for now that nobody actually uses boxes larger
 			// than int64.
-			return b, errors.Wrapf(errLargeBox, "box '%s'", b.boxType)
+			return b, errors.Wrapf(errLargeBox, "readBox '%s'", b.boxType)
 		}
 		b.remain = int(b.size)
 		return b, b.discard(16)
@@ -225,6 +228,16 @@ func (br *bufReader) readBox() (b box, err error) {
 		// r.noMoreBoxes = true
 		// TODO: error
 	}
-	b.remain = int(b.size)
 	return b, b.discard(8)
+}
+
+func (br *bufReader) closeInnerBox(inner *box) (err error) {
+	br.remain -= int(inner.size)
+	br.offset += int(inner.size)
+
+	// clear remaing
+	if err = inner.discard(inner.remain); err != nil {
+		return errors.Wrapf(err, "Box '%s' (closeInnerBox)", inner.boxType)
+	}
+	return nil
 }

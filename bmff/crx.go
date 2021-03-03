@@ -3,29 +3,69 @@ package bmff
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"strings"
 
+	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/pkg/errors"
 )
 
 // Values are in BigEndian
 var crxBinaryOrder = binary.BigEndian
 
-// CR3MetaBoxUUID is the uuid that corresponds with Canon CR3 Metadata
-var CR3MetaBoxUUID, _ = meta.UUIDFromBytes([]byte{133, 192, 182, 135, 130, 15, 17, 224, 129, 17, 244, 206, 70, 43, 106, 72})
+// CR3MetaBoxUUID is the uuid that corresponds with Canon CR3 Metadata.
+//
+// uuid = 85c0b687 820f 11e0 8111 f4ce462b6a48
+var CR3MetaBoxUUID = meta.UUID{133, 192, 182, 135, 130, 15, 17, 224, 129, 17, 244, 206, 70, 43, 106, 72}
+
+// ParseCanonCR3 is a performance focused method for parsing metadata from a .CR3 file.
+func (r *Reader) ParseCanonCR3() (err error) {
+	// Parse Moov Box
+	moovBox, err := r.readBox()
+	if err != nil {
+		err = errors.Wrapf(err, "Box 'moov' (readBox) error")
+		return
+	}
+	if moovBox.boxType != TypeMoov {
+		err = errors.Wrapf(ErrWrongBoxType, "Box %s", moovBox.boxType)
+		return
+	}
+	var inner box
+	for moovBox.anyRemain() {
+		if inner, err = moovBox.readInnerBox(); err != nil {
+			err = errors.Wrapf(err, "Box 'moov' %s (readBox)", inner.boxType)
+			return
+		}
+		switch inner.boxType {
+		case TypeUUID:
+			uuid, err := inner.readUUID()
+			if err != nil {
+				return err
+			}
+			switch uuid {
+			case CR3MetaBoxUUID:
+				cr3, err := parseCR3MetaBox(&inner)
+				fmt.Println(cr3, err)
+			}
+		default:
+			//fmt.Println(inner)
+		}
+		if err = moovBox.closeInnerBox(&inner); err != nil {
+			return
+		}
+	}
+	return moovBox.discard(moovBox.remain)
+}
 
 // CR3MetaBox is a uuidBox that contains Metadata for CR3 files
 type CR3MetaBox struct {
 	CNCV CNCVBox
 	CCTP CCTPBox
 	CTBO CTBOBox
-	//CMT1
-	//CMT2
-	//CMT3
-	//CMT4
-	//THMB
-	//mvhd
+	CMT  [4]exif.Header
+	THMB THMBBox
 }
 
 // Type returns TypeUUID, CR3MetaBox's boxType.
@@ -36,28 +76,77 @@ func (cr3 CR3MetaBox) Type() BoxType {
 // parseCR3MetaBox parses a uuid box with the uuid of 85c0b687 820f 11e0 8111 f4ce462b6a48
 func parseCR3MetaBox(outer *box) (meta CR3MetaBox, err error) {
 	var inner box
+	cmt := 0
 	for outer.anyRemain() {
-		if inner, err = outer.readBox(); err != nil {
+		if inner, err = outer.readInnerBox(); err != nil {
 			return
 		}
 		switch inner.boxType {
 		case TypeCNCV:
-			meta.CNCV, err = parseCNCVBox(&inner)
-			fmt.Println("CNCV:", meta.CNCV, err)
+			meta.CNCV, err = inner.parseCNCVBox()
 		case TypeCCTP:
-			meta.CCTP, err = parseCCTPBox(&inner)
-			fmt.Println("CCTP:", meta.CCTP, err)
+			meta.CCTP, err = inner.parseCCTPBox()
 		case TypeCTBO:
-			meta.CTBO, err = parseCTBOBox(&inner)
-			fmt.Println("CTBO:", meta.CTBO, err)
+			meta.CTBO, err = inner.parseCTBOBox()
+		case TypeTMHB:
+			meta.THMB, err = inner.parseTHMBBox()
+		case TypeCMT1, TypeCMT2, TypeCMT3, TypeCMT4:
+			meta.CMT[cmt], err = inner.parseExifHeader(imagetype.ImageCR3)
+			cmt++
+		default:
+			fmt.Println(inner)
 		}
-		fmt.Println(inner)
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
+		if err != nil {
+			return
+		}
+
+		if err = outer.closeInnerBox(&inner); err != nil {
 			return
 		}
 	}
 	return
+}
+
+func (b *box) parseExifHeader(it imagetype.ImageType) (header exif.Header, err error) {
+	buf, err := b.peek(8)
+	if err != nil {
+		return exif.Header{}, errors.Wrap(err, "parseExifHeader")
+	}
+	byteOrder := tiff.BinaryOrder(buf[:4])
+	firstIfdOffset := byteOrder.Uint32(buf[4:8])
+	tiffHeaderOffset := uint32(b.offset)
+	exifLength := uint32(b.remain)
+	return exif.NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, exifLength, it), b.discard(8)
+}
+
+// THMBBox is a Canon CR3 Thumbnail Box
+type THMBBox struct {
+	offset        uint32
+	size          uint32
+	width, height uint16
+}
+
+func (b *box) parseTHMBBox() (thmb THMBBox, err error) {
+	flags, err := b.readFlags()
+	if err != nil {
+		return thmb, errors.Wrap(err, "parseTHMBBox")
+	}
+	buf, err := b.peek(8)
+	if err != nil {
+		return thmb, errors.Wrap(err, "parseTHMBBox")
+	}
+	// read width, height, jpeg image size
+	thmb.offset = uint32(b.offset + 8)
+	thmb.width = crxBinaryOrder.Uint16(buf[:2])
+	thmb.height = crxBinaryOrder.Uint16(buf[2:4])
+	thmb.size = crxBinaryOrder.Uint32(buf[4:8])
+	switch flags.Version() {
+	case 0:
+		thmb.offset += 4
+	case 1:
+	}
+
+	return thmb, b.discard(b.remain)
 }
 
 // CCDTBox is a Canon CR3 definition of tracks?
@@ -67,16 +156,16 @@ type CCDTBox struct {
 	idx uint32
 }
 
-func parseCCDTBox(outer *box) (ccdt CCDTBox, err error) {
-	if outer.boxType != TypeCCDT {
+func (b *box) parseCCDTBox() (ccdt CCDTBox, err error) {
+	if b.boxType != TypeCCDT {
 		err = ErrWrongBoxType
 		return
 	}
-	buf, err := outer.bufReader.Peek(16)
+	buf, err := b.peek(16)
 	if err != nil {
 		return
 	}
-	if err = outer.discard(16); err != nil {
+	if err = b.discard(16); err != nil {
 		return
 	}
 	// uint64 value appears to be imagetype
@@ -86,7 +175,7 @@ func parseCCDTBox(outer *box) (ccdt CCDTBox, err error) {
 	// uint32 value for the trak Index
 	ccdt.idx = crxBinaryOrder.Uint32(buf[12:16])
 
-	return ccdt, outer.discard(outer.remain)
+	return ccdt, b.discard(b.remain)
 }
 
 // CNCVBox is Canon Compressor Version box
@@ -107,16 +196,13 @@ func (cncv CNCVBox) String() string {
 	return sb.String()
 }
 
-func parseCNCVBox(outer *box) (cncv CNCVBox, err error) {
-	buf, err := outer.bufReader.Peek(30)
+func (b *box) parseCNCVBox() (cncv CNCVBox, err error) {
+	buf, err := b.peek(30)
 	if err != nil {
 		return
 	}
-	if err = outer.discard(30); err != nil {
-		return
-	}
 	copy(cncv.val[:], buf[0:30])
-	return cncv, nil
+	return cncv, b.discard(30)
 }
 
 // CCTPBox is Canon Compressor Table Pointers box
@@ -126,16 +212,16 @@ type CCTPBox struct {
 	CCDT []CCDTBox
 }
 
-func parseCCTPBox(outer *box) (cctp CCTPBox, err error) {
-	if outer.boxType != TypeCCTP {
+func (b *box) parseCCTPBox() (cctp CCTPBox, err error) {
+	if b.boxType != TypeCCTP {
 		err = ErrWrongBoxType
 		return
 	}
-	buf, err := outer.bufReader.Peek(12)
+	buf, err := b.peek(12)
 	if err != nil {
 		return
 	}
-	if err = outer.discard(12); err != nil {
+	if err = b.discard(12); err != nil {
 		return
 	}
 	// CCTP Box contains 12 bytes (3 x uint32)
@@ -144,23 +230,18 @@ func parseCCTPBox(outer *box) (cctp CCTPBox, err error) {
 	cctp.CCDT = make([]CCDTBox, count)
 
 	var inner box
-	for i := 0; i < int(count) && outer.anyRemain(); i++ {
-		inner, err = outer.readBox()
-		if err != nil {
-			if err == io.EOF {
-				return
-			}
+	for i := 0; i < int(count) && b.anyRemain(); i++ {
+		if inner, err = b.readInnerBox(); err != nil {
 			return
 		}
 		if inner.boxType == TypeCCDT {
-			cctp.CCDT[i], err = parseCCDTBox(&inner)
+			cctp.CCDT[i], err = inner.parseCCDTBox()
 		}
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			break
+		if err = b.closeInnerBox(&inner); err != nil {
+			return
 		}
 	}
-	return cctp, outer.discard(outer.remain)
+	return cctp, b.discard(b.remain)
 }
 
 // CTBOBox is a Canon tracks base offsets Box?
@@ -176,28 +257,28 @@ type IndexOffset struct {
 	idx    uint32
 }
 
-func parseCTBOBox(outer *box) (ctbo CTBOBox, err error) {
-	if outer.Type() != TypeCTBO {
+func (b *box) parseCTBOBox() (ctbo CTBOBox, err error) {
+	if b.Type() != TypeCTBO {
 		err = ErrWrongBoxType
 		return
 	}
-	buf, err := outer.bufReader.Peek(4)
+	buf, err := b.peek(4)
 	if err != nil {
 		return
 	}
-	if err = outer.discard(4); err != nil {
+	if err = b.discard(4); err != nil {
 		return
 	}
 	count := crxBinaryOrder.Uint32(buf[0:4])
 	ctbo.items = make([]IndexOffset, count)
 
-	for i := 0; i < int(count) && outer.anyRemain(); i++ {
+	for i := 0; i < int(count) && b.anyRemain(); i++ {
 		// each item is 20 bytes in length
-		buf, err = outer.bufReader.Peek(20)
+		buf, err = b.peek(20)
 		if err != nil {
 			return
 		}
-		if err = outer.discard(20); err != nil {
+		if err = b.discard(20); err != nil {
 			return
 		}
 		ctbo.items[i] = IndexOffset{
@@ -206,5 +287,5 @@ func parseCTBOBox(outer *box) (ctbo CTBOBox, err error) {
 			length: crxBinaryOrder.Uint64(buf[12:20]),
 		}
 	}
-	return ctbo, outer.discard(outer.remain)
+	return ctbo, b.discard(b.remain)
 }

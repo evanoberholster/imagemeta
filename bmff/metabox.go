@@ -2,13 +2,12 @@ package bmff
 
 import (
 	"fmt"
-	"io"
 	"strings"
 )
 
 // MetaBox is a 'meta' box
 type MetaBox struct {
-	size  uint32
+	//size  uint32
 	Flags Flags
 
 	Handler    HandlerBox
@@ -17,11 +16,6 @@ type MetaBox struct {
 	Properties ItemPropertiesBox
 	Location   ItemLocationBox
 	Children   []Box
-}
-
-// Size returns the size of the MetaBox
-func (mb MetaBox) Size() int64 {
-	return int64(mb.size)
 }
 
 // Type returns TypeMeta
@@ -57,7 +51,6 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 		err = ErrWrongBoxType
 		return
 	}
-	mb = MetaBox{size: uint32(outer.size)}
 	mb.Flags, err = outer.readFlags()
 	if err != nil {
 		return mb, err
@@ -65,15 +58,12 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 
 	var inner box
 	for outer.anyRemain() {
-		inner, err = outer.readBox()
+		inner, err = outer.readInnerBox()
 		if err != nil {
-			if err == io.EOF {
-				return mb, nil
-			}
 			return mb, err
 		}
 		switch inner.boxType {
-		case TypeIdat, TypeDinf, TypeUUID, TypeIref:
+		case TypeIdat, TypeDinf, TypeUUID, TypeIref, TypeColr, TypeHvcC:
 			// Do not parse
 
 		//case TypeIref:
@@ -81,37 +71,29 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 		case TypePitm:
 			mb.Primary, err = parsePrimaryItemBox(&inner)
 		case TypeIinf:
-			mb.ItemInfo, err = parseItemInfoBox(&inner)
+			mb.ItemInfo, err = inner.parseItemInfoBox()
 		case TypeHdlr:
 			mb.Handler, err = parseHandlerBox(&inner)
 		case TypeIprp:
-			mb.Properties, err = parseItemPropertiesBox(&inner)
+			mb.Properties, err = inner.parseItemPropertiesBox()
 		case TypeIloc:
-			mb.Location, err = parseItemLocationBox(&inner)
+			mb.Location, err = inner.parseItemLocationBox()
 		default:
-			p, err := inner.Parse()
-			if err == nil {
-				mb.Children = append(mb.Children, p)
-			}
+			//p, err := inner.Parse()
+			//if err == nil {
+			//	mb.Children = append(mb.Children, p)
+			//}
 		}
 		if err != nil {
-			if Debug {
-				fmt.Println(err)
-			}
+			return
 		}
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			if Debug {
-				fmt.Println(err)
-			}
-			// TODO: improve error handling
+		if err = outer.closeInnerBox(&inner); err != nil {
 			break
 		}
 
-		if Debug {
+		if debugFlag {
 			fmt.Println(inner, outer.remain, inner.remain, inner.size)
 		}
 	}
-	err = outer.discard(outer.remain)
-	return mb, err
+	return mb, outer.discard(outer.remain)
 }
