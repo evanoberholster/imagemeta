@@ -38,11 +38,11 @@ func TestIfdString(t *testing.T) {
 	for i, v := range testIfds {
 		assert.Equal(t, v.ifd.String(), v.str)
 		ta := tag.Tag{}
-		ta.TagID = v.rootTag
+		ta.ID = v.rootTag
 
 		assert.Equal(t, v.rootIFD, RootIFD.IsChildIfd(ta), "RootIfd Children: %v")
 
-		ta.TagID = v.exifTag
+		ta.ID = v.exifTag
 		assert.Equal(t, v.exifIFD, ExifIFD.IsChildIfd(ta), "ExifIfd Children: %d", i)
 	}
 	assert.Equal(t, RootIFD.TagName(ExifTag), "ExifTag")

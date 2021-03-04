@@ -35,22 +35,24 @@ type SRational struct {
 type Tag struct {
 	ValueOffset uint32
 	UnitCount   uint16 // 4 bytes
-	TagID       ID     // 2 bytes
-	TagType     Type   // 1 byte
+	ID          ID     // 2 bytes
+	t           Type   // 1 byte
+	Ifd         uint8  // 1 byte
 }
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32) Tag {
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8) Tag {
 	return Tag{
-		TagID:       tagID,
-		TagType:     tagType,
+		ID:          tagID,
+		t:           tagType,
 		UnitCount:   uint16(unitCount),
 		ValueOffset: valueOffset,
+		Ifd:         ifd,
 	}
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("0x%04x\t | %s ", t.TagID, t.TagType)
+	return fmt.Sprintf("0x%04x\t | %s ", t.ID, t.t)
 }
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset
@@ -60,7 +62,12 @@ func (t Tag) IsEmbedded() bool {
 
 // Size returns the size of the Tag's value
 func (t Tag) Size() int {
-	return int(t.TagType.Size() * uint32(t.UnitCount))
+	return int(t.t.Size() * uint32(t.UnitCount))
+}
+
+// Type returns the type of Tag
+func (t Tag) Type() Type {
+	return t.t
 }
 
 // Errors

@@ -5,20 +5,17 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/evanoberholster/imagemeta/exif/ifds"
-	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
 var (
 	sampleDir     = "../../test/img/"
 	testFilenames = []string{
-		//"honor20.jpg",
-		//"hero6.jpg",
+		"honor20.jpg",
+		"hero6.jpg",
 		"1.CR2",
 		"3.CR2",
-		//"350D.CR2",
-		//"XT1.CR2",
+		"350D.CR2",
+		"XT1.CR2",
 		"60D.CR2",
 		"6D.CR2",
 		"7D.CR2",
@@ -27,15 +24,15 @@ var (
 		"1.CR3",
 		"1.jpg",
 		"2.jpg",
-		//"1.NEF",
-		//"2.NEF",
-		//"3.NEF",
-		//"1.ARW",
-		//"2.ARW",
-		//"4.RW2",
-		//"hero6.gpr",
-		//"4.webp",
-		//"20.jpg",
+		"1.NEF",
+		"2.NEF",
+		"3.NEF",
+		"1.ARW",
+		"2.ARW",
+		"4.RW2",
+		"hero6.gpr",
+		"4.webp",
+		"20.jpg",
 	}
 	testFilenames2 = []string{
 		"2.CR2",
@@ -67,29 +64,29 @@ func BenchmarkScanExif100(b *testing.B) {
 	}
 }
 
-//BenchmarkParseExif100/honor20.jpg-8         	   41763	     26779 ns/op	    8791 B/op	      38 allocs/op
-//BenchmarkParseExif100/hero6.jpg-8           	   56798	     21478 ns/op	    8036 B/op	      31 allocs/op
-//BenchmarkParseExif100/1.CR2-8               	   25717	     43625 ns/op	   13215 B/op	      57 allocs/op
-//BenchmarkParseExif100/3.CR2-8               	   31881	     37863 ns/op	   12144 B/op	      53 allocs/op
-//BenchmarkParseExif100/350D.CR2-8            	   39760	     30335 ns/op	   10445 B/op	      46 allocs/op
-//BenchmarkParseExif100/XT1.CR2-8             	   39951	     30473 ns/op	   10443 B/op	      46 allocs/op
-//BenchmarkParseExif100/60D.CR2-8             	   28388	     41794 ns/op	   12592 B/op	      52 allocs/op
-//BenchmarkParseExif100/6D.CR2-8              	   26862	     43931 ns/op	   13182 B/op	      57 allocs/op
-//BenchmarkParseExif100/7D.CR2-8              	   27742	     43892 ns/op	   13215 B/op	      57 allocs/op
-//BenchmarkParseExif100/90D.cr3-8             	  152034	      8243 ns/op	    5158 B/op	      17 allocs/op
-//BenchmarkParseExif100/2.CR3-8               	  148568	      8020 ns/op	    5157 B/op	      17 allocs/op
-//BenchmarkParseExif100/1.CR3-8               	  152665	      8190 ns/op	    5158 B/op	      17 allocs/op
-//BenchmarkParseExif100/1.jpg-8               	   65166	     18525 ns/op	    6755 B/op	      30 allocs/op
-//BenchmarkParseExif100/2.jpg-8               	   52927	     22747 ns/op	    8421 B/op	      33 allocs/op
-//BenchmarkParseExif100/1.NEF-8               	   23182	     47926 ns/op	   13600 B/op	      61 allocs/op
-//BenchmarkParseExif100/2.NEF-8               	   22272	     51129 ns/op	   16674 B/op	      63 allocs/op
-//BenchmarkParseExif100/3.NEF-8               	   20660	     58233 ns/op	   17008 B/op	      67 allocs/op
-//BenchmarkParseExif100/1.ARW-8               	   31310	     38229 ns/op	   11930 B/op	      56 allocs/op
-//BenchmarkParseExif100/2.ARW-8               	   30970	     38146 ns/op	   11932 B/op	      57 allocs/op
-//BenchmarkParseExif100/4.RW2-8               	   36390	     32900 ns/op	    8199 B/op	      31 allocs/op
-//BenchmarkParseExif100/hero6.gpr-8           	   33552	     35745 ns/op	   13603 B/op	      39 allocs/op
-//BenchmarkParseExif100/4.webp-8              	     826	   1536155 ns/op	    4432 B/op	       5 allocs/op
-//BenchmarkParseExif100/20.jpg-8              	     472	   2536924 ns/op	    4432 B/op	       5 allocs/op
+//BenchmarkScanExif100/honor20.jpg         	   95787	     11793 ns/op	    5488 B/op	      25 allocs/op
+//BenchmarkScanExif100/hero6.jpg           	  122072	      8912 ns/op	    5351 B/op	      21 allocs/op
+//BenchmarkScanExif100/1.CR2               	   50002	     23182 ns/op	   11129 B/op	      31 allocs/op
+//BenchmarkScanExif100/3.CR2               	   74066	     18786 ns/op	    5724 B/op	      29 allocs/op
+//BenchmarkScanExif100/350D.CR2            	   73534	     16655 ns/op	    5484 B/op	      25 allocs/op
+//BenchmarkScanExif100/XT1.CR2             	   78391	     14130 ns/op	    5484 B/op	      25 allocs/op
+//BenchmarkScanExif100/60D.CR2             	   56073	     21547 ns/op	   11083 B/op	      29 allocs/op
+//BenchmarkScanExif100/6D.CR2              	   56967	     21669 ns/op	   11116 B/op	      31 allocs/op
+//BenchmarkScanExif100/7D.CR2              	   56366	     22410 ns/op	   11131 B/op	      31 allocs/op
+//BenchmarkScanExif100/90D.cr3             	  265622	      3936 ns/op	     982 B/op	       9 allocs/op
+//BenchmarkScanExif100/2.CR3               	  316366	      3631 ns/op	     976 B/op	       9 allocs/op
+//BenchmarkScanExif100/1.CR3               	  315829	      3648 ns/op	     976 B/op	       9 allocs/op
+//BenchmarkScanExif100/1.jpg               	  156877	     11899 ns/op	    2579 B/op	      18 allocs/op
+//BenchmarkScanExif100/2.jpg               	   99021	     12269 ns/op	    5433 B/op	      23 allocs/op
+//BenchmarkScanExif100/1.NEF               	   48734	     23879 ns/op	   11242 B/op	      33 allocs/op
+//BenchmarkScanExif100/2.NEF               	   46730	     25353 ns/op	   11243 B/op	      33 allocs/op
+//BenchmarkScanExif100/3.NEF               	   43644	     26385 ns/op	   11303 B/op	      35 allocs/op
+//BenchmarkScanExif100/1.ARW               	   72991	     15820 ns/op	    5658 B/op	      30 allocs/op
+//BenchmarkScanExif100/2.ARW               	   78735	     16046 ns/op	    5658 B/op	      30 allocs/op
+//BenchmarkScanExif100/4.RW2               	   65305	     17868 ns/op	    5360 B/op	      21 allocs/op
+//BenchmarkScanExif100/hero6.gpr           	   67656	     15147 ns/op	    5434 B/op	      23 allocs/op
+//BenchmarkScanExif100/4.webp              	    1120	   1117162 ns/op	     240 B/op	       3 allocs/op
+//BenchmarkScanExif100/20.jpg              	     536	   1925329 ns/op	     240 B/op	       3 allocs/op
 
 func BenchmarkParseExif100(b *testing.B) {
 	for _, bm := range testFilenames2 {
@@ -113,7 +110,7 @@ func BenchmarkParseExif100(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				b.StartTimer()
-				e.GPSAltitude()
+				e.GPSDate(nil)
 			}
 		})
 	}
@@ -154,25 +151,3 @@ func BenchmarkParseExif100(b *testing.B) {
 // BenchmarkParseExif100/1.CR2         	   34333	     35437 ns/op	    9148 B/op	      56 allocs/op
 
 // BenchmarkParseExif100/1.CR2         	   31680	     39503 ns/op	   13214 B/op	      57 allocs/op
-
-func BenchmarkIfdKey(b *testing.B) {
-	tm := make(ifds.TagMap)
-	tagTest := tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 32, 32)
-	b.Run("Key/Set", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			key := ifds.NewKey(ifds.RootIFD, 0, tag.ID(uint8(i%255)))
-			tm[key] = tagTest
-		}
-	})
-	b.Run("Key/Get", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			key := ifds.NewKey(ifds.RootIFD, 0, tag.ID(uint8(i%255)))
-			_ = key
-			_ = tm[key]
-		}
-	})
-}

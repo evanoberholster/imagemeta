@@ -65,7 +65,7 @@ func (ifd IFD) IsChildIfd(t tag.Tag) IFD {
 
 	// RootIfd Children
 	if ifd == RootIFD {
-		switch t.TagID {
+		switch t.ID {
 		case ExifTag:
 			return ExifIFD
 		case GPSTag:
@@ -77,7 +77,7 @@ func (ifd IFD) IsChildIfd(t tag.Tag) IFD {
 
 	// ExifIfd Children
 	if ifd == ExifIFD {
-		switch t.TagID {
+		switch t.ID {
 		case exififd.MakerNote:
 			return MknoteIFD
 		}

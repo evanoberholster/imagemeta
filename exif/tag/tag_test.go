@@ -55,13 +55,13 @@ func TestTagType(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	tag := NewTag(ID(0x0010), TypeASCII, 16, 0x0002)
+	tag := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0)
 
-	if tag.TagID != ID(0x0010) {
-		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.TagID)
+	if tag.ID != ID(0x0010) {
+		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.ID)
 	}
-	if tag.TagType != TypeASCII {
-		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.TagType)
+	if tag.Type() != TypeASCII {
+		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.Type())
 	}
 	if tag.UnitCount != 16 {
 		t.Errorf("Incorrect Tag UnitCount wanted %d got %d", 16, tag.UnitCount)

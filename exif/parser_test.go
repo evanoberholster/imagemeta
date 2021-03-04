@@ -3,6 +3,7 @@ package exif
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"testing"
 	"time"
 
@@ -14,12 +15,12 @@ import (
 )
 
 func newMockReader(buf []byte) *reader {
-	return newExifReader(bytes.NewReader(buf), binary.BigEndian, 0x0000)
+	return newExifReader(bytes.NewReader(buf), binary.BigEndian, 0x0000, 0)
 }
 
 func TestParseTimeStamp(t *testing.T) {
-	dateTag := tag.NewTag(ifds.DateTimeDigitized, tag.TypeASCII, 20, 0)
-	wrongTag := tag.NewTag(ifds.DateTimeDigitized, tag.TypeByte, 20, 0)
+	dateTag := tag.NewTag(ifds.DateTimeDigitized, tag.TypeASCII, 20, 0, 0)
+	wrongTag := tag.NewTag(ifds.DateTimeDigitized, tag.TypeByte, 20, 0, 0)
 	buf := []byte("1997:09:01 12:00:00  ")
 	d := newData(newMockReader(buf), imagetype.ImageUnknown)
 
@@ -40,7 +41,7 @@ func TestParseTimeStamp(t *testing.T) {
 
 	ts, err = d.ParseTimeStamp(dateTag, tag.Tag{}, nil)
 	if assert.Error(t, err) {
-		assert.ErrorIs(t, err, ErrParseBufSize)
+		assert.ErrorIs(t, err, io.EOF)
 	}
 
 }
@@ -61,12 +62,12 @@ func TestParseGPSTimeStamp(t *testing.T) {
 
 	for i, v := range parseGPSTimeStampTests {
 		buf := append(v.ds, v.ts...)
-		ds := tag.NewTag(gpsifd.GPSDateStamp, tag.TypeASCII, 11, 0)
-		ts := tag.NewTag(gpsifd.GPSTimeStamp, tag.TypeRational, 0x0003, 11)
+		ds := tag.NewTag(gpsifd.GPSDateStamp, tag.TypeASCII, 11, 0, 0)
+		ts := tag.NewTag(gpsifd.GPSTimeStamp, tag.TypeRational, 0x0003, 11, 0)
 
 		d := newData(newMockReader(buf), imagetype.ImageUnknown)
 		if i == 5 {
-			ts.TagType = tag.TypeByte
+			ts = tag.NewTag(gpsifd.GPSTimeStamp, tag.TypeByte, 0x0003, 11, 0)
 		}
 		ti, err := d.ParseGPSTimeStamp(ds, ts, tag.Tag{}, nil)
 		if err != nil {
@@ -90,17 +91,17 @@ func TestParseGPSCoord(t *testing.T) {
 		{[]byte{255, 128, 255, 255, 10, 0, 0, 0, 120, 240, 0, 0, 1, 0, 0, 0, 250, 0, 0, 0, 1, 0, 0, 0}, 'N', 27.63546006348398, nil},
 		{[]byte{255, 128, 255, 255, 10, 0, 0, 0, 120, 240, 0, 0, 1, 0, 0, 0, 250, 0, 0, 0, 1, 0, 0, 0}, 'W', -27.63546006348398, nil},
 		{[]byte{255, 128, 255, 255, 10, 0, 0, 0, 120, 240, 0, 0, 1, 0, 0, 0, 250, 0, 0, 0, 1, 0, 0, 0}, 'E', 27.63546006348398, nil},
-		{[]byte{255, 128, 255, 255, 10, 0, 0, 0, 120, 240, 0, 0, 1, 0, 0, 0, 250, 0, 0, 0, 1}, 'E', 0, ErrParseBufSize},
+		{[]byte{255, 128, 255, 255, 10, 0, 0, 0, 120, 240, 0, 0, 1, 0, 0, 0, 250, 0, 0, 0, 1}, 'E', 0, io.EOF},
 		{[]byte("255, "), 'S', 0, ErrParseGPS},
 	}
 
 	for i, v := range parseGPSCoordTests {
 
-		lat := tag.NewTag(gpsifd.GPSLatitude, tag.TypeRational, 3, 0)
-		latRef := tag.NewTag(gpsifd.GPSLatitudeRef, tag.TypeASCII, 2, binary.BigEndian.Uint32([]byte{v.ref, 0, 0, 0}))
+		lat := tag.NewTag(gpsifd.GPSLatitude, tag.TypeRational, 3, 0, 0)
+		latRef := tag.NewTag(gpsifd.GPSLatitudeRef, tag.TypeASCII, 2, binary.BigEndian.Uint32([]byte{v.ref, 0, 0, 0}), 0)
 		d := newData(newMockReader(v.buf), imagetype.ImageUnknown)
 		if v.err == ErrParseGPS {
-			lat.TagType = tag.TypeByte
+			lat = tag.NewTag(gpsifd.GPSLatitude, tag.TypeByte, 3, 0, 0)
 		}
 		coord, err := d.ParseGPSCoord(latRef, lat)
 		if v.err != nil {
@@ -110,6 +111,46 @@ func TestParseGPSCoord(t *testing.T) {
 		}
 		assert.Equal(t, v.val, coord, "Test: %d", i)
 	}
+}
+
+func TestParseASCIIValue(t *testing.T) {
+	parseASCIITests := []struct {
+		data []byte
+		val  string
+		err  error
+	}{
+		{[]byte("abcdefghijlkmnop"), "cdefghijlk", nil},
+	}
+	for _, v := range parseASCIITests {
+		testTag := tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0)
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseASCIIValue(testTag)
+		if err != nil {
+			t.Error(err)
+		}
+		assert.Equal(t, v.val, val)
+	}
+}
+func TestParseUint32Value(t *testing.T) {
+
+}
+func TestParseUint16Values(t *testing.T) {
+
+}
+func TestParseUint32Values(t *testing.T) {
+
+}
+func TestParseRationalValue(t *testing.T) {
+
+}
+func TestParseSRationalValue(t *testing.T) {
+
+}
+func TestParseRationalValues(t *testing.T) {
+
+}
+func TestParseSRationalValues(t *testing.T) {
+
 }
 
 func TestTrim(t *testing.T) {

@@ -37,7 +37,7 @@ func newData(er *reader, it imagetype.ImageType) *Data {
 func (e *Data) AddTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
 	if ifd == ifds.RootIFD {
 		// Add Make and Model to Exif struct for future decoding of Makernotes
-		switch t.TagID {
+		switch t.ID {
 		case ifds.Make:
 			e.make, _ = e.ParseASCIIValue(t)
 		case ifds.Model:
@@ -46,7 +46,7 @@ func (e *Data) AddTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
 	}
 	switch ifd {
 	case ifds.RootIFD, ifds.SubIFD, ifds.ExifIFD, ifds.GPSIFD, ifds.MknoteIFD:
-		e.ifdMap[ifds.NewKey(ifd, ifdIndex, t.TagID)] = t
+		e.ifdMap[ifds.NewKey(ifd, ifdIndex, t.ID)] = t
 	}
 }
 

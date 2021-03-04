@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+
+	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
 // reader errors
@@ -20,16 +22,20 @@ type reader struct {
 	offset int64
 
 	// Exif Header
-	byteOrder  binary.ByteOrder
-	exifOffset int64
-	exifLength uint32
+	byteOrder binary.ByteOrder
+
+	// Offsets for multiple Ifds
+	ifdExifOffset [7]uint32
 
 	// rawBuffer for parsing Tags
 	rawBuffer [rawBufferSize]byte
+
+	exifOffset int64
+	exifLength uint32
 }
 
 // newExifReader returns a new ExifReader. It reads from reader according to byteOrder from exifOffset
-func newExifReader(r io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32) *reader {
+func newExifReader(r io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32, exifLength uint32) *reader {
 	er, ok := r.(*reader)
 	if ok {
 		return er
@@ -38,6 +44,7 @@ func newExifReader(r io.ReaderAt, byteOrder binary.ByteOrder, exifOffset uint32)
 		reader:     r,
 		byteOrder:  byteOrder,
 		exifOffset: int64(exifOffset),
+		exifLength: exifLength,
 	}
 }
 
@@ -51,6 +58,24 @@ func (er *reader) Read(p []byte) (n int, err error) {
 	er.offset += int64(n)
 
 	return n, err
+}
+
+func (er *reader) TagValue(t tag.Tag) (buf []byte, err error) {
+	// check if Value is Embedded
+	if t.IsEmbedded() {
+		er.ByteOrder().PutUint32(er.rawBuffer[:4], t.ValueOffset)
+		return er.rawBuffer[:4], nil
+	}
+
+	byteLength := t.Size()
+	if byteLength <= len(er.rawBuffer) {
+		buf = er.rawBuffer[:byteLength]
+	} else {
+		buf = make([]byte, byteLength)
+	}
+	exifOffset := er.ifdExifOffset[t.Ifd]
+	_, err = er.reader.ReadAt(buf[:byteLength], int64(exifOffset+t.ValueOffset))
+	return buf[:byteLength], err
 }
 
 // ReadAt reads from ExifReader at the given offset

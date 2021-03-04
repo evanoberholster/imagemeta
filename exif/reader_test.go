@@ -15,7 +15,7 @@ func TestExifReader(t *testing.T) {
 	byteOrder := binary.BigEndian
 	reader := bytes.NewReader([]byte{0, 0, 0, 0})
 
-	er := newExifReader(reader, byteOrder, exifOffset)
+	er := newExifReader(reader, byteOrder, exifOffset, 0)
 
 	// Error ExifReader
 	tempbuf := make([]byte, 0)

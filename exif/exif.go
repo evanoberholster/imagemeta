@@ -26,7 +26,7 @@ var (
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r io.ReaderAt) (e *Data, err error) {
-	er := newExifReader(r, nil, 0)
+	er := newExifReader(r, nil, 0, 0)
 
 	br := bufio.NewReaderSize(er, 64)
 
@@ -52,7 +52,7 @@ func ScanExif(r io.ReaderAt) (e *Data, err error) {
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
 func ParseExif(r io.ReaderAt, header Header) (e *Data, err error) {
-	er := newExifReader(r, nil, 0)
+	er := newExifReader(r, nil, 0, header.ExifLength)
 
 	// ExifData with an ExifReader attached
 	e = newData(er, header.ImageType)
@@ -66,5 +66,24 @@ func ParseExif(r io.ReaderAt, header Header) (e *Data, err error) {
 
 	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
 	err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
+	return
+}
+
+func (e *Data) ParseExif(r io.ReaderAt, header Header) (err error) {
+	if header.ByteOrder == nil || e == nil {
+		return io.EOF
+	}
+
+	e.imageType = header.ImageType
+	if e.ifdMap == nil {
+		e.er = newExifReader(r, header.ByteOrder, header.TiffHeaderOffset, header.ExifLength)
+		e.ifdMap = make(ifds.TagMap, 20)
+	}
+	e.er.exifOffset = int64(header.TiffHeaderOffset)
+	e.er.exifLength = header.ExifLength
+	e.er.offset = 0
+
+	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
+	err = scan(e.er, e, header.FirstIfd, header.FirstIfdOffset)
 	return
 }
