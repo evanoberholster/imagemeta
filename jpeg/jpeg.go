@@ -10,7 +10,6 @@ import (
 	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
@@ -25,11 +24,12 @@ var (
 type Metadata struct {
 	// Decode Functions for EXIF and XMP metadata
 	ExifDecodeFn exif.DecodeFn
+	ExifHeader   exif.Header
 	XmpDecodeFn  xmp.DecodeFn
+	XmpHeader    xmp.Header
+
 	// SOF Header and Tiff Header
 	sofHeader
-	ExifHeader exif.Header
-	XmpHeader  xmp.Header
 
 	// Reader
 	br        *bufio.Reader
@@ -200,7 +200,7 @@ func (m *Metadata) readExif(buf []byte) (err error) {
 
 	// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
 	// the tiff Header Offset, and the length of the exif information.
-	byteOrder := tiff.BinaryOrder(buf)
+	byteOrder := meta.BinaryOrder(buf)
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
 	exifLength := uint32(length)
 

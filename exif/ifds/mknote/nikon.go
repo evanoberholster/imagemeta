@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Errors
@@ -23,7 +23,7 @@ func NikonMkNoteHeader(reader io.Reader) (byteOrder binary.ByteOrder, err error)
 	}
 	// Nikon makernote header starts with "Nikon" with the first 5 bytes
 	if isNikonMkNoteHeaderBytes(mknoteHeader[:5]) {
-		if byteOrder := tiff.BinaryOrder(mknoteHeader[10:14]); byteOrder != nil {
+		if byteOrder := meta.BinaryOrder(mknoteHeader[10:14]); byteOrder != nil {
 			return byteOrder, nil
 		}
 	}

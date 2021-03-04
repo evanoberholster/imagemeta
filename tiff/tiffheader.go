@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 
+	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
@@ -21,6 +22,7 @@ var (
 // a Tiff Directory.
 type Header struct {
 	ByteOrder        binary.ByteOrder
+	FirstIfd         ifds.IFD
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
@@ -31,6 +33,7 @@ type Header struct {
 func NewHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) Header {
 	return Header{
 		ByteOrder:        byteOrder,
+		FirstIfd:         ifds.RootIFD,
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,

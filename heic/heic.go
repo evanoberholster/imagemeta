@@ -11,7 +11,6 @@ import (
 	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
@@ -65,13 +64,11 @@ func (hm *Metadata) getMeta() (err error) {
 
 	hm.FileType, err = bmr.ReadFtypBox()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
 	hm.Meta, err = bmr.ReadMetaBox()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
@@ -148,7 +145,7 @@ func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, le
 	if _, err = r.Read(buf[:8]); err != nil {
 		return
 	}
-	byteOrder := tiff.BinaryOrder(buf[:4])
+	byteOrder := meta.BinaryOrder(buf[:4])
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
 	tiffHeaderOffset := int64(offset) + size + 4
 	return exif.NewHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), imageType), nil

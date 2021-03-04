@@ -3,7 +3,6 @@ package tiff
 
 import (
 	"bufio"
-	"encoding/binary"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -38,7 +37,7 @@ func scan(br *bufio.Reader) (header Header, err error) {
 			return
 		}
 
-		byteOrder := BinaryOrder(buf)
+		byteOrder := meta.BinaryOrder(buf)
 		if byteOrder == nil {
 			// Exif not identified. Move forward by one byte.
 			if buf[1] == 0x49 || buf[1] == 0x4d {
@@ -56,35 +55,4 @@ func scan(br *bufio.Reader) (header Header, err error) {
 		tiffHeaderOffset := uint32(discarded)
 		return NewHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, imagetype.ImageTiff), nil
 	}
-}
-
-// BinaryOrder returns the binary.ByteOrder for a Tiff Header
-//
-// Good reference:
-// CIPA DC-008-2016; JEITA CP-3451D
-// -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
-func BinaryOrder(buf []byte) binary.ByteOrder {
-	if isTiffBigEndian(buf[:4]) {
-		return binary.BigEndian
-	}
-	if isTiffLittleEndian(buf[:4]) {
-		return binary.LittleEndian
-	}
-	return nil
-}
-
-// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func isTiffLittleEndian(buf []byte) bool {
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x2a &&
-		buf[3] == 0x00
-}
-
-// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func isTiffBigEndian(buf []byte) bool {
-	return buf[0] == 0x4d &&
-		buf[1] == 0x4d &&
-		buf[2] == 0x00 &&
-		buf[3] == 0x2a
 }
