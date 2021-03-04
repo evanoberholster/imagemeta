@@ -190,7 +190,7 @@ func (br *bufReader) readUUID() (u meta.UUID, err error) {
 		return
 	}
 	// err not possible here, so we will ignore the error
-	u.UnmarshalBinary(buf)
+	_ = u.UnmarshalBinary(buf)
 	return u, br.discard(16)
 }
 

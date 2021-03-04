@@ -99,14 +99,16 @@ func (hm *Metadata) DecodeXMP(r meta.Reader) (err error) {
 		return
 	}
 	offset, length, _ := hm.CrxMoov.Meta.XPacketData()
-	r.Seek(int64(offset), 0)
+	if _, err = r.Seek(int64(offset), 0); err != nil {
+		return err
+	}
 	br := bufio.NewReaderSize(io.LimitReader(r, int64(length)), 1024*3/2)
 	buf, err := br.Peek(24)
 	if err != nil {
 		return
 	}
 	var uuid meta.UUID
-	uuid.UnmarshalBinary(buf[8:24])
+	_ = uuid.UnmarshalBinary(buf[8:24])
 	if uuid != bmff.CR3XPacketUUID {
 		fmt.Println("Wrong UUID")
 	}

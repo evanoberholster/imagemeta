@@ -72,8 +72,12 @@ func parseCR3(f meta.Reader) {
 		return err
 	}
 
-	m.DecodeExif(f)
-	m.DecodeXMP(f)
+	if err = m.DecodeExif(f); err != nil {
+		fmt.Println(err)
+	}
+	if err = m.DecodeXMP(f); err != nil {
+		fmt.Println(err)
+	}
 	_ = XMP
 
 	printExif(e)
