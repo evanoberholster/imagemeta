@@ -16,17 +16,17 @@ var testFtyp = []struct {
 	err      error
 	assert   bool
 }{
-	{"Sample 1", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [6]Brand{brandMif1, brandHeic}}, "", "samples/1.sample", 30, nil, true},
-	{"Sample 2", FileTypeBox{MajorBrand: brandMif1, MinorVersion: "", Compatible: [6]Brand{brandMif1, brandHeic}}, "", "samples/2.sample", 30, nil, true},
-	{"Sample 3", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [6]Brand{brandHeic, brandMif1}}, "", "samples/3.sample", 20, nil, true},
-	{"iPhone 11", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [6]Brand{brandMif1, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone11.sample", 20, nil, true},
-	{"iPhone 12", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [6]Brand{brandMif1, brandMiHE, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone12.sample", 20, nil, true},
+	{"Sample 1", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/1.sample", 30, nil, true},
+	{"Sample 2", FileTypeBox{MajorBrand: brandMif1, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/2.sample", 30, nil, true},
+	{"Sample 3", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandHeic, brandMif1}}, "", "samples/3.sample", 20, nil, true},
+	{"iPhone 11", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone11.sample", 20, nil, true},
+	{"iPhone 12", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiHE, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone12.sample", 20, nil, true},
+	{"CanonR6 CR3", FileTypeBox{MajorBrand: brandCrx, MinorVersion: "\x00\x00\x00\x01", Compatible: [brandCount]Brand{brandCrx, brandIsom}}, "", "samples/canonR6.sample", 20, nil, true},
 	//{"Avif Ftyp", FileTypeBox{MajorBrand: brandAvif, MinorVersion: "", Compatible: [6]Brand{}}, []byte("uri  "), 20, nil, true},
-	//{"Cr3 Ftyp", FileTypeBox{MajorBrand: brandCrx, MinorVersion: "", Compatible: [6]Brand{}}, []byte("av01 "), 20, nil, true},
 }
 
 //func TestGenSamples(t *testing.T) {
-//	testFilename := "../../test/img/iPhone12.heic"
+//	testFilename := "../../test/img/canonR6.cr3"
 //	f, err := os.Open(testFilename)
 //	if err != nil {
 //		panic(err)
@@ -38,8 +38,8 @@ var testFtyp = []struct {
 //		}
 //	}()
 //	buf, err := ioutil.ReadAll(f)
-//	buf = buf[:3642]
-//	dat, err := os.Create("samples/8.sample")
+//	buf = buf[:42560]
+//	dat, err := os.Create("samples/canonR6.sample")
 //	if err != nil {
 //		panic(err)
 //	}
@@ -75,9 +75,16 @@ func TestParseMeta(t *testing.T) {
 		if v.assert {
 			assert.Equalf(t, v.ftyp, ftyp, "error message: %s", v.name)
 		}
-		_, err = bmr.ReadMetaBox()
-		if err != v.err {
-			t.Errorf("Error: (%s), %v", v.name, err)
+		if ftyp.MajorBrand != brandCrx {
+			_, err = bmr.ReadMetaBox()
+			if err != v.err {
+				t.Errorf("Error: (%s), %v", v.name, err)
+			}
+		} else {
+			_, err = bmr.ReadCrxMoovBox()
+			if err != v.err {
+				t.Errorf("Error: (%s), %v", v.name, err)
+			}
 		}
 
 	}

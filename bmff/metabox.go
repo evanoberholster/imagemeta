@@ -48,14 +48,18 @@ func parseMeta(outer *box) (Box, error) {
 
 func parseMetaBox(outer *box) (mb MetaBox, err error) {
 	if outer.boxType != TypeMeta {
+		if debugFlag {
+			traceBoxWithMsg(*outer, "error wrong BoxType")
+		}
 		err = ErrWrongBoxType
 		return
 	}
-	mb.Flags, err = outer.readFlags()
-	if err != nil {
-		return mb, err
+	if mb.Flags, err = outer.readFlags(); err != nil {
+		return
 	}
-
+	if debugFlag {
+		traceBoxWithFlags(*outer, *outer, mb.Flags)
+	}
 	var inner box
 	for outer.anyRemain() {
 		inner, err = outer.readInnerBox()
@@ -63,17 +67,14 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 			return mb, err
 		}
 		switch inner.boxType {
-		case TypeIdat, TypeDinf, TypeUUID, TypeIref, TypeColr, TypeHvcC:
+		case TypeIdat, TypeDinf, TypeUUID, TypeIref:
 			// Do not parse
-
-		//case TypeIref:
-		//	_, err = inner.Parse()
 		case TypePitm:
-			mb.Primary, err = parsePrimaryItemBox(&inner)
+			mb.Primary, err = inner.parsePrimaryItemBox()
 		case TypeIinf:
 			mb.ItemInfo, err = inner.parseItemInfoBox()
 		case TypeHdlr:
-			mb.Handler, err = parseHandlerBox(&inner)
+			mb.Handler, err = inner.parseHandlerBox()
 		case TypeIprp:
 			mb.Properties, err = inner.parseItemPropertiesBox()
 		case TypeIloc:
@@ -92,7 +93,7 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 		}
 
 		if debugFlag {
-			fmt.Println(inner, outer.remain, inner.remain, inner.size)
+			log.Debug("%s", inner)
 		}
 	}
 	return mb, outer.discard(outer.remain)

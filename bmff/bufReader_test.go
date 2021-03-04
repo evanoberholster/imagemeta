@@ -123,25 +123,25 @@ func TestBufReaderReadFlags(t *testing.T) {
 	assert.ErrorIs(t, err, ErrBufLength)
 }
 
-var testReadItemType = []struct {
-	name     string
-	itemType ItemType
-	data     []byte
-	remain   int
-	err      error
-	assert   bool
-}{
-	{"ItemTypeInfe", ItemTypeInfe, []byte("infe "), 5, nil, true},
-	{"ItemTypeMime", ItemTypeMime, []byte("mime "), 5, nil, true},
-	{"ItemTypeURI", ItemTypeURI, []byte("uri  "), 5, nil, true},
-	{"ItemTypeAv01", ItemTypeAv01, []byte("av01 "), 5, nil, true},
-	{"ItemTypeHvc1", ItemTypeHvc1, []byte("hvc1 "), 5, nil, true},
-	{"ItemTypeGrid", ItemTypeGrid, []byte("grid "), 5, nil, true},
-	{"ItemTypeExif", ItemTypeExif, []byte("Exif "), 5, nil, true},
-	{"ItemTypeInfe Type 2", ItemTypeInfe, append([]byte("infe"), 0), 5, nil, true},
-	{"ItemType too Short", ItemTypeUnknown, []byte{0, 0, 0}, 5, ErrBufLength, false},
-	{"ItemType remain too Short", ItemTypeUnknown, []byte{0, 0, 0}, 4, ErrBufLength, false},
-}
+//var testReadItemType = []struct {
+//	name     string
+//	itemType ItemType
+//	data     []byte
+//	remain   int
+//	err      error
+//	assert   bool
+//}{
+//	{"ItemTypeInfe", ItemTypeInfe, []byte("infe "), 5, nil, true},
+//	{"ItemTypeMime", ItemTypeMime, []byte("mime "), 5, nil, true},
+//	{"ItemTypeURI", ItemTypeURI, []byte("uri  "), 5, nil, true},
+//	{"ItemTypeAv01", ItemTypeAv01, []byte("av01 "), 5, nil, true},
+//	{"ItemTypeHvc1", ItemTypeHvc1, []byte("hvc1 "), 5, nil, true},
+//	{"ItemTypeGrid", ItemTypeGrid, []byte("grid "), 5, nil, true},
+//	{"ItemTypeExif", ItemTypeExif, []byte("Exif "), 5, nil, true},
+//	{"ItemTypeInfe Type 2", ItemTypeInfe, append([]byte("infe"), 0), 5, nil, true},
+//	{"ItemType too Short", ItemTypeUnknown, []byte{0, 0, 0}, 5, ErrBufLength, false},
+//	{"ItemType remain too Short", ItemTypeUnknown, []byte{0, 0, 0}, 4, ErrBufLength, false},
+//}
 
 //func TestBufReaderReadItemType(t *testing.T) {
 //	for _, v := range testReadItemType {

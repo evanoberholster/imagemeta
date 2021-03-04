@@ -2,7 +2,8 @@ package bmff
 
 import (
 	"fmt"
-	"io"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // MoovBox is a 'moov' box
@@ -27,47 +28,53 @@ func parseMoov(outer *box) (Box, error) {
 	return parseMetaBox(outer)
 }
 
-func parseMoovBox(outer *box) (moov MoovBox, err error) {
-	moov = MoovBox{size: uint32(outer.size)}
+func (b *box) parseMoovBox() (moov MoovBox, err error) {
+	moov.size = uint32(b.size)
 
 	var inner box
-	for outer.anyRemain() {
-		inner, err = outer.readInnerBox()
+	for b.anyRemain() {
+		inner, err = b.readInnerBox()
 		if err != nil {
-			if err == io.EOF {
-				return
-			}
 			return
 		}
 		if inner.boxType == TypeUUID {
-			uBox, err := parseUUIDBox(&inner)
+			uBox, err := inner.parseUUIDBox()
 			fmt.Println(uBox, err)
 		}
 
-		if err = outer.closeInnerBox(&inner); err != nil {
-			// Log error
-			if debugFlag {
-				fmt.Println(err)
-			}
+		if err = b.closeInnerBox(&inner); err != nil {
 			break
 		}
 	}
-	err = outer.discard(outer.remain)
+	err = b.discard(b.remain)
 	return
 }
 
-func parseUUIDBox(outer *box) (b Box, err error) {
-	if outer.boxType != TypeUUID {
-		err = ErrWrongBoxType
-		return
+// UUIDBox is a special type of Box that contains a uuid
+type UUIDBox struct {
+	uuid meta.UUID
+}
+
+func (uuidBox UUIDBox) String() string {
+	return fmt.Sprintf("uuid | %s\t", uuidBox.uuid.String())
+}
+
+// Type returns TypeUUID
+func (uuidBox UUIDBox) Type() BoxType {
+	return TypeUUID
+}
+
+func (b *box) parseUUIDBox() (Box, error) {
+	if b.boxType != TypeUUID {
+		return nil, ErrWrongBoxType
 	}
-	uuid, err := outer.readUUID()
+	uuid, err := b.readUUID()
 	if err != nil {
-		return
+		return nil, err
 	}
 	switch uuid {
 	case CR3MetaBoxUUID:
-		return parseCR3MetaBox(outer)
+		return parseCR3MetaBox(b)
 	}
-	return
+	return nil, nil
 }

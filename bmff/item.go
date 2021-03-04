@@ -7,16 +7,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HeicByteOrder is BigEndian
-var heicByteOrder = binary.BigEndian
-
 var (
+	// HeicByteOrder is BigEndian
+	heicByteOrder = binary.BigEndian
+
 	// ErrItemNotFound is returned as en error when an Item was not Found.
 	ErrItemNotFound = errors.New("item not found")
 )
 
-// ItemType is
-// always 4 bytes
+// ItemType is always 4 bytes
 type ItemType [4]byte
 
 // Common ItemTypes
@@ -74,7 +73,7 @@ func (iinf ItemInfoBox) LastItemByType(itemType ItemType) (ItemInfoEntry, error)
 // ItemByID returns the Item of a given ID.
 // If the ItemID is not found, the returned error is ErrItemNotFound.
 func (iinf ItemInfoBox) ItemByID(itemID uint16) (ItemInfoEntry, error) {
-	for i := len(iinf.ItemInfos) - 1; i >= 0; i-- {
+	for i := (len(iinf.ItemInfos) - 1); i >= 0; i-- {
 		if iinf.ItemInfos[i].ItemID == itemID {
 			return iinf.ItemInfos[i], nil
 		}
@@ -101,14 +100,11 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	// Read Item count
 	count := int(heicByteOrder.Uint16(buf[4:6]))
-
+	iinf.ItemInfos = make([]ItemInfoEntry, int(count))
 	if debugFlag {
-		//if flags.Version() != 0 {
-		log.Debug("(iinf) | ItemCount: %d, Flag: %s", count, flags)
-		//}
+		traceBoxWithFlags(iinf, *b, flags)
 	}
 
-	iinf.ItemInfos = make([]ItemInfoEntry, 0, int(count))
 	var inner box
 	for i := 0; i < count && b.anyRemain(); i++ {
 		if inner, err = b.readInnerBox(); err != nil {
@@ -120,11 +116,11 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 			if infe, err = inner.parseItemInfoEntry(); err != nil {
 				if debugFlag {
 					log.Debug("INFE: error Parsing ItemInfoEntry: %s", infe)
+					log.Debug("INFE: error: %s", err.Error())
 				}
-				err = inner.discard(inner.remain)
 				break
 			}
-			iinf.ItemInfos = append(iinf.ItemInfos, infe)
+			iinf.ItemInfos[i] = infe
 		default:
 			if debugFlag {
 				log.Debug("INFE: Unknown BoxType: %s", inner.Type())
@@ -164,7 +160,7 @@ func (infe ItemInfoEntry) Type() BoxType {
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf(" \t ItemInfoEntry (\"infe\"), ItemID: %d, ProtectionIndex: %d, ItemType: %s", infe.ItemID, infe.ProtectionIndex, infe.ItemType)
+	return fmt.Sprintf(" \tItemInfoEntry: ItemID:%d, ProtectionIndex:%d, ItemType:%s", infe.ItemID, infe.ProtectionIndex, infe.ItemType)
 }
 
 func parseInfe(outer *box) (Box, error) {
@@ -191,7 +187,7 @@ func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
 	if buf[12] != '\x00' {
 		// Read until whitespace
 		if debugFlag {
-			log.Debug("ItemType doesn't end on whitespace: %s", ie.ItemType)
+			traceBoxWithMsg(*b, fmt.Sprintf("\t'%s' doesn't end on whitespace. %s", ie.ItemType, flags))
 		}
 		infeHeaderSize--
 	}
@@ -214,6 +210,9 @@ func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
 		_, _ = b.readString()
 		//ie.ItemURIType, _ = outer.r.readString()
 	}
+	if debugFlag {
+		traceBoxWithFlags(ie, *b, flags)
+	}
 	return
 }
 
@@ -231,7 +230,7 @@ func (iloc ItemLocationBox) Type() BoxType {
 }
 
 func (iloc ItemLocationBox) String() string {
-	return fmt.Sprintf("iloc | ItemCount: %d, OffsetSize: %d, LengthSize: %d, BaseOffsetSize: %d, indexSize: %d", iloc.ItemCount, iloc.offsetSize, iloc.lengthSize, iloc.baseOffsetSize, iloc.indexSize)
+	return fmt.Sprintf("iloc | ItemCount:%d, OffsetSize:%d, LengthSize:%d, BaseOffsetSize:%d, indexSize:%d", iloc.ItemCount, iloc.offsetSize, iloc.lengthSize, iloc.baseOffsetSize, iloc.indexSize)
 }
 
 // EntryByID returns the last Item Location Box Entry for the given ID. If
@@ -273,22 +272,33 @@ func (b *box) parseItemLocationBox() (ilb ItemLocationBox, err error) {
 	ilb.Items = make([]ItemLocationBoxEntry, 0, ilb.ItemCount)
 
 	if debugFlag {
-		fmt.Println(ilb)
+		traceBox(ilb, *b)
 	}
 	for i := 0; b.anyRemain() && i < int(ilb.ItemCount) && err == nil; i++ {
 		var ent ItemLocationBoxEntry
-		ent.ItemID, err = b.readUint16()
+		// Refactor for performance
+		if buf, err = b.peek(6); err != nil {
+			err = errors.Wrap(err, "ItemLocationBoxEntry")
+			return
+		}
+		ent.ItemID = heicByteOrder.Uint16(buf[:2])
 
 		if flags.Version() > 0 { // version 1
-			var cmeth uint16
-			cmeth, err = b.readUint16()
+			cmeth := heicByteOrder.Uint16(buf[2:4])
 			ent.ConstructionMethod = byte(cmeth & 15)
+			buf = buf[2:]
 		}
-		ent.DataReferenceIndex, err = b.readUint16()
+		ent.DataReferenceIndex = heicByteOrder.Uint16(buf[2:4])
+		if err = b.discard(10 - len(buf)); err != nil {
+			return
+		}
 
 		// Adjust for baseOffset per issue "https://github.com/go4org/go4/issues/47" thanks to petercgrant
 		if ilb.baseOffsetSize > 0 && err == nil {
 			ent.BaseOffset, err = b.readUintN(ilb.baseOffsetSize * 8)
+			if err != nil {
+				return
+			}
 			//outer.r.discard(int(ilb.baseOffsetSize) / 8)
 		}
 
@@ -297,6 +307,9 @@ func (b *box) parseItemLocationBox() (ilb ItemLocationBox, err error) {
 		for j := 0; j < int(ent.ExtentCount) && err == nil; j++ {
 			var ol OffsetLength
 			ol.Offset, err = b.readUintN(ilb.offsetSize * 8)
+			if err != nil {
+				break
+			}
 			ol.Length, err = b.readUintN(ilb.lengthSize * 8)
 			if err != nil {
 				break
@@ -329,7 +342,7 @@ type ItemLocationBoxEntry struct {
 }
 
 func (ilbe ItemLocationBoxEntry) String() string {
-	return fmt.Sprintf("\t ItemID: %d, ConstructionMethod: %d, DataReferenceIndex: %d, BaseOffset: %d, ExtentCount: %d, FirstExtent: %s", ilbe.ItemID, ilbe.ConstructionMethod, ilbe.DataReferenceIndex, ilbe.BaseOffset, ilbe.ExtentCount, ilbe.FirstExtent)
+	return fmt.Sprintf("\t ItemID:%d, ConstructionMethod:%d, DataReferenceIndex:%d, BaseOffset:%d, ExtentCount:%d, FirstExtent:%s", ilbe.ItemID, ilbe.ConstructionMethod, ilbe.DataReferenceIndex, ilbe.BaseOffset, ilbe.ExtentCount, ilbe.FirstExtent)
 }
 
 // OffsetLength contains an offset and length
@@ -338,7 +351,7 @@ type OffsetLength struct {
 }
 
 func (ol OffsetLength) String() string {
-	return fmt.Sprintf("{ Offset: %d, Length: %d }", ol.Offset, ol.Length)
+	return fmt.Sprintf("{Offset:%d, Length:%d}", ol.Offset, ol.Length)
 }
 
 // ItemPropertiesBox is an ISOBMFF "iprp" box
@@ -361,39 +374,40 @@ func parseIprp(outer *box) (Box, error) {
 }
 
 func (b *box) parseItemPropertiesBox() (ip ItemPropertiesBox, err error) {
-
 	var inner box
 	for b.remain > 4 {
 		// Read Box
 		if inner, err = b.readInnerBox(); err != nil {
 			err = errors.Wrap(err, "parseItemPropertiesBox")
-			break
+			return
 		}
 		switch inner.Type() {
 		case TypeIpco:
-			// Read ItemPropertyContainerBox
+			// Parse ItemPropertyContainerBox
 			ip.PropertyContainer, err = inner.parseItemPropertyContainerBox()
 			if err != nil {
 				err = errors.Wrap(err, "parseItemPropertiesBox")
-				break
+				return
 			}
 		case TypeIpma:
-			// Read ItemPropertyAssociation
-			ipma, err := parseItemPropertyAssociation(&inner)
+			// Parse ItemPropertyAssociation
+			var ipma ItemPropertyAssociation
+			ipma, err = inner.parseItemPropertyAssociation()
 			if err != nil {
 				err = errors.Wrap(err, "parseItemPropertiesBox")
-				break
+				return
 			}
 			ip.Associations = append(ip.Associations, ipma)
 		default:
 			if debugFlag {
 				log.Debug("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
+				traceBox(inner, inner)
 			}
 		}
 
 		if err = b.closeInnerBox(&inner); err != nil {
 			err = errors.Wrap(err, "parseItemPropertiesBox")
-			break
+			return
 		}
 	}
 	return ip, b.discard(b.remain)
@@ -442,8 +456,8 @@ func (b *box) parseItemPropertyContainerBox() (ipc ItemPropertyContainerBox, err
 // ItemPropertyAssociation is an ISOBMFF "ipma" box
 type ItemPropertyAssociation struct {
 	//Flags      Flags
-	EntryCount uint32
-	Entries    []ItemPropertyAssociationItem
+	//EntryCount uint32
+	Entries []ItemPropertyAssociationItem
 }
 
 // Type returns TypeIpma
@@ -452,41 +466,42 @@ func (ipma ItemPropertyAssociation) Type() BoxType {
 }
 
 func parseIpma(outer *box) (Box, error) {
-	return parseItemPropertyAssociation(outer)
+	return outer.parseItemPropertyAssociation()
 }
 
-func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err error) {
-	flags, err := outer.readFlags()
+func (b *box) parseItemPropertyAssociation() (ipa ItemPropertyAssociation, err error) {
+	buf, err := b.peek(8)
 	if err != nil {
 		return
 	}
-	ipa.EntryCount, err = outer.readUint32()
-	if err != nil {
+	flags := Flags(heicByteOrder.Uint32(buf[:4]))
+	count := int(heicByteOrder.Uint32(buf[4:8]))
+	if err = b.discard(8); err != nil {
 		// TODO: Error handling
 		return
 	}
 
 	// Entries
-	ipa.Entries = make([]ItemPropertyAssociationItem, 0, ipa.EntryCount)
-
-	for i := uint32(0); i < ipa.EntryCount && err == nil; i++ {
+	//	ipa.EntryCount = uint32(count)
+	ipa.Entries = make([]ItemPropertyAssociationItem, 0, count)
+	for i := 0; i < count && err == nil; i++ {
 		var itemID uint32
 		if flags.Version() < 1 {
 			var itemID16 uint16
-			itemID16, err = outer.readUint16()
+			itemID16, err = b.readUint16() //2
 			itemID = uint32(itemID16)
 		} else {
-			itemID, err = outer.readUint32()
+			itemID, err = b.readUint32() // 4
 		}
-		assocCount, _ := outer.readUint8()
+		assocCount, err := b.readUint8() // 1
 		ipai := ItemPropertyAssociationItem{
-			ItemID:            itemID,
-			AssociationsCount: int(assocCount),
-			Associations:      make([]ItemProperty, 0, assocCount),
+			ItemID: itemID,
+			//AssociationsCount: uint32(assocCount),
+			//Associations:      make([]ItemProperty, 0, assocCount),
 		}
 		var first uint8
 		for j := 0; j < int(assocCount) && err == nil; j++ {
-			first, err = outer.readUint8()
+			first, err = b.readUint8()
 			if err != nil {
 				break
 			}
@@ -496,15 +511,19 @@ func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err 
 			var index uint16
 			var second uint8
 			if flags.Flags()&1 != 0 {
-				second, err = outer.readUint8()
+				second, err = b.readUint8()
 				index = uint16(first)<<8 | uint16(second)
 			} else {
 				index = uint16(first)
 			}
-			ipai.Associations = append(ipai.Associations, ItemProperty{
-				Essential: essential,
-				Index:     index,
-			})
+			if j < len(ipai.Associations) {
+				ipai.Associations[j] = index
+				_ = essential
+			}
+			//ipai.Associations = append(ipai.Associations, ItemProperty{
+			//	Essential: essential,
+			//	Index:     index,
+			//})
 		}
 		ipa.Entries = append(ipa.Entries, ipai)
 	}
@@ -516,9 +535,10 @@ func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err 
 
 // ItemPropertyAssociationItem is not a box
 type ItemPropertyAssociationItem struct {
-	ItemID            uint32
-	AssociationsCount int            // as declared
-	Associations      []ItemProperty // as parsed
+	ItemID       uint32
+	Associations [6]uint16
+	//AssociationsCount uint32 // as declared
+	//Associations      []ItemProperty // as parsed
 }
 
 // ItemProperty is not a box

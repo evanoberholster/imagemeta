@@ -12,6 +12,7 @@ type Brand uint8
 const (
 	brandUnknown Brand = iota // unknown ISOBMFF brand
 	//brandMA1B                 // 'MA1B': ?
+	brandAvci // 'avci'
 	brandAvif // 'avif': AVIF
 	brandCrx  // 'crx ' : Canon CR3
 	brandHeic // 'heic': the usual HEIF images
@@ -22,16 +23,26 @@ const (
 	brandHevm // 'hevm': multiview sequence
 	brandHevs // 'hevs': scalable sequence
 	brandHevx // 'hevx': image sequence
+	brandIso8 // 'iso8': sequence
 	brandIsom // 'isom' : ?
+	brandM4A  // 'M4A '
 	brandMeta // 'meta': meta
 	brandMiaf // 'miaf' :
+	brandMiAn // 'MiAn'
+	brandMiBr // 'MiBr'
 	brandMif1 // 'mif1': image
+	brandMif2 // 'mif2'
+	brandMiHA // 'MiHA'
 	brandMiHB // 'MiHB' :
 	brandMiHE // 'MiHE' :
+	brandMiPr // 'MiPr'
+	brandMp41 // 'mp41'
+	brandMp42 // 'mp42'
 	brandMsf1 // 'msf1': sequence
 )
 
 var mapStringBrand = map[string]Brand{
+	"avci": brandAvci,
 	"avif": brandAvif,
 	"crx ": brandCrx,
 	"heic": brandHeic,
@@ -42,16 +53,26 @@ var mapStringBrand = map[string]Brand{
 	"hevm": brandHevm,
 	"hevs": brandHevs,
 	"hevx": brandHevx,
+	"iso8": brandIso8,
 	"isom": brandIsom,
+	"M4A ": brandM4A,
 	"meta": brandMeta,
 	"miaf": brandMiaf,
+	"MiAn": brandMiAn,
+	"MiBr": brandMiBr,
 	"mif1": brandMif1,
+	"mif2": brandMif2,
+	"MiHA": brandMiHA,
 	"MiHB": brandMiHB,
 	"MiHE": brandMiHE,
+	"MiPr": brandMiPr,
+	"mp41": brandMp41,
+	"mp42": brandMp42,
 	"msf1": brandMsf1,
 }
 
 var mapBrandString = map[Brand]string{
+	brandAvci: "avci",
 	brandAvif: "avif",
 	brandCrx:  "crx ",
 	brandHeic: "heic",
@@ -62,12 +83,21 @@ var mapBrandString = map[Brand]string{
 	brandHevm: "hevm",
 	brandHevs: "hevs",
 	brandHevx: "hevx",
+	brandIso8: "iso8",
 	brandIsom: "isom",
+	brandM4A:  "M4A ",
 	brandMeta: "meta",
 	brandMiaf: "miaf",
+	brandMiAn: "MiAn",
+	brandMiBr: "MiBr",
 	brandMif1: "mif1",
+	brandMif2: "mif2",
+	brandMiHA: "MiHA",
 	brandMiHB: "MiHB",
 	brandMiHE: "MiHE",
+	brandMiPr: "MiPr",
+	brandMp41: "mp41",
+	brandMp42: "mp42",
 	brandMsf1: "msf1",
 }
 
@@ -92,9 +122,9 @@ func brand(buf []byte) Brand {
 
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
-	MinorVersion string   // 4 bytes
-	MajorBrand   Brand    // 4 bytes
-	Compatible   [6]Brand // all 4 bytes
+	MinorVersion string            // 4 bytes
+	MajorBrand   Brand             // 4 bytes
+	Compatible   [brandCount]Brand // all 4 bytes
 }
 
 // IsCR3 returns true if major brand is crx (Canon CR3)
@@ -124,20 +154,25 @@ func (b *box) parseFileTypeBox() (ftyp FileTypeBox, err error) {
 	if err = b.discard(8); err != nil {
 		return
 	}
-
-	// Read maximum 6 Compatible brands
-	for i := 0; i < 6 && b.remain >= 4; i++ {
+	// Read maximum 7 Compatible brands
+	for i := 0; i < brandCount && b.remain >= 4; i++ {
 		ftyp.Compatible[i], _ = b.readBrand()
+	}
+	if debugFlag {
+		traceBox(ftyp, *b)
 	}
 	return ftyp, b.discard(b.remain)
 }
 
 func (ftyp FileTypeBox) String() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftyp.MajorBrand, ""))
+	sb.WriteString(fmt.Sprintf("ftyp | Major Brand:'%s', Minor Version:'%s', Compatible: ", ftyp.MajorBrand, ""))
 	for _, b := range ftyp.Compatible {
-		sb.WriteString(b.String() + " ")
+		sb.WriteString("'")
+		sb.WriteString(b.String())
+		sb.WriteString("' ")
 	}
+	sb.WriteString("\n")
 	return sb.String()
 }
 

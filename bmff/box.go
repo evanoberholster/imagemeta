@@ -18,12 +18,25 @@ const (
 	TypeAuxl            // 'auxl'
 	TypeAv01            // 'av01'
 	TypeAv1C            // 'av1C'
+	TypeAvcC            // 'avcC'
+	TypeCCDT            // 'CCDT'
+	TypeCCTP            // 'CCTP'
 	TypeCdsc            // 'cdsc'
 	TypeClap            // 'clap'
+	TypeCMT1            // 'CMT1'
+	TypeCMT2            // 'CMT2'
+	TypeCMT3            // 'CMT3'
+	TypeCMT4            // 'CMT4'
+	TypeCNCV            // 'CNCV'
 	TypeColr            // 'colr'
+	TypeCrtt            // 'crtt'
+	TypeCTBO            // 'CTBO'
 	TypeDimg            // 'dimg'
 	TypeDinf            // 'dinf'
+	TypeEtyp            // 'etyp'
+	TypeFree            // 'free'
 	TypeFtyp            // 'ftyp'
+	TypeGrpl            // 'grpl'
 	TypeHdlr            // 'hdlr'
 	TypeHvcC            // 'hvcC'
 	TypeIdat            // 'idat'
@@ -38,27 +51,22 @@ const (
 	TypeIref            // 'iref'
 	TypeIrot            // 'irot'
 	TypeIspe            // 'ispe'
+	TypeLhvC            // 'lhvC'
+	TypeMdat            // 'mdat'
+	TypeMdft            // 'mdft'
 	TypeMeta            // 'meta'
 	TypeMoov            // 'moov'
+	TypeMvhd            // 'mvhd'
+	TypeOinf            // 'oinf'
 	TypePasp            // 'pasp'
 	TypePitm            // 'pitm'
 	TypePixi            // 'pixi'
+	TypePRVW            // 'PRVW'
 	TypeThmb            // 'thmb'
+	TypeTHMB            // 'THMB'
+	TypeTols            // 'tols'
 	TypeTrak            // 'trak'
 	TypeUUID            // 'uuid'
-	TypeCCTP            // 'CCTP'
-	TypeCNCV            // 'CNCV'
-	TypeCTBO            // 'CTBO'
-	TypeCMT1            // 'CMT1'
-	TypeCMT2            // 'CMT2'
-	TypeCMT3            // 'CMT3'
-	TypeCMT4            // 'CMT4'
-	TypeTMHB            // 'THMB'
-	TypeMvhd            // 'mvhd'
-	TypePRVW            // 'PRVW'
-	TypeMdat            // 'mdat'
-	TypeFree            // 'free'
-	TypeCCDT            // 'CCDT'
 )
 
 var mapStringBoxType = map[string]BoxType{
@@ -66,12 +74,25 @@ var mapStringBoxType = map[string]BoxType{
 	"auxl": TypeAuxl,
 	"av01": TypeAv01,
 	"av1C": TypeAv1C,
+	"avcC": TypeAvcC,
+	"CCDT": TypeCCDT,
+	"CCTP": TypeCCTP,
 	"cdsc": TypeCdsc,
 	"clap": TypeClap,
+	"CMT1": TypeCMT1,
+	"CMT2": TypeCMT2,
+	"CMT3": TypeCMT3,
+	"CMT4": TypeCMT4,
+	"CNCV": TypeCNCV,
 	"colr": TypeColr,
+	"crtt": TypeCrtt,
+	"CTBO": TypeCTBO,
 	"dimg": TypeDimg,
 	"dinf": TypeDinf,
+	"etyp": TypeEtyp,
+	"free": TypeFree,
 	"ftyp": TypeFtyp,
+	"grpl": TypeGrpl,
 	"hdlr": TypeHdlr,
 	"hvcC": TypeHvcC,
 	"idat": TypeIdat,
@@ -86,27 +107,22 @@ var mapStringBoxType = map[string]BoxType{
 	"iref": TypeIref,
 	"irot": TypeIrot,
 	"ispe": TypeIspe,
+	"lhvC": TypeLhvC,
+	"mdat": TypeMdat,
+	"mdft": TypeMdft,
 	"meta": TypeMeta,
 	"moov": TypeMoov,
+	"mvhd": TypeMvhd,
+	"oinf": TypeOinf,
 	"pasp": TypePasp,
 	"pitm": TypePitm,
 	"pixi": TypePixi,
+	"PRVW": TypePRVW,
 	"thmb": TypeThmb,
+	"THMB": TypeTHMB,
+	"tols": TypeTols,
 	"trak": TypeTrak,
 	"uuid": TypeUUID,
-	"CCTP": TypeCCTP,
-	"CNCV": TypeCNCV,
-	"CTBO": TypeCTBO,
-	"CMT1": TypeCMT1,
-	"CMT2": TypeCMT2,
-	"CMT3": TypeCMT3,
-	"CMT4": TypeCMT4,
-	"THMB": TypeTMHB,
-	"mvhd": TypeMvhd,
-	"PRVW": TypePRVW,
-	"mdat": TypeMdat,
-	"free": TypeFree,
-	"CCDT": TypeCCDT,
 }
 
 var mapBoxTypeString = map[BoxType]string{
@@ -114,12 +130,25 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeAuxl: "auxl",
 	TypeAv01: "av01",
 	TypeAv1C: "av1C",
+	TypeAvcC: "avcC",
+	TypeCCDT: "CCDT",
+	TypeCCTP: "CCTP",
 	TypeCdsc: "cdsc",
 	TypeClap: "clap",
+	TypeCMT1: "CMT1",
+	TypeCMT2: "CMT2",
+	TypeCMT3: "CMT3",
+	TypeCMT4: "CMT4",
+	TypeCNCV: "CNCV",
 	TypeColr: "colr",
+	TypeCrtt: "crtt",
+	TypeCTBO: "CTBO",
 	TypeDimg: "dimg",
 	TypeDinf: "dinf",
+	TypeEtyp: "etyp",
+	TypeFree: "free",
 	TypeFtyp: "ftyp",
+	TypeGrpl: "grpl",
 	TypeHdlr: "hdlr",
 	TypeHvcC: "hvcC",
 	TypeIdat: "idat",
@@ -134,27 +163,22 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeIref: "iref",
 	TypeIrot: "irot",
 	TypeIspe: "ispe",
+	TypeLhvC: "lhvC",
+	TypeMdat: "mdat",
+	TypeMdft: "mdft",
 	TypeMeta: "meta",
 	TypeMoov: "moov",
+	TypeMvhd: "mvhd",
+	TypeOinf: "oinf",
 	TypePasp: "pasp",
 	TypePitm: "pitm",
 	TypePixi: "pixi",
+	TypePRVW: "PRVW",
 	TypeThmb: "thmb",
+	TypeTHMB: "THMB",
+	TypeTols: "tols",
 	TypeTrak: "trak",
 	TypeUUID: "uuid",
-	TypeCCTP: "CCTP",
-	TypeCNCV: "CNCV",
-	TypeCTBO: "CTBO",
-	TypeCMT1: "CMT1",
-	TypeCMT2: "CMT2",
-	TypeCMT3: "CMT3",
-	TypeCMT4: "CMT4",
-	TypeTMHB: "THMB",
-	TypeMvhd: "mvhd",
-	TypePRVW: "PRVW",
-	TypeMdat: "mdat",
-	TypeFree: "free",
-	TypeCCDT: "CCDT",
 }
 
 func (t BoxType) String() string {
@@ -209,7 +233,7 @@ func (f Flags) Version() uint8 {
 }
 
 func (f Flags) String() string {
-	return fmt.Sprintf("Flags: %d, Version: %d", f.Flags(), f.Version())
+	return fmt.Sprintf("Flags:%d, Version:%d", f.Flags(), f.Version())
 }
 
 // Box is a BMFF box
@@ -220,7 +244,7 @@ type box struct {
 }
 
 func (b box) String() string {
-	return fmt.Sprintf("(Box) type: \"%s\", offset: %d, size: %d", b.boxType, b.offset, b.size)
+	return fmt.Sprintf("(Box) type:'%s', offset:%d, size:%d", b.boxType, b.offset, b.size)
 }
 
 func (b box) Size() int64   { return b.size }
@@ -233,7 +257,7 @@ func (b *box) Parse() (Box, error) {
 	parser, ok := parsers[b.Type()]
 	if !ok {
 		if debugFlag {
-			log.Debug("Unknown Parser. Boxtype: '%s', BoxSize: '%d'", b.Type(), b.Size())
+			log.Debug("Unknown Parser. Box:'%s', BoxSize:'%d'", b.Type(), b.Size())
 		}
 		return UnknownBox{t: b.Type(), s: b.size}, nil
 	}
@@ -258,7 +282,7 @@ func init() {
 		TypeIpma: parseIpma,
 		TypeIprp: parseIprp,
 		TypeIref: parseIref,
-		TypeIrot: parseImageRotation,
+		TypeIrot: parseIrot,
 		TypeIspe: parseImageSpatialExtentsProperty,
 		TypeMeta: parseMeta,
 		TypeMoov: parseMoov,

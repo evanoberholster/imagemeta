@@ -32,6 +32,9 @@ var (
 	ErrNoMoreBoxes       = errors.New("no more boxes to be parsed")
 )
 
+// brandCount is the number of compatible brands supported.
+const brandCount = 8
+
 // NewReader returns a new bmff.Reader
 func NewReader(r io.Reader) Reader {
 	br, ok := r.(*bufio.Reader)
@@ -110,7 +113,7 @@ func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 	if err != nil {
 		return moov, err
 	}
-	return parseMoovBox(&b)
+	return b.parseMoovBox()
 }
 
 // ReadBox reads a box and returns it
