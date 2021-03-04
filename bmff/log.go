@@ -11,19 +11,23 @@ var (
 	log       Logger
 )
 
+// DebugLogger sets the debug logger
+// TODO: rewrite
 func DebugLogger(logger Logger) {
 	debugFlag = true
 	log = logger
 }
 
-// Logger
+// Logger is a logging Interface
 type Logger interface {
 	Debug(format string, args ...interface{})
 }
 
+// STDLogger is the Standard Logger
 type STDLogger struct {
 }
 
+// Debug logs debug information
 func (std STDLogger) Debug(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 	fmt.Printf("\n")
