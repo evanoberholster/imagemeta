@@ -13,6 +13,8 @@ var (
 
 	// ErrItemNotFound is returned as en error when an Item was not Found.
 	ErrItemNotFound = errors.New("item not found")
+	// ErrInfeVersionNotSupported is returned when an infe box with an unsupported was found.
+	ErrInfeVersionNotSupported = errors.New("infe box version not supported")
 )
 
 // ItemType is always 4 bytes
@@ -46,7 +48,6 @@ type ItemInfoBox struct {
 	//size int64
 	//Flags Flags
 	//Count uint16
-
 	ItemInfos []ItemInfoEntry
 }
 
@@ -92,10 +93,7 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 		err = errors.Wrap(err, "ParseItemInfoBox")
 		return
 	}
-	if err = b.discard(6); err != nil {
-		err = errors.Wrap(err, "ParseItemInfoBox")
-		return
-	}
+	_ = b.discard(6)
 	// Read Flags
 	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	// Read Item count
@@ -106,28 +104,30 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 	}
 
 	var inner box
+	var infe ItemInfoEntry
 	for i := 0; i < count && b.anyRemain(); i++ {
 		if inner, err = b.readInnerBox(); err != nil {
-			break
+			err = errors.Wrap(err, "ParseItemInfoBox (inner)")
+			return
 		}
 		switch inner.Type() {
 		case TypeInfe:
-			var infe ItemInfoEntry
 			if infe, err = inner.parseItemInfoEntry(); err != nil {
 				if debugFlag {
-					log.Debug("INFE: error Parsing ItemInfoEntry: %s", infe)
-					log.Debug("INFE: error: %s", err.Error())
+					log.Debug("(infe) error parsing ItemInfoEntry: %s, %s", infe, err.Error())
 				}
-				break
+				err = errors.Wrap(err, "ParseItemInfoBox (infe)")
+				return
 			}
 			iinf.ItemInfos[i] = infe
 		default:
 			if debugFlag {
-				log.Debug("INFE: Unknown BoxType: %s", inner.Type())
+				log.Debug("(infe) Unknown BoxType: %s", inner.Type())
 			}
 		}
 		if err = b.closeInnerBox(&inner); err != nil {
-			break
+			err = errors.Wrap(err, "ParseItemInfoBox (close)")
+			return
 		}
 	}
 	return iinf, b.discard(b.remain)
@@ -177,7 +177,7 @@ func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
 	}
 	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	if flags.Version() != 2 {
-		err = errors.Errorf("TODO: found version %d infe box. Only 2 is supported now", flags.Version())
+		err = errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", flags.Version())
 		return
 	}
 	ie.ItemID = heicByteOrder.Uint16(buf[4:6])
@@ -472,18 +472,17 @@ func parseIpma(outer *box) (Box, error) {
 func (b *box) parseItemPropertyAssociation() (ipa ItemPropertyAssociation, err error) {
 	buf, err := b.peek(8)
 	if err != nil {
+		err = errors.Wrap(err, "parseItemPropertyAssociation")
 		return
 	}
+	_ = b.discard(8)
+
 	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	count := int(heicByteOrder.Uint32(buf[4:8]))
-	if err = b.discard(8); err != nil {
-		// TODO: Error handling
-		return
-	}
 
 	// Entries
 	//	ipa.EntryCount = uint32(count)
-	ipa.Entries = make([]ItemPropertyAssociationItem, 0, count)
+	ipa.Entries = make([]ItemPropertyAssociationItem, count)
 	for i := 0; i < count && err == nil; i++ {
 		var itemID uint32
 		if flags.Version() < 1 {
@@ -525,10 +524,10 @@ func (b *box) parseItemPropertyAssociation() (ipa ItemPropertyAssociation, err e
 			//	Index:     index,
 			//})
 		}
-		ipa.Entries = append(ipa.Entries, ipai)
+		ipa.Entries[i] = ipai
 	}
 	if debugFlag {
-		fmt.Println(ipa)
+		traceBox(ipa, *b)
 	}
 	return ipa, nil
 }
@@ -555,7 +554,7 @@ type ImageSpatialExtentsProperty struct {
 }
 
 func (ispe ImageSpatialExtentsProperty) String() string {
-	return fmt.Sprintf("(ispe) Image Width: %d, Height: %d", ispe.W, ispe.H)
+	return fmt.Sprintf("(ispe) Image Width:%d, Height:%d", ispe.W, ispe.H)
 }
 
 // Type returns TypeIspe
@@ -563,19 +562,19 @@ func (ispe ImageSpatialExtentsProperty) Type() BoxType {
 	return TypeIspe
 }
 
-func parseImageSpatialExtentsProperty(outer *box) (Box, error) {
-	flags, err := outer.readFlags()
+func parseIspe(b *box) (Box, error) {
+	return b.parseImageSpatialExtentsProperty()
+}
+
+func (b *box) parseImageSpatialExtentsProperty() (ispe ImageSpatialExtentsProperty, err error) {
+	buf, err := b.peek(12)
 	if err != nil {
-		return nil, err
-	}
-	w, _ := outer.readUint32()
-	h, err := outer.readUint32()
-	if err != nil {
-		return nil, err
+		err = errors.Wrap(err, "parseImageSpatialExtentsProperty")
+		return
 	}
 	return ImageSpatialExtentsProperty{
-		Flags: flags,
-		W:     w,
-		H:     h,
-	}, nil
+		Flags: Flags(heicByteOrder.Uint32(buf[:4])),
+		W:     heicByteOrder.Uint32(buf[4:8]),
+		H:     heicByteOrder.Uint32(buf[8:12]),
+	}, b.discard(12)
 }

@@ -280,4 +280,21 @@ func TestBufReaderReadUint(t *testing.T) {
 }
 
 func TestBufReaderReadString(t *testing.T) {
+	strTests := []struct {
+		name string
+		data []byte
+		val  string
+		err  error
+	}{
+		{"Test 1", []byte{'h', 'o', 'w', 'd', 'y', 0, 1, 2, 3}, "howdy", nil},
+		{"Test 2", []byte{'h', 'o', 'w', 'd', 'y', 1, 2, 3}, "", io.EOF},
+	}
+
+	for _, v := range strTests {
+		b := newTestBox(v.data)
+		str, err := b.readString()
+		if assert.ErrorIs(t, err, v.err) {
+			assert.Equal(t, v.val, str)
+		}
+	}
 }

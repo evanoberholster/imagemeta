@@ -283,7 +283,7 @@ func init() {
 		TypeIprp: parseIprp,
 		TypeIref: parseIref,
 		TypeIrot: parseIrot,
-		TypeIspe: parseImageSpatialExtentsProperty,
+		TypeIspe: parseIspe,
 		TypeMeta: parseMeta,
 		TypeMoov: parseMoov,
 		TypePitm: parsePitm,

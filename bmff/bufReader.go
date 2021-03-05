@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"strings"
 
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/pkg/errors"
@@ -81,12 +80,12 @@ func (br *bufReader) readString() (str string, err error) {
 		s0 = s0[:length-1]
 		return string(s0), nil
 	}
-	s := strings.TrimSuffix(s0, "\x00")
-	if len(s) == length {
-		err = errors.New("readString: unexpected non-null terminated string")
-		return
-	}
-	return s, nil
+	//s := strings.TrimSuffix(s0, "\x00")
+	//if len(s) == length {
+	//	err = errors.New("readString: unexpected non-null terminated string")
+	//	return
+	//}
+	return string(s0), err
 }
 
 func (br *bufReader) readUint8() (uint8, error) {

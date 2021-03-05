@@ -2,6 +2,8 @@ package bmff
 
 import (
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // HandlerType always 4 bytes; usually "pict" for HEIF images.
@@ -65,7 +67,7 @@ func parseHdlr(outer *box) (Box, error) {
 
 func (b *box) parseHandlerBox() (hdlr HandlerBox, err error) {
 	hdlr.size = uint32(b.size)
-	buf, err := b.Peek(24)
+	buf, err := b.peek(24)
 	if err != nil {
 		return
 	}
@@ -76,7 +78,8 @@ func (b *box) parseHandlerBox() (hdlr HandlerBox, err error) {
 	hdlr.Flags = Flags(heicByteOrder.Uint32(buf[:4]))
 	hdlr.HandlerType = handler(buf[8:12])
 	if hdlr.HandlerType == handlerUnknown {
-		err = fmt.Errorf("error Handler type unknown: %s", string(buf[8:12]))
+		// Debug
+		err = errors.Errorf("error Handler type unknown: %s", string(buf[8:12]))
 		return
 	}
 	//hdlr.Name, _ = outer.readString()
@@ -138,10 +141,18 @@ func (irot ImageRotation) String() string {
 	if irot == 0 {
 		return "(irot) No Rotation"
 	}
-	if irot >= 1 && irot <= 3 {
-		return fmt.Sprintf("(irot) Angle: %d° Counter-Clockwise", irot*90)
+	var angle uint16
+	switch irot {
+	case 1:
+		angle = 90
+	case 2:
+		angle = 180
+	case 3:
+		angle = 270
+	default:
+		return fmt.Sprintf("(irot) Unknown Angle: %d", irot)
 	}
-	return fmt.Sprintf("(irot) Unknown Angle: %d", irot)
+	return fmt.Sprintf("(irot) Angle: %d° Counter-Clockwise", angle)
 }
 
 func parseIrot(outer *box) (Box, error) {

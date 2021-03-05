@@ -41,16 +41,25 @@ func (std STDLogger) Debug(format string, args ...interface{}) {
 // Level
 
 func traceBox(b Box, b2 box) {
+	if log == nil {
+		return
+	}
 	name := trace()
 	log.Debug("%s\t %s\t Called from: %s", b2, b, name)
 }
 
 func traceBoxWithFlags(b Box, b2 box, f Flags) {
+	if log == nil {
+		return
+	}
 	name := trace()
 	log.Debug("%s\t %s\t %s\t Called from: %s", b2, b, f, name)
 }
 
 func traceBoxWithMsg(b box, msg string) {
+	if log == nil {
+		return
+	}
 	name := trace()
 	log.Debug("%s\t %s\t Called from: %s", b, msg, name)
 }

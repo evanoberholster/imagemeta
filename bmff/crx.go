@@ -67,7 +67,9 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 				}
 			}
 		default:
-			fmt.Println(inner)
+			if debugFlag {
+				traceBox(inner, inner)
+			}
 		}
 		if err = moovBox.closeInnerBox(&inner); err != nil {
 			return

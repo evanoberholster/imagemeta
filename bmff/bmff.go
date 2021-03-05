@@ -15,7 +15,7 @@
 	limitations under the License.
 */
 
-// Package bmff reads ISO BMFF boxes, as used by HEIF, AVIF, CR3, etc. and other riff based files
+// Package bmff reads ISOBMFF boxes, as used by HEIF, AVIF, CR3, etc. and other riff based files
 package bmff
 
 import (
@@ -94,6 +94,7 @@ func (r *Reader) ReadMetaBox() (mb MetaBox, err error) {
 	}
 	b, err := r.readBox()
 	if err != nil {
+		err = errors.Wrapf(err, "ReadMetaBox")
 		return mb, err
 	}
 	return parseMetaBox(&b)
@@ -111,6 +112,7 @@ func (r *Reader) ReadMoovBox() (moov MoovBox, err error) {
 	}
 	b, err := r.readBox()
 	if err != nil {
+		err = errors.Wrapf(err, "ReadMetaBox")
 		return moov, err
 	}
 	return b.parseMoovBox()
