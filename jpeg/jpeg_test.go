@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"os"
 	"testing"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 func TestScanJPEG(t *testing.T) {
@@ -30,7 +32,7 @@ func TestScanJPEG(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			m, err := ScanJPEG(br, nil, nil)
+			m, err := ScanJPEG(br, meta.Metadata{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -59,7 +61,7 @@ func TestScanJPEG(t *testing.T) {
 func TestScanMarkers(t *testing.T) {
 	data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r := bytes.NewReader(data)
-	m := newMetadata(bufio.NewReader(r), nil, nil)
+	m := Metadata{br: bufio.NewReader(r)}
 
 	// Test discard
 	m.discard(0)
@@ -75,7 +77,7 @@ func TestScanMarkers(t *testing.T) {
 
 	data = []byte{markerFirstByte, markerSOI, markerFirstByte, markerEOI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r = bytes.NewReader(data)
-	m = newMetadata(bufio.NewReader(r), nil, nil)
+	m = Metadata{br: bufio.NewReader(r)}
 
 	// Test SOI
 	buf, _ = m.br.Peek(16)
@@ -92,7 +94,7 @@ func TestScanMarkers(t *testing.T) {
 	}
 
 	// Test Scan JPEG
-	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), nil, nil)
+	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), meta.Metadata{})
 	if err != ErrNoJPEGMarker {
 		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 	}
