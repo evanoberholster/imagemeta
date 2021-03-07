@@ -32,7 +32,7 @@ func TestIfdString(t *testing.T) {
 		{IopIFD, "Ifd/Iop", 0, NullIFD, 0, NullIFD},
 		{MknoteIFD, "Ifd/Exif/Makernote", exififd.MakerNote, NullIFD, exififd.MakerNote, MknoteIFD},
 		{DNGAdobeDataIFD, "Ifd/DNGAdobeData", 0, NullIFD, 0, NullIFD},
-		{NullIFD, "Unknown", 0, NullIFD, 0, NullIFD},
+		{NullIFD, "UnknownIfd", 0, NullIFD, 0, NullIFD},
 	}
 
 	for i, v := range testIfds {

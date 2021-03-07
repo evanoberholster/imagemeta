@@ -56,7 +56,7 @@ func (ifd IFD) String() string {
 	case DNGAdobeDataIFD:
 		return "Ifd/DNGAdobeData"
 	}
-	return "Unknown"
+	return "UnknownIfd"
 }
 
 // IsChildIfd returns the IFD if it is a Child of the current ifd
