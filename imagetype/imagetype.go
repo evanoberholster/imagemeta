@@ -186,26 +186,24 @@ func isCR2(buf []byte) bool {
 }
 
 // isCR3 returns true if it matches an image/x-canon-cr3.
-// TODO: missing major brand and minor brand
-// major_brand: crx // minor_version   : 1 // compatible_brands: crx isom
-// ftyp
+//
+// ftyp box with major_brand: 'crx ' and compatible_brands: 'crx ' 'isom'
 func isCR3(buf []byte) bool {
 	return isFTYPBox(buf) &&
-		buf[8] == 0x63 &&
-		buf[9] == 0x72 &&
-		buf[10] == 0x78 &&
-		buf[11] == 0x20
+		isFTYPBrand(buf[8:12], "crx ")
 }
 
 // isHeif returns true if the header matches the start of a HEIF file.
-// TODO: missing major brand and minor brand
-// TODO: Implement better ISOBMFF Box identification
+//
 // Major brands: heic, mif1, heix
+// Minor brand contains:
 func isHeif(buf []byte) bool {
 	return isFTYPBox(buf) &&
 		(isFTYPBrand(buf[8:12], "heic") ||
-			isFTYPBrand(buf[8:12], "mif1") ||
-			isFTYPBrand(buf[8:12], "heix"))
+			isFTYPBrand(buf[8:12], "heix") ||
+			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[16:20], "heic")) ||
+			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[20:24], "heic")) ||
+			(isFTYPBrand(buf[8:12], "msf1") && isFTYPBrand(buf[20:24], "hevc")))
 }
 
 // isFTYPBrand returns true if the Brand in []byte matches the brand in str.
@@ -219,8 +217,7 @@ func isFTYPBrand(buf []byte, str string) bool {
 func isFTYPBox(buf []byte) bool {
 	return buf[0] == 0x0 &&
 		buf[1] == 0x0 &&
-		buf[2] == 0x0 &&
-		// buf[3]
+		// buf[0:4] is 'ftyp' box size
 		buf[4] == 0x66 &&
 		buf[5] == 0x74 &&
 		buf[6] == 0x79 &&
@@ -229,19 +226,11 @@ func isFTYPBox(buf []byte) bool {
 
 // isAVIF returns true if the header matches an ftyp box and
 // an avif box.
-// TODO: Implement better ISOBMFF Box identification
+//
 func isAVIF(buf []byte) bool {
-	return isFTYPBox(buf) && (buf[8] == 0x61 &&
-		buf[9] == 0x76 &&
-		buf[10] == 0x69 &&
-		buf[11] == 0x66) || (buf[16] == 0x6d &&
-		buf[17] == 0x69 &&
-		buf[18] == 0x66 &&
-		buf[19] == 0x31 &&
-		buf[20] == 0x61 &&
-		buf[21] == 0x76 &&
-		buf[22] == 0x69 &&
-		buf[23] == 0x66)
+	return isFTYPBox(buf) &&
+		(isFTYPBrand(buf[8:12], "avif") ||
+			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[20:24], "avif")))
 }
 
 // isBMP returns true if the header matches the start of a BMP file
