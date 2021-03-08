@@ -18,7 +18,8 @@ func (u UUID) String() string {
 
 // UUIDFromBytes returns UUID converted from raw byte slice input. It will return error if the slice isn't 16 bytes long.
 func UUIDFromBytes(buf []byte) (UUID, error) {
-	u, err := uuid.FromBytes(buf)
+	var u UUID
+	err := u.UnmarshalBinary(buf)
 	return UUID(u), err
 }
 
@@ -43,8 +44,7 @@ func (u *UUID) UnmarshalText(text []byte) (err error) {
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 func (u UUID) MarshalBinary() (data []byte, err error) {
-	data = u.Bytes()
-	return
+	return u.Bytes(), nil
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.

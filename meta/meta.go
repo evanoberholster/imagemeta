@@ -59,7 +59,7 @@ type ExifHeader struct {
 // IsValid returns true if the ExifHeader ByteOrder is not nil and
 // the FirstIfdOffset is greater than 0
 func (h ExifHeader) IsValid() bool {
-	return h.ByteOrder != nil || h.FirstIfdOffset > 0
+	return h.ByteOrder != nil && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
 }
 
 // NewExifHeader returns a new ExifHeader.
@@ -83,4 +83,36 @@ type XmpHeader struct {
 // and length of where to read XMP metadata.
 func NewXMPHeader(offset, length uint32) XmpHeader {
 	return XmpHeader{offset, length}
+}
+
+// BinaryOrder returns the binary.ByteOrder for a Tiff Header based
+// on 4 bytes from the buf.
+//
+// Good reference:
+// CIPA DC-008-2016; JEITA CP-3451D
+// -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
+func BinaryOrder(buf []byte) binary.ByteOrder {
+	if isTiffBigEndian(buf[:4]) {
+		return binary.BigEndian
+	}
+	if isTiffLittleEndian(buf[:4]) {
+		return binary.LittleEndian
+	}
+	return nil
+}
+
+// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func isTiffLittleEndian(buf []byte) bool {
+	return buf[0] == 0x49 &&
+		buf[1] == 0x49 &&
+		buf[2] == 0x2a &&
+		buf[3] == 0x00
+}
+
+// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
+func isTiffBigEndian(buf []byte) bool {
+	return buf[0] == 0x4d &&
+		buf[1] == 0x4d &&
+		buf[2] == 0x00 &&
+		buf[3] == 0x2a
 }
