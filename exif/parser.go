@@ -145,18 +145,18 @@ func (e *Data) ParseSubSec(subSec tag.Tag) (int, error) {
 // ParseASCIIValue parses the ASCII value of the tag as a string
 // and returns an error if it encounters one
 func (e *Data) ParseASCIIValue(t tag.Tag) (value string, err error) {
-	if t.Type().IsValid() { // TODO: Needs Typecheck
+	if t.Type() == tag.TypeASCII || t.Type() == tag.TypeASCIINoNul {
 		var buf []byte
-		buf, err := e.er.TagValue(t)
-		if err != nil {
+		if buf, err = e.er.TagValue(t); err != nil {
 			err = errors.Wrap(err, "ParseASCIIValue")
-			return "", err
+			return
 		}
 
 		// Trim trailing spaces and null values
 		return string(trim(buf)), nil
 	}
-	return "", tag.ErrTagNotValid
+	return "", tag.ErrTagTypeNotValid
+
 }
 
 // ParseUint16Value returns the Short value of the tag as a uint16
@@ -177,19 +177,20 @@ func (e *Data) ParseUint16Value(t tag.Tag) (uint16, error) {
 func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 	if t.Type().IsValid() && t.UnitCount == 1 {
 		var buf []byte
-		buf, err = e.er.TagValue(t)
-		if err != nil {
+		if buf, err = e.er.TagValue(t); err != nil {
 			return
 		}
 		byteOrder := e.er.ByteOrder()
 
 		if t.Type() == tag.TypeShort {
 			value = uint32(byteOrder.Uint16(buf[:2]))
+			return
 		}
 		if t.Type() == tag.TypeLong {
 			value = byteOrder.Uint32(buf[:4])
+			return
 		}
-		return
+
 	}
 	return 0, tag.ErrTagTypeNotValid
 }
@@ -244,9 +245,8 @@ func (e *Data) ParseUint32Values(t tag.Tag) (value []uint32, err error) {
 // numerator and denominator for a single Unsigned Rational
 func (e *Data) ParseRationalValue(t tag.Tag) (n, d uint32, err error) {
 	if t.Type() == tag.TypeRational || t.Type() == tag.TypeSignedRational {
-		if t.Size() > 8 {
-			err = ErrParseRationals
-			return
+		if t.UnitCount > 1 {
+			return 0, 0, ErrParseRationals
 		}
 		var buf []byte
 		buf, err = e.er.TagValue(t)
@@ -256,8 +256,9 @@ func (e *Data) ParseRationalValue(t tag.Tag) (n, d uint32, err error) {
 		byteOrder := e.er.ByteOrder()
 		n = byteOrder.Uint32(buf[:4])
 		d = byteOrder.Uint32(buf[4:8])
+		return
 	}
-	return
+	return 0, 0, tag.ErrTagTypeNotValid
 }
 
 // ParseSRationalValue returns a numerator and denominator for a single Signed Rational

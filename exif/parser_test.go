@@ -15,7 +15,9 @@ import (
 )
 
 func newMockReader(buf []byte) *reader {
-	return newExifReader(bytes.NewReader(buf), binary.BigEndian, 0x0000, 0)
+	r := newExifReader(bytes.NewReader(buf), binary.BigEndian, 0x0000, 0)
+	r.ifdExifOffset[ifds.RootIFD] = 0
+	return r
 }
 
 func TestParseTimeStamp(t *testing.T) {
@@ -114,43 +116,175 @@ func TestParseGPSCoord(t *testing.T) {
 }
 
 func TestParseASCIIValue(t *testing.T) {
-	parseASCIITests := []struct {
+	tests := []struct {
+		name string
 		data []byte
+		tag  tag.Tag
 		val  string
 		err  error
 	}{
-		{[]byte("abcdefghijlkmnop"), "cdefghijlk", nil},
+		{"1", []byte("  HelloWorld"), tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), "HelloWorld", nil},
+		{"2", []byte(""), tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 2, 538986601, 0), "  Hi", nil},
+		{"3", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 0, 0), "", tag.ErrTagTypeNotValid},
+		{"4", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 1, 12345773, 0), "", tag.ErrTagTypeNotValid},
+		{"5", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 0, 0), "", tag.ErrTagTypeNotValid},
+		{"2", []byte(""), tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 6, 538986601, 0), "", io.EOF},
 	}
-	for _, v := range parseASCIITests {
-		testTag := tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0)
+	for _, v := range tests {
 		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
-		val, err := d.ParseASCIIValue(testTag)
-		if err != nil {
-			t.Error(err)
-		}
-		assert.Equal(t, v.val, val)
+		val, err := d.ParseASCIIValue(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, val, v.name)
 	}
 }
 func TestParseUint32Value(t *testing.T) {
-
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  uint32
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), 0, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 0, 0), 0, io.EOF},
+		{"3", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 12345773, 0), 12345773, nil},
+		{"4", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 1, 12345773, 0), 188, nil},
+		{"5", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 0, 0), 0, nil},
+	}
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseUint32Value(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, int(v.val), int(val), v.name)
+	}
 }
 func TestParseUint16Values(t *testing.T) {
-
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  []uint16
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 0, 0), nil, tag.ErrTagTypeNotValid},
+		{"3", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 12345773, 0), nil, tag.ErrTagTypeNotValid},
+		{"4", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 1, 1024232342, 0), []uint16{15628}, nil},
+		{"5", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 2, 1024232342, 0), []uint16{15628, 35734}, nil},
+		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 3, 1024232342, 0), nil, io.EOF},
+		{"7", []byte{0, 0, 250, 250, 125, 125, 125, 234}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 3, 2, uint8(ifds.RootIFD)), []uint16{64250, 32125, 32234}, nil},
+	}
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseUint16Values(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, val, v.name)
+	}
 }
 func TestParseUint32Values(t *testing.T) {
-
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  []uint32
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 0, 0), nil, tag.ErrTagTypeNotValid},
+		{"3", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeShort, 1, 1024232342, 0), nil, tag.ErrTagTypeNotValid},
+		{"4", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 12345773, 0), []uint32{12345773}, nil},
+		{"5", []byte{0, 0, 250, 250, 125, 125, 0, 0, 25, 25}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 2, 2, 0), []uint32{4210720125, 6425}, nil},
+		{"6", []byte{0, 0, 250, 250, 125, 125, 0, 0, 25, 25, 0, 0, 0, 25}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 3, 2, 0), []uint32{4210720125, 6425, 25}, nil},
+		{"7", []byte{0, 0, 250, 250, 125, 125, 125, 234}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 3, 2, 0), nil, io.EOF},
+	}
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseUint32Values(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, val, v.name)
+	}
 }
 func TestParseRationalValue(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  []uint32
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), []uint32{0, 0}, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0), []uint32{0, 0}, tag.ErrTagTypeNotValid},
+		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []uint32{3095, 3096}, nil},
+		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 1, 2, 0), []uint32{3097, 3098}, nil},
+		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 2, 2, 0), []uint32{0, 0}, ErrParseRationals},
+		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 10, 0), []uint32{0, 0}, io.EOF},
+	}
 
-}
-func TestParseSRationalValue(t *testing.T) {
+	// Rational
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		a, b, err := d.ParseRationalValue(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, []uint32{a, b}, v.name)
+	}
 
+	// SignedRational
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		a, b, err := d.ParseSRationalValue(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		val2 := []int32{int32(v.val[0]), int32(v.val[1])}
+		assert.Equal(t, val2, []int32{a, b}, v.name)
+	}
 }
+
 func TestParseRationalValues(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  []tag.Rational
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0), nil, tag.ErrTagTypeNotValid},
+		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.Rational{{3095, 3096}}, nil},
+		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 1, 2, 0), []tag.Rational{{3097, 3098}}, nil},
+		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 2, 2, 0), []tag.Rational{{3095, 3096}, {3095, 3096}}, nil},
+		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 10, 0), nil, io.EOF},
+	}
 
+	// Rational
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseRationalValues(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, val, v.name)
+	}
 }
 func TestParseSRationalValues(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		tag  tag.Tag
+		val  []tag.SRational
+		err  error
+	}{
+		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
+		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0), nil, tag.ErrTagTypeNotValid},
+		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{3095, 3096}}, nil},
+		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{3097, 3098}}, nil},
+		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 2, 2, 0), []tag.SRational{{3095, 3096}, {3095, 3096}}, nil},
+		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 10, 0), nil, io.EOF},
+	}
 
+	// Rational
+	for _, v := range tests {
+		d := newData(newMockReader(v.data), imagetype.ImageUnknown)
+		val, err := d.ParseSRationalValues(v.tag)
+		assert.ErrorIs(t, err, v.err, v.name)
+		assert.Equal(t, v.val, val, v.name)
+	}
 }
 
 func TestTrim(t *testing.T) {
