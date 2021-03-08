@@ -181,7 +181,7 @@ func (ite *ifdTagEnumerator) ParseIfd(e *Data, ifd ifds.IFD, ifdIndex uint8, doD
 		childIFD := ifd.IsChildIfd(t)
 		switch childIFD {
 		case ifds.NullIFD:
-			e.AddTag(ifd, ifdIndex, t)
+			e.addTag(ifd, ifdIndex, t)
 		case ifds.SubIFD:
 			if err := scanSubIfds(ite.exifReader, e, t); err != nil {
 				return nextIfdOffset, err

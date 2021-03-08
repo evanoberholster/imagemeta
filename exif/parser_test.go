@@ -248,9 +248,9 @@ func TestParseRationalValues(t *testing.T) {
 	}{
 		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
 		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0), nil, tag.ErrTagTypeNotValid},
-		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.Rational{{3095, 3096}}, nil},
-		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 1, 2, 0), []tag.Rational{{3097, 3098}}, nil},
-		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 2, 2, 0), []tag.Rational{{3095, 3096}, {3095, 3096}}, nil},
+		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.Rational{{Numerator: 3095, Denominator: 3096}}, nil},
+		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 1, 2, 0), []tag.Rational{{Numerator: 3097, Denominator: 3098}}, nil},
+		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeRational, 2, 2, 0), []tag.Rational{{Numerator: 3095, Denominator: 3096}, {Numerator: 3095, Denominator: 3096}}, nil},
 		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 10, 0), nil, io.EOF},
 	}
 
@@ -272,9 +272,9 @@ func TestParseSRationalValues(t *testing.T) {
 	}{
 		{"1", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeASCII, 10, 2, 0), nil, tag.ErrTagTypeNotValid},
 		{"2", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0), nil, tag.ErrTagTypeNotValid},
-		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{3095, 3096}}, nil},
-		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{3097, 3098}}, nil},
-		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 2, 2, 0), []tag.SRational{{3095, 3096}, {3095, 3096}}, nil},
+		{"3", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{Numerator: 3095, Denominator: 3096}}, nil},
+		{"4", []byte{0, 0, 0, 0, 12, 25, 0, 0, 12, 26}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 1, 2, 0), []tag.SRational{{Numerator: 3097, Denominator: 3098}}, nil},
+		{"5", []byte{0, 0, 0, 0, 12, 23, 0, 0, 12, 24, 0, 0, 12, 23, 0, 0, 12, 24}, tag.NewTag(ifds.ApertureValue, tag.TypeSignedRational, 2, 2, 0), []tag.SRational{{Numerator: 3095, Denominator: 3096}, {Numerator: 3095, Denominator: 3096}}, nil},
 		{"6", []byte{}, tag.NewTag(ifds.ActiveArea, tag.TypeRational, 1, 10, 0), nil, io.EOF},
 	}
 
