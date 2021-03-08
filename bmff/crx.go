@@ -25,6 +25,7 @@ var (
 	CR3XPacketUUID = meta.UUID{190, 122, 207, 203, 151, 169, 66, 232, 156, 113, 153, 148, 145, 227, 175, 172}
 )
 
+// CrxMoovBox is a Canon Raw Moov Box
 type CrxMoovBox struct {
 	Meta CR3MetaBox
 }

@@ -14,6 +14,7 @@ var (
 
 	// ErrItemNotFound is returned as en error when an Item was not Found.
 	ErrItemNotFound = errors.New("item not found")
+
 	// ErrInfeVersionNotSupported is returned when an infe box with an unsupported was found.
 	ErrInfeVersionNotSupported = errors.New("infe box version not supported")
 )
@@ -197,24 +198,24 @@ func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
 		return
 	}
 
-	switch ie.ItemType {
-	case ItemTypeMime:
-		_, _ = b.readString()
-		if b.anyRemain() {
-			_, _ = b.readString()
-		}
-		//ie.ContentType, _ = outer.r.readString()
-		//if outer.r.anyRemain() {
-		//	ie.ContentEncoding, _ = outer.r.readString()
-		//}
-	case ItemTypeURI:
-		_, _ = b.readString()
-		//ie.ItemURIType, _ = outer.r.readString()
-	}
+	//switch ie.ItemType {
+	//case ItemTypeMime:
+	//	_, _ = b.readString()
+	//	if b.anyRemain() {
+	//		_, _ = b.readString()
+	//	}
+	//ie.ContentType, _ = outer.r.readString()
+	//if outer.r.anyRemain() {
+	//	ie.ContentEncoding, _ = outer.r.readString()
+	//}
+	//case ItemTypeURI:
+	//	_, _ = b.readString()
+	//ie.ItemURIType, _ = outer.r.readString()
+	//}
 	if debugFlag {
 		traceBoxWithFlags(ie, *b, flags)
 	}
-	return
+	return ie, b.discard(b.remain)
 }
 
 // ItemLocationBox is a "iloc" box

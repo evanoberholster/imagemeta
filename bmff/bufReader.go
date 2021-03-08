@@ -23,14 +23,11 @@ var (
 // bufReader adds some HEIF/BMFF-specific methods around a *bufio.Reader.
 type bufReader struct {
 	*bufio.Reader
-	//err    error
 	offset int
 	remain int
 }
 
-// ok reports whether all previous reads have been error-free.
-//func (br *bufReader) ok() bool { return br.err == nil }
-
+// anyRemain returns true if bufReader has unread bytes.
 func (br *bufReader) anyRemain() bool {
 	return br.remain > 0
 }
@@ -56,7 +53,7 @@ func (br *bufReader) discard(n int) (err error) {
 		return nil
 	}
 	if br.remain < n {
-		n = br.remain // limit discarded amount to remaining in bufReader
+		n = br.remain // limit discard to amount remaining in bufReader
 	}
 	n, err = br.Discard(n)
 	br.remain -= n

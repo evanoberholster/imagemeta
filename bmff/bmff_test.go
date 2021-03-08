@@ -22,7 +22,7 @@ var testFtyp = []struct {
 	{"iPhone 11", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone11.sample", 20, nil, true},
 	{"iPhone 12", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiHE, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone12.sample", 20, nil, true},
 	{"CanonR6 CR3", FileTypeBox{MajorBrand: brandCrx, MinorVersion: "\x00\x00\x00\x01", Compatible: [brandCount]Brand{brandCrx, brandIsom}}, "", "samples/canonR6.sample", 20, nil, true},
-	//{"Avif Ftyp", FileTypeBox{MajorBrand: brandAvif, MinorVersion: "", Compatible: [6]Brand{}}, []byte("uri  "), 20, nil, true},
+	{"Avif Ftyp", FileTypeBox{MajorBrand: brandAvif, MinorVersion: "", Compatible: [brandCount]Brand{brandAvif, brandMif1, brandMiaf, brandMA1B}}, "", "samples/avif.sample", 20, nil, true},
 }
 
 //func TestGenSamples(t *testing.T) {

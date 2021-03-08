@@ -71,9 +71,7 @@ func (b *box) parseHandlerBox() (hdlr HandlerBox, err error) {
 	if err != nil {
 		return
 	}
-	if err = b.discard(24); err != nil {
-		return
-	}
+	_ = b.discard(24)
 
 	hdlr.Flags = Flags(heicByteOrder.Uint32(buf[:4]))
 	hdlr.HandlerType = handler(buf[8:12])
@@ -104,6 +102,7 @@ func (iref ItemTypeReferenceBox) Type() BoxType {
 func parseIref(outer *box) (Box, error) {
 	return outer.parseItemTypeReferenceBox()
 }
+
 func (b *box) parseItemTypeReferenceBox() (iref ItemTypeReferenceBox, err error) {
 	iref.size = uint32(b.size)
 	iref.Flags, err = b.readFlags()

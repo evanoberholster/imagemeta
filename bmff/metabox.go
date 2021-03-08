@@ -75,8 +75,8 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 			mb.ItemInfo, err = inner.parseItemInfoBox()
 		case TypeHdlr:
 			mb.Handler, err = inner.parseHandlerBox()
-		case TypeIprp:
-			mb.Properties, err = inner.parseItemPropertiesBox()
+		//case TypeIprp:
+		//	mb.Properties, err = inner.parseItemPropertiesBox()
 		case TypeIloc:
 			mb.Location, err = inner.parseItemLocationBox()
 		default:

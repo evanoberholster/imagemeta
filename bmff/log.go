@@ -34,12 +34,6 @@ func (std STDLogger) Debug(format string, args ...interface{}) {
 
 }
 
-// Debug
-// Info
-// Warn
-// Error
-// Level
-
 func traceBox(b Box, b2 box) {
 	if log == nil {
 		return

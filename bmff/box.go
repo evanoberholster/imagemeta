@@ -1,12 +1,8 @@
 package bmff
 
 import (
-	"errors"
 	"fmt"
 )
-
-// ErrUnknownParser is returned by Box.Parse for unrecognized box parser.
-var ErrUnknownParser = errors.New("error no parser for box")
 
 // BoxType is an ISOBMFF box
 type BoxType uint8
@@ -209,7 +205,6 @@ func boxType(buf []byte) BoxType {
 
 // Box is an interface for different BMFF boxes.
 type Box interface {
-	//Size() int64 // 0 means unknown (will read to end of file)
 	Type() BoxType
 }
 
@@ -243,12 +238,11 @@ type box struct {
 	boxType BoxType
 }
 
+func (b box) Size() int64   { return b.size }
+func (b box) Type() BoxType { return b.boxType }
 func (b box) String() string {
 	return fmt.Sprintf("(Box) type:'%s', offset:%d, size:%d", b.boxType, b.offset, b.size)
 }
-
-func (b box) Size() int64   { return b.size }
-func (b box) Type() BoxType { return b.boxType }
 
 func (b *box) Parse() (Box, error) {
 	if !b.anyRemain() {
@@ -271,8 +265,8 @@ var parsers map[BoxType]parserFunc
 
 func init() {
 	parsers = map[BoxType]parserFunc{
-		TypeDinf: parseDataInformationBox,
 		//boxType("dref"): parseDataReferenceBox,
+		TypeDinf: parseDinf,
 		TypeFtyp: parseFtyp,
 		TypeHdlr: parseHdlr,
 		TypeIinf: parseIinf,
@@ -303,10 +297,13 @@ func (dinf DataInformationBox) Type() BoxType {
 	return TypeDinf
 }
 
-func parseDataInformationBox(outer *box) (Box, error) {
+func parseDinf(outer *box) (Box, error) {
+	return outer.parseDataInformationBox()
+}
+
+func (b *box) parseDataInformationBox() (Box, error) {
 	dib := DataInformationBox{}
-	//br.parseAppendBoxes(&dib.Children)
-	return dib, outer.discard(outer.remain)
+	return dib, b.discard(b.remain)
 }
 
 // UnknownBox is a box that was unable to be parsed.
