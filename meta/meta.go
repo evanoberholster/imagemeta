@@ -66,6 +66,7 @@ func (h ExifHeader) IsValid() bool {
 func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
+		FirstIfd:         ifds.RootIFD,
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,
