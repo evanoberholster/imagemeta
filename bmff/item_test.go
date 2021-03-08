@@ -72,7 +72,7 @@ func TestParseItemPropertiesBox(t *testing.T) {
 	iprp := ItemPropertiesBox{}
 	assert.Equal(t, TypeIprp, iprp.Type())
 
-	iprp2 := ItemPropertiesBox{Associations: make([]ItemPropertyAssociation, 2)}
+	iprp2 := ItemPropertiesBox{Associations: ItemPropertyAssociation{Entries: make([]ItemPropertyAssociationItem, 2)}}
 	assert.NotEqual(t, iprp.String(), iprp2.String())
 }
 func TestParseItemPropertyContainerBox(t *testing.T) {

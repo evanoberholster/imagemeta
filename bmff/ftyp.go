@@ -26,6 +26,7 @@ const (
 	brandIso8 // 'iso8': sequence
 	brandIsom // 'isom' : ?
 	brandM4A  // 'M4A '
+	brandMA1B // 'MA1B'
 	brandMeta // 'meta': meta
 	brandMiaf // 'miaf' :
 	brandMiAn // 'MiAn'
@@ -56,6 +57,7 @@ var mapStringBrand = map[string]Brand{
 	"iso8": brandIso8,
 	"isom": brandIsom,
 	"M4A ": brandM4A,
+	"MA1B": brandMA1B,
 	"meta": brandMeta,
 	"miaf": brandMiaf,
 	"MiAn": brandMiAn,
@@ -86,6 +88,7 @@ var mapBrandString = map[Brand]string{
 	brandIso8: "iso8",
 	brandIsom: "isom",
 	brandM4A:  "M4A ",
+	brandMA1B: "MA1B",
 	brandMeta: "meta",
 	brandMiaf: "miaf",
 	brandMiAn: "MiAn",

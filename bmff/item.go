@@ -3,6 +3,7 @@ package bmff
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -357,7 +358,8 @@ func (ol OffsetLength) String() string {
 // ItemPropertiesBox is an ISOBMFF "iprp" box
 type ItemPropertiesBox struct {
 	PropertyContainer ItemPropertyContainerBox
-	Associations      []ItemPropertyAssociation // at least 1
+	//Associations      []ItemPropertyAssociation // at least 1
+	Associations ItemPropertyAssociation
 }
 
 // Type returns TypeIprp
@@ -366,7 +368,24 @@ func (iprp ItemPropertiesBox) Type() BoxType {
 }
 
 func (iprp ItemPropertiesBox) String() string {
-	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations))
+	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations.Entries))
+}
+
+func (iprp ItemPropertiesBox) ContainerByID(id uint16, boxType BoxType) (Box, error) {
+	for _, entry := range iprp.Associations.Entries {
+		if entry.ItemID == uint32(id) {
+			for i := 0; i < len(entry.Associations) && entry.Associations[i] < uint16(len(iprp.PropertyContainer.Properties)); i++ {
+				if entry.Associations[i] == 0 {
+					continue
+				}
+				b := iprp.PropertyContainer.Properties[entry.Associations[i]-1]
+				if b.Type() == boxType {
+					return b, nil
+				}
+			}
+		}
+	}
+	return nil, ErrItemNotFound
 }
 
 func parseIprp(outer *box) (Box, error) {
@@ -397,7 +416,8 @@ func (b *box) parseItemPropertiesBox() (ip ItemPropertiesBox, err error) {
 				err = errors.Wrap(err, "parseItemPropertiesBox")
 				return
 			}
-			ip.Associations = append(ip.Associations, ipma)
+			ip.Associations = ipma
+			//ip.Associations = append(ip.Associations, ipma)
 		default:
 			if debugFlag {
 				log.Debug("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
@@ -538,6 +558,16 @@ type ItemPropertyAssociationItem struct {
 	Associations [6]uint16
 	//AssociationsCount uint32 // as declared
 	//Associations      []ItemProperty // as parsed
+}
+
+func (ipai ItemPropertyAssociationItem) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("ItemID:%d {", ipai.ItemID))
+	for i := 0; i < len(ipai.Associations); i++ {
+		sb.WriteString(fmt.Sprintf("%d,", ipai.Associations[i]))
+	}
+	sb.WriteString("}")
+	return sb.String()
 }
 
 // ItemProperty is not a box
