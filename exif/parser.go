@@ -66,8 +66,6 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 		return
 	}
 
-	sub, _ := e.ParseSubSec(subSec)
-
 	// Read GPS DateStamp Tag with the format is "YYYY:MM:DD."
 	var buf []byte
 	buf, err = e.er.TagValue(ds)
@@ -76,7 +74,7 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 		return
 	}
 
-	// check recieved value
+	// Parse yyyy:mm:dd from recieved value
 	if buf[4] == ':' && buf[7] == ':' { //&& buf[10] == '.' {
 		year := parseUint(buf[0:4])
 		month := parseUint(buf[5:7])
@@ -92,9 +90,12 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 		min := int(byteOrder.Uint32(buf[8:12]) / byteOrder.Uint32(buf[12:16]))
 		sec := int(byteOrder.Uint32(buf[16:20]) / byteOrder.Uint32(buf[20:24]))
 
+		sub, _ := e.ParseSubSec(subSec)
+
 		if tz == nil {
 			tz = time.UTC
 		}
+
 		return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), int(sub), tz), nil
 	}
 	return time.Time{}, ErrParseTimeStamp
@@ -120,7 +121,7 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 
 	// Read Reference Tag
 	// Coordinate is a negative value for a South or West Orientation
-	e.er.byteOrder.PutUint32(buf[:4], refTag.ValueOffset)
+	buf = e.er.embeddedTagValue(refTag.ValueOffset)
 	if buf[0] == 'S' || buf[0] == 'W' {
 		coord *= -1
 	}
@@ -131,8 +132,8 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 // Returns ErrParseSubSecond if an err occurs
 func (e *Data) ParseSubSec(subSec tag.Tag) (int, error) {
 	if subSec.Type() == tag.TypeASCII && subSec.IsEmbedded() {
-		e.er.byteOrder.PutUint32(e.er.rawBuffer[:4], subSec.ValueOffset)
-		return int(parseUint(e.er.rawBuffer[:3]) * 1000000), nil
+		buf := e.er.embeddedTagValue(subSec.ValueOffset)
+		return int(parseUint(buf) * 1000000), nil
 	}
 	return 0, ErrParseSubSecond
 }
@@ -141,34 +142,14 @@ func (e *Data) ParseSubSec(subSec tag.Tag) (int, error) {
 // Low-Level Parsers
 ////
 
-// RawEncodedBytes returns the raw encoded bytes for the value that we represent.
-//func rawEncodedBytes(r *reader, t tag.Tag) (buf []byte, err error) {
-//	// check if Value is Embedded
-//	if t.IsEmbedded() {
-//		r.ByteOrder().PutUint32(r.rawBuffer[:4], t.ValueOffset)
-//		return r.rawBuffer[:4], nil
-//	}
-//
-//	byteLength := t.Size()
-//	if byteLength <= len(r.rawBuffer) {
-//		return r.ReadBufferAt(byteLength, int64(t.ValueOffset))
-//	}
-//
-//	buf = make([]byte, byteLength)
-//	if _, err = r.ReadAt(buf[:byteLength], int64(t.ValueOffset)); err != nil {
-//		return nil, err
-//	}
-//	return buf[:byteLength], nil
-//}
-
 // ParseASCIIValue parses the ASCII value of the tag as a string
 // and returns an error if it encounters one
 func (e *Data) ParseASCIIValue(t tag.Tag) (value string, err error) {
-	if t.Type().IsValid() {
-		// TODO: Needs Typecheck
-
+	if t.Type().IsValid() { // TODO: Needs Typecheck
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		buf, err := e.er.TagValue(t)
+		if err != nil {
+			err = errors.Wrap(err, "ParseASCIIValue")
 			return "", err
 		}
 
@@ -183,7 +164,7 @@ func (e *Data) ParseASCIIValue(t tag.Tag) (value string, err error) {
 //
 // Warning: it returns only the first value if there are more values
 // use Uint16Values function
-func (e *Data) ParseUint16Value(t tag.Tag) (value uint16, err error) {
+func (e *Data) ParseUint16Value(t tag.Tag) (uint16, error) {
 	v, err := e.ParseUint32Value(t)
 	return uint16(v), err
 }
@@ -194,30 +175,22 @@ func (e *Data) ParseUint16Value(t tag.Tag) (value uint16, err error) {
 // Warning: it returns only the first value if there are more values
 // use Uint16Values (Short) or Unit32Values (Long) function
 func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
-	if t.Type() == tag.TypeLong {
-		if t.IsEmbedded() {
-			return t.ValueOffset, nil
-		}
+	if t.Type().IsValid() && t.UnitCount == 1 {
 		var buf []byte
 		buf, err = e.er.TagValue(t)
 		if err != nil {
 			return
 		}
+		byteOrder := e.er.ByteOrder()
+
 		if t.Type() == tag.TypeShort {
-			value = uint32(e.er.byteOrder.Uint16(buf[:2]))
+			value = uint32(byteOrder.Uint16(buf[:2]))
 		}
 		if t.Type() == tag.TypeLong {
-			value = e.er.byteOrder.Uint32(buf[:4])
+			value = byteOrder.Uint32(buf[:4])
 		}
 		return
 	}
-	if t.Type() == tag.TypeShort {
-		if t.IsEmbedded() {
-			e.er.byteOrder.PutUint32(e.er.rawBuffer[:4], t.ValueOffset)
-			return uint32(e.er.byteOrder.Uint16(e.er.rawBuffer[:2])), nil
-		}
-	}
-
 	return 0, tag.ErrTagTypeNotValid
 }
 
@@ -226,18 +199,17 @@ func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
 	if t.Type() == tag.TypeShort {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
-			return nil, err
+		buf, err = e.er.TagValue(t)
+		if err != nil {
+			return
 		}
 
-		if len(buf) < t.Size() {
-			err = tag.ErrNotEnoughData
-		}
-
+		byteOrder := e.er.ByteOrder()
 		count := int(t.UnitCount)
+
 		value = make([]uint16, count)
 		for i := 0; i < count; i++ {
-			value[i] = e.er.byteOrder.Uint16(buf[i*2:])
+			value[i] = byteOrder.Uint16(buf[i*2:])
 		}
 
 		return
@@ -250,22 +222,17 @@ func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
 //
 func (e *Data) ParseUint32Values(t tag.Tag) (value []uint32, err error) {
 	if t.Type() == tag.TypeLong {
-		if t.IsEmbedded() {
-			return append(value, t.ValueOffset), nil
-		}
 		var buf []byte
 		if buf, err = e.er.TagValue(t); err != nil {
 			return nil, err
 		}
 
-		if len(buf) < t.Size() {
-			err = tag.ErrNotEnoughData
-		}
-
+		byteOrder := e.er.ByteOrder()
 		count := int(t.UnitCount)
+
 		value = make([]uint32, count)
 		for i := 0; i < count; i++ {
-			value[i] = e.er.byteOrder.Uint32(buf[i*4:])
+			value[i] = byteOrder.Uint32(buf[i*4:])
 		}
 
 		return
@@ -281,13 +248,14 @@ func (e *Data) ParseRationalValue(t tag.Tag) (n, d uint32, err error) {
 			err = ErrParseRationals
 			return
 		}
-
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		buf, err = e.er.TagValue(t)
+		if err != nil {
 			return
 		}
-		n = e.er.byteOrder.Uint32(buf[:4])
-		d = e.er.byteOrder.Uint32(buf[4:8])
+		byteOrder := e.er.ByteOrder()
+		n = byteOrder.Uint32(buf[:4])
+		d = byteOrder.Uint32(buf[4:8])
 	}
 	return
 }
@@ -305,11 +273,6 @@ func (e *Data) ParseRationalValues(t tag.Tag) (value []tag.Rational, err error) 
 		if buf, err = e.er.TagValue(t); err != nil {
 			return nil, err
 		}
-
-		if len(buf) < t.Size() {
-			return nil, tag.ErrNotEnoughData
-		}
-
 		byteOrder := e.er.ByteOrder()
 		count := int(t.UnitCount)
 
@@ -330,10 +293,6 @@ func (e *Data) ParseSRationalValues(t tag.Tag) (value []tag.SRational, err error
 		var buf []byte
 		if buf, err = e.er.TagValue(t); err != nil {
 			return nil, err
-		}
-
-		if len(buf) < t.Size() {
-			return nil, tag.ErrNotEnoughData
 		}
 
 		byteOrder := e.er.ByteOrder()

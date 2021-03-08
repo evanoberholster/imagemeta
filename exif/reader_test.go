@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"testing"
-
-	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 // TODO: Write tests for exifReader
@@ -29,17 +26,6 @@ func TestExifReader(t *testing.T) {
 	// ByteOrder
 	if er.ByteOrder() != binary.BigEndian {
 		t.Errorf("Error with ByteOrder")
-	}
-
-	// SetHeader
-	th := tiff.NewHeader(byteOrder, exifOffset, exifOffset, 0, imagetype.ImageUnknown)
-	if err := er.SetHeader(Header(th)); err != nil {
-		t.Errorf("Error with reader.SetHeader expected no error")
-	}
-
-	// SetHeader (Invalid Header)
-	if err := er.SetHeader(Header{}); err != ErrInvalidHeader {
-		t.Errorf("Error with reader.SetHeader %s, expected %s", err.Error(), ErrInvalidHeader.Error())
 	}
 
 	// TODO: test Reader

@@ -110,7 +110,7 @@ func BenchmarkParseExif100(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				b.StartTimer()
-				e.GPSDate(nil)
+				e.Aperture()
 			}
 		})
 	}

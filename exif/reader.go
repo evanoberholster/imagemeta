@@ -2,10 +2,10 @@ package exif
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/tag"
+	"github.com/pkg/errors"
 )
 
 // reader errors
@@ -60,24 +60,6 @@ func (er *reader) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (er *reader) TagValue(t tag.Tag) (buf []byte, err error) {
-	// check if Value is Embedded
-	if t.IsEmbedded() {
-		er.ByteOrder().PutUint32(er.rawBuffer[:4], t.ValueOffset)
-		return er.rawBuffer[:4], nil
-	}
-
-	byteLength := t.Size()
-	if byteLength <= len(er.rawBuffer) {
-		buf = er.rawBuffer[:byteLength]
-	} else {
-		buf = make([]byte, byteLength)
-	}
-	exifOffset := er.ifdExifOffset[t.Ifd]
-	_, err = er.reader.ReadAt(buf[:byteLength], int64(exifOffset+t.ValueOffset))
-	return buf[:byteLength], err
-}
-
 // ReadAt reads from ExifReader at the given offset
 func (er reader) ReadAt(p []byte, off int64) (n int, err error) {
 	if off < 0 {
@@ -94,20 +76,34 @@ func (er reader) ReadBufferAt(n int, off int64) ([]byte, error) {
 	return er.rawBuffer[:n], err
 }
 
+// TagValue returns the Tag's Value as a byte slice.
+// It allocates a new []byte when the value is larger than the exifReader's underlying rawBuffer
+// and it is not a an embedded tag.
+func (er *reader) TagValue(t tag.Tag) (buf []byte, err error) {
+	if t.IsEmbedded() { // check if Value is Embedded
+		return er.embeddedTagValue(t.ValueOffset), nil
+	}
+
+	byteLength := t.Size()
+	if byteLength <= rawBufferSize {
+		buf = er.rawBuffer[:byteLength]
+	} else {
+		buf = make([]byte, byteLength)
+	}
+	exifOffset := er.ifdExifOffset[t.Ifd] // Offset for the given Tag's Ifd
+	n, err := er.reader.ReadAt(buf[:byteLength], int64(exifOffset+t.ValueOffset))
+	if n < t.Size() {
+		err = errors.Wrap(err, tag.ErrNotEnoughData.Error()) // FixMe Please
+	}
+	return buf[:byteLength], err
+}
+
+func (er *reader) embeddedTagValue(valueOffset uint32) []byte {
+	er.byteOrder.PutUint32(er.rawBuffer[:4], valueOffset)
+	return er.rawBuffer[:4]
+}
+
 // ByteOrder returns the ExifReader's byteOrder
 func (er *reader) ByteOrder() binary.ByteOrder {
 	return er.byteOrder
-}
-
-// SetHeader sets the ByteOrder, exifOffset and exifLength of an ExifReader
-// from a TiffHeader and sets the ExifReader read offset to 0
-func (er *reader) SetHeader(header Header) error {
-	if !header.IsValid() {
-		return ErrInvalidHeader
-	}
-	er.byteOrder = header.ByteOrder
-	er.exifOffset = int64(header.TiffHeaderOffset)
-	er.exifLength = header.ExifLength
-	er.offset = 0
-	return nil
 }

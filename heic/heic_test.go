@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"os"
 	"testing"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // TODO: write tests
@@ -47,7 +49,7 @@ func BenchmarkHeicDecodeExif(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				hm, err := NewMetadata(br)
+				hm, err := NewMetadata(br, meta.Metadata{})
 				if err != nil {
 					b.Fatal(err)
 				}

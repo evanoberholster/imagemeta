@@ -47,6 +47,8 @@ func (e *Data) AddTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
 	switch ifd {
 	case ifds.RootIFD, ifds.SubIFD, ifds.ExifIFD, ifds.GPSIFD, ifds.MknoteIFD:
 		e.ifdMap[ifds.NewKey(ifd, ifdIndex, t.ID)] = t
+	default:
+		// trace UnknownIFD
 	}
 }
 

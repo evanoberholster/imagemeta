@@ -7,13 +7,12 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/cr3"
 	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
-	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 // Errors
@@ -33,34 +32,23 @@ type Reader interface {
 
 // Metadata from an Image. The ExifDecodeFn and XmpDecodeFn
 // are responsible for decoding their respective data.
-type Metadata struct {
-	r            Reader
-	ExifDecodeFn exif.DecodeFn
-	XmpDecodeFn  xmp.DecodeFn
-	images       uint16
-	exifHeader   exif.Header
-	xmpHeader    xmp.Header
-	size         meta.Dimensions
-	t            imagetype.ImageType
+type ImageMetadata struct {
+	meta.Metadata
+	r      Reader
+	images uint16
 	//Thumbnail Offsets
 }
 
-// Dimensions returns the primary image's width and height dimensions
-func (m Metadata) Dimensions() meta.Dimensions {
-	return m.size
-}
-
 // NewMetadata creates a new Metadata
-func NewMetadata(r Reader, xmpDecodeFn xmp.DecodeFn, exifDecodeFn exif.DecodeFn) (meta *Metadata, err error) {
-	meta = &Metadata{
-		r:            r,
-		XmpDecodeFn:  xmpDecodeFn,
-		ExifDecodeFn: exifDecodeFn}
+func NewMetadata(r Reader, xmpDecodeFn meta.XmpDecodeFn, exifDecodeFn meta.ExifDecodeFn) (meta *ImageMetadata, err error) {
+	meta = &ImageMetadata{r: r}
+	meta.XmpDecodeFn = xmpDecodeFn
+	meta.ExifDecodeFn = exifDecodeFn
 	// Create New bufio.Reader w/ 6KB because of XMP processing
 	br := bufio.NewReaderSize(r, 160)
 	// Pool
 	// Identify image Type
-	meta.t, err = imagetype.ScanBuf(br) // no discard
+	meta.It, err = imagetype.ScanBuf(br) // no discard
 	if err != nil {
 		return
 	}
@@ -69,8 +57,8 @@ func NewMetadata(r Reader, xmpDecodeFn xmp.DecodeFn, exifDecodeFn exif.DecodeFn)
 	return
 }
 
-func (m *Metadata) parse(br *bufio.Reader) (err error) {
-	switch m.t {
+func (m *ImageMetadata) parse(br *bufio.Reader) (err error) {
+	switch m.It {
 	case imagetype.ImageXMP:
 		return m.parseXmp(br)
 	case imagetype.ImageJPEG:
@@ -79,24 +67,24 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 		err = ErrMetadataNotSupported
 		return
 	case imagetype.ImageNEF:
-		return m.parseTiff(br, m.t)
+		return m.parseTiff(br)
 	case imagetype.ImageCR2:
-		return m.parseTiff(br, m.t)
+		return m.parseTiff(br)
 	case imagetype.ImageCR3:
-		err = ErrMetadataNotSupported
-		return
+		return m.parseCR3(br)
 	case imagetype.ImageHEIF:
 		return m.parseHeic(br)
 	case imagetype.ImageAVIF:
-		err = ErrMetadataNotSupported
-		return
+		return m.parseHeic(br)
+		//err = ErrMetadataNotSupported
+		//return
 	case imagetype.ImagePNG:
 		err = ErrMetadataNotSupported
 		return
 	default:
 		// process as Tiff
 		// Bruteforce search for Exif header
-		return m.parseTiff(br, m.t)
+		return m.parseTiff(br)
 	}
 }
 
@@ -105,15 +93,12 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 //
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
-func (m *Metadata) parseJpeg(br *bufio.Reader) (err error) {
-	jpegMeta, err := jpeg.ScanJPEG(br, m.XmpDecodeFn, m.ExifDecodeFn)
+func (m *ImageMetadata) parseJpeg(br *bufio.Reader) (err error) {
+	jpegMeta, err := jpeg.ScanJPEG(br, m.Metadata)
 	if err != nil {
 		return
 	}
-	m.exifHeader = jpegMeta.ExifHeader
-	m.xmpHeader = jpegMeta.XmpHeader
-	width, height := jpegMeta.Size()
-	m.size = meta.NewDimensions(uint32(width), uint32(height))
+	m.Metadata = jpegMeta.Metadata
 	m.images = 1
 	return nil
 }
@@ -121,9 +106,9 @@ func (m *Metadata) parseJpeg(br *bufio.Reader) (err error) {
 // parseXmp uses the 'xmp' package to identify and parse the metadata.
 //
 // Will use the custom decode function: XmpDecodeFn if it is not nil.
-func (m *Metadata) parseXmp(br *bufio.Reader) (err error) {
+func (m *ImageMetadata) parseXmp(br *bufio.Reader) (err error) {
 	if m.XmpDecodeFn != nil {
-		return m.XmpDecodeFn(br, xmp.NewHeader(0, 0))
+		return m.XmpDecodeFn(br, meta.NewXMPHeader(0, 0))
 	}
 	return ErrNoXmpDecodeFn
 }
@@ -133,28 +118,42 @@ func (m *Metadata) parseXmp(br *bufio.Reader) (err error) {
 //
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
-func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
+func (m *ImageMetadata) parseHeic(br *bufio.Reader) (err error) {
 	if _, err = m.r.Seek(0, 0); err != nil {
 		return
 	}
-	hm, err := heic.NewMetadata(m.r)
+	hm, err := heic.NewMetadata(m.r, m.Metadata)
 	if err != nil {
 		return err
 	}
-	hm.ExifDecodeFn = m.ExifDecodeFn
-	m.exifHeader = hm.ExifHeader
-	m.xmpHeader = hm.XmpHeader
-	m.size = hm.Dimensions()
+	//m.Metadata = hm.Metadata
 	m.images = hm.Images()
 	if m.ExifDecodeFn != nil {
 		err = hm.DecodeExif(m.r)
 	}
-	if m.XmpDecodeFn != nil {
-		return m.XmpDecodeFn(m.r, hm.XmpHeader)
+	if hm.XmpDecodeFn != nil {
+		return hm.XmpDecodeFn(m.r, hm.XmpHeader)
 	}
+	m.Metadata = hm.Metadata
 	// Add Support for XMP
 	//hm.DecodeXmp(m.r)
 	return err
+}
+
+func (m *ImageMetadata) parseCR3(br *bufio.Reader) (err error) {
+	cr3, err := cr3.NewMetadata(br, m.Metadata)
+	if err != nil {
+		return err
+	}
+
+	if err = cr3.DecodeExif(br); err != nil {
+		return
+	}
+	if err = cr3.DecodeXMP(br); err != nil {
+		return
+	}
+	m.Metadata = cr3.Metadata
+	return nil
 }
 
 // parseTiff uses the 'tiff' package to identify the metadata and
@@ -162,13 +161,14 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 //
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
-func (m *Metadata) parseTiff(br *bufio.Reader, imageType imagetype.ImageType) (err error) {
+func (m *ImageMetadata) parseTiff(br *bufio.Reader) (err error) {
 	// package tiff -> exif
 	header, err := tiff.Scan(br)
 	if err != nil {
 		return
 	}
+	m.Metadata.ExifHeader = header
 	// Update Header's ImageType
-	header.ImageType = imageType
-	return m.ExifDecodeFn(m.r, exif.Header(header))
+	header.ImageType = m.It
+	return m.ExifDecodeFn(m.r, header)
 }

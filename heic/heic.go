@@ -8,10 +8,9 @@ import (
 	"io"
 
 	"github.com/evanoberholster/imagemeta/bmff"
-	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 // TODO:
@@ -26,32 +25,20 @@ var (
 
 // Metadata is an Heic file's Metadata
 type Metadata struct {
+	meta.Metadata
 	// Reader
-	r io.Reader
-	// Custom Decoder interface
-	ExifDecodeFn exif.DecodeFn
-	ExifHeader   exif.Header
-	XmpDecodeFn  xmp.DecodeFn
-	XmpHeader    xmp.Header
-	FileType     bmff.FileTypeBox
-	Meta         bmff.MetaBox
+	r        io.Reader
+	FileType bmff.FileTypeBox
+	Meta     bmff.MetaBox
 	//Thumbnail []byte
-	dim meta.Dimensions
-	n   uint16 // Num Images
-	t   imagetype.ImageType
+	n uint16 // Num Images
 }
 
 // NewMetadata returns a new heic.Metadata
-func NewMetadata(r io.Reader) (m *Metadata, err error) {
-	m = &Metadata{r: r, t: imagetype.ImageHEIF}
-	err = m.getMeta()
-	return m, err
-}
-
-// Dimensions returns the meta.Dimensions of the
-// Primary Image.
-func (hm Metadata) Dimensions() meta.Dimensions {
-	return hm.dim
+func NewMetadata(r io.Reader, m meta.Metadata) (hm *Metadata, err error) {
+	hm = &Metadata{r: r, Metadata: m}
+	err = hm.getMeta()
+	return hm, err
 }
 
 // Images returns the number of images.
@@ -73,11 +60,14 @@ func (hm *Metadata) getMeta() (err error) {
 	}
 
 	// Find PITM and set Dimensions
-	// TODO: fetch PitM, # images, and dimensions
-	hm.dim = meta.NewDimensions(0, 0)
+	b, err := hm.Meta.Properties.ContainerByID(hm.Meta.Primary.ItemID, bmff.TypeIspe)
+	if err != nil {
+		return
+	}
+	if ispe, ok := b.(bmff.ImageSpatialExtentsProperty); ok {
+		hm.Dim = meta.NewDimensions(ispe.W, ispe.H)
+	}
 	hm.n = 1
-
-	//fmt.Println(mb)
 	return nil
 }
 
@@ -108,22 +98,22 @@ func (hm *Metadata) ExifItem() (item Item, err error) {
 // If an error occurs returns the error.
 //
 // Utilizes the custom decoder ExifDecodeFn if it is not nil.
-func (hm *Metadata) DecodeExif(r meta.Reader) error {
+func (hm *Metadata) DecodeExif(r meta.Reader) (err error) {
 	item, err := hm.ExifItem()
 	if err != nil {
 		return err
 	}
-	header, err := readExifBox(r, hm.t, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
+	hm.ExifHeader, err = readExifBox(r, hm.It, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
 	if err != nil {
 		return err
 	}
 	if hm.ExifDecodeFn == nil {
 		return nil
 	}
-	return hm.ExifDecodeFn(r, header)
+	return hm.ExifDecodeFn(r, hm.ExifHeader)
 }
 
-func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header exif.Header, err error) {
+func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header meta.ExifHeader, err error) {
 	// Seek to Exif Box position
 	_, err = r.Seek(int64(offset), 0)
 	if err != nil {
@@ -148,7 +138,9 @@ func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, le
 	byteOrder := meta.BinaryOrder(buf[:4])
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
 	tiffHeaderOffset := int64(offset) + size + 4
-	return exif.NewHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), imageType), nil
+	header = meta.NewExifHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), imageType)
+	header.FirstIfd = ifds.RootIFD
+	return header, nil
 }
 
 func readBox(r io.Reader, buf [8]byte, boxType string) (size int64, err error) {

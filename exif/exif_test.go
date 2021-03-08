@@ -9,6 +9,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/stretchr/testify/assert"
 )
 
 // TODO: write more tests for ParseExif
@@ -43,8 +44,8 @@ func TestParseExif(t *testing.T) {
 			buf, _ := ioutil.ReadAll(f)
 			cb := bytes.NewReader(buf)
 			e, err := ScanExif(cb)
-			if err != nil {
-				t.Error(err)
+			if !assert.ErrorIs(t, err, nil) {
+				return
 			}
 			if e.CameraMake() != wantedExif.make {
 				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.CameraMake())

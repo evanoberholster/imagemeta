@@ -25,10 +25,8 @@ var (
 // to imagetypeUnknown.
 //
 // If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r io.ReaderAt) (e *Data, err error) {
-	er := newExifReader(r, nil, 0, 0)
-
-	br := bufio.NewReaderSize(er, 64)
+func ScanExif(r meta.Reader) (e *Data, err error) {
+	br := bufio.NewReaderSize(r, 64)
 
 	// Identify Image Type
 	it, err := imagetype.ScanBuf(br)
@@ -41,49 +39,42 @@ func ScanExif(r io.ReaderAt) (e *Data, err error) {
 	if err != nil {
 		return
 	}
+
 	// Update Imagetype in ExifHeader
 	header.ImageType = it
 
-	return ParseExif(er, Header(header))
+	// Set FirstIfd to RootIfd
+	header.FirstIfd = ifds.RootIFD
+
+	return ParseExif(r, header)
 }
 
 // ParseExif parses Exif metadata from an io.ReaderAt and a tiff.Header and
 // returns exif and an error.
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
-func ParseExif(r io.ReaderAt, header Header) (e *Data, err error) {
-	er := newExifReader(r, nil, 0, header.ExifLength)
-
-	// ExifData with an ExifReader attached
-	e = newData(er, header.ImageType)
-
-	// Set TiffHeader sets the ExifReader and checks
-	// the header's validity.
-	// Returns ErrInvalidHeader if header is not valid.
-	if err = er.SetHeader(header); err != nil {
-		return
-	}
-
-	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
-	err = scan(er, e, ifds.RootIFD, header.FirstIfdOffset)
-	return
+func ParseExif(r io.ReaderAt, header meta.ExifHeader) (e *Data, err error) {
+	e, err = e.ParseExif(r, header)
+	return e, err
 }
 
-func (e *Data) ParseExif(r io.ReaderAt, header Header) (err error) {
-	if header.ByteOrder == nil || e == nil {
-		return io.EOF
+func (e *Data) ParseExif(r io.ReaderAt, header meta.ExifHeader) (*Data, error) {
+	if !header.IsValid() {
+		return e, ErrInvalidHeader
 	}
 
-	e.imageType = header.ImageType
-	if e.ifdMap == nil {
-		e.er = newExifReader(r, header.ByteOrder, header.TiffHeaderOffset, header.ExifLength)
-		e.ifdMap = make(ifds.TagMap, 20)
+	if e == nil {
+		e = newData(newExifReader(r, header.ByteOrder, header.TiffHeaderOffset, header.ExifLength), header.ImageType)
 	}
+
 	e.er.exifOffset = int64(header.TiffHeaderOffset)
 	e.er.exifLength = header.ExifLength
 	e.er.offset = 0
 
-	// Scan the RootIFD with the FirstIfdOffset from the ExifReader
-	err = scan(e.er, e, header.FirstIfd, header.FirstIfdOffset)
-	return
+	if header.FirstIfd == ifds.NullIFD {
+		header.FirstIfd = ifds.RootIFD
+	}
+	// Scan the FirstIfd with the FirstIfdOffset from the ExifReader
+	err := scan(e.er, e, header.FirstIfd, header.FirstIfdOffset)
+	return e, err
 }

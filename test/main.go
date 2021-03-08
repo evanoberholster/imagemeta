@@ -11,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta/bmff"
 	"github.com/evanoberholster/imagemeta/cr3"
 	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
@@ -33,32 +34,34 @@ func main() {
 	}()
 	stdLogger := bmff.STDLogger{}
 	bmff.DebugLogger(stdLogger)
-	//parseHeic(f)
-	parseCR3(f)
+	parseHeic(f)
+	//parseCR3(f)
 }
 
-//func parseHeic(f meta.Reader) {
-//	hm, err := heic.NewMetadata(f)
-//	if err != nil {
-//		fmt.Println(err)
-//		// Error retrieving Heic Metadata
-//	}
-//	var e *exif.Data
-//	hm.ExifDecodeFn = func(r io.Reader, header exif.Header) error {
-//		e, err = exif.ParseExif(f, header)
-//		fmt.Println(e, err, header)
-//		return nil
-//	}
-//	err = hm.DecodeExif(f)
-//	fmt.Println(e, err)
-//	PrintExif(e)
-//}
+func parseHeic(f meta.Reader) {
+
+	hm, err := heic.NewMetadata(f, meta.Metadata{})
+	if err != nil {
+		fmt.Println(err)
+		// Error retrieving Heic Metadata
+	}
+	var e *exif.Data
+	hm.ExifDecodeFn = func(r io.Reader, header meta.ExifHeader) error {
+		e, err = exif.ParseExif(f, header)
+		fmt.Println(e, err, header)
+		return nil
+	}
+	err = hm.DecodeExif(f)
+	fmt.Println(e, err)
+	printExif(e)
+}
+
 //
 func parseCR3(f meta.Reader) {
-	m, err := cr3.NewMetadata(f)
+	m, err := cr3.NewMetadata(f, meta.Metadata{})
 	fmt.Println(m, err)
 	var XMP xmp.XMP
-	m.XmpDecodeFn = func(r io.Reader, header xmp.Header) error {
+	m.XmpDecodeFn = func(r io.Reader, header meta.XmpHeader) error {
 		start := time.Now()
 		XMP, err = xmp.ParseXmp(r)
 		elapsed := time.Since(start)
@@ -66,9 +69,9 @@ func parseCR3(f meta.Reader) {
 		return err
 	}
 
-	e := &exif.Data{}
-	m.ExifDecodeFn = func(r io.Reader, header exif.Header) (err error) {
-		err = e.ParseExif(f, header)
+	var e *exif.Data
+	m.ExifDecodeFn = func(r io.Reader, header meta.ExifHeader) (err error) {
+		e, err = e.ParseExif(f, header)
 		return err
 	}
 
