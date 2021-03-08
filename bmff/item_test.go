@@ -1,7 +1,6 @@
 package bmff
 
 import (
-	"bufio"
 	"io"
 	"testing"
 
@@ -32,7 +31,7 @@ func TestParseItemInfoBox(t *testing.T) {
 		{"Test3", []byte{0, 0, 0, 18, 'i', 'i', 'n', 'f', 0, 0, 0, 3, 0, 5, 0, 0, 18, 'i', 'n', 'f', 'd', 0, 0, 0, 0, 0}, ItemInfoBox{array2}, io.EOF},                                                              // CloseInnerBox Error
 		{"Test4", []byte{0, 0, 0, 18, 'i', 'i', 'n', 'f', 0, 0, 0, 3, 0, 5, 0, 0, 0, 2, 'i', 'n', 'f', 'e', 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, ItemInfoBox{array2}, io.EOF},                     // io.EOF
 		{"Test5", []byte{0, 0, 0, 18, 'i', 'i', 'n', 'f', 0, 0, 0, 3, 0, 5, 0, 0, 1, 0, 'i', 'n', 'f', 'e', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, ItemInfoBox{array2}, ErrInfeVersionNotSupported}, // ErrVersionNotSupported
-		{"Test6", []byte{0, 0, 0, 39, 'i', 'i', 'n', 'f', 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 'i', 'n', 'f', 'e', 2, 0, 0, 0, 2, 1, 0, 0, 'm', 'i', 'm', 'e', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, ItemInfoBox{array1}, bufio.ErrNegativeCount},
+		{"Test6", []byte{0, 0, 0, 39, 'i', 'i', 'n', 'f', 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 'i', 'n', 'f', 'e', 2, 0, 0, 0, 2, 1, 0, 0, 'm', 'i', 'm', 'e', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, ItemInfoBox{array1}, nil},
 	}
 	// Read ItemInfoEntry: [4]flags, [2]ItemID, [2]ProtectionIndex, [5]ItemType
 	//infeHeaderSize := 13
