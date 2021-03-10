@@ -69,9 +69,8 @@ func parseHeic(f meta.Reader) {
 		printExif(e)
 	}
 
-	_, err = hm.ReadXmpHeader(f)
-	f.Seek(int64(hm.XmpHeader.Offset), 0)
-	if err == nil {
+	if _, err = hm.ReadXmpHeader(f); err == nil {
+		_, err = f.Seek(int64(hm.XmpHeader.Offset), 0)
 		if err = m.XmpFn(f, m); err != nil {
 			panic(err)
 		}
