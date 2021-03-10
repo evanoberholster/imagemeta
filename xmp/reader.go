@@ -3,6 +3,7 @@ package xmp
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -35,11 +36,16 @@ type bufReader struct {
 // If the xmpRootTag is not found returns the error ErrNoXMP.
 func (br *bufReader) readRootTag() (tag Tag, err error) {
 	var buf []byte
+	discarded := 0
 	for {
 		if buf, err = br.Peek(18); err != nil {
 			if err == io.EOF {
 				err = ErrNoXMP
 			}
+			return
+		}
+		if len(buf) < 18 {
+			err = ErrNoXMP
 			return
 		}
 		for i := 0; i < 8; i++ {
@@ -48,10 +54,12 @@ func (br *bufReader) readRootTag() (tag Tag, err error) {
 					_, err = br.r.ReadSlice('>') // Read until end of the StartTag (RootTag)
 					tag.t = startTag
 					tag.self = xmpns.XMPRootProperty
+					fmt.Println("XMP Discarded:", discarded)
 					return tag, err
 				}
 			}
 		}
+		discarded += 8
 		if _, err = br.Discard(8); err != nil {
 			return
 		}

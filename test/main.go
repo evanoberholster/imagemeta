@@ -11,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 func main() {
@@ -36,21 +37,50 @@ func main() {
 }
 
 func parseHeic(f meta.Reader) {
+	var err error
+	m := &meta.Metadata{}
 
-	hm, err := heic.NewMetadata(f, meta.Metadata{})
+	var e *exif.Data
+	var x xmp.XMP
+
+	m.ExifFn = func(r io.Reader, m *meta.Metadata) error {
+		e, err = exif.ParseExif(f, m.ExifHeader)
+		return nil
+	}
+	m.XmpFn = func(r io.Reader, m *meta.Metadata) error {
+		x, err = xmp.ParseXmp(r)
+		return nil
+	}
+	hm, err := heic.NewMetadata(f, m)
 	if err != nil {
+
 		fmt.Println(err)
 		// Error retrieving Heic Metadata
 	}
-	var e *exif.Data
-	hm.ExifDecodeFn = func(r io.Reader, header meta.ExifHeader) error {
-		e, err = exif.ParseExif(f, header)
-		fmt.Println(e, err, header)
-		return nil
+	_, err = hm.ReadExifHeader(f)
+	if err != nil {
+		fmt.Println(err)
 	}
-	err = hm.DecodeExif(f)
-	fmt.Println(e, err)
-	printExif(e)
+	if err != meta.ErrNoExif {
+		if err = m.ExifFn(f, m); err != nil {
+			panic(err)
+		}
+		printJSON(e)
+		printExif(e)
+	}
+
+	_, err = hm.ReadXmpHeader(f)
+	f.Seek(int64(hm.XmpHeader.Offset), 0)
+	if err == nil {
+		if err = m.XmpFn(f, m); err != nil {
+			panic(err)
+		}
+		fmt.Println(x)
+	}
+
+	fmt.Println(m.XmpHeader)
+	fmt.Println(m.ExifHeader)
+	fmt.Println(m.It, m.Dim)
 }
 
 //
@@ -82,6 +112,11 @@ func parseHeic(f meta.Reader) {
 //
 //	printExif(e)
 //}
+
+func printJSON(e *exif.Data) {
+	buf, err := e.MarshalJSON()
+	fmt.Println(string(buf), err)
+}
 
 func printExif(e *exif.Data) {
 	if e != nil {

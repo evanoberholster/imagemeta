@@ -11,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 func main() {
@@ -30,29 +31,25 @@ func main() {
 		}
 	}()
 
-	//var x xmp.XMP
+	var x xmp.XMP
 	var e *exif.Data
-	exifDecodeFn := func(r io.Reader, header meta.ExifHeader) error {
-		e, err = e.ParseExif(f, header)
-		//fmt.Println("Item", e, err, header)
+	exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
+		e, err = e.ParseExifWithMetadata(f, m)
 		return nil
 	}
-	//xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
-	//	fmt.Println(header)
-	//	var err error
-	//	x, err = xmp.ParseXmp(r)
-	//	fmt.Println(x, err)
-	//	return err
-	//}
+	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
+		x, err = xmp.ParseXmp(r)
+		fmt.Println(x, err)
+		return err
+	}
 	start := time.Now()
-	m, err := imagemeta.NewMetadata(f, nil, exifDecodeFn)
+	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
 	if err != nil {
-		fmt.Println(err, "here")
+		fmt.Println(err)
 	}
 	elapsed := time.Since(start)
-	fmt.Println(m.Dimensions())
-	fmt.Println(m)
-	//fmt.Println(*e)
+	fmt.Println(m.Metadata)
+
 	fmt.Println(elapsed)
 	if e != nil {
 		fmt.Println(e.Artist())

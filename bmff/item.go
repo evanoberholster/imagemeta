@@ -372,6 +372,7 @@ func (iprp ItemPropertiesBox) String() string {
 	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations.Entries))
 }
 
+// ContainerByID returns a Box for the given id and boxType.
 func (iprp ItemPropertiesBox) ContainerByID(id uint16, boxType BoxType) (Box, error) {
 	for _, entry := range iprp.Associations.Entries {
 		if entry.ItemID == uint32(id) {

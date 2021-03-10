@@ -14,7 +14,7 @@ import (
 
 // Metadata is an Heic file's Metadata
 type Metadata struct {
-	meta.Metadata
+	*meta.Metadata
 	// Reader
 	r io.Reader
 
@@ -24,8 +24,8 @@ type Metadata struct {
 }
 
 // NewMetadata returns a new heic.Metadata
-func NewMetadata(r io.Reader, m meta.Metadata) (cm *Metadata, err error) {
-	cm = &Metadata{r: r, Metadata: m}
+func NewMetadata(r io.Reader, m *meta.Metadata) (cm Metadata, err error) {
+	cm = Metadata{r: r, Metadata: m}
 	m.It = imagetype.ImageCR3
 	err = cm.getMeta()
 	return cm, err
@@ -66,7 +66,7 @@ func (hm *Metadata) getMeta() (err error) {
 
 func (hm *Metadata) DecodeExif(r io.Reader) (err error) {
 	// Don't process Exif if no Decode function is given
-	if hm.ExifDecodeFn == nil {
+	if hm.ExifFn == nil {
 		return
 	}
 	for _, cmt := range hm.CrxMoov.Meta.CMT {
@@ -81,7 +81,7 @@ func (hm *Metadata) DecodeExif(r io.Reader) (err error) {
 		case bmff.TypeCMT4:
 			hm.ExifHeader.FirstIfd = ifds.GPSIFD
 		}
-		if err = hm.ExifDecodeFn(r, hm.ExifHeader); err != nil {
+		if err = hm.ExifFn(r, hm.Metadata); err != nil {
 			return err
 		}
 	}
@@ -91,7 +91,7 @@ func (hm *Metadata) DecodeExif(r io.Reader) (err error) {
 // DecodeXMP decodes XMP from the underlying CR3 Image.
 func (hm *Metadata) DecodeXMP(r io.Reader) (err error) {
 	// Don't process XMP if no Decode function is given
-	if hm.XmpDecodeFn == nil {
+	if hm.XmpFn == nil {
 		return
 	}
 	offset, length, _ := hm.CrxMoov.Meta.XPacketData()
@@ -108,5 +108,6 @@ func (hm *Metadata) DecodeXMP(r io.Reader) (err error) {
 	//if uuid != bmff.CR3XPacketUUID {
 	//	fmt.Println("Wrong UUID")
 	//}
-	return hm.XmpDecodeFn(r, meta.NewXMPHeader(uint32(offset), uint32(length)))
+	hm.XmpHeader = meta.NewXMPHeader(uint32(offset), uint32(length))
+	return hm.XmpFn(r, hm.Metadata)
 }

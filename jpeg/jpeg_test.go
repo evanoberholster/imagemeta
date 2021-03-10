@@ -32,7 +32,7 @@ func TestScanJPEG(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			m, err := ScanJPEG(br, meta.Metadata{})
+			m, err := ScanJPEG(br, &meta.Metadata{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -94,7 +94,7 @@ func TestScanMarkers(t *testing.T) {
 	}
 
 	// Test Scan JPEG
-	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), meta.Metadata{})
+	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), &meta.Metadata{})
 	if err != ErrNoJPEGMarker {
 		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 	}

@@ -21,7 +21,7 @@ var (
 // Metadata from a JPEG file
 type Metadata struct {
 	// Decode Functions for EXIF and XMP metadata
-	meta.Metadata
+	*meta.Metadata
 
 	// SOF Header and Tiff Header
 	sofHeader
@@ -36,14 +36,17 @@ type Metadata struct {
 // positions during the scan. Returns Metadata.
 //
 // Returns the error ErrNoJPEGMarker if a JPEG SOF was not found.
-func ScanJPEG(r *bufio.Reader, cm meta.Metadata) (m Metadata, err error) {
+func ScanJPEG(r *bufio.Reader, mm *meta.Metadata) (m Metadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
+	if mm == nil {
+		return
+	}
 
-	m = Metadata{br: r, Metadata: cm}
+	m = Metadata{br: r, Metadata: mm}
 
 	var buf []byte
 	for {
@@ -188,9 +191,9 @@ func (m *Metadata) readExif(buf []byte) (err error) {
 	m.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, m.discarded, exifLength, imagetype.ImageJPEG)
 
 	// Read Exif Information
-	if m.ExifDecodeFn != nil {
+	if m.ExifFn != nil {
 		r := io.LimitReader(m.br, int64(remain))
-		if err = m.ExifDecodeFn(r, m.ExifHeader); err != nil {
+		if err = m.ExifFn(r, m.Metadata); err != nil {
 			return err
 		}
 		remain = int(r.(*io.LimitedReader).N)
@@ -213,9 +216,10 @@ func (m *Metadata) readXMP(buf []byte) (err error) {
 
 	// TODO: XMP Header (offset, length)
 	// Use XML Decode Function if not nil
-	if m.XmpDecodeFn != nil {
+	if m.XmpFn != nil {
 		r := io.LimitReader(m.br, int64(remain))
-		if err = m.XmpDecodeFn(r, m.XmpHeader); err != nil {
+
+		if err = m.XmpFn(r, m.Metadata); err != nil {
 			return
 		}
 		remain = int(r.(*io.LimitedReader).N)

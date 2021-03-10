@@ -52,7 +52,7 @@ func BenchmarkScanJPEG100(b *testing.B) {
 				cb.Seek(0, 0)
 				br := bufio.NewReader(cb)
 				b.StartTimer()
-				if _, err := jpeg.ScanJPEG(br, meta.Metadata{}); err != nil {
+				if _, err := jpeg.ScanJPEG(br, &meta.Metadata{}); err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
 					}
@@ -107,13 +107,13 @@ func BenchmarkImagemeta100(b *testing.B) {
 				b.StopTimer()
 				r.Seek(0, 0)
 
-				exifDecodeFn := func(r io.Reader, header meta.ExifHeader) error {
+				exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
 					b.StopTimer()
 					b.StartTimer()
-					exif.ParseExif(f, header)
+					exif.ParseExif(f, m.ExifHeader)
 					return nil
 				}
-				xmpDecodeFn := func(r io.Reader, header meta.XmpHeader) error {
+				xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
 					b.StopTimer()
 					b.StartTimer()
 					return err

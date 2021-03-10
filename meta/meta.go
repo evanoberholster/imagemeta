@@ -15,20 +15,28 @@ type Reader interface {
 	io.ReadSeeker
 }
 
-// ExifDecodeFn is a function for decoding Exif Metadata
-type ExifDecodeFn func(io.Reader, ExifHeader) error
-
-// XmpDecodeFn is a function for decoding Xmp Metadata
-type XmpDecodeFn func(io.Reader, XmpHeader) error
+// DecodeFn is a function for decoding Metadata.
+//
+// For Exif Metadata use ExifHeader and ExifFn.
+//
+// For Xmp Metadata use XmpHeader and XmpFn.
+type DecodeFn func(io.Reader, *Metadata) error
 
 // Metadata is common metadata among image parsers
 type Metadata struct {
-	ExifDecodeFn ExifDecodeFn
-	ExifHeader   ExifHeader
-	XmpDecodeFn  XmpDecodeFn
-	XmpHeader    XmpHeader
-	Dim          Dimensions
-	It           imagetype.ImageType
+	// Exif Decode Function with ExifHeader
+	ExifFn     DecodeFn
+	ExifHeader ExifHeader
+
+	// Xmp Decoding Function with XmpHeader
+	XmpFn     DecodeFn
+	XmpHeader XmpHeader
+
+	// Dimenions of primary Image
+	Dim Dimensions
+
+	// Image Type
+	It imagetype.ImageType
 }
 
 // Dimensions returns the Dimensions of the Primary Image.

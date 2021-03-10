@@ -203,6 +203,11 @@ func boxType(buf []byte) BoxType {
 	return TypeUnknown
 }
 
+// IsBoxType returns true when bt1 is equal to bt2.
+func IsBoxType(bt1 string, bt2 []byte) bool {
+	return bt1[0] == bt2[0] && bt1[1] == bt2[1] && bt1[2] == bt2[2] && bt1[3] == bt2[3]
+}
+
 // Box is an interface for different BMFF boxes.
 type Box interface {
 	Type() BoxType

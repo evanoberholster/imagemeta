@@ -49,11 +49,11 @@ func BenchmarkHeicDecodeExif(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				hm, err := NewMetadata(br, meta.Metadata{})
+				hm, err := NewMetadata(br, &meta.Metadata{})
 				if err != nil {
 					b.Fatal(err)
 				}
-				_ = hm.DecodeExif(f)
+				_, _ = hm.ReadExifHeader(f)
 			}
 		})
 	}

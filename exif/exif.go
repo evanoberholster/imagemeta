@@ -64,7 +64,7 @@ func ParseExif(r io.ReaderAt, header meta.ExifHeader) (e *Data, err error) {
 	return e, err
 }
 
-// ParseExif parases Exif metadata from an io.ReaderAt and a TiffHeader
+// ParseExif parses Exif metadata from an io.ReaderAt and a TiffHeader
 //
 // If the header is invalid ParseExif will return ErrInvalidHeader.
 func (e *Data) ParseExif(r io.ReaderAt, header meta.ExifHeader) (*Data, error) {
@@ -85,6 +85,18 @@ func (e *Data) ParseExif(r io.ReaderAt, header meta.ExifHeader) (*Data, error) {
 	}
 	// Scan the FirstIfd with the FirstIfdOffset from the ExifReader
 	err := scan(e.er, e, header.FirstIfd, header.FirstIfdOffset)
+	return e, err
+}
+
+// ParseExifWithMetadata parses Exif Metdata from a meta.Reader and meta.Metadata
+func (e *Data) ParseExifWithMetadata(r meta.Reader, m *meta.Metadata) (*Data, error) {
+	var err error
+	e, err = e.ParseExif(r, m.ExifHeader)
+	if m.Dim == 0 {
+		if e.width != 0 && e.height != 0 {
+			m.Dim, _ = e.Dimensions()
+		}
+	}
 	return e, err
 }
 
@@ -207,6 +219,8 @@ func (e *Data) RangeTags() chan tag.Tag {
 	}()
 	return c
 }
+
+// jsonExif for testing purposes.
 
 type jsonExif struct {
 	Ifds   map[string]map[uint8]jsonIfds `json:"Ifds"`
