@@ -16,6 +16,10 @@ var (
 // ID is the uint16 representation of an IFD tag
 type ID uint16
 
+func (id ID) String() string {
+	return fmt.Sprintf("0x%04x", uint16(id))
+}
+
 // Offset for reading data
 type Offset uint32
 
@@ -52,7 +56,7 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("0x%04x\t | %s ", t.ID, t.t)
+	return fmt.Sprintf("0x%04x\t | %s ", uint16(t.ID), t.t)
 }
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset

@@ -78,4 +78,7 @@ func TestTag(t *testing.T) {
 	if tag.String() != "0x0010\t | ASCII " {
 		t.Errorf("Incorrect Tag String wanted %v got %v", "0x0010\t | ASCII ", tag.String())
 	}
+	if tag.ID.String() != "0x0010" {
+		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", tag.ID.String())
+	}
 }

@@ -2,8 +2,6 @@
 package ifds
 
 import (
-	"fmt"
-
 	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif/tag"
@@ -22,6 +20,11 @@ func NewKey(ifd IFD, ifdIndex uint8, tagID tag.ID) Key {
 	key |= (uint32(ifdIndex) << 16)
 	key |= (uint32(tagID))
 	return Key(key)
+}
+
+// Val returns the TagMap's Key as an ifd, ifdIndex and a tagID
+func (k Key) Val() (ifd IFD, ifdIndex uint8, tagID tag.ID) {
+	return IFD(k >> 24), uint8(k << 8 >> 24), tag.ID(k << 16 >> 16)
 }
 
 // TagMap is a map of Tags
@@ -100,7 +103,7 @@ func (ifd IFD) TagName(id tag.ID) (name string) {
 	case MknoteIFD:
 	}
 	if !ok {
-		name = fmt.Sprintf("0x%04x", id)
+		name = id.String()
 	}
 	return
 }

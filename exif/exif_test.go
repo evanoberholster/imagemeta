@@ -32,6 +32,84 @@ var exifTests = []struct {
 	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 3648, 5472, time.Unix(1575608507, 0)},
 }
 
+//func TestGenSamples(t *testing.T) {
+//	for _, wantedExif := range exifTests {
+//		f, err := os.Open(wantedExif.filename)
+//		if err != nil {
+//			panic(err)
+//		}
+//		defer func() {
+//			err = f.Close()
+//			if err != nil {
+//				panic(err)
+//			}
+//		}()
+//		buf, err := ioutil.ReadAll(f)
+//		e, err := ScanExif(bytes.NewReader(buf))
+//		if !assert.ErrorIs(t, err, nil) {
+//			return
+//		}
+//
+//		buf, err = json.Marshal(e)
+//		if !assert.ErrorIs(t, err, nil) {
+//			return
+//		}
+//
+//		dat, err := os.Create(wantedExif.filename + ".json")
+//		if !assert.ErrorIs(t, err, nil) {
+//			return
+//		}
+//		defer func() {
+//			err = dat.Close()
+//			if err != nil {
+//				panic(err)
+//			}
+//		}()
+//		if _, err := dat.Write(buf); err != nil {
+//			err = f.Close()
+//			panic(err)
+//		}
+//	}
+//}
+
+func TestPreviouslyParsedExif(t *testing.T) {
+	for _, wantedExif := range exifTests {
+		t.Run(wantedExif.filename, func(t *testing.T) {
+			// Open file
+			f, err := os.Open(wantedExif.filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			buf, _ := ioutil.ReadAll(f)
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
+			cb := bytes.NewReader(buf)
+			e, err := ScanExif(cb)
+			if !assert.ErrorIs(t, err, nil) {
+				return
+			}
+			b1, err := e.MarshalJSON()
+			if !assert.ErrorIs(t, err, nil) {
+				return
+			}
+
+			// Open file
+			f, err = os.Open(wantedExif.filename + ".json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			b2, _ := ioutil.ReadAll(f)
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
+			if !bytes.Equal(b1, b2) {
+				t.Errorf("Please review: Incorrect Exif Data wanted length %d got length %d", len(b2), len(b1))
+			}
+		})
+	}
+}
+
 func TestParseExif(t *testing.T) {
 	for _, wantedExif := range exifTests {
 		t.Run(wantedExif.filename, func(t *testing.T) {
@@ -42,6 +120,9 @@ func TestParseExif(t *testing.T) {
 				t.Fatal(err)
 			}
 			buf, _ := ioutil.ReadAll(f)
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
 			cb := bytes.NewReader(buf)
 			e, err := ScanExif(cb)
 			if !assert.ErrorIs(t, err, nil) {
