@@ -1,1 +1,522 @@
-{"Ifds":{"Ifd":{"0":{"Tags":[{"ID":"0x010f","Name":"Make","Count":6,"Type":"ASCII","Val":"Canon"},{"ID":"0x0110","Name":"Model","Count":13,"Type":"ASCII","Val":"Canon EOS 6D"},{"ID":"0x0112","Name":"Orientation","Count":1,"Type":"SHORT","Val":1},{"ID":"0x011a","Name":"XResolution","Count":1,"Type":"RATIONAL","Val":[{"Numerator":240,"Denominator":1}]},{"ID":"0x011b","Name":"YResolution","Count":1,"Type":"RATIONAL","Val":[{"Numerator":240,"Denominator":1}]},{"ID":"0x0128","Name":"ResolutionUnit","Count":1,"Type":"SHORT","Val":2},{"ID":"0x0132","Name":"DateTime","Count":20,"Type":"ASCII","Val":"2019:12:06 05:01:47"},{"ID":"0x013b","Name":"Artist","Count":17,"Type":"ASCII","Val":"Evan Oberholster"},{"ID":"0x8298","Name":"Copyright","Count":17,"Type":"ASCII","Val":"Evan Oberholster"}]}},"Ifd/Exif":{"0":{"Tags":[{"ID":"0x829a","Name":"ExposureTime","Count":1,"Type":"RATIONAL","Val":[{"Numerator":1,"Denominator":20}]},{"ID":"0x829d","Name":"FNumber","Count":1,"Type":"RATIONAL","Val":[{"Numerator":5,"Denominator":1}]},{"ID":"0x8822","Name":"ExposureProgram","Count":1,"Type":"SHORT","Val":1},{"ID":"0x8827","Name":"ISOSpeedRatings","Count":1,"Type":"SHORT","Val":500},{"ID":"0x8830","Name":"SensitivityType","Count":1,"Type":"SHORT","Val":2},{"ID":"0x8832","Name":"RecommendedExposureIndex","Count":1,"Type":"LONG","Val":500},{"ID":"0x9000","Name":"ExifVersion","Count":4,"Type":"UNDEFINED","Val":null},{"ID":"0x9003","Name":"DateTimeOriginal","Count":20,"Type":"ASCII","Val":"2019:12:06 05:01:47"},{"ID":"0x9004","Name":"DateTimeDigitized","Count":20,"Type":"ASCII","Val":"2019:12:06 05:01:47"},{"ID":"0x9101","Name":"ComponentsConfiguration","Count":4,"Type":"UNDEFINED","Val":null},{"ID":"0x9201","Name":"ShutterSpeedValue","Count":1,"Type":"SRATIONAL","Val":[{"Numerator":35,"Denominator":8}]},{"ID":"0x9202","Name":"ApertureValue","Count":1,"Type":"RATIONAL","Val":[{"Numerator":37,"Denominator":8}]},{"ID":"0x9204","Name":"ExposureBiasValue","Count":1,"Type":"SRATIONAL","Val":[{"Numerator":0,"Denominator":1}]},{"ID":"0x9205","Name":"MaxApertureValue","Count":1,"Type":"RATIONAL","Val":[{"Numerator":4,"Denominator":1}]},{"ID":"0x9207","Name":"MeteringMode","Count":1,"Type":"SHORT","Val":5},{"ID":"0x9209","Name":"Flash","Count":1,"Type":"SHORT","Val":16},{"ID":"0x920a","Name":"FocalLength","Count":1,"Type":"RATIONAL","Val":[{"Numerator":20,"Denominator":1}]},{"ID":"0x9290","Name":"SubSecTime","Count":3,"Type":"ASCII","Val":"44"},{"ID":"0x9291","Name":"SubSecTimeOriginal","Count":3,"Type":"ASCII","Val":"44"},{"ID":"0x9292","Name":"SubSecTimeDigitized","Count":3,"Type":"ASCII","Val":"44"},{"ID":"0xa000","Name":"FlashpixVersion","Count":4,"Type":"UNDEFINED","Val":null},{"ID":"0xa001","Name":"ColorSpace","Count":1,"Type":"SHORT","Val":1},{"ID":"0xa002","Name":"PixelXDimension","Count":1,"Type":"LONG","Val":3648},{"ID":"0xa003","Name":"PixelYDimension","Count":1,"Type":"LONG","Val":5472},{"ID":"0xa20e","Name":"FocalPlaneXResolution","Count":1,"Type":"RATIONAL","Val":[{"Numerator":1368000,"Denominator":359}]},{"ID":"0xa20f","Name":"FocalPlaneYResolution","Count":1,"Type":"RATIONAL","Val":[{"Numerator":2243749,"Denominator":588}]},{"ID":"0xa210","Name":"FocalPlaneResolutionUnit","Count":1,"Type":"SHORT","Val":2},{"ID":"0xa401","Name":"CustomRendered","Count":1,"Type":"SHORT","Val":0},{"ID":"0xa402","Name":"ExposureMode","Count":1,"Type":"SHORT","Val":1},{"ID":"0xa403","Name":"WhiteBalance","Count":1,"Type":"SHORT","Val":0},{"ID":"0xa406","Name":"SceneCaptureType","Count":1,"Type":"SHORT","Val":0},{"ID":"0xa431","Name":"BodySerialNumber","Count":13,"Type":"ASCII","Val":"412052000727"},{"ID":"0xa432","Name":"LensSpecification","Count":4,"Type":"RATIONAL","Val":[{"Numerator":16,"Denominator":1},{"Numerator":35,"Denominator":1},{"Numerator":0,"Denominator":1},{"Numerator":0,"Denominator":1}]},{"ID":"0xa434","Name":"LensModel","Count":22,"Type":"ASCII","Val":"EF16-35mm f/4L IS USM"},{"ID":"0xa435","Name":"LensSerialNumber","Count":11,"Type":"ASCII","Val":"1800003793"}]}},"Ifd/GPS":{"0":{"Tags":[{"ID":"0x0000","Name":"GPSVersionID","Count":4,"Type":"BYTE","Val":""},{"ID":"0x0001","Name":"GPSLatitudeRef","Count":2,"Type":"ASCII","Val":"N"},{"ID":"0x0002","Name":"GPSLatitude","Count":3,"Type":"RATIONAL","Val":[{"Numerator":14,"Denominator":1},{"Numerator":12,"Denominator":1},{"Numerator":1499,"Denominator":100}]},{"ID":"0x0003","Name":"GPSLongitudeRef","Count":2,"Type":"ASCII","Val":"E"},{"ID":"0x0004","Name":"GPSLongitude","Count":3,"Type":"RATIONAL","Val":[{"Numerator":120,"Denominator":1},{"Numerator":58,"Denominator":1},{"Numerator":1048,"Denominator":100}]},{"ID":"0x0005","Name":"GPSAltitudeRef","Count":1,"Type":"BYTE","Val":""},{"ID":"0x0006","Name":"GPSAltitude","Count":1,"Type":"RATIONAL","Val":[{"Numerator":6327501,"Denominator":16384}]},{"ID":"0x0008","Name":"GPSSatellites","Count":3,"Type":"ASCII","Val":"12"},{"ID":"0x0009","Name":"GPSStatus","Count":2,"Type":"ASCII","Val":"A"},{"ID":"0x000a","Name":"GPSMeasureMode","Count":2,"Type":"ASCII","Val":"3"},{"ID":"0x000b","Name":"GPSDOP","Count":1,"Type":"RATIONAL","Val":null},{"ID":"0x0012","Name":"GPSMapDatum","Count":7,"Type":"ASCII","Val":""}]}}},"ImageType":"image/heif","Make":"Canon","Model":"Canon EOS 6D","Width":3648,"Height":5472}
+{
+  "Ifds": {
+    "Ifd": {
+      "0": {
+        "Tags": [
+          {
+            "ID": "0x010f",
+            "Name": "Make",
+            "Count": 6,
+            "Type": "ASCII",
+            "Val": "Canon"
+          },
+          {
+            "ID": "0x0110",
+            "Name": "Model",
+            "Count": 13,
+            "Type": "ASCII",
+            "Val": "Canon EOS 6D"
+          },
+          {
+            "ID": "0x0112",
+            "Name": "Orientation",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 1
+          },
+          {
+            "ID": "0x011a",
+            "Name": "XResolution",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 240,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x011b",
+            "Name": "YResolution",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 240,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x0128",
+            "Name": "ResolutionUnit",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 2
+          },
+          {
+            "ID": "0x0132",
+            "Name": "DateTime",
+            "Count": 20,
+            "Type": "ASCII",
+            "Val": "2019:12:06 05:01:47"
+          },
+          {
+            "ID": "0x013b",
+            "Name": "Artist",
+            "Count": 17,
+            "Type": "ASCII",
+            "Val": "Evan Oberholster"
+          },
+          {
+            "ID": "0x8298",
+            "Name": "Copyright",
+            "Count": 17,
+            "Type": "ASCII",
+            "Val": "Evan Oberholster"
+          }
+        ]
+      }
+    },
+    "Ifd/Exif": {
+      "0": {
+        "Tags": [
+          {
+            "ID": "0x829a",
+            "Name": "ExposureTime",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 1,
+                "Denominator": 20
+              }
+            ]
+          },
+          {
+            "ID": "0x829d",
+            "Name": "FNumber",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 5,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x8822",
+            "Name": "ExposureProgram",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 1
+          },
+          {
+            "ID": "0x8827",
+            "Name": "ISOSpeedRatings",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 500
+          },
+          {
+            "ID": "0x8830",
+            "Name": "SensitivityType",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 2
+          },
+          {
+            "ID": "0x8832",
+            "Name": "RecommendedExposureIndex",
+            "Count": 1,
+            "Type": "LONG",
+            "Val": 500
+          },
+          {
+            "ID": "0x9000",
+            "Name": "ExifVersion",
+            "Count": 4,
+            "Type": "UNDEFINED",
+            "Val": null
+          },
+          {
+            "ID": "0x9003",
+            "Name": "DateTimeOriginal",
+            "Count": 20,
+            "Type": "ASCII",
+            "Val": "2019:12:06 05:01:47"
+          },
+          {
+            "ID": "0x9004",
+            "Name": "DateTimeDigitized",
+            "Count": 20,
+            "Type": "ASCII",
+            "Val": "2019:12:06 05:01:47"
+          },
+          {
+            "ID": "0x9101",
+            "Name": "ComponentsConfiguration",
+            "Count": 4,
+            "Type": "UNDEFINED",
+            "Val": null
+          },
+          {
+            "ID": "0x9201",
+            "Name": "ShutterSpeedValue",
+            "Count": 1,
+            "Type": "SRATIONAL",
+            "Val": [
+              {
+                "Numerator": 35,
+                "Denominator": 8
+              }
+            ]
+          },
+          {
+            "ID": "0x9202",
+            "Name": "ApertureValue",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 37,
+                "Denominator": 8
+              }
+            ]
+          },
+          {
+            "ID": "0x9204",
+            "Name": "ExposureBiasValue",
+            "Count": 1,
+            "Type": "SRATIONAL",
+            "Val": [
+              {
+                "Numerator": 0,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x9205",
+            "Name": "MaxApertureValue",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 4,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x9207",
+            "Name": "MeteringMode",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 5
+          },
+          {
+            "ID": "0x9209",
+            "Name": "Flash",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 16
+          },
+          {
+            "ID": "0x920a",
+            "Name": "FocalLength",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 20,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0x9290",
+            "Name": "SubSecTime",
+            "Count": 3,
+            "Type": "ASCII",
+            "Val": "44"
+          },
+          {
+            "ID": "0x9291",
+            "Name": "SubSecTimeOriginal",
+            "Count": 3,
+            "Type": "ASCII",
+            "Val": "44"
+          },
+          {
+            "ID": "0x9292",
+            "Name": "SubSecTimeDigitized",
+            "Count": 3,
+            "Type": "ASCII",
+            "Val": "44"
+          },
+          {
+            "ID": "0xa000",
+            "Name": "FlashpixVersion",
+            "Count": 4,
+            "Type": "UNDEFINED",
+            "Val": null
+          },
+          {
+            "ID": "0xa001",
+            "Name": "ColorSpace",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 1
+          },
+          {
+            "ID": "0xa002",
+            "Name": "PixelXDimension",
+            "Count": 1,
+            "Type": "LONG",
+            "Val": 3648
+          },
+          {
+            "ID": "0xa003",
+            "Name": "PixelYDimension",
+            "Count": 1,
+            "Type": "LONG",
+            "Val": 5472
+          },
+          {
+            "ID": "0xa20e",
+            "Name": "FocalPlaneXResolution",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 1368000,
+                "Denominator": 359
+              }
+            ]
+          },
+          {
+            "ID": "0xa20f",
+            "Name": "FocalPlaneYResolution",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 2243749,
+                "Denominator": 588
+              }
+            ]
+          },
+          {
+            "ID": "0xa210",
+            "Name": "FocalPlaneResolutionUnit",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 2
+          },
+          {
+            "ID": "0xa401",
+            "Name": "CustomRendered",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 0
+          },
+          {
+            "ID": "0xa402",
+            "Name": "ExposureMode",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 1
+          },
+          {
+            "ID": "0xa403",
+            "Name": "WhiteBalance",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 0
+          },
+          {
+            "ID": "0xa406",
+            "Name": "SceneCaptureType",
+            "Count": 1,
+            "Type": "SHORT",
+            "Val": 0
+          },
+          {
+            "ID": "0xa431",
+            "Name": "BodySerialNumber",
+            "Count": 13,
+            "Type": "ASCII",
+            "Val": "412052000727"
+          },
+          {
+            "ID": "0xa432",
+            "Name": "LensSpecification",
+            "Count": 4,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 16,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 35,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 0,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 0,
+                "Denominator": 1
+              }
+            ]
+          },
+          {
+            "ID": "0xa434",
+            "Name": "LensModel",
+            "Count": 22,
+            "Type": "ASCII",
+            "Val": "EF16-35mm f/4L IS USM"
+          },
+          {
+            "ID": "0xa435",
+            "Name": "LensSerialNumber",
+            "Count": 11,
+            "Type": "ASCII",
+            "Val": "1800003793"
+          }
+        ]
+      }
+    },
+    "Ifd/GPS": {
+      "0": {
+        "Tags": [
+          {
+            "ID": "0x0000",
+            "Name": "GPSVersionID",
+            "Count": 4,
+            "Type": "BYTE",
+            "Val": ""
+          },
+          {
+            "ID": "0x0001",
+            "Name": "GPSLatitudeRef",
+            "Count": 2,
+            "Type": "ASCII",
+            "Val": "N"
+          },
+          {
+            "ID": "0x0002",
+            "Name": "GPSLatitude",
+            "Count": 3,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 14,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 12,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 1499,
+                "Denominator": 100
+              }
+            ]
+          },
+          {
+            "ID": "0x0003",
+            "Name": "GPSLongitudeRef",
+            "Count": 2,
+            "Type": "ASCII",
+            "Val": "E"
+          },
+          {
+            "ID": "0x0004",
+            "Name": "GPSLongitude",
+            "Count": 3,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 120,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 58,
+                "Denominator": 1
+              },
+              {
+                "Numerator": 1048,
+                "Denominator": 100
+              }
+            ]
+          },
+          {
+            "ID": "0x0005",
+            "Name": "GPSAltitudeRef",
+            "Count": 1,
+            "Type": "BYTE",
+            "Val": ""
+          },
+          {
+            "ID": "0x0006",
+            "Name": "GPSAltitude",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": [
+              {
+                "Numerator": 6327501,
+                "Denominator": 16384
+              }
+            ]
+          },
+          {
+            "ID": "0x0008",
+            "Name": "GPSSatellites",
+            "Count": 3,
+            "Type": "ASCII",
+            "Val": "12"
+          },
+          {
+            "ID": "0x0009",
+            "Name": "GPSStatus",
+            "Count": 2,
+            "Type": "ASCII",
+            "Val": "A"
+          },
+          {
+            "ID": "0x000a",
+            "Name": "GPSMeasureMode",
+            "Count": 2,
+            "Type": "ASCII",
+            "Val": "3"
+          },
+          {
+            "ID": "0x000b",
+            "Name": "GPSDOP",
+            "Count": 1,
+            "Type": "RATIONAL",
+            "Val": null
+          },
+          {
+            "ID": "0x0012",
+            "Name": "GPSMapDatum",
+            "Count": 7,
+            "Type": "ASCII",
+            "Val": ""
+          }
+        ]
+      }
+    }
+  },
+  "ImageType": "image/heif",
+  "Make": "Canon",
+  "Model": "Canon EOS 6D",
+  "Width": 3648,
+  "Height": 5472
+}
