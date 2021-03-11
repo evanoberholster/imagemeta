@@ -130,17 +130,17 @@ func (e *Data) LensSerial() (serial string, err error) {
 }
 
 // Dimensions convenience func. "IFD" Dimensions
-func (e *Data) Dimensions() (dimensions meta.Dimensions, err error) {
+func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 	if e.width > 0 && e.height > 0 {
-		return meta.NewDimensions(uint32(e.width), uint32(e.height)), nil
+		return meta.NewDimensions(uint32(e.width), uint32(e.height))
 	}
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.PixelXDimension)
 	if err == nil {
 		e.width, err = e.ParseUint16Value(t)
 		if err == nil {
 			if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.PixelYDimension); err == nil {
-				e.height, err = e.ParseUint16Value(t)
-				return meta.NewDimensions(uint32(e.width), uint32(e.height)), err
+				e.height, _ = e.ParseUint16Value(t)
+				return meta.NewDimensions(uint32(e.width), uint32(e.height))
 			}
 		}
 	}
@@ -149,14 +149,14 @@ func (e *Data) Dimensions() (dimensions meta.Dimensions, err error) {
 	if err == nil {
 		e.width, err = e.ParseUint16Value(t)
 		if err == nil {
-			if t, err = e.GetTag(ifds.RootIFD, 0, ifds.ImageLength); err == nil {
-				e.height, err = e.ParseUint16Value(t)
-				return meta.NewDimensions(uint32(e.width), uint32(e.height)), err
+			if t, _ = e.GetTag(ifds.RootIFD, 0, ifds.ImageLength); err == nil {
+				e.height, _ = e.ParseUint16Value(t)
+				return meta.NewDimensions(uint32(e.width), uint32(e.height))
 			}
 		}
 	}
 
-	return meta.Dimensions(0), ErrEmptyTag
+	return meta.Dimensions(0)
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram

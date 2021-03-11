@@ -94,8 +94,11 @@ func (e *Data) ParseExifWithMetadata(r meta.Reader, m *meta.Metadata) (*Data, er
 	e, err = e.ParseExif(r, m.ExifHeader)
 	if m.Dim == 0 {
 		if e.width != 0 && e.height != 0 {
-			m.Dim, _ = e.Dimensions()
+			m.Dim = e.Dimensions()
 		}
+	}
+	if m.It == imagetype.ImageTiff {
+		m.It = e.imageType
 	}
 	return e, err
 }
@@ -183,7 +186,7 @@ func (e *Data) GetTagValue(t tag.Tag) (value interface{}) {
 	case tag.TypeASCII, tag.TypeASCIINoNul, tag.TypeByte:
 		str, _ := e.ParseASCIIValue(t)
 		if len(str) > 64 {
-			value = str[:64]
+			value = str[:256]
 		} else {
 			value = str
 		}

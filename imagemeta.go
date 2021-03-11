@@ -5,7 +5,6 @@ package imagemeta
 import (
 	"bufio"
 	"errors"
-	"io"
 
 	"github.com/evanoberholster/imagemeta/cr3"
 	"github.com/evanoberholster/imagemeta/heic"
@@ -41,7 +40,7 @@ func NewMetadata(r meta.Reader, xmpFn meta.DecodeFn, exifFn meta.DecodeFn) (m *M
 		ExifFn: exifFn,
 	}
 	// Create New bufio.Reader w/ 6KB because of XMP processing
-	br := bufio.NewReaderSize(r, 160)
+	br := bufio.NewReaderSize(r, 6*1024)
 	// Pool
 	// Identify image Type
 	m.It, err = imagetype.ScanBuf(br) // no discard
@@ -115,25 +114,16 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 	if _, err = m.r.Seek(0, 0); err != nil {
 		return
 	}
-	hm, err := heic.NewMetadata(m.r, m.Metadata)
+	hm, err := heic.NewMetadata(br, m.Metadata)
 	if err != nil {
 		return err
 	}
 	m.images = hm.Images()
-	if m.ExifFn != nil {
-		if _, err = hm.ReadExifHeader(m.r); err != nil {
-			return
-		}
-		err = m.ExifFn(m.r, m.Metadata)
+	if err = hm.ReadExif(m.r); err != nil {
+		return
 	}
-	if hm.XmpFn != nil {
-		if _, err = hm.ReadXmpHeader(m.r); err != nil {
-			return
-		}
-		if _, err = m.r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
-			return
-		}
-		return hm.XmpFn(io.LimitReader(m.r, int64(hm.XmpHeader.Length)), m.Metadata)
+	if err = hm.ReadXmp(m.r); err != nil {
+		return
 	}
 	return err
 }

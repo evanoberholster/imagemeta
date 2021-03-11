@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
-	"github.com/evanoberholster/imagemeta/exif/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif/tag"
+	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
 // Errors
@@ -124,12 +124,20 @@ func (ite *ifdTagEnumerator) parseUndefinedIfds(e *Data, ifd ifds.IFD) bool {
 		case "NIKON CORPORATION", "Nikon":
 			// Nikon v3 maker note is a self-contained Ifd
 			// (offsets are relative to the start of the maker note)
-			byteOrder, err := mknote.NikonMkNoteHeader(ite)
+			byteOrder, err := NikonMkNoteHeader(ite)
 			if err != nil {
 				return false
 			}
 			ite.byteOrder = byteOrder
+			// update imagetype
+			if e.imageType == imagetype.ImageTiff {
+				e.imageType = imagetype.ImageNEF
+			}
 			return true
+		case "SONY", "Sony":
+			if e.imageType == imagetype.ImageTiff {
+				e.imageType = imagetype.ImageARW
+			}
 		}
 		return false
 	}
