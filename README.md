@@ -105,7 +105,7 @@ Suggestions and pull requests are welcome.
 ## Benchmarks
 
 This was benchmarked without the retrival of values.
-To run your own benchmarks see benchmark_test.go
+To run your own benchmarks see bench_test.go
 
 ```go
 BenchmarkScanExif100/NoExif.jpg-8              1249808          996 ns/op       4496 B/op          5 allocs/op

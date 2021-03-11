@@ -42,17 +42,16 @@ func ScanExif(r meta.Reader) (e *Data, err error) {
 
 	// Search Image for Metadata Header using ImageType
 	header, err := tiff.Scan(br)
-	if err != nil {
-		return
+	if !header.IsValid() || err != nil {
+		return nil, ErrNoExif
 	}
-
 	// Update Imagetype in ExifHeader
 	header.ImageType = it
 
 	// Set FirstIfd to RootIfd
 	header.FirstIfd = ifds.RootIFD
-
-	return ParseExif(r, header)
+	r.Seek(0, 0)
+	return e.ParseExif(r, header)
 }
 
 // ParseExif parses Exif metadata from an io.ReaderAt and a TiffHeader and

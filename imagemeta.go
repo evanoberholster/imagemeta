@@ -43,8 +43,7 @@ func NewMetadata(r meta.Reader, xmpFn meta.DecodeFn, exifFn meta.DecodeFn) (m *M
 	br := bufio.NewReaderSize(r, 6*1024)
 	// Pool
 	// Identify image Type
-	m.It, err = imagetype.ScanBuf(br) // no discard
-	if err != nil {
+	if m.It, err = imagetype.ScanBuf(br); err != nil {
 		return
 	}
 	// Parse ImageMetadata
@@ -71,9 +70,13 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 		return m.parseHeic(br)
 	case imagetype.ImageAVIF:
 		return m.parseHeic(br)
-		//err = ErrMetadataNotSupported
-		//return
-	case imagetype.ImagePNG:
+	case imagetype.ImagePNG, imagetype.ImageBMP, imagetype.ImageGIF:
+		err = ErrMetadataNotSupported
+		return
+	case imagetype.ImageCRW:
+		err = ErrMetadataNotSupported
+		return
+	case imagetype.ImageUnknown:
 		err = ErrMetadataNotSupported
 		return
 	default:
