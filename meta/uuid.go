@@ -31,9 +31,13 @@ import (
 
 // String parse helpers.
 var (
-	urnPrefix     = []byte("urn:uuid:")
-	byteGroups    = []int{8, 4, 4, 4, 12}
+	urnPrefix  = []byte("urn:uuid:")
+	byteGroups = []int{8, 4, 4, 4, 12}
+
+	// ErrUUIDFormat is returned for an incorrect UUID format.
 	ErrUUIDFormat = errors.New("uuid: incorrect UUID format")
+
+	// ErrUUIDLength is returned for an incorrect UUID length.
 	ErrUUIDLength = errors.New("uuid: incorrect UUID length")
 )
 
@@ -57,7 +61,7 @@ func (u UUID) Bytes() []byte {
 	return u[:]
 }
 
-// Returns canonical string representation of UUID:
+// String returns canonical string representation of UUID:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
 func (u UUID) String() string {
 	buf := make([]byte, 36)
