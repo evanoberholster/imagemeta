@@ -50,7 +50,10 @@ func ScanExif(r meta.Reader) (e *Data, err error) {
 
 	// Set FirstIfd to RootIfd
 	header.FirstIfd = ifds.RootIFD
-	r.Seek(0, 0)
+
+	if _, err = r.Seek(0, 0); err != nil {
+		return
+	}
 	return e.ParseExif(r, header)
 }
 
