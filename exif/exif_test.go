@@ -12,24 +12,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: write more tests for ParseExif
-
 var exifTests = []struct {
-	filename    string
-	imageType   imagetype.ImageType
-	make        string
-	model       string
-	ISOSpeed    uint32
-	aperture    meta.Aperture
-	focalLength meta.FocalLength
-	width       uint32
-	height      uint32
-	createdDate time.Time
+	filename     string
+	imageType    imagetype.ImageType
+	make         string
+	model        string
+	ISOSpeed     uint32
+	aperture     meta.Aperture
+	focalLength  meta.FocalLength
+	shutterSpeed meta.ShutterSpeed
+	width        uint32
+	height       uint32
+	createdDate  time.Time
 }{
-	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, 4928, 3280, time.Unix(1508673260, 0)},
-	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, 160, 120, time.Unix(1378201516, 0)},
-	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, 5616, 3744, time.Unix(1192715072, 0)},
-	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, 3648, 5472, time.Unix(1575608507, 0)},
+	// TODO: Add test for RW2
+	{"../testImages/JPEG.jpg", imagetype.ImageJPEG, "GoPro", "HERO4 Silver", 113, 2.8, 3, meta.NewShutterSpeed(1, 60), 0, 0, time.Unix(1476205190, 0)},
+	{"../testImages/Hero8.GPR", imagetype.ImageTiff, "GoPro", "HERO8 Black", 317, 2.8, 3, meta.NewShutterSpeed(1, 240), 4000, 3000, time.Unix(1590641247, 0)},
+	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, meta.NewShutterSpeed(1, 100), 4928, 3280, time.Unix(1508673260, 0)},
+	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, meta.NewShutterSpeed(10, 300), 160, 120, time.Unix(1378201522, 0)},
+	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, meta.NewShutterSpeed(1, 40), 5616, 3744, time.Unix(1192715074, 0)},
+	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, meta.NewShutterSpeed(1, 20), 3648, 5472, time.Unix(1575608513, 0)},
 }
 
 //func TestGenSamples(t *testing.T) {
@@ -128,36 +130,40 @@ func TestParseExif(t *testing.T) {
 			if !assert.ErrorIs(t, err, nil) {
 				return
 			}
-			if e.CameraMake() != wantedExif.make {
-				t.Errorf("Incorrect Exif Make wanted %s got %s", wantedExif.make, e.CameraMake())
-			}
-			if e.CameraModel() != wantedExif.model {
-				t.Errorf("Incorrect Exif Model wanted %s got %s", wantedExif.model, e.CameraModel())
-			}
-			isoSpeed, err := e.ISOSpeed()
-			if err != nil || isoSpeed != wantedExif.ISOSpeed {
-				t.Errorf("Incorrect ISO Speed wanted %d got %d", wantedExif.ISOSpeed, isoSpeed)
-			}
-			aperture, err := e.Aperture()
-			if err != nil || aperture != wantedExif.aperture {
-				t.Errorf("Incorrect Aperture wanted %0.2f got %0.2f", wantedExif.aperture, aperture)
-			}
-			focalLength, err := e.FocalLength()
-			if err != nil || focalLength != wantedExif.focalLength {
-				t.Errorf("Incorrect Focal Length wanted %s got %s", wantedExif.focalLength.String(), focalLength.String())
-			}
-			dim, _ := e.Dimensions()
-			width, height := dim.Size()
-			if err != nil || wantedExif.width != width {
-				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.width, width)
-			}
-			if wantedExif.height != height {
-				t.Errorf("Incorrect Dimensions wanted %d got %d", wantedExif.height, height)
-			}
-			createdDate, err := e.DateTime()
-			if createdDate.Unix() != wantedExif.createdDate.Unix() && err != nil {
-				t.Errorf("Incorrect Unix Time wanted %v got %v", wantedExif.createdDate, createdDate)
-			}
+
+			var val interface{}
+
+			// Camera Make
+			assert.Equal(t, wantedExif.make, e.CameraMake(), "Camera Make")
+
+			// Camera Model
+			assert.Equal(t, wantedExif.model, e.CameraModel(), "Camera Model")
+
+			// Dimensions
+			w, h := e.Dimensions().Size()
+			assert.Equal(t, wantedExif.width, w, "Image Width")
+			assert.Equal(t, wantedExif.height, h, "Image Height")
+
+			// ISO Speed
+			val, _ = e.ISOSpeed()
+			assert.Equal(t, wantedExif.ISOSpeed, val, "ISO Speed")
+
+			// Aperture
+			val, _ = e.Aperture()
+			assert.Equal(t, wantedExif.aperture, val, "Aperture")
+
+			// Shutter Speed
+			val, _ = e.ShutterSpeed()
+			assert.Equal(t, wantedExif.shutterSpeed, val, "Shutter Speed")
+
+			// Focal Length
+			val, _ = e.FocalLength()
+			assert.Equal(t, wantedExif.focalLength, val, "Focal Length")
+
+			// Created Date
+			date, _ := e.DateTime()
+			assert.Equal(t, wantedExif.createdDate.Unix(), date.Unix())
+
 		})
 	}
 }

@@ -53,8 +53,16 @@ func main() {
 	fmt.Println(elapsed)
 	if e != nil {
 		fmt.Println(e.Artist())
+		fmt.Println(e.Copyright())
+
 		fmt.Println(e.CameraMake())
 		fmt.Println(e.CameraModel())
+		fmt.Println(e.CameraSerial())
+
+		fmt.Println(e.LensMake())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.LensSerial())
+
 		fmt.Println(e.ISOSpeed())
 		fmt.Println(e.FocalLength())
 		fmt.Println(e.LensModel())
