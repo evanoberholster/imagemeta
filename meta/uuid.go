@@ -41,13 +41,13 @@ var (
 	ErrUUIDLength = errors.New("uuid: incorrect UUID length")
 )
 
+// UUID is a 128 bits Universally Unique Identifier (UUID).
+// Based on github.com/satori/go.uuid
+type UUID [16]byte
+
 // NilUUID is special form of UUID that is specified to have all
 // 128 bits set to zero.
 var NilUUID = UUID{}
-
-// UUID is a [16]byte Universally Unique Identifier (UUID).
-// Based on github.com/satori/go.uuid
-type UUID [16]byte
 
 // UUIDFromBytes returns UUID converted from raw byte slice input. It will return error if the slice isn't 16 bytes long.
 func UUIDFromBytes(buf []byte) (UUID, error) {

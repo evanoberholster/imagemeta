@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
@@ -39,18 +38,15 @@ func main() {
 	}
 	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
 		x, err = xmp.ParseXmp(r)
-		fmt.Println(x, err)
 		return err
 	}
-	start := time.Now()
+
 	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
 	if err != nil {
 		fmt.Println(err)
 	}
-	elapsed := time.Since(start)
 	fmt.Println(m.Metadata)
-
-	fmt.Println(elapsed)
+	fmt.Println(x)
 	if e != nil {
 		fmt.Println(e.Artist())
 		fmt.Println(e.Copyright())
@@ -77,13 +73,8 @@ func main() {
 		c, _ := e.GPSCellID()
 		fmt.Println(c.ToToken())
 		fmt.Println(e.DateTime())
-		//fmt.Println(e.ModifyDate())
+		fmt.Println(e.ModifyDate())
 
 		fmt.Println(e.GPSDate(nil))
-
-		start = time.Now()
 	}
-	//elapsed = time.Since(start)
-	//fmt.Println(elapsed)
-
 }
