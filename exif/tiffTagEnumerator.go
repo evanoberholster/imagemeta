@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
-	"github.com/evanoberholster/imagemeta/exif/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif/tag"
+	"github.com/evanoberholster/imagemeta/imagetype"
 )
 
 // Errors
@@ -35,6 +35,8 @@ func scan(er *reader, e *Data, ifd ifds.IFD, offset uint32) (err error) {
 
 	var ifdIndex uint8
 	for ifdIndex = 0; ; ifdIndex++ {
+		er.ifdExifOffset[ifd] = uint32(er.exifOffset)
+
 		enumerator := newTagEnumerator(offset, er)
 		//fmt.Printf("Parsing IFD [%s] (%d) at offset (0x%04x).\n", ifd, ifdIndex, offset)
 		nextIfdOffset, err := enumerator.ParseIfd(e, ifd, ifdIndex, true)
@@ -122,12 +124,20 @@ func (ite *ifdTagEnumerator) parseUndefinedIfds(e *Data, ifd ifds.IFD) bool {
 		case "NIKON CORPORATION", "Nikon":
 			// Nikon v3 maker note is a self-contained Ifd
 			// (offsets are relative to the start of the maker note)
-			byteOrder, err := mknote.NikonMkNoteHeader(ite)
+			byteOrder, err := NikonMkNoteHeader(ite)
 			if err != nil {
 				return false
 			}
 			ite.byteOrder = byteOrder
+			// update imagetype
+			if e.imageType == imagetype.ImageTiff {
+				e.imageType = imagetype.ImageNEF
+			}
 			return true
+		case "SONY", "Sony":
+			if e.imageType == imagetype.ImageTiff {
+				e.imageType = imagetype.ImageARW
+			}
 		}
 		return false
 	}
@@ -164,7 +174,7 @@ func (ite *ifdTagEnumerator) ParseIfd(e *Data, ifd ifds.IFD, ifdIndex uint8, doD
 	}
 
 	for i := 0; i < int(tagCount); i++ {
-		t, err := ite.ReadTag()
+		t, err := ite.ReadTag(ifd)
 		if err != nil {
 			if err == tag.ErrTagTypeNotValid {
 				//if errors.Is(err, tag.ErrTagTypeNotValid) {
@@ -179,7 +189,7 @@ func (ite *ifdTagEnumerator) ParseIfd(e *Data, ifd ifds.IFD, ifdIndex uint8, doD
 		childIFD := ifd.IsChildIfd(t)
 		switch childIFD {
 		case ifds.NullIFD:
-			e.AddTag(ifd, ifdIndex, t)
+			e.addTag(ifd, ifdIndex, t)
 		case ifds.SubIFD:
 			if err := scanSubIfds(ite.exifReader, e, t); err != nil {
 				return nextIfdOffset, err
@@ -209,7 +219,7 @@ func (ite *ifdTagEnumerator) ParseIfd(e *Data, ifd ifds.IFD, ifdIndex uint8, doD
 
 // ReadTag reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
 // from an ifdTagEnumerator
-func (ite *ifdTagEnumerator) ReadTag() (t tag.Tag, err error) {
+func (ite *ifdTagEnumerator) ReadTag(ifd ifds.IFD) (t tag.Tag, err error) {
 	// Read 12 bytes of Tag
 	buf, err := ite.ReadBuffer(12)
 	if err != nil {
@@ -227,9 +237,8 @@ func (ite *ifdTagEnumerator) ReadTag() (t tag.Tag, err error) {
 	if err != nil {
 		return t, err
 	}
-
 	// Creates a newTag. If the TypeFromRaw is unsupported, it returns tag.ErrTagTypeNotValid.
-	return tag.NewTag(tagID, tagType, unitCount, valueOffset), err
+	return tag.NewTag(tagID, tagType, unitCount, valueOffset, uint8(ifd)), err
 }
 
 // ReadUint16 reads a uint16 from an ifdTagEnumerator.

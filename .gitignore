@@ -24,7 +24,7 @@ samples/*
 xml/test*
 testImages/gen.go
 testImages/*.html
-test/*.svg
+test/*
 meta/cmd/*
 xmp/test/samples/*
 

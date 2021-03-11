@@ -1,23 +1,27 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
-	"time"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
-const testFilename = "../../test/img/0.CR2"
-
-//const testFilename2 = "../testImages/Heic.exif"
-
 func main() {
-	f, err := os.Open(testFilename)
+	flag.Parse()
+	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
+		os.Exit(1)
+	}
+	f, err := os.Open(flag.Arg(0))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer func() {
 		err = f.Close()
@@ -25,34 +29,36 @@ func main() {
 			panic(err)
 		}
 	}()
-	fmt.Println(testFilename)
-	//var x xmp.XMP
+
+	var x xmp.XMP
 	var e *exif.Data
-	exifDecodeFn := func(r io.Reader, header exif.Header) error {
-		e, err = exif.ParseExif(f, header)
-		fmt.Println(e, err, header)
+	exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
+		e, err = e.ParseExifWithMetadata(f, m)
 		return nil
 	}
-	//xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
-	//	fmt.Println(header)
-	//	var err error
-	//	x, err = xmp.ParseXmp(r)
-	//	fmt.Println(x, err)
-	//	return err
-	//}
-	start := time.Now()
-	m, err := imagemeta.NewMetadata(f, nil, exifDecodeFn)
-	if err != nil {
-		panic(err)
+	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
+		x, err = xmp.ParseXmp(r)
+		return err
 	}
-	elapsed := time.Since(start)
-	fmt.Println(m.Dimensions())
-	fmt.Println(m)
-	fmt.Println(elapsed)
+
+	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(m.Metadata)
+	fmt.Println(x)
 	if e != nil {
 		fmt.Println(e.Artist())
+		fmt.Println(e.Copyright())
+
 		fmt.Println(e.CameraMake())
 		fmt.Println(e.CameraModel())
+		fmt.Println(e.CameraSerial())
+
+		fmt.Println(e.LensMake())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.LensSerial())
+
 		fmt.Println(e.ISOSpeed())
 		fmt.Println(e.FocalLength())
 		fmt.Println(e.LensModel())
@@ -63,26 +69,12 @@ func main() {
 		fmt.Println(e.ExposureBias())
 
 		fmt.Println(e.GPSCoords())
+
+		c, _ := e.GPSCellID()
+		fmt.Println(c.ToToken())
 		fmt.Println(e.DateTime())
-		//fmt.Println(e.ModifyDate())
+		fmt.Println(e.ModifyDate())
 
 		fmt.Println(e.GPSDate(nil))
-
-		start = time.Now()
-		//for t := range e.RangeTags() {
-		//	//ifds.ExifIFD, 0, exififd.ISOSpeedRatings
-		//	//if t.TagID == exififd.DateTimeDigitized {
-		//	if a, ok := ifds.RootIfdTagIDMap[t.TagID]; ok {
-		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
-		//	} else if a, ok := exififd.TagIDMap[t.TagID]; ok {
-		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
-		//	} else if a, ok := gpsifd.TagIDMap[t.TagID]; ok {
-		//		fmt.Println(t.TagID, a, t.UnitCount, t.ValueOffset)
-		//	}
-		//	//}
-		//}
 	}
-	//elapsed = time.Since(start)
-	//fmt.Println(elapsed)
-
 }

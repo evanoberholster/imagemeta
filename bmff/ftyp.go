@@ -2,6 +2,7 @@ package bmff
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Brand of ISOBMFF ftyp
@@ -10,28 +11,41 @@ type Brand uint8
 // Major and Minor Brands
 const (
 	brandUnknown Brand = iota // unknown ISOBMFF brand
-	brandAvif                 // 'avif': AVIF
-	brandHeic                 // 'heic': the usual HEIF images
-	brandHeim                 // 'heim': multiview
-	brandHeis                 // 'heis': scalable
-	brandHeix                 // 'heix': 10bit images, or anything that uses h265 with range extension
-	brandHevc                 // 'hevc': brand for image sequences
-	brandHevm                 // 'hevm': multiview sequence
-	brandHevs                 // 'hevs': scalable sequence
-	brandHevx                 // 'hevx': image sequence
-	brandMeta                 // 'meta': meta
 	//brandMA1B                 // 'MA1B': ?
+	brandAvci // 'avci'
+	brandAvif // 'avif': AVIF
 	brandCrx  // 'crx ' : Canon CR3
+	brandHeic // 'heic': the usual HEIF images
+	brandHeim // 'heim': multiview
+	brandHeis // 'heis': scalable
+	brandHeix // 'heix': 10bit images, or anything that uses h265 with range extension
+	brandHevc // 'hevc': brand for image sequences
+	brandHevm // 'hevm': multiview sequence
+	brandHevs // 'hevs': scalable sequence
+	brandHevx // 'hevx': image sequence
+	brandIso8 // 'iso8': sequence
 	brandIsom // 'isom' : ?
+	brandM4A  // 'M4A '
+	brandMA1B // 'MA1B'
+	brandMeta // 'meta': meta
 	brandMiaf // 'miaf' :
+	brandMiAn // 'MiAn'
+	brandMiBr // 'MiBr'
 	brandMif1 // 'mif1': image
+	brandMif2 // 'mif2'
+	brandMiHA // 'MiHA'
 	brandMiHB // 'MiHB' :
 	brandMiHE // 'MiHE' :
+	brandMiPr // 'MiPr'
+	brandMp41 // 'mp41'
+	brandMp42 // 'mp42'
 	brandMsf1 // 'msf1': sequence
 )
 
 var mapStringBrand = map[string]Brand{
+	"avci": brandAvci,
 	"avif": brandAvif,
+	"crx ": brandCrx,
 	"heic": brandHeic,
 	"heim": brandHeim,
 	"heis": brandHeis,
@@ -40,18 +54,29 @@ var mapStringBrand = map[string]Brand{
 	"hevm": brandHevm,
 	"hevs": brandHevs,
 	"hevx": brandHevx,
+	"iso8": brandIso8,
+	"isom": brandIsom,
+	"M4A ": brandM4A,
+	"MA1B": brandMA1B,
 	"meta": brandMeta,
 	"miaf": brandMiaf,
+	"MiAn": brandMiAn,
+	"MiBr": brandMiBr,
 	"mif1": brandMif1,
+	"mif2": brandMif2,
+	"MiHA": brandMiHA,
 	"MiHB": brandMiHB,
 	"MiHE": brandMiHE,
+	"MiPr": brandMiPr,
+	"mp41": brandMp41,
+	"mp42": brandMp42,
 	"msf1": brandMsf1,
-	"crx ": brandCrx,
-	"isom": brandIsom,
 }
 
 var mapBrandString = map[Brand]string{
+	brandAvci: "avci",
 	brandAvif: "avif",
+	brandCrx:  "crx ",
 	brandHeic: "heic",
 	brandHeim: "heim",
 	brandHeis: "heis",
@@ -60,14 +85,23 @@ var mapBrandString = map[Brand]string{
 	brandHevm: "hevm",
 	brandHevs: "hevs",
 	brandHevx: "hevx",
+	brandIso8: "iso8",
+	brandIsom: "isom",
+	brandM4A:  "M4A ",
+	brandMA1B: "MA1B",
 	brandMeta: "meta",
 	brandMiaf: "miaf",
+	brandMiAn: "MiAn",
+	brandMiBr: "MiBr",
 	brandMif1: "mif1",
+	brandMif2: "mif2",
+	brandMiHA: "MiHA",
 	brandMiHB: "MiHB",
 	brandMiHE: "MiHE",
+	brandMiPr: "MiPr",
+	brandMp41: "mp41",
+	brandMp42: "mp42",
 	brandMsf1: "msf1",
-	brandCrx:  "crx ",
-	brandIsom: "isom",
 }
 
 func (b Brand) String() string {
@@ -83,17 +117,22 @@ func brand(buf []byte) Brand {
 			return b
 		}
 	}
-	if Debug {
-		fmt.Println("Unknown Brand: ", string(buf), buf)
+	if debugFlag {
+		log.Debug("Brand '%s' not found", buf)
 	}
 	return brandUnknown
 }
 
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
-	MinorVersion string   // 4 bytes
-	MajorBrand   Brand    // 4 bytes
-	Compatible   [6]Brand // all 4 bytes
+	MinorVersion string            // 4 bytes
+	MajorBrand   Brand             // 4 bytes
+	Compatible   [brandCount]Brand // all 4 bytes
+}
+
+// IsCR3 returns true if major brand is crx (Canon CR3)
+func (ftyp FileTypeBox) IsCR3() bool {
+	return ftyp.MajorBrand == brandCrx
 }
 
 // Type returns TypeFtyp
@@ -101,41 +140,46 @@ func (ftyp FileTypeBox) Type() BoxType {
 	return TypeFtyp
 }
 
-func parseFtyp(outer *box) (Box, error) {
-	return parseFileTypeBox(outer)
+func parseFtyp(b *box) (Box, error) {
+	return b.parseFileTypeBox()
 }
 
-func parseFileTypeBox(outer *box) (ftyp FileTypeBox, err error) {
-	var buf []byte
-	if buf, err = outer.Peek(8); err != nil {
-		return
+func (b *box) parseFileTypeBox() (ftyp FileTypeBox, err error) {
+	if b.boxType != TypeFtyp {
+		return ftyp, ErrWrongBoxType
+	}
+	buf, err := b.peek(8)
+	if err != nil {
+		return ftyp, err
 	}
 	ftyp.MajorBrand = brand(buf[:4])
-	ftyp.MinorVersion = processString(buf[4:8])
-	if err = outer.discard(8); err != nil {
+	ftyp.MinorVersion = cleanString(buf[4:8])
+	if err = b.discard(8); err != nil {
 		return
 	}
-	// Read maximum 6 Compatible brands
-	for i := 0; i < 6; i++ {
-		if outer.remain < 4 {
-			break
-		}
-
-		ftyp.Compatible[i], _ = outer.readBrand()
+	// Read maximum 7 Compatible brands
+	for i := 0; i < brandCount && b.remain >= 4; i++ {
+		ftyp.Compatible[i], _ = b.readBrand()
 	}
-	err = outer.discard(outer.remain)
-	return ftyp, err
+	if debugFlag {
+		traceBox(ftyp, *b)
+	}
+	return ftyp, b.discard(b.remain)
 }
 
 func (ftyp FileTypeBox) String() string {
-	str := fmt.Sprintf("(Box) ftyp | Major Brand: %s, Minor Version: %s, Compatible: ", ftyp.MajorBrand, "")
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("ftyp | Major Brand:'%s', Minor Version:'%s', Compatible: ", ftyp.MajorBrand, ""))
 	for _, b := range ftyp.Compatible {
-		str += b.String() + " "
+		sb.WriteString("'")
+		sb.WriteString(b.String())
+		sb.WriteString("' ")
 	}
-	return str
+	sb.WriteString("\n")
+	return sb.String()
 }
 
-func processString(buf []byte) string {
+func cleanString(buf []byte) string {
 	if buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 0 {
 		return ""
 	}

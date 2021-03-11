@@ -11,9 +11,28 @@ import (
 )
 
 func TestKey(t *testing.T) {
-	key := NewKey(RootIFD, 1, TileWidth)
+	tests := []struct {
+		tagID    tag.ID
+		ifd      IFD
+		ifdIndex uint8
+	}{
+		{TileLength, RootIFD, 1},
+		{TileByteCounts, ExifIFD, 2},
+		{CacheVersion, GPSIFD, 3},
+		{OpcodeList3, MknoteIFD, 4},
+		{OpcodeList2, RootIFD, 5},
+	}
 
-	assert.Equal(t, key, Key(0x1010142), "Ifd Key")
+	for _, v := range tests {
+		key := NewKey(v.ifd, v.ifdIndex, v.tagID)
+		ifd, ifdIndex, tagID := key.Val()
+
+		key2 := NewKey(ifd, ifdIndex, tagID)
+		assert.Equal(t, key, key2)
+		assert.Equal(t, v.tagID, tagID)
+		assert.Equal(t, v.ifd, ifd)
+		assert.Equal(t, v.ifdIndex, ifdIndex)
+	}
 }
 
 func TestIfdString(t *testing.T) {
@@ -32,17 +51,17 @@ func TestIfdString(t *testing.T) {
 		{IopIFD, "Ifd/Iop", 0, NullIFD, 0, NullIFD},
 		{MknoteIFD, "Ifd/Exif/Makernote", exififd.MakerNote, NullIFD, exififd.MakerNote, MknoteIFD},
 		{DNGAdobeDataIFD, "Ifd/DNGAdobeData", 0, NullIFD, 0, NullIFD},
-		{NullIFD, "Unknown", 0, NullIFD, 0, NullIFD},
+		{NullIFD, "UnknownIfd", 0, NullIFD, 0, NullIFD},
 	}
 
 	for i, v := range testIfds {
 		assert.Equal(t, v.ifd.String(), v.str)
 		ta := tag.Tag{}
-		ta.TagID = v.rootTag
+		ta.ID = v.rootTag
 
 		assert.Equal(t, v.rootIFD, RootIFD.IsChildIfd(ta), "RootIfd Children: %v")
 
-		ta.TagID = v.exifTag
+		ta.ID = v.exifTag
 		assert.Equal(t, v.exifIFD, ExifIFD.IsChildIfd(ta), "ExifIfd Children: %d", i)
 	}
 	assert.Equal(t, RootIFD.TagName(ExifTag), "ExifTag")

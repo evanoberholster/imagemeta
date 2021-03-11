@@ -20,22 +20,26 @@ Example usage:
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
-const testFilename = "image.jpg"
-
 func main() {
-	f, err := os.Open(testFilename)
+	flag.Parse()
+	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
+		os.Exit(1)
+	}
+	f, err := os.Open(flag.Arg(0))
 	if err != nil {
-		panic(err)
+		fmt.Fatal(err)
 	}
 	defer func() {
 		err = f.Close()
@@ -43,74 +47,72 @@ func main() {
 			panic(err)
 		}
 	}()
+
 	var x xmp.XMP
-	var e exif.Exif
-   
-   // Exif Decode function
-	exifDecodeFn := func(r io.Reader, header exif.Header) error {
-		e, err = exif.ParseExif(f, header)
+	var e *exif.Data
+	exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
+		e, err = e.ParseExifWithMetadata(f, m)
 		return nil
 	}
-   // Xmp Decode function
-	xmpDecodeFn := func(r io.Reader, header xmp.Header) error {
-		fmt.Println(header)
-		var err error
+	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
 		x, err = xmp.ParseXmp(r)
 		return err
 	}
-	start := time.Now()
+
 	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
-	elapsed := time.Since(start)
-
-	fmt.Println(m.Dimensions())
-	fmt.Println(m)
-	fmt.Println(elapsed)
-
-	// XMP
+	fmt.Println(m.Metadata)
 	fmt.Println(x)
+	if e != nil {
+		fmt.Println(e.Artist())
+		fmt.Println(e.Copyright())
 
-	// Exif
-	fmt.Println(e)
+		fmt.Println(e.CameraMake())
+		fmt.Println(e.CameraModel())
+		fmt.Println(e.CameraSerial())
+
+		fmt.Println(e.LensMake())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.LensSerial())
 
     // Example Tags
-	fmt.Println(e.CameraMake())
-	fmt.Println(e.CameraModel())
-	fmt.Println(e.Artist())
-	fmt.Println(e.Copyright())
-	fmt.Println(e.LensMake())
-	fmt.Println(e.LensModel())
-	fmt.Println(e.CameraSerial())
-	fmt.Println(e.LensSerial())
-	fmt.Println(e.Dimensions())
+	  fmt.Println(e.Dimensions())
 
-	// Makernote Tags
-	fmt.Println(e.CanonCameraSettings())
-	fmt.Println(e.CanonFileInfo())
-	fmt.Println(e.CanonShotInfo())
-	fmt.Println(e.CanonAFInfo())
+	  // Makernote Tags
+	  fmt.Println(e.CanonCameraSettings())
+	  fmt.Println(e.CanonFileInfo())
+	  fmt.Println(e.CanonShotInfo())
+	  fmt.Println(e.CanonAFInfo())
 	
-	// Time Tags
-	fmt.Println(e.ModifyDate())
-	fmt.Println(e.DateTime())
-	fmt.Println(e.GPSDate(time.UTC))
+	  // Time Tags
+	  fmt.Println(e.ModifyDate())
+	  fmt.Println(e.DateTime())
+	  fmt.Println(e.GPSDate(time.UTC))
+    fmt.Println(e.GPSDate(nil))
 	
-	// GPS Tags
-	fmt.Println(e.GPSCoords())
-	fmt.Println(e.GPSAltitude())
+	  // GPS Tags
+	  fmt.Println(e.GPSCoords())
+	  fmt.Println(e.GPSAltitude())
 	
-	// Other Tags
-	fmt.Println(e.ExposureProgram())
-	fmt.Println(e.MeteringMode())
-	fmt.Println(e.ShutterSpeed())
-	fmt.Println(e.Aperture())
-	fmt.Println(e.FocalLength())
-	fmt.Println(e.FocalLengthIn35mmFilm())
-	fmt.Println(e.ISOSpeed())
-	fmt.Println(e.Flash())
+	  // Other Tags
+	  fmt.Println(e.ExposureProgram())
+	  fmt.Println(e.MeteringMode())
+	  fmt.Println(e.ShutterSpeed())
+	  fmt.Println(e.Aperture())
+	  fmt.Println(e.FocalLength())
+	  fmt.Println(e.FocalLengthIn35mmFilm())
+	  fmt.Println(e.ISOSpeed())
+	  fmt.Println(e.Flash())
 
+		fmt.Println(e.ExposureValue())
+		fmt.Println(e.ExposureBias())
+
+		fmt.Println(e.GPSCoords())
+		c, _ := e.GPSCellID()
+		fmt.Println(c.ToToken())		
+	}
 }
 ```
 
@@ -121,7 +123,7 @@ Suggestions and pull requests are welcome.
 ## Benchmarks
 
 This was benchmarked without the retrival of values.
-To run your own benchmarks see benchmark_test.go
+To run your own benchmarks see bench_test.go
 
 ```go
 BenchmarkImagemeta100/.CR2/60D         	   15552	     69759 ns/op	   11281 B/op	      30 allocs/op
@@ -184,26 +186,32 @@ func main() {
 - [x] Stabilize ImageTypes API
 - [x] Add Exif parsing for individual image types (jpg, heic, cr2, tiff, dng)
 - [x] Add XMP parsing as "xmp" package
-- [ ] Add Avif, Heic and CR3 image metadata support (riff format images)
+- [x] Add Avif, Heic and CR3 image metadata support (riff format images)
+- [ ] Stabalize Imagemeta API
+- [ ] Improve test coverage
+- [ ] Create Thumbnail API
 - [ ] Add Webp image metadata support
 - [ ] Add Canon Exif Makernote support
+- [ ] Add Nikon Exif Makernote support
 - [ ] Add CRW image metadata support (ciff format images)
-- [ ] Stabalize Imagemeta API
-- [ ] Write tests for stable packages
-- [ ] Create Thumbnail API
 - [ ] Documentation
 
 ## Based on and Inspired by
 
-Significantly based on work by Dustin Oprea [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif)
+Based on work by Dustin Oprea [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif)
 
 Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org)
 
 Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
 
+## Special Thanks to:
+- The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
+- Laurent Clévy (@Lorenzo2472) (https://github.com/lclevy/canon_cr3) for Canon CR3 structure.
+- Lasse Heikkilä (https://trepo.tuni.fi/bitstream/handle/123456789/24147/heikkila.pdf) for HEIF structure from his thesis.
+
 ## LICENSE
 
-Copyright (c) 2020, Evan Oberholster & Contributors
+Copyright (c) 2020-2021, Evan Oberholster & Contributors
 
 Copyright (c) 2019, Dustin Oprea
 

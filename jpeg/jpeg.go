@@ -7,11 +7,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
-	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 // Errors
@@ -24,12 +21,10 @@ var (
 // Metadata from a JPEG file
 type Metadata struct {
 	// Decode Functions for EXIF and XMP metadata
-	ExifDecodeFn exif.DecodeFn
-	XmpDecodeFn  xmp.DecodeFn
+	*meta.Metadata
+
 	// SOF Header and Tiff Header
 	sofHeader
-	ExifHeader exif.Header
-	XmpHeader  xmp.Header
 
 	// Reader
 	br        *bufio.Reader
@@ -41,14 +36,17 @@ type Metadata struct {
 // positions during the scan. Returns Metadata.
 //
 // Returns the error ErrNoJPEGMarker if a JPEG SOF was not found.
-func ScanJPEG(r *bufio.Reader, xmpDecodeFn xmp.DecodeFn, exifDecodeFn exif.DecodeFn) (m Metadata, err error) {
+func ScanJPEG(r *bufio.Reader, mm *meta.Metadata) (m Metadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
+	if mm == nil {
+		return
+	}
 
-	m = newMetadata(r, xmpDecodeFn, exifDecodeFn)
+	m = Metadata{br: r, Metadata: mm}
 
 	var buf []byte
 	for {
@@ -58,17 +56,13 @@ func ScanJPEG(r *bufio.Reader, xmpDecodeFn xmp.DecodeFn, exifDecodeFn exif.Decod
 		}
 
 		if !isMarkerFirstByte(buf) {
-			if err = m.discard(1); err != nil {
-				return
-			}
+			_ = m.discard(1)
 			continue
 		}
 		if isSOIMarker(buf) {
 			m.pos++
 			//fmt.Println("SOI:", m.discarded, m.pos)
-			if err = m.discard(2); err != nil {
-				return
-			}
+			_ = m.discard(2)
 			continue
 		}
 		if m.pos > 0 {
@@ -148,17 +142,6 @@ func (m Metadata) Size() (width, height uint16) {
 	return m.width, m.height
 }
 
-// newMetadata creates a New metadata object from an io.Reader
-func newMetadata(reader *bufio.Reader, xmpDecodeFn xmp.DecodeFn, exifDecodeFn exif.DecodeFn) Metadata {
-	jm := Metadata{
-		br:        reader,
-		discarded: 0,
-	}
-	jm.XmpDecodeFn = xmpDecodeFn
-	jm.ExifDecodeFn = exifDecodeFn
-	return jm
-}
-
 // discard adds to m.discarded and discards from the underlying bufio.Reader
 func (m *Metadata) discard(i int) (err error) {
 	if i == 0 {
@@ -186,7 +169,7 @@ func (m *Metadata) readAPP1(buf []byte) (err error) {
 // ExifDecodeFn. If the function is nil it discards the exif length.
 func (m *Metadata) readExif(buf []byte) (err error) {
 	// Read the length of the Exif Information
-	length := jpegByteOrder.Uint16(buf[2:4]) - exifPrefixLength
+	remain := int(jpegByteOrder.Uint16(buf[2:4]) - exifPrefixLength)
 
 	// Discard App Marker bytes and Exif header bytes
 	if err = m.discard(2 + exifPrefixLength); err != nil {
@@ -200,64 +183,61 @@ func (m *Metadata) readExif(buf []byte) (err error) {
 
 	// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
 	// the tiff Header Offset, and the length of the exif information.
-	byteOrder := tiff.BinaryOrder(buf)
+	byteOrder := meta.BinaryOrder(buf)
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
-	exifLength := uint32(length)
+	exifLength := uint32(remain)
 
 	// Set Tiff Header
-	m.ExifHeader = exif.NewHeader(byteOrder, firstIfdOffset, m.discarded, exifLength, imagetype.ImageJPEG)
+	m.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, m.discarded, exifLength, imagetype.ImageJPEG)
 
-	//fmt.Println("Exif Tiff Header:", m.Header)
 	// Read Exif Information
-	if m.ExifDecodeFn != nil {
-		r := io.LimitReader(m.br, int64(length))
-		err = m.ExifDecodeFn(r, m.ExifHeader)
-		if err != nil {
+	if m.ExifFn != nil {
+		r := io.LimitReader(m.br, int64(remain))
+		if err = m.ExifFn(r, m.Metadata); err != nil {
 			return err
 		}
-		remain := r.(*io.LimitedReader).N
-		return m.discard(int(remain))
+		remain = int(r.(*io.LimitedReader).N)
 	}
-	// Discard Exif information bytes
-	return m.discard(int(length))
+	// Discard remaining bytes
+	return m.discard(remain)
 }
 
 // readXMP reads the Exif header/component with the addtached metadata
 // XmpDecodeFn. If the function is nil it discards the exif length.
 func (m *Metadata) readXMP(buf []byte) (err error) {
 	// Read the length of the XMPHeader
-	length := int(jpegByteOrder.Uint16(buf[2:4])) - 2 - xmpPrefixLength
+	remain := int(jpegByteOrder.Uint16(buf[2:4])) - 2 - xmpPrefixLength
 
 	// Discard App Marker bytes and header length bytes
 	if err = m.discard(4 + xmpPrefixLength); err != nil {
 		return err
 	}
-	m.XmpHeader = xmp.NewHeader(m.discarded, uint32(length))
+	m.XmpHeader = meta.NewXMPHeader(m.discarded, uint32(remain))
 
 	// TODO: XMP Header (offset, length)
 	// Use XML Decode Function if not nil
-	if m.XmpDecodeFn != nil {
-		r := io.LimitReader(m.br, int64(length))
-		err = m.XmpDecodeFn(r, m.XmpHeader)
-		if err != nil {
-			return err
+	if m.XmpFn != nil {
+		r := io.LimitReader(m.br, int64(remain))
+
+		if err = m.XmpFn(r, m.Metadata); err != nil {
+			return
 		}
-		remain := r.(*io.LimitedReader).N
-		return m.discard(int(remain))
+		remain = int(r.(*io.LimitedReader).N)
 	}
 
-	// Discard Xmp information bytes
-	return m.discard(int(length))
+	// Discard remaining bytes
+	return m.discard(remain)
 }
 
 // readSOF reads a JPEG Start of file with the uint16
 // width, height, and components of the JPEG image.
 func (m *Metadata) readSOF(buf []byte) error {
 	length := int(jpegByteOrder.Uint16(buf[2:4]))
-	header := sofHeader{
-		jpegByteOrder.Uint16(buf[5:7]),
-		jpegByteOrder.Uint16(buf[7:9]),
-		buf[9]}
+	height := jpegByteOrder.Uint16(buf[5:7])
+	width := jpegByteOrder.Uint16(buf[7:9])
+	comp := uint8(buf[9])
+	header := sofHeader{height, width, comp}
+	m.Metadata.Dim = meta.NewDimensions(uint32(width), uint32(height))
 	if m.pos == 1 {
 		m.sofHeader = header
 	}

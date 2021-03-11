@@ -2,18 +2,24 @@ package bmff
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
-	"io"
+	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var (
+	// HeicByteOrder is BigEndian
+	heicByteOrder = binary.BigEndian
+
 	// ErrItemNotFound is returned as en error when an Item was not Found.
 	ErrItemNotFound = errors.New("item not found")
+
+	// ErrInfeVersionNotSupported is returned when an infe box with an unsupported was found.
+	ErrInfeVersionNotSupported = errors.New("infe box version not supported")
 )
 
-// ItemType is
-// always 4 bytes
+// ItemType is always 4 bytes
 type ItemType [4]byte
 
 // Common ItemTypes
@@ -41,20 +47,14 @@ func itemType(buf []byte) ItemType {
 
 // ItemInfoBox represents an "iinf" box.
 type ItemInfoBox struct {
-	size  int64
-	Flags Flags
-	Count uint16
-
+	//size int64
+	//Flags Flags
+	//Count uint16
 	ItemInfos []ItemInfoEntry
 }
 
 func (iinf ItemInfoBox) String() string {
-	return fmt.Sprintf("iinf | ItemCount: %d, Flags: %d, Version: %d", len(iinf.ItemInfos), iinf.Flags.Flags(), iinf.Flags.Version())
-}
-
-// Size returns the size of the ItemInfoBox
-func (iinf ItemInfoBox) Size() int64 {
-	return int64(iinf.size)
+	return fmt.Sprintf("(iinf) | ItemCount: %d", len(iinf.ItemInfos))
 }
 
 // Type returns TypeIinf
@@ -76,7 +76,7 @@ func (iinf ItemInfoBox) LastItemByType(itemType ItemType) (ItemInfoEntry, error)
 // ItemByID returns the Item of a given ID.
 // If the ItemID is not found, the returned error is ErrItemNotFound.
 func (iinf ItemInfoBox) ItemByID(itemID uint16) (ItemInfoEntry, error) {
-	for i := len(iinf.ItemInfos) - 1; i >= 0; i-- {
+	for i := (len(iinf.ItemInfos) - 1); i >= 0; i-- {
 		if iinf.ItemInfos[i].ItemID == itemID {
 			return iinf.ItemInfos[i], nil
 		}
@@ -85,74 +85,61 @@ func (iinf ItemInfoBox) ItemByID(itemID uint16) (ItemInfoEntry, error) {
 }
 
 func parseIinf(outer *box) (Box, error) {
-	return parseItemInfoBox(outer)
+	return outer.parseItemInfoBox()
 }
 
-func parseItemInfoBox(outer *box) (iinf ItemInfoBox, err error) {
+func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
+	// Read IinfHeader [4]Flags, [2]ItemCount
+	buf, err := b.peek(6)
+	if err != nil {
+		err = errors.Wrap(err, "ParseItemInfoBox")
+		return
+	}
+	_ = b.discard(6)
 	// Read Flags
-	flags, err := outer.readFlags()
-	if err != nil {
-		return
-	}
+	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	// Read Item count
-	count, err := outer.readUint16()
-	if err != nil {
-		return
+	count := int(heicByteOrder.Uint16(buf[4:6]))
+	iinf.ItemInfos = make([]ItemInfoEntry, int(count))
+	if debugFlag {
+		traceBoxWithFlags(iinf, *b, flags)
 	}
-
-	// New ItemInfoBox
-	iinf = ItemInfoBox{
-		size:      outer.size,
-		Flags:     flags,
-		Count:     count,
-		ItemInfos: make([]ItemInfoEntry, 0, int(count))}
 
 	var inner box
-	for outer.remain > 0 {
-		inner, err = outer.readInnerBox()
-		if err != nil {
-			break
+	var infe ItemInfoEntry
+	for i := 0; i < count && b.anyRemain(); i++ {
+		if inner, err = b.readInnerBox(); err != nil {
+			err = errors.Wrap(err, "ParseItemInfoBox (inner)")
+			return
 		}
-
-		if inner.Type() == TypeInfe {
-			var infe ItemInfoEntry
-			if infe, err = parseItemInfoEntry(&inner); err != nil {
-				err = inner.discard(inner.remain)
+		switch inner.Type() {
+		case TypeInfe:
+			if infe, err = inner.parseItemInfoEntry(); err != nil {
+				if debugFlag {
+					log.Debug("(infe) error parsing ItemInfoEntry: %s, %s", infe, err.Error())
+				}
+				err = errors.Wrap(err, "ParseItemInfoBox (infe)")
+				return
 			}
-			iinf.ItemInfos = append(iinf.ItemInfos, infe)
-			if Debug {
-				fmt.Println(infe, outer.remain, inner.remain, outer.size)
-			}
-		} else {
-			// Error here Box Unknown
-			err = inner.discard(inner.remain)
-		}
-
-		if err != nil {
-			if Debug {
-				err = fmt.Errorf("error parsing ItemInfoEntry in ItemInfoBox: %v", err)
-				fmt.Println(err)
+			iinf.ItemInfos[i] = infe
+		default:
+			if debugFlag {
+				log.Debug("(infe) Unknown BoxType: %s", inner.Type())
 			}
 		}
-
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			break
+		if err = b.closeInnerBox(&inner); err != nil {
+			err = errors.Wrap(err, "ParseItemInfoBox (close)")
+			return
 		}
-
 	}
-	if Debug {
-		fmt.Println(iinf, outer.remain)
-	}
-	err = outer.discard(outer.remain)
-	return iinf, err
+	return iinf, b.discard(b.remain)
 }
 
 // ItemInfoEntry represents an "infe" box.
 //
 // TODO: currently only parses Version 2 boxes.
 type ItemInfoEntry struct {
-	Flags           Flags
+	//Flags           Flags
 	ItemID          uint16
 	ProtectionIndex uint16
 
@@ -175,63 +162,65 @@ func (infe ItemInfoEntry) Type() BoxType {
 }
 
 func (infe ItemInfoEntry) String() string {
-	return fmt.Sprintf(" \t ItemInfoEntry (\"infe\"), Version: %d, Flags: %d, ItemID: %d, ProtectionIndex: %d, ItemType: %s", infe.Flags.Version(), infe.Flags.Flags(), infe.ItemID, infe.ProtectionIndex, infe.ItemType)
+	return fmt.Sprintf(" \tItemInfoEntry: ItemID:%d, ProtectionIndex:%d, ItemType:%s", infe.ItemID, infe.ProtectionIndex, infe.ItemType)
 }
 
 func parseInfe(outer *box) (Box, error) {
-	return parseItemInfoEntry(outer)
+	return outer.parseItemInfoEntry()
 }
 
-func parseItemInfoEntry(outer *box) (ie ItemInfoEntry, err error) {
-	// Read Flags
-	flags, err := outer.readFlags()
+func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
+	// Read ItemInfoEntry: [4]flags, [2]ItemID, [2]ProtectionIndex, [5]ItemType
+	infeHeaderSize := 13
+	buf, err := b.peek(infeHeaderSize)
 	if err != nil {
-		return ie, err
+		err = errors.Wrap(err, "ParseItemInfoEntry")
+		return
 	}
+	flags := Flags(heicByteOrder.Uint32(buf[:4]))
 	if flags.Version() != 2 {
-		return ie, fmt.Errorf("TODO: found version %d infe box. Only 2 is supported now", flags.Version())
+		err = errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", flags.Version())
+		return
 	}
-
-	// New ItemInfoEntry
-	ie = ItemInfoEntry{
-		Flags: flags,
-		size:  int16(outer.size),
-	}
-
-	ie.ItemID, _ = outer.readUint16()
-	ie.ProtectionIndex, _ = outer.readUint16()
-	if !outer.ok() {
-		return ie, outer.err
-	}
-	ie.ItemType, err = outer.readItemType()
-	if err != nil {
-		return ie, outer.discard(outer.remain)
-	}
-
-	switch ie.ItemType {
-	case ItemTypeMime:
-		_, _ = outer.readString()
-		if outer.anyRemain() {
-			_, _ = outer.readString()
+	ie.ItemID = heicByteOrder.Uint16(buf[4:6])
+	ie.ProtectionIndex = heicByteOrder.Uint16(buf[6:8])
+	ie.size = int16(b.size)
+	ie.ItemType = itemType(buf[8:12])
+	if buf[12] != '\x00' {
+		// Read until whitespace
+		if debugFlag {
+			traceBoxWithMsg(*b, fmt.Sprintf("\t'%s' doesn't end on whitespace. %s", ie.ItemType, flags))
 		}
-		//ie.ContentType, _ = outer.r.readString()
-		//if outer.r.anyRemain() {
-		//	ie.ContentEncoding, _ = outer.r.readString()
-		//}
-	case ItemTypeURI:
-		_, _ = outer.readString()
-		//ie.ItemURIType, _ = outer.r.readString()
+		infeHeaderSize--
 	}
-	if !outer.ok() {
-		return ie, outer.err
+	if err = b.discard(infeHeaderSize); err != nil {
+		err = errors.Wrap(err, "ParseItemInfoEntry")
+		return
 	}
-	return ie, nil
+
+	//switch ie.ItemType {
+	//case ItemTypeMime:
+	//	_, _ = b.readString()
+	//	if b.anyRemain() {
+	//		_, _ = b.readString()
+	//	}
+	//ie.ContentType, _ = outer.r.readString()
+	//if outer.r.anyRemain() {
+	//	ie.ContentEncoding, _ = outer.r.readString()
+	//}
+	//case ItemTypeURI:
+	//	_, _ = b.readString()
+	//ie.ItemURIType, _ = outer.r.readString()
+	//}
+	if debugFlag {
+		traceBoxWithFlags(ie, *b, flags)
+	}
+	return ie, b.discard(b.remain)
 }
 
 // ItemLocationBox is a "iloc" box
 type ItemLocationBox struct {
-	Items []ItemLocationBoxEntry
-	Flags
+	Items     []ItemLocationBoxEntry
 	ItemCount uint16
 
 	offsetSize, lengthSize, baseOffsetSize, indexSize uint8 // actually uint4
@@ -243,7 +232,7 @@ func (iloc ItemLocationBox) Type() BoxType {
 }
 
 func (iloc ItemLocationBox) String() string {
-	return fmt.Sprintf("iloc | ItemCount: %d, Flags: %d, Version: %d, OffsetSize: %d, LengthSize: %d, BaseOffsetSize: %d, indexSize: %d", iloc.ItemCount, iloc.Flags.Flags(), iloc.Flags.Version(), iloc.offsetSize, iloc.lengthSize, iloc.baseOffsetSize, iloc.indexSize)
+	return fmt.Sprintf("iloc | ItemCount:%d, OffsetSize:%d, LengthSize:%d, BaseOffsetSize:%d, indexSize:%d", iloc.ItemCount, iloc.offsetSize, iloc.lengthSize, iloc.baseOffsetSize, iloc.indexSize)
 }
 
 // EntryByID returns the last Item Location Box Entry for the given ID. If
@@ -258,63 +247,74 @@ func (iloc ItemLocationBox) EntryByID(id uint16) (ItemLocationBoxEntry, error) {
 }
 
 func parseIloc(outer *box) (Box, error) {
-	return parseItemLocationBox(outer)
+	return outer.parseItemLocationBox()
 }
 
-func parseItemLocationBox(outer *box) (ilb ItemLocationBox, err error) {
-	ilb.Flags, err = outer.readFlags()
+func (b *box) parseItemLocationBox() (ilb ItemLocationBox, err error) {
+	buf, err := b.peek(8)
 	if err != nil {
+		err = errors.Wrap(err, "parseItemLocationBoc")
 		return
 	}
-
-	buf, err := outer.Peek(4)
-	if err != nil {
-		// TODO: Write error handling
-		return
-	}
+	flags := Flags(heicByteOrder.Uint32(buf[:4]))
+	buf = buf[4:]
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if ilb.Flags.Version() > 0 { // version 1
+	if flags.Version() > 0 { // version 1
 		ilb.indexSize = buf[1] & 15
 	}
 
-	ilb.ItemCount = binary.BigEndian.Uint16(buf[2:4])
-	if err = outer.discard(4); err != nil {
-		// TODO: Write error handling
+	ilb.ItemCount = heicByteOrder.Uint16(buf[2:4])
+	if err = b.discard(8); err != nil {
+		err = errors.Wrap(err, "parseItemLocationBoc")
 		return
 	}
 
 	ilb.Items = make([]ItemLocationBoxEntry, 0, ilb.ItemCount)
 
-	if Debug {
-		fmt.Println(ilb)
+	if debugFlag {
+		traceBox(ilb, *b)
 	}
-	for i := 0; outer.anyRemain() && i < int(ilb.ItemCount); i++ {
+	for i := 0; b.anyRemain() && i < int(ilb.ItemCount) && err == nil; i++ {
 		var ent ItemLocationBoxEntry
-		ent.ItemID, _ = outer.readUint16()
-
-		if ilb.Flags.Version() > 0 { // version 1
-			cmeth, _ := outer.readUint16()
-			ent.ConstructionMethod = byte(cmeth & 15)
+		// Refactor for performance
+		if buf, err = b.peek(6); err != nil {
+			err = errors.Wrap(err, "ItemLocationBoxEntry")
+			return
 		}
-		ent.DataReferenceIndex, _ = outer.readUint16()
+		ent.ItemID = heicByteOrder.Uint16(buf[:2])
+
+		if flags.Version() > 0 { // version 1
+			cmeth := heicByteOrder.Uint16(buf[2:4])
+			ent.ConstructionMethod = byte(cmeth & 15)
+			buf = buf[2:]
+		}
+		ent.DataReferenceIndex = heicByteOrder.Uint16(buf[2:4])
+		if err = b.discard(10 - len(buf)); err != nil {
+			return
+		}
 
 		// Adjust for baseOffset per issue "https://github.com/go4org/go4/issues/47" thanks to petercgrant
-		if outer.ok() && ilb.baseOffsetSize > 0 {
-			ent.BaseOffset, _ = outer.readUintN(ilb.baseOffsetSize * 8)
+		if ilb.baseOffsetSize > 0 && err == nil {
+			ent.BaseOffset, err = b.readUintN(ilb.baseOffsetSize * 8)
+			if err != nil {
+				return
+			}
 			//outer.r.discard(int(ilb.baseOffsetSize) / 8)
 		}
 
 		// ExtentCount
-		ent.ExtentCount, _ = outer.readUint16()
-		for j := 0; outer.ok() && j < int(ent.ExtentCount); j++ {
+		ent.ExtentCount, err = b.readUint16()
+		for j := 0; j < int(ent.ExtentCount) && err == nil; j++ {
 			var ol OffsetLength
-			ol.Offset, _ = outer.readUintN(ilb.offsetSize * 8)
-			ol.Length, _ = outer.readUintN(ilb.lengthSize * 8)
-			if outer.err != nil {
-				err = outer.err
-				return
+			ol.Offset, err = b.readUintN(ilb.offsetSize * 8)
+			if err != nil {
+				break
+			}
+			ol.Length, err = b.readUintN(ilb.lengthSize * 8)
+			if err != nil {
+				break
 			}
 			if j == 0 {
 				ent.FirstExtent = ol
@@ -325,15 +325,11 @@ func parseItemLocationBox(outer *box) (ilb ItemLocationBox, err error) {
 
 		ilb.Items = append(ilb.Items, ent)
 
-		if Debug {
-			fmt.Println(ent, outer.remain)
+		if debugFlag {
+			log.Debug("%s", ent)
 		}
 	}
-	if !outer.ok() {
-		err = outer.err
-		return
-	}
-	return ilb, nil
+	return ilb, err
 }
 
 // ItemLocationBoxEntry is not a box
@@ -348,7 +344,7 @@ type ItemLocationBoxEntry struct {
 }
 
 func (ilbe ItemLocationBoxEntry) String() string {
-	return fmt.Sprintf("\t ItemID: %d, ConstructionMethod: %d, DataReferenceIndex: %d, BaseOffset: %d, ExtentCount: %d, FirstExtent: %s", ilbe.ItemID, ilbe.ConstructionMethod, ilbe.DataReferenceIndex, ilbe.BaseOffset, ilbe.ExtentCount, ilbe.FirstExtent)
+	return fmt.Sprintf("\t ItemID:%d, ConstructionMethod:%d, DataReferenceIndex:%d, BaseOffset:%d, ExtentCount:%d, FirstExtent:%s", ilbe.ItemID, ilbe.ConstructionMethod, ilbe.DataReferenceIndex, ilbe.BaseOffset, ilbe.ExtentCount, ilbe.FirstExtent)
 }
 
 // OffsetLength contains an offset and length
@@ -357,13 +353,14 @@ type OffsetLength struct {
 }
 
 func (ol OffsetLength) String() string {
-	return fmt.Sprintf("{ Offset: %d, Length: %d }", ol.Offset, ol.Length)
+	return fmt.Sprintf("{Offset:%d, Length:%d}", ol.Offset, ol.Length)
 }
 
 // ItemPropertiesBox is an ISOBMFF "iprp" box
 type ItemPropertiesBox struct {
 	PropertyContainer ItemPropertyContainerBox
-	Associations      []ItemPropertyAssociation // at least 1
+	//Associations      []ItemPropertyAssociation // at least 1
+	Associations ItemPropertyAssociation
 }
 
 // Type returns TypeIprp
@@ -372,50 +369,70 @@ func (iprp ItemPropertiesBox) Type() BoxType {
 }
 
 func (iprp ItemPropertiesBox) String() string {
-	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations))
+	return fmt.Sprintf("iprp | Properties: %d, Associations: %d", len(iprp.PropertyContainer.Properties), len(iprp.Associations.Entries))
+}
+
+// ContainerByID returns a Box for the given id and boxType.
+func (iprp ItemPropertiesBox) ContainerByID(id uint16, boxType BoxType) (Box, error) {
+	for _, entry := range iprp.Associations.Entries {
+		if entry.ItemID == uint32(id) {
+			for i := 0; i < len(entry.Associations) && entry.Associations[i] < uint16(len(iprp.PropertyContainer.Properties)); i++ {
+				if entry.Associations[i] == 0 {
+					continue
+				}
+				b := iprp.PropertyContainer.Properties[entry.Associations[i]-1]
+				if b.Type() == boxType {
+					return b, nil
+				}
+			}
+		}
+	}
+	return nil, ErrItemNotFound
 }
 
 func parseIprp(outer *box) (Box, error) {
-	return parseItemPropertiesBox(outer)
+	return outer.parseItemPropertiesBox()
 }
 
-func parseItemPropertiesBox(outer *box) (ip ItemPropertiesBox, err error) {
-	// New Reader
-	//boxr := outer.newReader(outer.remain)
+func (b *box) parseItemPropertiesBox() (ip ItemPropertiesBox, err error) {
 	var inner box
-	for outer.remain > 4 {
+	for b.remain > 4 {
 		// Read Box
-		if inner, err = outer.readInnerBox(); err != nil {
-			// TODO: write error
-			break
+		if inner, err = b.readInnerBox(); err != nil {
+			err = errors.Wrap(err, "parseItemPropertiesBox")
+			return
+		}
+		switch inner.Type() {
+		case TypeIpco:
+			// Parse ItemPropertyContainerBox
+			ip.PropertyContainer, err = inner.parseItemPropertyContainerBox()
+			if err != nil {
+				err = errors.Wrap(err, "parseItemPropertiesBox")
+				return
+			}
+		case TypeIpma:
+			// Parse ItemPropertyAssociation
+			var ipma ItemPropertyAssociation
+			ipma, err = inner.parseItemPropertyAssociation()
+			if err != nil {
+				err = errors.Wrap(err, "parseItemPropertiesBox")
+				return
+			}
+			ip.Associations = ipma
+			//ip.Associations = append(ip.Associations, ipma)
+		default:
+			if debugFlag {
+				log.Debug("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
+				traceBox(inner, inner)
+			}
 		}
 
-		if inner.boxType == TypeIpco { // Read ItemPropertyContainerBox
-			ip.PropertyContainer, err = parseItemPropertyContainerBox(&inner)
-			if err != nil {
-				// TODO: write error
-				break
-			}
-		} else if inner.boxType == TypeIpma { // Read ItemPropertyAssociation
-			ipma, err := parseItemPropertyAssociation(&inner)
-			if err != nil {
-				// TODO: write error
-				break
-			}
-			ip.Associations = append(ip.Associations, ipma)
-		} else {
-			if Debug {
-				fmt.Printf("(iprp) Unexpected Box Type: %s, Size: %d", inner.Type(), inner.size)
-			}
-		}
-
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			break
+		if err = b.closeInnerBox(&inner); err != nil {
+			err = errors.Wrap(err, "parseItemPropertiesBox")
+			return
 		}
 	}
-	err = outer.discard(outer.remain)
-	return ip, err
+	return ip, b.discard(b.remain)
 }
 
 // ItemPropertyContainerBox is an ISOBMFF "ipco" box
@@ -429,46 +446,40 @@ func (ipco ItemPropertyContainerBox) Type() BoxType {
 }
 
 func parseIpco(outer *box) (Box, error) {
-	return parseItemPropertyContainerBox(outer)
+	return outer.parseItemPropertyContainerBox()
 }
 
-func parseItemPropertyContainerBox(outer *box) (ipc ItemPropertyContainerBox, err error) {
+func (b *box) parseItemPropertyContainerBox() (ipc ItemPropertyContainerBox, err error) {
 	var p Box
 	var inner box
-	for outer.remain > 4 {
-		inner, err = outer.readInnerBox()
-		if err != nil {
-			if err == io.EOF {
-				return ipc, nil
-			}
-			outer.err = err
-			return ipc, err
+	for b.remain > 4 {
+		if inner, err = b.readInnerBox(); err != nil {
+			return
 		}
 		p, err = inner.Parse()
-		if Debug {
-			fmt.Printf("(ipco) %T %s ", p, p)
-			fmt.Printf("\t[ Outer: %d, Size: %d, Inner: %d ]", outer.remain, inner.size, inner.remain)
+		if err != nil {
+			break
+		}
+		if debugFlag {
+			log.Debug("(ipco) %T %s \t", p, p)
 			if err != nil {
 				fmt.Printf("error: %s", err)
 			}
-			fmt.Printf("\n")
 		}
 		ipc.Properties = append(ipc.Properties, p)
 
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
+		if err = b.closeInnerBox(&inner); err != nil {
 			break
 		}
 	}
-	err = outer.discard(outer.remain)
-	return ipc, err
+	return ipc, b.discard(b.remain)
 }
 
 // ItemPropertyAssociation is an ISOBMFF "ipma" box
 type ItemPropertyAssociation struct {
-	Flags      Flags
-	EntryCount uint32
-	Entries    []ItemPropertyAssociationItem
+	//Flags      Flags
+	//EntryCount uint32
+	Entries []ItemPropertyAssociationItem
 }
 
 // Type returns TypeIpma
@@ -477,70 +488,88 @@ func (ipma ItemPropertyAssociation) Type() BoxType {
 }
 
 func parseIpma(outer *box) (Box, error) {
-	return parseItemPropertyAssociation(outer)
+	return outer.parseItemPropertyAssociation()
 }
 
-func parseItemPropertyAssociation(outer *box) (ipa ItemPropertyAssociation, err error) {
-	ipa.Flags, err = outer.readFlags()
+func (b *box) parseItemPropertyAssociation() (ipa ItemPropertyAssociation, err error) {
+	buf, err := b.peek(8)
 	if err != nil {
+		err = errors.Wrap(err, "parseItemPropertyAssociation")
 		return
 	}
-	ipa.EntryCount, err = outer.readUint32()
-	if err != nil {
-		// TODO: Error handling
-		return
-	}
+	_ = b.discard(8)
+
+	flags := Flags(heicByteOrder.Uint32(buf[:4]))
+	count := int(heicByteOrder.Uint32(buf[4:8]))
 
 	// Entries
-	ipa.Entries = make([]ItemPropertyAssociationItem, 0, ipa.EntryCount)
-
-	for i := uint32(0); i < ipa.EntryCount && outer.ok(); i++ {
+	//	ipa.EntryCount = uint32(count)
+	ipa.Entries = make([]ItemPropertyAssociationItem, count)
+	for i := 0; i < count && err == nil; i++ {
 		var itemID uint32
-		if ipa.Flags.Version() < 1 {
-			itemID16, _ := outer.readUint16()
+		if flags.Version() < 1 {
+			var itemID16 uint16
+			itemID16, err = b.readUint16() //2
 			itemID = uint32(itemID16)
 		} else {
-			itemID, _ = outer.readUint32()
+			itemID, err = b.readUint32() // 4
 		}
-		assocCount, _ := outer.readUint8()
+		assocCount, err := b.readUint8() // 1
 		ipai := ItemPropertyAssociationItem{
-			ItemID:            itemID,
-			AssociationsCount: int(assocCount),
-			Associations:      make([]ItemProperty, 0, assocCount),
+			ItemID: itemID,
+			//AssociationsCount: uint32(assocCount),
+			//Associations:      make([]ItemProperty, 0, assocCount),
 		}
-		for j := 0; j < int(assocCount) && outer.ok(); j++ {
-			first, _ := outer.readUint8()
+		var first uint8
+		for j := 0; j < int(assocCount) && err == nil; j++ {
+			first, err = b.readUint8()
+			if err != nil {
+				break
+			}
 			essential := first&(1<<7) != 0
 			first &^= byte(1 << 7)
 
 			var index uint16
-			if ipa.Flags.Flags()&1 != 0 {
-				second, _ := outer.readUint8()
+			var second uint8
+			if flags.Flags()&1 != 0 {
+				second, err = b.readUint8()
 				index = uint16(first)<<8 | uint16(second)
 			} else {
 				index = uint16(first)
 			}
-			ipai.Associations = append(ipai.Associations, ItemProperty{
-				Essential: essential,
-				Index:     index,
-			})
+			if j < len(ipai.Associations) {
+				ipai.Associations[j] = index
+				_ = essential
+			}
+			//ipai.Associations = append(ipai.Associations, ItemProperty{
+			//	Essential: essential,
+			//	Index:     index,
+			//})
 		}
-		ipa.Entries = append(ipa.Entries, ipai)
+		ipa.Entries[i] = ipai
 	}
-	if !outer.ok() {
-		return ipa, outer.err
-	}
-	if Debug {
-		fmt.Println(ipa)
+	if debugFlag {
+		traceBox(ipa, *b)
 	}
 	return ipa, nil
 }
 
 // ItemPropertyAssociationItem is not a box
 type ItemPropertyAssociationItem struct {
-	ItemID            uint32
-	AssociationsCount int            // as declared
-	Associations      []ItemProperty // as parsed
+	ItemID       uint32
+	Associations [6]uint16
+	//AssociationsCount uint32 // as declared
+	//Associations      []ItemProperty // as parsed
+}
+
+func (ipai ItemPropertyAssociationItem) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("ItemID:%d {", ipai.ItemID))
+	for i := 0; i < len(ipai.Associations); i++ {
+		sb.WriteString(fmt.Sprintf("%d,", ipai.Associations[i]))
+	}
+	sb.WriteString("}")
+	return sb.String()
 }
 
 // ItemProperty is not a box
@@ -557,7 +586,7 @@ type ImageSpatialExtentsProperty struct {
 }
 
 func (ispe ImageSpatialExtentsProperty) String() string {
-	return fmt.Sprintf("(ispe) Image Width: %d, Height: %d", ispe.W, ispe.H)
+	return fmt.Sprintf("(ispe) Image Width:%d, Height:%d", ispe.W, ispe.H)
 }
 
 // Type returns TypeIspe
@@ -565,19 +594,19 @@ func (ispe ImageSpatialExtentsProperty) Type() BoxType {
 	return TypeIspe
 }
 
-func parseImageSpatialExtentsProperty(outer *box) (Box, error) {
-	flags, err := outer.readFlags()
+func parseIspe(b *box) (Box, error) {
+	return b.parseImageSpatialExtentsProperty()
+}
+
+func (b *box) parseImageSpatialExtentsProperty() (ispe ImageSpatialExtentsProperty, err error) {
+	buf, err := b.peek(12)
 	if err != nil {
-		return nil, err
-	}
-	w, _ := outer.readUint32()
-	h, err := outer.readUint32()
-	if err != nil {
-		return nil, err
+		err = errors.Wrap(err, "parseImageSpatialExtentsProperty")
+		return
 	}
 	return ImageSpatialExtentsProperty{
-		Flags: flags,
-		W:     w,
-		H:     h,
-	}, nil
+		Flags: Flags(heicByteOrder.Uint32(buf[:4])),
+		W:     heicByteOrder.Uint32(buf[4:8]),
+		H:     heicByteOrder.Uint32(buf[8:12]),
+	}, b.discard(12)
 }

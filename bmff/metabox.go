@@ -2,12 +2,12 @@ package bmff
 
 import (
 	"fmt"
-	"io"
+	"strings"
 )
 
 // MetaBox is a 'meta' box
 type MetaBox struct {
-	size  uint32
+	//size  uint32
 	Flags Flags
 
 	Handler    HandlerBox
@@ -18,23 +18,28 @@ type MetaBox struct {
 	Children   []Box
 }
 
-// Size returns the size of the MetaBox
-func (mb MetaBox) Size() int64 {
-	return int64(mb.size)
-}
-
 // Type returns TypeMeta
 func (mb MetaBox) Type() BoxType {
 	return TypeMeta
 }
 
 func (mb MetaBox) String() string {
-	str := fmt.Sprintf("(Box) bmff.Metabox, %d Children\n", len(mb.Children))
-	str += "\t" + mb.Primary.String() + "\n"
-	str += "\t" + mb.ItemInfo.String() + "\n"
-	str += "\t" + mb.Properties.String() + "\n"
-	str += "\t" + mb.Location.String() + "\n"
-	return str
+	var sb strings.Builder
+	sb.WriteString("(Box) meta | Children: ")
+	sb.WriteString(fmt.Sprint(len(mb.Children)))
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Primary.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.ItemInfo.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Properties.String())
+	sb.WriteString("\n")
+	sb.WriteString("\t")
+	sb.WriteString(mb.Location.String())
+	return sb.String()
 }
 
 func parseMeta(outer *box) (Box, error) {
@@ -42,61 +47,54 @@ func parseMeta(outer *box) (Box, error) {
 }
 
 func parseMetaBox(outer *box) (mb MetaBox, err error) {
-	mb = MetaBox{size: uint32(outer.size)}
-	mb.Flags, err = outer.readFlags()
-	if err != nil {
-		return mb, err
+	if outer.boxType != TypeMeta {
+		if debugFlag {
+			traceBoxWithMsg(*outer, "error wrong BoxType")
+		}
+		err = ErrWrongBoxType
+		return
 	}
-
+	if mb.Flags, err = outer.readFlags(); err != nil {
+		return
+	}
+	if debugFlag {
+		traceBoxWithFlags(*outer, *outer, mb.Flags)
+	}
 	var inner box
 	for outer.anyRemain() {
 		inner, err = outer.readInnerBox()
 		if err != nil {
-			if err == io.EOF {
-				return mb, nil
-			}
 			return mb, err
 		}
 		switch inner.boxType {
 		case TypeIdat, TypeDinf, TypeUUID, TypeIref:
 			// Do not parse
-
-		//case TypeIref:
-		//	_, err = inner.Parse()
 		case TypePitm:
-			mb.Primary, err = parsePrimaryItemBox(&inner)
+			mb.Primary, err = inner.parsePrimaryItemBox()
 		case TypeIinf:
-			mb.ItemInfo, err = parseItemInfoBox(&inner)
+			mb.ItemInfo, err = inner.parseItemInfoBox()
 		case TypeHdlr:
-			mb.Handler, err = parseHandlerBox(&inner)
+			mb.Handler, err = inner.parseHandlerBox()
 		case TypeIprp:
-			mb.Properties, err = parseItemPropertiesBox(&inner)
+			mb.Properties, err = inner.parseItemPropertiesBox()
 		case TypeIloc:
-			mb.Location, err = parseItemLocationBox(&inner)
+			mb.Location, err = inner.parseItemLocationBox()
 		default:
-			p, err := inner.Parse()
-			if err == nil {
-				mb.Children = append(mb.Children, p)
-			}
+			//p, err := inner.Parse()
+			//if err == nil {
+			//	mb.Children = append(mb.Children, p)
+			//}
 		}
 		if err != nil {
-			if Debug {
-				fmt.Println(err)
-			}
+			return
 		}
-		outer.remain -= int(inner.size)
-		if err = inner.discard(inner.remain); err != nil {
-			if Debug {
-				fmt.Println(err)
-			}
-			// TODO: improve error handling
+		if err = outer.closeInnerBox(&inner); err != nil {
 			break
 		}
 
-		if Debug {
-			fmt.Println(inner, outer.remain, inner.remain, inner.size)
+		if debugFlag {
+			log.Debug("%s", inner)
 		}
 	}
-	err = outer.discard(outer.remain)
-	return mb, err
+	return mb, outer.discard(outer.remain)
 }

@@ -2,21 +2,16 @@
 package heic
 
 import (
-	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/bmff"
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
-	"github.com/evanoberholster/imagemeta/xmp"
+	"github.com/pkg/errors"
 )
 
 // TODO:
-// Add support for XMP
 // Write benchmarks
 // Write tests
 
@@ -27,61 +22,44 @@ var (
 
 // Metadata is an Heic file's Metadata
 type Metadata struct {
-	// Reader
-	r io.Reader
-	// Custom Decoder interface
-	ExifDecodeFn exif.DecodeFn
-	ExifHeader   exif.Header
-	XmpDecodeFn  xmp.DecodeFn
-	XmpHeader    xmp.Header
-	FileType     bmff.FileTypeBox
-	Meta         bmff.MetaBox
+	*meta.Metadata
+
+	FileType bmff.FileTypeBox
+	Meta     bmff.MetaBox
 	//Thumbnail []byte
-	dim meta.Dimensions
-	n   uint16 // Num Images
-	t   imagetype.ImageType
+	n uint16 // Num Images
 }
 
 // NewMetadata returns a new heic.Metadata
-func NewMetadata(r io.Reader) (m *Metadata, err error) {
-	m = &Metadata{r: r, t: imagetype.ImageHEIF}
-	err = m.getMeta()
-	return m, err
-}
-
-// Dimensions returns the meta.Dimensions of the
-// Primary Image.
-func (hm Metadata) Dimensions() meta.Dimensions {
-	return hm.dim
-}
-
-// Images returns the number of images.
-func (hm Metadata) Images() uint16 {
-	return hm.n
-}
-
-func (hm *Metadata) getMeta() (err error) {
-	bmr := bmff.NewReader(hm.r)
+func NewMetadata(r io.Reader, m *meta.Metadata) (hm Metadata, err error) {
+	hm = Metadata{Metadata: m}
+	bmr := bmff.NewReader(r)
 
 	hm.FileType, err = bmr.ReadFtypBox()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
 	hm.Meta, err = bmr.ReadMetaBox()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
 	// Find PITM and set Dimensions
-	// TODO: fetch PitM, # images, and dimensions
-	hm.dim = meta.NewDimensions(0, 0)
-	hm.n = 1
+	box, err := hm.Meta.Properties.ContainerByID(hm.Meta.Primary.ItemID, bmff.TypeIspe)
+	if err != nil {
+		err = errors.Wrap(err, "Heic getMeta")
+	}
+	if ispe, ok := box.(bmff.ImageSpatialExtentsProperty); ok {
+		hm.Dim = meta.NewDimensions(ispe.W, ispe.H)
+	}
 
-	//fmt.Println(mb)
-	return nil
+	return hm, err
+}
+
+// Images returns the number of images.
+func (hm Metadata) Images() uint16 {
+	return hm.n
 }
 
 // Item represents an item in a HEIF file.
@@ -92,8 +70,8 @@ type Item struct {
 	Properties bmff.ItemPropertyAssociationItem
 }
 
-func (hm *Metadata) ExifItem() (item Item, err error) {
-	item.Info, err = hm.Meta.ItemInfo.LastItemByType(bmff.ItemTypeExif)
+func (hm *Metadata) itemByType(it bmff.ItemType) (item Item, err error) {
+	item.Info, err = hm.Meta.ItemInfo.LastItemByType(it)
 	if err == bmff.ErrItemNotFound {
 		err = meta.ErrNoExif
 		return
@@ -107,40 +85,37 @@ func (hm *Metadata) ExifItem() (item Item, err error) {
 	return
 }
 
-// DecodeExif reads Exif Metadata from the underlying reader interface and returns Exif.
+// ReadXmpHeader reads Xmp Header from the Heic Metadata and returns an Xmp Header.
 // If an error occurs returns the error.
 //
-// Utilizes the custom decoder ExifDecodeFn if it is not nil.
-func (hm *Metadata) DecodeExif(r meta.Reader) error {
-	item, err := hm.ExifItem()
+func (hm *Metadata) ReadXmpHeader(r meta.Reader) (header meta.XmpHeader, err error) {
+	item, err := hm.itemByType(bmff.ItemTypeMime)
 	if err != nil {
-		return err
+		return
 	}
-	header, err := readExifBox(r, hm.t, item.Location.FirstExtent.Offset, item.Location.FirstExtent.Length)
-	if err != nil {
-		return err
-	}
-	if hm.ExifDecodeFn == nil {
-		return nil
-	}
-	return hm.ExifDecodeFn(r, header)
+	hm.XmpHeader = meta.NewXMPHeader(uint32(item.Location.FirstExtent.Offset), uint32(item.Location.FirstExtent.Length))
+	return hm.XmpHeader, err
 }
 
-func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, length uint64) (header exif.Header, err error) {
-	// Seek to Exif Box position
-	_, err = r.Seek(int64(offset), 0)
+// ReadExifHeader reads Exif Header from the Heic Metadata and returns an Exif Header.
+// If an error occurs returns the error.
+//
+func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err error) {
+	item, err := hm.itemByType(bmff.ItemTypeExif)
 	if err != nil {
+		return
+	}
+	offset := item.Location.FirstExtent.Offset
+	length := item.Location.FirstExtent.Length
+
+	var buf [18]byte
+	if _, err = r.ReadAt(buf[:], int64(offset)); err != nil {
 		return
 	}
 
-	// Read Exif Box
-	var buf [8]byte
-	size, err := readBox(r, buf, "Exif")
-	if err != nil {
-		return
-	}
-	_, err = r.Seek(int64(size-4), io.SeekCurrent)
-	if err != nil {
+	// Read BoxType
+	if !(bmff.IsBoxType("Exif", buf[4:8])) {
+		err = fmt.Errorf("error wrong Box Type: %d", buf[4:8])
 		return
 	}
 
@@ -148,41 +123,36 @@ func readExifBox(r meta.Reader, imageType imagetype.ImageType, offset uint64, le
 	if _, err = r.Read(buf[:8]); err != nil {
 		return
 	}
-	byteOrder := tiff.BinaryOrder(buf[:4])
-	firstIfdOffset := byteOrder.Uint32(buf[4:8])
-	tiffHeaderOffset := int64(offset) + size + 4
-	return exif.NewHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), imageType), nil
+	byteOrder := meta.BinaryOrder(buf[10:14])
+	firstIfdOffset := byteOrder.Uint32(buf[14:18])
+	tiffHeaderOffset := int64(offset) + 10
+	hm.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), hm.It)
+	hm.ExifHeader.FirstIfd = ifds.RootIFD
+
+	return hm.ExifHeader, err
 }
 
-func readBox(r io.Reader, buf [8]byte, boxType string) (size int64, err error) {
-	// Read size
-	if _, err = r.Read(buf[:]); err != nil {
+// ReadXmp reads XMP metadata from the meta.Reader
+func (hm *Metadata) ReadXmp(r meta.Reader) (err error) {
+	if hm.XmpFn == nil {
 		return
 	}
-	size = int64(binary.BigEndian.Uint32(buf[:4]))
-
-	// Read BoxType
-	if !(isBoxType(boxType, buf[4:8])) {
-		err = fmt.Errorf("error wrong Box Type: %d", buf)
+	if _, err = hm.ReadXmpHeader(r); err != nil {
 		return
 	}
-
-	switch size {
-	case 1:
-		// Read 64 bit size, after the type
-		if _, err = r.Read(buf[:]); err != nil {
-			return
-		}
-		size = int64(binary.BigEndian.Uint64(buf[:8]))
-		if size < 0 {
-			return //Error
-		}
-	case 0:
-		return // Error
+	if _, err = r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
+		return
 	}
-	return size, nil
+	return hm.XmpFn(io.LimitReader(r, int64(hm.XmpHeader.Length)), hm.Metadata)
 }
 
-func isBoxType(bt1 string, bt2 []byte) bool {
-	return bt1[0] == bt2[0] && bt1[1] == bt2[1] && bt1[2] == bt2[2] && bt1[3] == bt2[3]
+// ReadExif reads Exif metadata from the meta.Reader
+func (hm *Metadata) ReadExif(r meta.Reader) (err error) {
+	if hm.ExifFn == nil {
+		return
+	}
+	if _, err = hm.ReadExifHeader(r); err != nil {
+		return
+	}
+	return hm.ExifFn(r, hm.Metadata)
 }
