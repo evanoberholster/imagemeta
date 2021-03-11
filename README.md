@@ -77,23 +77,41 @@ func main() {
 		fmt.Println(e.LensModel())
 		fmt.Println(e.LensSerial())
 
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
+    // Example Tags
+	  fmt.Println(e.Dimensions())
+
+	  // Makernote Tags
+	  fmt.Println(e.CanonCameraSettings())
+	  fmt.Println(e.CanonFileInfo())
+	  fmt.Println(e.CanonShotInfo())
+	  fmt.Println(e.CanonAFInfo())
+	
+	  // Time Tags
+	  fmt.Println(e.ModifyDate())
+	  fmt.Println(e.DateTime())
+	  fmt.Println(e.GPSDate(time.UTC))
+    fmt.Println(e.GPSDate(nil))
+	
+	  // GPS Tags
+	  fmt.Println(e.GPSCoords())
+	  fmt.Println(e.GPSAltitude())
+	
+	  // Other Tags
+	  fmt.Println(e.ExposureProgram())
+	  fmt.Println(e.MeteringMode())
+	  fmt.Println(e.ShutterSpeed())
+	  fmt.Println(e.Aperture())
+	  fmt.Println(e.FocalLength())
+	  fmt.Println(e.FocalLengthIn35mmFilm())
+	  fmt.Println(e.ISOSpeed())
+	  fmt.Println(e.Flash())
 
 		fmt.Println(e.ExposureValue())
 		fmt.Println(e.ExposureBias())
 
 		fmt.Println(e.GPSCoords())
-
 		c, _ := e.GPSCellID()
-		fmt.Println(c.ToToken())
-		fmt.Println(e.DateTime())
-		fmt.Println(e.ModifyDate())
-
-		fmt.Println(e.GPSDate(nil))
+		fmt.Println(c.ToToken())		
 	}
 }
 ```
@@ -108,20 +126,23 @@ This was benchmarked without the retrival of values.
 To run your own benchmarks see bench_test.go
 
 ```go
-BenchmarkScanExif100/NoExif.jpg-8              1249808          996 ns/op       4496 B/op          5 allocs/op
-BenchmarkScanExif100/350D.CR2-8                  39280        31519 ns/op      10445 B/op         46 allocs/op
-BenchmarkScanExif100/XT1.CR2-8                   37731        31582 ns/op      10444 B/op         46 allocs/op
-BenchmarkScanExif100/60D.CR2-8                   27439        43459 ns/op      12593 B/op         52 allocs/op
-BenchmarkScanExif100/6D.CR2-8                    26264        45286 ns/op      13185 B/op         57 allocs/op
-BenchmarkScanExif100/7D.CR2-8                    26625        46062 ns/op      13216 B/op         57 allocs/op
-BenchmarkScanExif100/5DMKIII.CR2-8               24404        48578 ns/op      13212 B/op         57 allocs/op
-BenchmarkScanExif100/1.CR3-8                    138854         8470 ns/op       5157 B/op         17 allocs/op
-BenchmarkScanExif100/1.jpg-8                     52980        22424 ns/op      31394 B/op         32 allocs/op
-BenchmarkScanExif100/1.NEF-8                     24420        50230 ns/op      13598 B/op         61 allocs/op
-BenchmarkScanExif100/3.NEF-8                     20294        58299 ns/op      17008 B/op         67 allocs/op
-BenchmarkScanExif100/1.ARW-8                     30277        39593 ns/op      11928 B/op         56 allocs/op
-BenchmarkScanExif100/4.RW2-8                     34719        34740 ns/op       8202 B/op         31 allocs/op
-BenchmarkScanExif100/hero6.gpr-8                 31630        38285 ns/op      13606 B/op         39 allocs/op
+BenchmarkImagemeta100/.CR2/60D         	   15552	     69759 ns/op	   11281 B/op	      30 allocs/op
+BenchmarkImagemeta100/.CR2/GPS         	   14929	     83673 ns/op	   11332 B/op	      32 allocs/op
+BenchmarkImagemeta100/.CR2/7D          	   14068	     83297 ns/op	   11333 B/op	      32 allocs/op
+BenchmarkImagemeta100/.JPG/GPS         	   19404	     59828 ns/op	    5629 B/op	      24 allocs/op
+BenchmarkImagemeta100/.JPF/GoPro6      	   25165	     47939 ns/op	    5607 B/op	      24 allocs/op
+BenchmarkImagemeta100/.HEIC            	   31309	     35531 ns/op	   12608 B/op	      76 allocs/op
+BenchmarkImagemeta100/.HEIC/CanonR5    	   14814	     81757 ns/op	   17655 B/op	      67 allocs/op
+BenchmarkImagemeta100/.HEIC/CanonR6    	   13557	     86212 ns/op	   17367 B/op	      65 allocs/op
+BenchmarkImagemeta100/.HEIC/iPhone11   	   15961	     68563 ns/op	   17101 B/op	      93 allocs/op
+BenchmarkImagemeta100/.HEIC/iPhone12   	   18288	     64648 ns/op	   14561 B/op	      94 allocs/op
+BenchmarkImagemeta100/.NEF/Nikon       	   13954	     84132 ns/op	   11443 B/op	      34 allocs/op
+BenchmarkImagemeta100/.NEF/Nikon#01    	   14503	     96479 ns/op	   11442 B/op	      34 allocs/op
+BenchmarkImagemeta100/.RW2/Panasonic   	   22882	     51855 ns/op	    5558 B/op	      22 allocs/op
+BenchmarkImagemeta100/.ARW/Sony        	   16862	     71868 ns/op	    5856 B/op	      31 allocs/op
+BenchmarkImagemeta100/.DNG/Adobe       	    8196	    131020 ns/op	   22138 B/op	      43 allocs/op
+BenchmarkImagemeta100/.JPG/NoExif      	 1609324	       756 ns/op	     352 B/op	       3 allocs/op
+
 ```
 
 ## Imagetype Identification
