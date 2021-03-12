@@ -18,7 +18,7 @@ func TestScan(t *testing.T) {
 		{"../testImages/CR2.exif", ImageCR2},
 		{"../testImages/Heic.exif", ImageHEIF},
 		{"../testImages/AVIF.avif", ImageAVIF},
-		{"../testImages/AVIF.AVIF", ImageAVIF},
+		{"../testImages/AVIF2.avif", ImageAVIF},
 		{"../testImages/CRW.CRW", ImageCRW},
 		{"../testImages/XMP.xmp", ImageXMP},
 		{"../testImages/Unknown.exif", ImageUnknown},
