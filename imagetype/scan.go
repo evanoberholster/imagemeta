@@ -17,7 +17,7 @@ const (
 )
 
 // Scan reads from the reader and returns an imageType based on
-// underlying rules. Returns ErrImageTypeNotFound if imageType was not
+// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if imageType was not
 // identified.
 func Scan(r io.Reader) (imageType ImageType, err error) {
 	// Parse Header for an ImageType
@@ -29,7 +29,7 @@ func Scan(r io.Reader) (imageType ImageType, err error) {
 }
 
 // ScanBuf peeks at a bufio.Reader and returns an imageType based on
-// underlying rules. Returns ErrImageTypeNotFound if imageType was not
+// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if imageType was not
 // identified.
 func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 	var buf []byte
@@ -41,6 +41,24 @@ func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 
 	// Parse Header for an ImageType
 	imageType = parseBuffer(buf)
+
+	// Check if ImageType is Unknown
+	if imageType == ImageUnknown {
+		err = ErrImageTypeNotFound
+	}
+	return
+}
+
+// ReadAt reads from the reader at the given offset and returns an imageType based on
+// underlying rules. Returns ImageUnknown and an error if imageType was not
+// identified.
+func ReadAt(r io.ReaderAt) (imageType ImageType, err error) {
+	buf := [searchHeaderLength]byte{}
+	if _, err = r.ReadAt(buf[:], 0); err != nil {
+		return ImageUnknown, err
+	}
+	// Parse Header for an ImageType
+	imageType = parseBuffer(buf[:])
 
 	// Check if ImageType is Unknown
 	if imageType == ImageUnknown {
