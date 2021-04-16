@@ -39,14 +39,7 @@ func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 		return ImageUnknown, err
 	}
 
-	// Parse Header for an ImageType
-	imageType = parseBuffer(buf)
-
-	// Check if ImageType is Unknown
-	if imageType == ImageUnknown {
-		err = ErrImageTypeNotFound
-	}
-	return
+	return Buf(buf[:])
 }
 
 // ReadAt reads from the reader at the given offset and returns an imageType based on
@@ -57,8 +50,20 @@ func ReadAt(r io.ReaderAt) (imageType ImageType, err error) {
 	if _, err = r.ReadAt(buf[:], 0); err != nil {
 		return ImageUnknown, err
 	}
+
+	return Buf(buf[:])
+}
+
+// Buf parses a []byte for image magic numbers that identify the imagetype.
+// If []byte is less than searchHeaderLength returns ImageUnknown and ErrDataLength
+// If imageType was not identified returns ImageUnknown and ErrImageTypeNotFound
+func Buf(buf []byte) (imageType ImageType, err error) {
+	if len(buf) < searchHeaderLength {
+		return ImageUnknown, ErrDataLength
+	}
+
 	// Parse Header for an ImageType
-	imageType = parseBuffer(buf[:])
+	imageType = parseBuffer(buf)
 
 	// Check if ImageType is Unknown
 	if imageType == ImageUnknown {

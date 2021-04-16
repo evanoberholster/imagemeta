@@ -152,11 +152,8 @@ func TestScanImageType(t *testing.T) {
 
 	// Image Unknown
 	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop1234567890abcdefghijklmnopqrs")))
-	if err != ErrImageTypeNotFound {
-		t.Fatal(err)
-	}
-
-	if imageType != ImageUnknown {
+	if imageType != ImageUnknown && err != ErrImageTypeNotFound {
+		t.Errorf("Incorrect Error wanted %s got %s", ErrImageTypeNotFound.Error(), err.Error())
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 
@@ -172,11 +169,15 @@ func TestScanImageType(t *testing.T) {
 	}
 
 	imageType, err = ReadAt(r)
-	if err != io.EOF {
-		t.Fatal(err)
+	if imageType != ImageUnknown && err != ErrImageTypeNotFound {
+		t.Errorf("Incorrect Error wanted %s got %s", ErrImageTypeNotFound.Error(), err.Error())
+		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 
-	if imageType != ImageUnknown {
+	buf = make([]byte, 10)
+	imageType, err = Buf(buf)
+	if imageType != ImageUnknown && err != ErrDataLength {
+		t.Errorf("Incorrect Error wanted %s got %s", ErrDataLength.Error(), err.Error())
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
 }
