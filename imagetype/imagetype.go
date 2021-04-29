@@ -11,6 +11,8 @@ var (
 	ErrDataLength = errors.New("error the data is not long enough")
 )
 
+//go:generate msgp
+
 // TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
 //TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
 
