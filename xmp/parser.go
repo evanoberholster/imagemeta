@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -82,6 +83,15 @@ func parseUint(buf []byte) (u uint64) {
 	for i := 0; i < len(buf); i++ {
 		u *= 10
 		u += uint64(buf[i] - '0')
+	}
+	return
+}
+
+// parseFloat64 parses a []byte of a string representation of a float64 value and returns the value
+func parseFloat64(buf []byte) (f float64) {
+	f, err := strconv.ParseFloat(string(buf), 64)
+	if err != nil {
+		return 0.0
 	}
 	return
 }
