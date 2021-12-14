@@ -14,8 +14,7 @@ func (xmp *XMP) parser(p property) (err error) {
 	}
 	switch p.Namespace() {
 	case xmpns.XMLnsNS:
-		// Null operation
-		return
+		return // Null operation
 	case xmpns.ExifNS:
 		err = xmp.Exif.parse(p)
 	case xmpns.AuxNS:
@@ -42,7 +41,7 @@ func (xmp *XMP) parser(p property) (err error) {
 	return
 }
 
-// parseDate
+// parseDate parses a Date and returns a time.Time or an error
 func parseDate(buf []byte) (t time.Time, err error) {
 	str := string(buf)
 	if t, err = time.Parse("2006-01-02T15:04:05Z07:00", str); err != nil {
@@ -53,6 +52,7 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	return
 }
 
+// parseUUID parses a UUID and returns a meta.UUID
 func parseUUID(buf []byte) (uuid meta.UUID) {
 	_, b := readUntil(buf, ':')
 	if len(b) > 0 {

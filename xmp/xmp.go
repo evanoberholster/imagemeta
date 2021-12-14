@@ -24,7 +24,7 @@ type XMP struct {
 var (
 
 	// ErrNoXMP is returned when no XMP Root Tag is found.
-	ErrNoXMP          = errors.New("xmp: error XMP not found")
+	ErrNoXMP          = errors.New("xmp: error no XMP Tag found")
 	ErrPropertyNotSet = errors.New("xmp: error property not set")
 )
 
