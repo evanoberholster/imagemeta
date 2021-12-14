@@ -33,6 +33,8 @@ func (mm *XMPMM) parse(p property) (err error) {
 		mm.DocumentID = parseUUID(p.Value())
 	case xmpns.OriginalDocumentID:
 		mm.OriginalDocumentID = parseUUID(p.Value())
+	case xmpns.PreservedFileName:
+		mm.PreservedFileName = parseString(p.Value())
 	case xmpns.InstanceID:
 		mm.InstanceID = parseUUID(p.Value())
 	default:
@@ -83,6 +85,8 @@ type XMPMM struct {
 	OriginalDocumentID meta.UUID
 
 	History []History
+
+	PreservedFileName string
 }
 
 // History is an XMPMM History sequence

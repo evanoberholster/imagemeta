@@ -8,8 +8,8 @@ import (
 //   xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#tiff
 type Tiff struct {
-	Make             string
-	Model            string
+	Make             string // Camera Make
+	Model            string // Camera Model
 	Software         string
 	Copyright        []string
 	ImageDescription []string

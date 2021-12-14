@@ -63,6 +63,10 @@ type Exif struct {
 
 func (exif *Exif) parse(p property) (err error) {
 	switch p.Name() {
+	case xmpns.PixelXDimension:
+		exif.PixelXDimension = uint32(parseUint(p.Value()))
+	case xmpns.PixelYDimension:
+		exif.PixelYDimension = uint32(parseUint(p.Value()))
 	case xmpns.DateTimeOriginal:
 		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case xmpns.ExposureTime:
@@ -75,21 +79,27 @@ func (exif *Exif) parse(p property) (err error) {
 	case xmpns.ExposureBiasValue:
 		err = exif.ExposureBias.UnmarshalText(p.Value())
 	case xmpns.FocalLength:
-		// TODO: error
+		// TODO: needs verification
 		n, d := parseRational(p.Value())
 		exif.FocalLength = meta.NewFocalLength(n, d)
 	case xmpns.SubjectDistance:
-		// TODO: error
+		// TODO: needs verification
 		n, d := parseRational(p.Value())
 		exif.SubjectDistance = float32(float32(n) / float32(d))
 	case xmpns.MeteringMode:
 		exif.MeteringMode = meta.NewMeteringMode(uint8(parseUint(p.Value())))
 	case xmpns.FNumber:
-		// TODO: error
+		// TODO: needs verification
 		n, d := parseRational(p.Value())
 		exif.Aperture = meta.NewAperture(n, d)
 	case xmpns.ISOSpeedRatings:
 		exif.ISOSpeedRatings = uint32(parseUint(p.val))
+	case xmpns.GPSLatitude:
+		exif.GPSLatitude = parseFloat64(p.Value())
+	case xmpns.GPSLongitude:
+		exif.GPSLongitude = parseFloat64(p.Value())
+	case xmpns.GPSAltitude:
+		exif.GPSAltitude = float32(parseFloat64(p.Value()))
 	//case xmpns.Flash:
 	default:
 		return ErrPropertyNotSet

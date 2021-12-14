@@ -15,7 +15,7 @@ var xmpRootTag = [10]byte{'<', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a'}
 
 // Reader errors
 var (
-	ErrNoValue      = errors.New("property has no value")
+	ErrNoValue      = errors.New("error property has no value")
 	ErrNegativeRead = errors.New("error negative read")
 	ErrBufferFull   = bufio.ErrBufferFull
 )

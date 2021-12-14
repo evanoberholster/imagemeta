@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -14,8 +15,7 @@ func (xmp *XMP) parser(p property) (err error) {
 	}
 	switch p.Namespace() {
 	case xmpns.XMLnsNS:
-		// Null operation
-		return
+		return // Null operation
 	case xmpns.ExifNS:
 		err = xmp.Exif.parse(p)
 	case xmpns.AuxNS:
@@ -42,7 +42,7 @@ func (xmp *XMP) parser(p property) (err error) {
 	return
 }
 
-// parseDate
+// parseDate parses a Date and returns a time.Time or an error
 func parseDate(buf []byte) (t time.Time, err error) {
 	str := string(buf)
 	if t, err = time.Parse("2006-01-02T15:04:05Z07:00", str); err != nil {
@@ -53,6 +53,7 @@ func parseDate(buf []byte) (t time.Time, err error) {
 	return
 }
 
+// parseUUID parses a UUID and returns a meta.UUID
 func parseUUID(buf []byte) (uuid meta.UUID) {
 	_, b := readUntil(buf, ':')
 	if len(b) > 0 {
@@ -82,6 +83,15 @@ func parseUint(buf []byte) (u uint64) {
 	for i := 0; i < len(buf); i++ {
 		u *= 10
 		u += uint64(buf[i] - '0')
+	}
+	return
+}
+
+// parseFloat64 parses a []byte of a string representation of a float64 value and returns the value
+func parseFloat64(buf []byte) (f float64) {
+	f, err := strconv.ParseFloat(string(buf), 64)
+	if err != nil {
+		return 0.0
 	}
 	return
 }
