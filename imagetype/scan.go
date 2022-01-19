@@ -147,5 +147,9 @@ func parseBuffer(buf []byte) ImageType {
 		return ImageXMP
 	}
 
+	if isGIF(buf) {
+		return ImageGIF
+	}
+
 	return ImageUnknown
 }
