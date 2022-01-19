@@ -18,6 +18,8 @@ var (
 	ErrGpsCoordsNotValid = errors.New("error GPS coordinates not valid")
 	// ErrGPSRationalNotValid means that the rawCoordinates were not long enough.
 	ErrGPSRationalNotValid = errors.New("error GPS Coords requires a raw-coordinate with exactly three rationals")
+	// ErrShutterSpeedOverflows means that the shutterspeed cannot be parsed in our internal structure.
+	ErrShutterSpeedOverflows = errors.New("error shutter speed overflows")
 )
 
 // CameraMake convenience func. "IFD" Make
@@ -223,6 +225,30 @@ func (e *Data) ShutterSpeed() (meta.ShutterSpeed, error) {
 	if err != nil {
 		return meta.ShutterSpeed{}, err
 	}
+
+	// Some cameras will report exposure time as microseconds.
+	// We special-case this, otherwise it will overflow uint16 and
+	// result in very unfriendly values for humans.
+	// We assume that humans cannot comprehend something like
+	// 16666/1000000s, therefor we normalize to an integer fraction
+	// of a second making the example parse as 1/60.
+
+	// Catch all cases that would result in overflowing uint16 catching
+	// microseonds in the process.
+	if num > math.MaxUint16 || denom > math.MaxUint16 {
+		// Get the reciprocal value by reversing the numerator and denominator.
+		f := float64(denom) / float64(num)
+
+		// We alwayes use a numerator and clip the denominator to an integer, it
+		// will give nice results for humans.
+		num, denom = 1, uint32(f)
+
+		// denom can still overflow, give up if this happens.
+		if denom > math.MaxUint16 {
+			return meta.ShutterSpeed{}, ErrShutterSpeedOverflows
+		}
+	}
+
 	return meta.NewShutterSpeed(uint16(num), uint16(denom)), err
 }
 
