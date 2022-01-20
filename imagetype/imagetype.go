@@ -326,3 +326,14 @@ func isXMP(buf []byte) bool {
 		buf[8] == 0x74 &&
 		buf[9] == 0x61
 }
+
+// isGIF returns true if the header matches the header of a GIF version 87a
+// or 89a.
+func isGIF(buf []byte) bool {
+	return buf[0] == 'G' &&
+		buf[1] == 'I' &&
+		buf[2] == 'F' &&
+		buf[3] == '8' &&
+		(buf[4] == '7' || buf[4] == '9') &&
+		buf[5] == 'a'
+}
