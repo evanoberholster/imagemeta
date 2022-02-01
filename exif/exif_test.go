@@ -166,7 +166,7 @@ func TestParseExif(t *testing.T) {
 			assert.Equal(t, wantedExif.focalLength, val, "Focal Length")
 
 			// Created Date
-			date, _ := e.DateTime()
+			date, _ := e.DateTime(nil)
 			assert.Equal(t, wantedExif.createdDate.Unix(), date.Unix())
 
 		})

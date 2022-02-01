@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
@@ -72,8 +73,8 @@ func main() {
 
 		c, _ := e.GPSCellID()
 		fmt.Println(c.ToToken())
-		fmt.Println(e.DateTime())
-		fmt.Println(e.ModifyDate())
+		fmt.Println(e.DateTime(time.Local))
+		fmt.Println(e.ModifyDate(time.Local))
 
 		fmt.Println(e.GPSDate(nil))
 	}
