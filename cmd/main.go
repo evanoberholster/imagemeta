@@ -55,6 +55,8 @@ func main() {
 		fmt.Println(e.CameraModel())
 		fmt.Println(e.CameraSerial())
 
+		fmt.Println(e.Orientation())
+
 		fmt.Println(e.LensMake())
 		fmt.Println(e.LensModel())
 		fmt.Println(e.LensSerial())
