@@ -10,6 +10,7 @@ import (
 type FocalLength float32
 
 var (
+	strExposureModeDist    = []uint{0, 4, 10, 22}
 	strExposureProgramDist = []uint{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
 	strMeteringModeDist    = []uint{0, 7, 14, 37, 41, 51, 64, 71}
 
@@ -18,6 +19,7 @@ var (
 )
 
 const (
+	strExposureModeString    = "AutoManualAuto bracket"
 	strMeteringModeString    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
 	strExposureProgramString = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
 )
@@ -71,6 +73,7 @@ func NewMeteringMode(meteringMode uint8) MeteringMode {
 
 // String - Return Metering Mode as a string
 //
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
 func (mm MeteringMode) String() string {
 	if int(mm) < len(strMeteringModeDist)-1 {
 		return strMeteringModeString[strMeteringModeDist[mm]:strMeteringModeDist[mm+1]]
@@ -121,6 +124,11 @@ var mapStringMeteringMode = map[string]MeteringMode{
 }
 
 // ExposureMode is the mode in which the Exposure was taken.
+//
+//  Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
+//	0: "Auto",
+//	1: "Manual",
+//	2: "Auto bracket",
 type ExposureMode uint8
 
 // NewExposureMode returns an ExposureMode from the given uint8
@@ -131,19 +139,10 @@ func NewExposureMode(em uint8) ExposureMode {
 	return 255
 }
 
-// mapExposureModeString -
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
-var mapExposureModeString = map[ExposureMode]string{
-	0: "Auto",
-	1: "Manual",
-	2: "Auto bracket",
-}
-
 // String returns an ExposureMode as a string
 func (em ExposureMode) String() string {
-	str, ok := mapExposureModeString[em]
-	if ok {
-		return str
+	if int(em) < len(strExposureModeDist) {
+		return strExposureModeString[strExposureModeDist[em]:strExposureModeDist[em+1]]
 	}
 	return "Unknown"
 }

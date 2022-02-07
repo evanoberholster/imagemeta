@@ -60,13 +60,18 @@ func TestMeteringMode(t *testing.T) {
 		if mm != mm2 {
 			t.Errorf("Incorrect MeteringMode.MarshallText wanted %s (%d) got %s (%d)", mm, uint8(mm), mm2, uint8(mm2))
 		}
-
-		if i >= 7 && i != 255 {
-			if mm.String() != "Unknown" {
-				t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", mm)
+		if i > 7 {
+			if i == 255 {
+				if mm.String() != "Other" {
+					t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Other", mm)
+				}
+			} else {
+				if mm.String() != "Unknown" {
+					t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", mm)
+				}
 			}
-		}
 
+		}
 	}
 }
 
