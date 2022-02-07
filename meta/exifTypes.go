@@ -10,8 +10,16 @@ import (
 type FocalLength float32
 
 var (
+	strExposureProgramDist = []uint{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
+	strMeteringModeDist    = []uint{0, 7, 14, 37, 41, 51, 64, 71}
+
 	// FocalLength Suffix in millimeters
-	sufFocalLength = []byte{'m', 'm'}
+	sufFocalLength = "mm"
+)
+
+const (
+	strMeteringModeString    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
+	strExposureProgramString = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
 )
 
 // NewFocalLength returns a new FocalLength by dividing
@@ -26,10 +34,7 @@ func (fl FocalLength) String() string {
 
 func (fl FocalLength) toBytes() (buf []byte) {
 	f := strconv.AppendFloat(buf, float64(fl), 'f', 2, 32)
-	buf = make([]byte, len(f)+2)
-	copy(buf[len(buf)-2:], sufFocalLength)
-	copy(buf[:len(buf)-2], f)
-	return
+	return append(f, sufFocalLength...)
 }
 
 // MarshalText implements the TextMarshaler interface that is
@@ -66,28 +71,14 @@ func NewMeteringMode(meteringMode uint8) MeteringMode {
 
 // String - Return Metering Mode as a string
 //
-// MeteringMode values
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
 func (mm MeteringMode) String() string {
-	switch mm {
-	case 0:
-		return "Unknown"
-	case 1:
-		return "Average"
-	case 2:
-		return "Center-weighted average"
-	case 3:
-		return "Spot"
-	case 4:
-		return "Multi-spot"
-	case 5:
-		return "Multi-segment"
-	case 6:
-		return "Partial"
-	case 255:
+	if int(mm) < len(strMeteringModeDist)-1 {
+		return strMeteringModeString[strMeteringModeDist[mm]:strMeteringModeDist[mm+1]]
+	}
+	if mm == 255 {
 		return "Other"
 	}
-	return "Unknown"
+	return strMeteringModeString[:strMeteringModeDist[1]]
 }
 
 // MarshalJSON implements the JSONMarshaler interface that is
@@ -116,6 +107,8 @@ func (mm *MeteringMode) UnmarshalText(text []byte) (err error) {
 	return nil
 }
 
+// MeteringMode values
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
 var mapStringMeteringMode = map[string]MeteringMode{
 	"Unknown":                 0,
 	"Average":                 1,
@@ -156,6 +149,18 @@ func (em ExposureMode) String() string {
 }
 
 // ExposureProgram is the program in which the image was taken.
+//
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
+// 	0: "Not Defined",
+// 	1: "Manual",
+// 	2: "Program AE",
+// 	3: "Aperture-priority AE",
+// 	4: "Shutter speed priority AE",
+// 	5: "Creative (Slow speed)",
+// 	6: "Action (High speed)",
+// 	7: "Portrait",
+// 	8: "Landscape",
+// 	9: "Bulb",
 type ExposureProgram uint8
 
 // NewExposureProgram returns an ExposureProgram from the given uint8
@@ -166,26 +171,10 @@ func NewExposureProgram(ep uint8) ExposureProgram {
 	return 255
 }
 
-// mapExposureProgramString -
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-var mapExposureProgramString = map[ExposureProgram]string{
-	0: "Not Defined",
-	1: "Manual",
-	2: "Program AE",
-	3: "Aperture-priority AE",
-	4: "Shutter speed priority AE",
-	5: "Creative (Slow speed)",
-	6: "Action (High speed)",
-	7: "Portrait",
-	8: "Landscape",
-	9: "Bulb",
-}
-
 // String returns an ExposureProgram as a string
 func (ep ExposureProgram) String() string {
-	str, ok := mapExposureProgramString[ep]
-	if ok {
-		return str
+	if int(ep) < len(strExposureProgramDist)-1 {
+		return strExposureProgramString[strExposureProgramDist[ep]:strExposureProgramDist[ep+1]]
 	}
 	return "Unknown"
 }
@@ -345,11 +334,11 @@ func (aa *Aperture) UnmarshalText(text []byte) (err error) {
 // ShutterSpeed contains the shutter speed in seconds.
 // Limit to 1/2 and 1/3 stops
 // [0] Numerator [1] Denominator
-type ShutterSpeed [2]uint16
+type ShutterSpeed [2]uint32
 
 // NewShutterSpeed creates a new ShutterSpeed with "n" as numerator and
 // "d" as denominator
-func NewShutterSpeed(n uint16, d uint16) ShutterSpeed {
+func NewShutterSpeed(n uint32, d uint32) ShutterSpeed {
 	return ShutterSpeed{n, d}
 }
 
@@ -360,7 +349,7 @@ func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
 			if i < len(buf)+1 {
-				return ShutterSpeed{uint16(parseUint(buf[:i])), uint16(parseUint(buf[i+1:]))}
+				return ShutterSpeed{uint32(parseUint(buf[:i])), uint32(parseUint(buf[i+1:]))}
 			}
 		}
 		if buf[i] == '.' {
@@ -372,11 +361,11 @@ func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
 				}
 				ub := parseUint(b)
 				if ub == 0 {
-					return ShutterSpeed{uint16(ua), 1}
+					return ShutterSpeed{uint32(ua), 1}
 				}
 				ua *= 10
 				ua += ub
-				return ShutterSpeed{uint16(ua), 10}
+				return ShutterSpeed{uint32(ua), 10}
 			}
 		}
 	}

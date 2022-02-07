@@ -383,7 +383,7 @@ func (z *ShutterSpeed) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 	for za0001 := range z {
-		z[za0001], err = dc.ReadUint16()
+		z[za0001], err = dc.ReadUint32()
 		if err != nil {
 			err = msgp.WrapError(err, za0001)
 			return
@@ -400,7 +400,7 @@ func (z *ShutterSpeed) EncodeMsg(en *msgp.Writer) (err error) {
 		return
 	}
 	for za0001 := range z {
-		err = en.WriteUint16(z[za0001])
+		err = en.WriteUint32(z[za0001])
 		if err != nil {
 			err = msgp.WrapError(err, za0001)
 			return
@@ -414,7 +414,7 @@ func (z *ShutterSpeed) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	o = msgp.AppendArrayHeader(o, uint32(2))
 	for za0001 := range z {
-		o = msgp.AppendUint16(o, z[za0001])
+		o = msgp.AppendUint32(o, z[za0001])
 	}
 	return
 }
@@ -432,7 +432,7 @@ func (z *ShutterSpeed) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		return
 	}
 	for za0001 := range z {
-		z[za0001], bts, err = msgp.ReadUint16Bytes(bts)
+		z[za0001], bts, err = msgp.ReadUint32Bytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err, za0001)
 			return
@@ -444,6 +444,6 @@ func (z *ShutterSpeed) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *ShutterSpeed) Msgsize() (s int) {
-	s = msgp.ArrayHeaderSize + (2 * (msgp.Uint16Size))
+	s = msgp.ArrayHeaderSize + (2 * (msgp.Uint32Size))
 	return
 }

@@ -71,7 +71,7 @@ func (exif *Exif) parse(p property) (err error) {
 		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case xmpns.ExposureTime:
 		n, d := parseRational(p.Value())
-		exif.ExposureTime = meta.NewShutterSpeed(uint16(n), uint16(d))
+		exif.ExposureTime = meta.NewShutterSpeed(n, d)
 	case xmpns.ExposureProgram:
 		exif.ExposureProgram = meta.ExposureProgram(uint8(parseUint(p.Value())))
 	case xmpns.ExposureMode:

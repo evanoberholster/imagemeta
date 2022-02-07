@@ -223,7 +223,7 @@ func (e *Data) ShutterSpeed() (meta.ShutterSpeed, error) {
 	if err != nil {
 		return meta.ShutterSpeed{}, err
 	}
-	return meta.NewShutterSpeed(uint16(num), uint16(denom)), err
+	return meta.NewShutterSpeed(num, denom), err
 }
 
 // ExposureValue convenience func. "IFD/Exif" ShutterSpeedValue
