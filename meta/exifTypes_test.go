@@ -72,6 +72,10 @@ func TestMeteringMode(t *testing.T) {
 
 		}
 	}
+
+	if MeteringMode(200).String() != "Unknown" {
+		t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", NewMeteringMode(200).String())
+	}
 }
 
 func TestExposureProgram(t *testing.T) {

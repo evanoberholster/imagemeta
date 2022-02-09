@@ -8,9 +8,9 @@ import (
 //go:generate msgp
 
 var (
-	_ExposureMode_index    = [...]uint8{0, 4, 10, 22}
-	_ExposureProgram_index = [...]uint8{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
-	_MeteringMode_index    = [...]uint8{0, 7, 14, 37, 41, 51, 64, 71}
+	_ExposureModeIndex    = [...]uint8{0, 4, 10, 22}
+	_ExposureProgramIndex = [...]uint8{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
+	_MeteringModeIndex    = [...]uint8{0, 7, 14, 37, 41, 51, 64, 71}
 
 	// FocalLength Suffix in millimeters
 	sufFocalLength = "mm"
@@ -19,9 +19,9 @@ var (
 )
 
 const (
-	_ExposureMode_name    = "AutoManualAuto bracket"
-	_MeteringMode_name    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
-	_ExposureProgram_name = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
+	_ExposureModeName    = "AutoManualAuto bracket"
+	_MeteringModeName    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
+	_ExposureProgramName = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
 )
 
 // FocalLength is a Focal Length expressed in millimeters.
@@ -78,13 +78,13 @@ func NewMeteringMode(meteringMode uint8) MeteringMode {
 //
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
 func (mm MeteringMode) String() string {
-	if int(mm) < len(_MeteringMode_index)-1 {
-		return _MeteringMode_name[_MeteringMode_index[mm]:_MeteringMode_index[mm+1]]
+	if int(mm) < len(_MeteringModeIndex)-1 {
+		return _MeteringModeName[_MeteringModeIndex[mm]:_MeteringModeIndex[mm+1]]
 	}
 	if mm == 255 {
 		return "Other"
 	}
-	return _MeteringMode_name[:_MeteringMode_index[1]]
+	return _MeteringModeName[:_MeteringModeIndex[1]]
 }
 
 // MarshalJSON implements the JSONMarshaler interface that is
@@ -144,8 +144,8 @@ func NewExposureMode(em uint8) ExposureMode {
 
 // String returns an ExposureMode as a string
 func (em ExposureMode) String() string {
-	if int(em) < len(_ExposureMode_index)-1 {
-		return _ExposureMode_name[_ExposureMode_index[em]:_ExposureMode_index[em+1]]
+	if int(em) < len(_ExposureModeIndex)-1 {
+		return _ExposureModeName[_ExposureModeIndex[em]:_ExposureModeIndex[em+1]]
 	}
 	return "Unknown"
 }
@@ -175,8 +175,8 @@ func NewExposureProgram(ep uint8) ExposureProgram {
 
 // String returns an ExposureProgram as a string
 func (ep ExposureProgram) String() string {
-	if int(ep) < len(_ExposureProgram_index)-1 {
-		return _ExposureProgram_name[_ExposureProgram_index[ep]:_ExposureProgram_index[ep+1]]
+	if int(ep) < len(_ExposureProgramIndex)-1 {
+		return _ExposureProgramName[_ExposureProgramIndex[ep]:_ExposureProgramIndex[ep+1]]
 	}
 	return "Unknown"
 }
