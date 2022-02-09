@@ -2,7 +2,6 @@ package meta
 
 import (
 	"bytes"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -158,58 +157,42 @@ func TestShutterSpeed(t *testing.T) {
 }
 
 var fmList = []struct {
-	name string
-	fm   FlashMode
-	str  string
-	m    uint8
-	b    bool
+	fm    FlashMode
+	str   string
+	m     uint8
+	fired bool
+	noFn  bool
 }{
-	{"test0", NoFlash, "No Flash", 0, false},
-	{"test1", FlashFired, "Fired", 1, true},
-	{"test5", FlashFired, "Fired", 5, true},
-	{"test7", FlashFired, "Fired", 7, true},
-	{"test8", FlashOffNotFired, "Off, Did not fire", 8, false},
-	{"test16", FlashOffNotFired, "Off, Did not fire", 16, false},
-	{"test20", FlashOffNotFired, "Off, Did not fire", 20, false},
-	{"test24", FlashAutoNotFired, "Auto, Did not fire", 24, false},
-	{"test88", FlashAutoNotFired, "Auto, Did not fire", 88, false},
-	{"test25", FlashAutoFired, "Auto, Fired", 25, true},
-	{"test29", FlashAutoFired, "Auto, Fired", 29, true},
-	{"test31", FlashAutoFired, "Auto, Fired", 31, true},
+	//{"test0", NoFlash, "No Flash", 0, false},
+	{NoFlash, "No Flash", 0, false, false},
+	{FlashFired, "Fired", 1, true, false},
 }
 
 func TestFlashMode(t *testing.T) {
 	for _, fm := range fmList {
-		if a := NewFlashMode(fm.m); a != fm.fm {
-			assert.Equal(t, fm.fm, a, "FlashMode.ParseFlashMode #%s, wanted %s got %s", fm.name, fm.fm, a)
+		mode := FlashMode(fm.m)
+		// Fired
+		if mode.Fired() != fm.fired {
+			t.Errorf("FlashMode.Fired error expected %v got %v", FlashMode(fm.m).Fired(), fm.fired)
 		}
+
+		// NoFunction
+		if mode.NoFunction() != fm.noFn {
+			t.Errorf("FlashMode.NoFunction error expected %v got %v", mode.NoFunction(), fm.noFn)
+		}
+
+		// Redeye
+
+		// Return
+
+		// Auto
 
 		// TextMarshall
-		txt, err := fm.fm.MarshalText()
-		if err != nil {
-			t.Errorf("Error FlashMode.MarshallText (%s): %s ", fm.name, err.Error())
-		}
-		b := NewFlashMode(fm.m)
-		assert.Equal(t, []byte(strconv.Itoa(int(b))), txt, "FlashMode.MarshalText #%s, wanted %d got %d", fm.name, fm.m, strconv.Itoa(int(b)))
 
 		// UnmarshalText
-		if err = b.UnmarshalText([]byte(strconv.Itoa(int(fm.m)))); err != nil {
-			t.Errorf("Error FlashMode.UnmarshalText (%s): %s ", fm.name, err.Error())
-		}
-		assert.Equal(t, fm.fm, b, "FlashMode.UnmarshalText #%s, wanted %d got %d", fm.name, fm.fm, b)
 
 		// String
-		assert.Equal(t, fm.str, fm.fm.String(), "FlashMode.String #%s, wanted %s got %s", fm.name, fm.str, fm.fm.String())
-
-		// Bool
-		assert.Equal(t, fm.b, fm.fm.Bool(), "FlashMode.Bool #%s, wanted %s got %s", fm.name, fm.fm, fm.fm.Bool())
 	}
-
-	// Incorrect FlashMode
-	a := FlashMode(250)
-	b := NewFlashMode(250)
-	assert.Equal(t, a.Bool(), false, "FlashMode.Bool #%s, wanted %s got %s", "Incorrect FlashMode", false, a.Bool())
-	assert.NotEqual(t, a, b, "FlashMode.ParseFlashMode #%s, wanted %s got %s", "Incorrect FlashMode", b, a)
 }
 
 var ebList = []struct {

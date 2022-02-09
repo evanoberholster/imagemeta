@@ -1,28 +1,31 @@
 package meta
 
 import (
+	"math/bits"
 	"strconv"
 )
 
 //go:generate msgp
 
-// FocalLength is a Focal Length expressed in millimeters.
-type FocalLength float32
-
 var (
-	strExposureModeDist    = []uint{0, 4, 10, 22}
-	strExposureProgramDist = []uint{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
-	strMeteringModeDist    = []uint{0, 7, 14, 37, 41, 51, 64, 71}
+	_ExposureMode_index    = [...]uint8{0, 4, 10, 22}
+	_ExposureProgram_index = [...]uint8{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
+	_MeteringMode_index    = [...]uint8{0, 7, 14, 37, 41, 51, 64, 71}
 
 	// FocalLength Suffix in millimeters
 	sufFocalLength = "mm"
+
+	exposureBiasZero = []byte("0/0")
 )
 
 const (
-	strExposureModeString    = "AutoManualAuto bracket"
-	strMeteringModeString    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
-	strExposureProgramString = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
+	_ExposureMode_name    = "AutoManualAuto bracket"
+	_MeteringMode_name    = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
+	_ExposureProgram_name = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
 )
+
+// FocalLength is a Focal Length expressed in millimeters.
+type FocalLength float32
 
 // NewFocalLength returns a new FocalLength by dividing
 // "n" numerator and "d" demoninator
@@ -75,13 +78,13 @@ func NewMeteringMode(meteringMode uint8) MeteringMode {
 //
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
 func (mm MeteringMode) String() string {
-	if int(mm) < len(strMeteringModeDist)-1 {
-		return strMeteringModeString[strMeteringModeDist[mm]:strMeteringModeDist[mm+1]]
+	if int(mm) < len(_MeteringMode_index)-1 {
+		return _MeteringMode_name[_MeteringMode_index[mm]:_MeteringMode_index[mm+1]]
 	}
 	if mm == 255 {
 		return "Other"
 	}
-	return strMeteringModeString[:strMeteringModeDist[1]]
+	return _MeteringMode_name[:_MeteringMode_index[1]]
 }
 
 // MarshalJSON implements the JSONMarshaler interface that is
@@ -141,8 +144,8 @@ func NewExposureMode(em uint8) ExposureMode {
 
 // String returns an ExposureMode as a string
 func (em ExposureMode) String() string {
-	if int(em) < len(strExposureModeDist) {
-		return strExposureModeString[strExposureModeDist[em]:strExposureModeDist[em+1]]
+	if int(em) < len(_ExposureMode_index)-1 {
+		return _ExposureMode_name[_ExposureMode_index[em]:_ExposureMode_index[em+1]]
 	}
 	return "Unknown"
 }
@@ -172,19 +175,21 @@ func NewExposureProgram(ep uint8) ExposureProgram {
 
 // String returns an ExposureProgram as a string
 func (ep ExposureProgram) String() string {
-	if int(ep) < len(strExposureProgramDist)-1 {
-		return strExposureProgramString[strExposureProgramDist[ep]:strExposureProgramDist[ep+1]]
+	if int(ep) < len(_ExposureProgram_index)-1 {
+		return _ExposureProgram_name[_ExposureProgram_index[ep]:_ExposureProgram_index[ep+1]]
 	}
 	return "Unknown"
 }
 
 // FlashMode - Mode in which a Flash was used.
 // (uint8) - value of FlashMode
+//
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
 type FlashMode uint8
 
 // NewFlashMode returns a new FlashMode
 func NewFlashMode(fm uint8) FlashMode {
-	return parseFlashMode(fm)
+	return FlashMode(fm)
 }
 
 // Flash Modes
@@ -216,15 +221,19 @@ func (fm *FlashMode) UnmarshalText(text []byte) (err error) {
 	return err
 }
 
-// Bool returns true if Flash was fired.
-func (fm FlashMode) Bool() bool {
-	switch fm {
-	case FlashFired, FlashAutoFired:
-		return true
-	case NoFlash, FlashAutoNotFired, FlashOffNotFired:
-		return false
-	}
-	return false
+const (
+	flashFiredFlag      = 00000001
+	flashNoFunctionFlag = 00000040
+)
+
+// Fired returns true if Flash was fired.
+func (fm FlashMode) Fired() bool {
+	return bits.OnesCount8(flashFiredFlag&uint8(fm)) == 1
+}
+
+// NoFunction returns true if Flash function wasn't present.
+func (fm FlashMode) NoFunction() bool {
+	return bits.OnesCount8(flashNoFunctionFlag&uint8(fm)) == 1
 }
 
 // parseFlashMode returns the FlashMode from an Exif flashmode integer
@@ -443,13 +452,11 @@ func (eb ExposureBias) String() string {
 // used by encoding/json
 func (eb ExposureBias) MarshalText() (text []byte, err error) {
 	if eb == 0 {
-		return []byte{'0', '/', '0'}, nil
+		return exposureBiasZero, nil
 	}
+	text = make([]byte, 0, 5)
 	if eb > 0 {
-		text = make([]byte, 1, 5)
-		text[0] = '+' // Sign
-	} else {
-		text = make([]byte, 0, 5)
+		text = append(text, '+')
 	}
 	text = strconv.AppendInt(text, int64(eb>>8), 10)
 	text = append(text, '/')
