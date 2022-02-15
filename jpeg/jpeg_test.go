@@ -4,25 +4,29 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"io"
 	"os"
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
 func TestScanJPEG(t *testing.T) {
-	exifHeaderTests := []struct {
-		filename         string
-		byteOrder        binary.ByteOrder
-		firstIfdOffset   uint32
-		tiffHeaderOffset uint32
-		width            uint16
-		height           uint16
+	testJPEGs := []struct {
+		filename string
+		exif     bool
+		header   meta.ExifHeader
+		width    uint16
+		height   uint16
 	}{
-		{"../testImages/JPEG.jpg", binary.LittleEndian, 13746, 12, 1000, 563},
-		{"../testImages/NoExif.jpg", binary.BigEndian, 8, 30, 50, 50},
+		{"../assets/JPEG.jpg", true, meta.NewExifHeader(binary.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
+		{"../assets/NoExif.jpg", true, meta.NewExifHeader(binary.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
+		{"../assets/a2.jpg", false, meta.NewExifHeader(binary.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
+		{"../assets/a1.jpg", true, meta.NewExifHeader(binary.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
 	}
-	for _, jpg := range exifHeaderTests {
+
+	for _, jpg := range testJPEGs {
 		t.Run(jpg.filename, func(t *testing.T) {
 			// Open file
 			f, err := os.Open(jpg.filename)
@@ -30,38 +34,66 @@ func TestScanJPEG(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer f.Close()
-			// Search for Tiff header
-			br := bufio.NewReader(f)
-			m, err := ScanJPEG(br, &meta.Metadata{})
-			if err != nil {
+
+			testExifHeaderfn := func(r io.Reader, eh meta.ExifHeader) error {
+				metaExifHeaderEqual(t, jpg.header, eh)
+				return nil
+			}
+			testXmpHeaderFn := func(r io.Reader, xH meta.XmpHeader) error {
+				return nil
+			}
+
+			m, err := ScanJPEG(f, testExifHeaderfn, testXmpHeaderFn)
+			if jpg.exif && err != nil {
 				t.Fatal(err)
 			}
-			if m.ExifHeader.ByteOrder != jpg.byteOrder {
-				t.Errorf("Incorrect Byte Order wanted %s got %s", jpg.byteOrder, m.ExifHeader.ByteOrder)
+			if !jpg.exif && err != ErrNoExif {
+				t.Fatal(err)
 			}
-			if m.ExifHeader.FirstIfdOffset != jpg.firstIfdOffset {
-				t.Errorf("Incorrect first Ifd Offset wanted %d got %d ", jpg.firstIfdOffset, m.ExifHeader.FirstIfdOffset)
-			}
-			if m.ExifHeader.TiffHeaderOffset != jpg.tiffHeaderOffset {
-				t.Errorf("Incorrect tiff Header Offset wanted %d got %d ", jpg.tiffHeaderOffset, m.ExifHeader.TiffHeaderOffset)
-			}
-			if !m.ExifHeader.IsValid() {
-				t.Errorf("Wanted valid tiff Header")
-			}
+
+			// test Imagesize
 			width, height := m.Size()
 			if width != jpg.width || height != jpg.height {
 				t.Errorf("Incorrect Jpeg Image size wanted width: %d got width: %d ", jpg.width, width)
 				t.Errorf("Incorrect Jpeg Image size wanted height: %d got height: %d ", jpg.height, height)
 			}
+			d := m.Dimensions()
+			a1 := d.AspectRatio()
+			a2 := float32(width) / float32(height)
+			if a1 != a2 {
+				t.Errorf("Incorrect Aspect ratio wanted ratio: %d got ratio: %d ", jpg.width, width)
+			}
 		})
-
 	}
+
+}
+
+func metaExifHeaderEqual(t *testing.T, h1 meta.ExifHeader, h2 meta.ExifHeader) {
+	if h1.ByteOrder != h2.ByteOrder {
+		t.Errorf("Incorrect Byte Order wanted %s got %s", h1.ByteOrder, h2.ByteOrder)
+	}
+	if h1.FirstIfdOffset != h2.FirstIfdOffset {
+		t.Errorf("Incorrect first Ifd Offset wanted %d got %d ", h1.FirstIfdOffset, h2.FirstIfdOffset)
+	}
+	if h1.TiffHeaderOffset != h2.TiffHeaderOffset {
+		t.Errorf("Incorrect tiff Header Offset wanted %d got %d ", h1.TiffHeaderOffset, h2.TiffHeaderOffset)
+	}
+	if h1.ExifLength != h2.ExifLength {
+		t.Errorf("Incorrect Exif Length wanted %d got %d ", h1.ExifLength, h2.ExifLength)
+	}
+	if h1.ImageType != h2.ImageType {
+		t.Errorf("Incorrect Exif Header Imagetype wanted %s got %s ", h1.ImageType, h2.ImageType)
+	}
+	if !h2.IsValid() {
+		t.Errorf("Wanted valid tiff Header")
+	}
+
 }
 
 func TestScanMarkers(t *testing.T) {
 	data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r := bytes.NewReader(data)
-	m := Metadata{br: bufio.NewReader(r)}
+	m := &Metadata{br: bufio.NewReader(r)}
 
 	// Test discard
 	m.discard(0)
@@ -77,7 +109,7 @@ func TestScanMarkers(t *testing.T) {
 
 	data = []byte{markerFirstByte, markerSOI, markerFirstByte, markerEOI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r = bytes.NewReader(data)
-	m = Metadata{br: bufio.NewReader(r)}
+	m = &Metadata{br: bufio.NewReader(r)}
 
 	// Test SOI
 	buf, _ = m.br.Peek(16)
@@ -94,7 +126,7 @@ func TestScanMarkers(t *testing.T) {
 	}
 
 	// Test Scan JPEG
-	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), &meta.Metadata{})
+	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), nil, nil)
 	if err != ErrNoJPEGMarker {
 		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 	}
