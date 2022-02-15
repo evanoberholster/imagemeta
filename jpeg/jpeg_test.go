@@ -1,3 +1,7 @@
+// Copyright (c) 2018-2022 Evan Oberholster. All rights reserved.
+// Use of this source code is governed by a license that can be
+// found in the LICENSE file.
+
 package jpeg
 
 import (
@@ -5,12 +9,54 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
+
+var (
+	dir            = "../assets/"
+	benchmarksJPEG = []struct {
+		fileName  string
+		noExifErr bool
+	}{
+		{"a1.jpg", false},
+		{"a2.jpg", true},
+		{"JPEG.jpg", false},
+		{"NoExif.jpg", true},
+	}
+)
+
+func BenchmarkScanJPEG100(b *testing.B) {
+	for _, bm := range benchmarksJPEG {
+		f, err := os.Open(dir + bm.fileName)
+		if err != nil {
+			b.Fatal(err)
+		}
+		defer f.Close()
+		buf, _ := ioutil.ReadAll(f)
+		r := bytes.NewReader(buf)
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.Run(bm.fileName, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				r.Seek(0, 0)
+				br := bufio.NewReader(r)
+				b.StartTimer()
+				if _, err := ScanJPEG(br, nil, nil); err != nil {
+					if !bm.noExifErr {
+						b.Fatal(err)
+					}
+				}
+			}
+		})
+	}
+}
 
 func TestScanJPEG(t *testing.T) {
 	testJPEGs := []struct {
@@ -93,7 +139,7 @@ func metaExifHeaderEqual(t *testing.T, h1 meta.ExifHeader, h2 meta.ExifHeader) {
 func TestScanMarkers(t *testing.T) {
 	data := []byte{0, markerFirstByte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r := bytes.NewReader(data)
-	m := &Metadata{br: bufio.NewReader(r)}
+	m := Metadata{br: bufio.NewReader(r)}
 
 	// Test discard
 	m.discard(0)
@@ -109,7 +155,7 @@ func TestScanMarkers(t *testing.T) {
 
 	data = []byte{markerFirstByte, markerSOI, markerFirstByte, markerEOI, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r = bytes.NewReader(data)
-	m = &Metadata{br: bufio.NewReader(r)}
+	m = Metadata{br: bufio.NewReader(r)}
 
 	// Test SOI
 	buf, _ = m.br.Peek(16)

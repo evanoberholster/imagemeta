@@ -1,4 +1,9 @@
 // Package jpeg reads metadata information (Exif and XMP) from a JPEG Image.
+
+// Copyright (c) 2018-2022 Evan Oberholster. All rights reserved.
+// Use of this source code is governed by a license that can be
+// found in the LICENSE file.
+
 package jpeg
 
 import (
@@ -41,20 +46,20 @@ func (m Metadata) Dimensions() meta.Dimensions {
 	return meta.NewDimensions(uint32(m.width), uint32(m.height))
 }
 
-func newMetdata(r io.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) *Metadata {
+func newMetdata(r io.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) Metadata {
 	br, ok := r.(*bufio.Reader)
-	if !ok || br.Size() < 32 {
-		br = bufio.NewReaderSize(r, 32)
+	if !ok || br.Size() < 64 {
+		br = bufio.NewReaderSize(r, 64)
 	}
 
-	return &Metadata{br: br, exifFn: exifFn, xmpFn: xmpFn}
+	return Metadata{br: br, exifFn: exifFn, xmpFn: xmpFn}
 }
 
 // ScanJPEG scans a reader for JPEG Image markers. xmpDecodeFn and exifDecodeFn are run at their respective
 // positions during the scan. Returns Metadata.
 //
 // Returns the error ErrNoJPEGMarker if a JPEG SOF was not found.
-func ScanJPEG(r io.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (m *Metadata, err error) {
+func ScanJPEG(r io.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (m Metadata, err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
