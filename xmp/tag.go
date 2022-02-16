@@ -79,10 +79,6 @@ func (t Tag) isStartTag() bool {
 	return t.t == startTag
 }
 
-//func (t Tag) isStopTag() bool {
-//	return t.t == stopTag
-//}
-
 func (t Tag) isRootStopTag() bool {
 	return t.self.Equals(xmpns.XMPRootProperty) && t.t == stopTag
 }

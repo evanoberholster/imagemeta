@@ -10,30 +10,41 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-// xmpRootTag starts with "<x:xmpmeta"
-var xmpRootTag = [10]byte{'<', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a'}
+const (
+	xmpBufferLength = 1538 // (1.5kb)
 
-// Reader errors
+	// Reader blocksizes
+	maxTagValueSize  = 512
+	maxTagHeaderSize = 128
+)
+
 var (
+	// Reader errors
 	ErrNoValue      = errors.New("error property has no value")
 	ErrNegativeRead = errors.New("error negative read")
 	ErrBufferFull   = bufio.ErrBufferFull
+
+	// xmpRootTag starts with "<x:xmpmeta" and ends with "</x:xmpmeta>"
+	xmpRootTag      = [...]byte{'<', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a'}
+	xmpRootCloseTag = [...]byte{'<', '/', 'x', ':', 'x', 'm', 'p', 'm', 'e', 't', 'a', '>'}
 )
 
-// Reader blocksizes
-const (
-	maxTagValueSize  = 256
-	maxTagHeaderSize = 64
-)
-
-type bufReader struct {
+type xmpReader struct {
 	r *bufio.Reader
 	a bool
 }
 
+func newXMPReader(r io.Reader) xmpReader {
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < xmpBufferLength {
+		br = bufio.NewReaderSize(r, xmpBufferLength)
+	}
+	return xmpReader{r: br}
+}
+
 // readRootTag reads and returns the xmpRootTag from the bufReader.
 // If the xmpRootTag is not found returns the error ErrNoXMP.
-func (br *bufReader) readRootTag() (tag Tag, err error) {
+func (br *xmpReader) readRootTag() (tag Tag, err error) {
 	var buf []byte
 	for {
 		if _, err = br.r.ReadSlice(xmpRootTag[0]); err != nil {
@@ -59,17 +70,17 @@ func (br *bufReader) readRootTag() (tag Tag, err error) {
 	}
 }
 
-func (br *bufReader) Discard(n int) (discarded int, err error) {
+func (br *xmpReader) Discard(n int) (discarded int, err error) {
 	return br.r.Discard(n)
 }
 
 // hasAttribute returns true when the bufReader's next read is
 // an attribute.
-func (br *bufReader) hasAttribute() bool {
+func (br *xmpReader) hasAttribute() bool {
 	return br.a
 }
 
-func (br *bufReader) Peek(n int) (buf []byte, err error) {
+func (br *xmpReader) Peek(n int) (buf []byte, err error) {
 	if buf, err = br.r.Peek(n); err == io.EOF {
 		if len(buf) > 4 {
 			return buf, nil
@@ -80,7 +91,7 @@ func (br *bufReader) Peek(n int) (buf []byte, err error) {
 }
 
 // readAttribute reads an attribute from the bufReader and Tag.
-func (br *bufReader) readAttribute(tag *Tag) (attr Attribute, err error) {
+func (br *xmpReader) readAttribute(tag *Tag) (attr Attribute, err error) {
 	var buf []byte
 	attr.pt = attrPType
 	attr.parent = tag.self
@@ -108,9 +119,10 @@ func (br *bufReader) readAttribute(tag *Tag) (attr Attribute, err error) {
 }
 
 // readAttrValue reada an Attributes value from the Tag.
-func (br *bufReader) readAttrValue(tag *Tag) (buf []byte, err error) {
+// Needs improvement for performance
+func (br *xmpReader) readAttrValue(tag *Tag) (buf []byte, err error) {
 	d, i := 0, 2
-	s := 64
+	s := maxTagValueSize / 2
 	for {
 		if buf, err = br.Peek(s); err != nil {
 			err = errors.Wrap(err, "Attr Value")
@@ -141,7 +153,7 @@ func (br *bufReader) readAttrValue(tag *Tag) (buf []byte, err error) {
 }
 
 // readTagHeader reads an xmp tag's header and returns the tag.
-func (br *bufReader) readTagHeader(parent Tag) (tag Tag, err error) {
+func (br *xmpReader) readTagHeader(parent Tag) (tag Tag, err error) {
 	tag.pt = tagPType
 	tag.parent = parent.self
 
@@ -201,7 +213,7 @@ end:
 
 // readTagValue reads the Tag's Value from the bufReader. Returns
 // a temporary []byte.
-func (br *bufReader) readTagValue() (buf []byte, err error) {
+func (br *xmpReader) readTagValue() (buf []byte, err error) {
 	var i, j int
 	s := maxTagValueSize
 	for {
@@ -236,6 +248,96 @@ func (br *bufReader) readTagValue() (buf []byte, err error) {
 		}
 		s += maxTagValueSize
 	}
+}
+
+func (br *xmpReader) readTag(xmp *XMP, parent Tag) (tag Tag, err error) {
+	for {
+		if tag, err = br.readTagHeader(parent); err != nil {
+			break
+		}
+		if tag.isEndTag(parent.self) {
+			break
+		}
+		var attr Attribute
+		for br.hasAttribute() {
+			if attr, err = br.readAttribute(&tag); err != nil {
+				return
+			}
+			// Parse Attribute Value
+			if err = xmp.parser(attr.property); err != nil {
+				return
+			}
+		}
+		if tag.isStartTag() {
+			if tag.Is(xmpns.RDFSeq) || tag.Is(xmpns.RDFAlt) || tag.Is(xmpns.RDFBag) {
+				if err = br.readSeqTags(xmp, tag); err != nil {
+					return
+				}
+			} else {
+				tag.val, err = br.readTagValue()
+				if err != nil {
+					return
+				}
+				// Parse Tag Value
+				if err = xmp.parser(tag.property); err != nil {
+					return
+				}
+
+				if tag, err = br.readTag(xmp, tag); err != nil {
+					return
+				}
+			}
+		}
+		if tag.isRootStopTag() {
+			return
+		}
+	}
+	return
+}
+
+// Special Tags
+// xmpMM:History -> stEvt
+// rdf:Bag -> rdf:li
+// rdf:Seq -> rdf:li
+// rdf:Alt -> rdf:li
+func (br *xmpReader) readSeqTags(xmp *XMP, parent Tag) (err error) {
+	var tag Tag
+	for {
+		if tag, err = br.readTagHeader(parent); err != nil {
+			return
+		}
+
+		if tag.isEndTag(parent.self) {
+			break
+		}
+
+		if tag.isStartTag() {
+			var attr Attribute
+			for br.hasAttribute() {
+				if attr, err = br.readAttribute(&tag); err != nil {
+					return
+				}
+
+				attr.parent = attr.self
+				attr.self = parent.parent
+				// Parse Attribute Value
+				if err = xmp.parser(attr.property); err != nil {
+					return
+				}
+			}
+
+			if tag.val, err = br.readTagValue(); err != nil {
+				return
+			}
+			tag.self = parent.parent
+			tag.parent = parent.self
+			// Parse Tag Value
+			if err = xmp.parser(tag.property); err != nil {
+				return
+			}
+		}
+	}
+	return
 }
 
 func parseAttrName(buf []byte) (xmpns.Property, int, error) {

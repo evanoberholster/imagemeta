@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -55,8 +56,7 @@ func parseDate(buf []byte) (t time.Time, err error) {
 
 // parseUUID parses a UUID and returns a meta.UUID
 func parseUUID(buf []byte) (uuid meta.UUID) {
-	_, b := readUntil(buf, ':')
-	if len(b) > 0 {
+	if _, b := readUntil(buf, ':'); len(b) > 0 {
 		buf = b
 	}
 	err := uuid.UnmarshalText(buf)
@@ -85,6 +85,24 @@ func parseUint(buf []byte) (u uint64) {
 		u += uint64(buf[i] - '0')
 	}
 	return
+}
+
+// parseUint32 parses a []byte of a string representation of a uint32 value and returns the value.
+// If the value is larger than uint32 returns 0.
+func parseUint32(buf []byte) (u uint32) {
+	if i := parseUint(buf); i < math.MaxUint32 {
+		return uint32(i)
+	}
+	return 0
+}
+
+// parseUint8 parses a []byte of a string representation of a uint8 value and returns the value.
+// If the value is larger than uint8 returns 0.
+func parseUint8(buf []byte) (u uint8) {
+	if i := parseUint(buf); i < math.MaxUint8 {
+		return uint8(i)
+	}
+	return 0
 }
 
 // parseFloat64 parses a []byte of a string representation of a float64 value and returns the value
