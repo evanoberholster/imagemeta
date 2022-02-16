@@ -75,7 +75,7 @@ func (it ImageType) String() string {
 	return _ImageTypeString[:_ImageTypeIndex[1]]
 }
 
-// Extensions returns the default extension for the Imagetype
+// Extension returns the default extension for the Imagetype
 func (it ImageType) Extension() string {
 	if int(it) < len(_ImageTypeExtIndex)-1 {
 		return _ImageTypeExtString[_ImageTypeExtIndex[it]:_ImageTypeExtIndex[it+1]]
