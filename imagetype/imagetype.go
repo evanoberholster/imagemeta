@@ -3,31 +3,51 @@ package imagetype
 
 import (
 	"errors"
+	"strings"
 )
 
-// Errors
 var (
 	// ErrDataLength is an error for data length
 	ErrDataLength = errors.New("error the data is not long enough")
+
+	// ImageType stringer Index
+	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293}
+
+	// ImageType extension Index
+	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61}
+)
+
+const (
+	// ImageType stringer Names
+	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avif"
+
+	// ImageType extension Names
+	_ImageTypeExtString = "jpgpnggifbmpwebp4heifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavif"
 )
 
 //go:generate msgp
 
-// TiffBigEndianSignature is the Tiff Signature for BigEndian encoded images
-//TiffBigEndianSignature = []byte{0x4d, 0x4d, 0x00, 0x2a}
-
-// TiffLittleEndianSignature is the Tiff Signature for LittleEndian encoded images
-//TiffLittleEndianSignature = []byte{0x49, 0x49, 0x2a, 0x00}
-
-// JPEGStartOfImageMarker is the JPEG Start of Image Marker.
-// JPEG SOI Marker
-//JPEGStartOfImageMarker = []byte{0xff, 0xd8}
-
-// PNGImageSignature is the marker for the start of a PNG Image.
-// 4 Bytes
-//PNGImageSignature = []byte{0x89, 0x50, 0x4E, 0x47}
-
-// ImageType -
+// ImageType is type of Image or Metadata file
+//		ImageUnknown: "application/octet-stream"
+//		ImageJPEG:    "image/jpeg"
+//		ImagePNG:     "image/png"
+//		ImageGIF:     "image/gif"
+//		ImageBMP:     "image/bmp"
+//		ImageWebP:    "image/webp"
+//		ImageHEIF:    "image/heif"
+//		ImageRAW:     "image/raw"
+//		ImageTiff:    "image/tiff"
+//		ImageDNG:     "image/x-adobe-dng"
+//		ImageNEF:     "image/x-nikon-nef"
+//		ImagePanaRAW: "image/x-panasonic-raw"
+//		ImageARW:     "image/x-sony-arw"
+//		ImageCRW:     "image/x-canon-crw"
+//		ImageGPR:     "image/x-gopro-gpr"
+//		ImageCR3:     "image/x-canon-cr3"
+//		ImageCR2:     "image/x-canon-cr2"
+//		ImagePSD:     "image/vnd.adobe.photoshop"
+//		ImageXMP:     "application/rdf+xml"
+//		ImageAVIF:    "image/avif"
 type ImageType uint8
 
 // IsUnknown returns true if the Image Type is unknown
@@ -38,24 +58,42 @@ func (it ImageType) IsUnknown() bool {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (it ImageType) MarshalText() (text []byte, err error) {
-	return []byte(imageTypeStrings[it]), nil
+	return []byte(it.String()), nil
 }
 
 // UnmarshalText implements the TextUnmarshaler interface that is
 // used by encoding/json
 func (it *ImageType) UnmarshalText(text []byte) (err error) {
-	*it = imageTypeValues[string(text)]
+	*it = FromString(string(text))
 	return nil
-	//return []byte(imageTypeStrings[it]), nil
 }
 
 func (it ImageType) String() string {
-	return imageTypeStrings[it]
+	if int(it) < len(_ImageTypeIndex)-1 {
+		return _ImageTypeString[_ImageTypeIndex[it]:_ImageTypeIndex[it+1]]
+	}
+	return _ImageTypeString[:_ImageTypeIndex[1]]
 }
 
-// FromString returns an ImageType for the given string
+// Extensions returns the default extension for the Imagetype
+func (it ImageType) Extension() string {
+	if int(it) < len(_ImageTypeExtIndex)-1 {
+		return _ImageTypeExtString[_ImageTypeExtIndex[it]:_ImageTypeExtIndex[it+1]]
+	}
+	return _ImageTypeExtString[:_ImageTypeExtIndex[1]]
+}
+
+// FromString returns an ImageType for the given content-type string or common filename extension
 func FromString(str string) ImageType {
-	return imageTypeValues[str]
+	// from content-type
+	if it, ok := imageTypeValues[str]; ok {
+		return it
+	}
+	// from extension
+	if it, ok := imageTypeExtensions[strings.ToLower(str)]; ok {
+		return it
+	}
+	return ImageUnknown
 }
 
 // Image file types Raw/Compressed/JPEG
@@ -82,31 +120,7 @@ const (
 	ImageAVIF
 )
 
-// ImageTypeStrings - Map accepting ImageType and returning string
-var imageTypeStrings = map[ImageType]string{
-	ImageUnknown: "application/octet-stream",
-	ImageJPEG:    "image/jpeg",
-	ImagePNG:     "image/png",
-	ImageGIF:     "image/gif",
-	ImageBMP:     "image/bmp",
-	ImageWebP:    "image/webp",
-	ImageHEIF:    "image/heif",
-	ImageRAW:     "image/raw",
-	ImageTiff:    "image/tiff",
-	ImageDNG:     "image/x-adobe-dng",
-	ImageNEF:     "image/x-nikon-nef",
-	ImagePanaRAW: "image/x-panasonic-raw",
-	ImageARW:     "image/x-sony-arw",
-	ImageCRW:     "image/x-canon-crw",
-	ImageGPR:     "image/x-gopro-gpr",
-	ImageCR3:     "image/x-canon-cr3",
-	ImageCR2:     "image/x-canon-cr2",
-	ImagePSD:     "image/vnd.adobe.photoshop",
-	ImageXMP:     "application/rdf+xml",
-	ImageAVIF:    "image/avif",
-}
-
-// ImageTypeValues - Map accepting string and returning Image Type
+// ImageTypeValues maps a content-type string with an imagetype.
 var imageTypeValues = map[string]ImageType{
 	"application/octet-stream":  ImageUnknown,
 	"image/jpeg":                ImageJPEG,
@@ -128,6 +142,30 @@ var imageTypeValues = map[string]ImageType{
 	"image/vnd.adobe.photoshop": ImagePSD,
 	"application/rdf+xml":       ImageXMP,
 	"image/avif":                ImageAVIF,
+}
+
+// ImageTypeExtensions maps filename extensions with an imagetype.
+var imageTypeExtensions = map[string]ImageType{
+	"":      ImageUnknown,
+	".jpg":  ImageJPEG,
+	".png":  ImagePNG,
+	".gif":  ImageGIF,
+	".bmp":  ImageBMP,
+	".webp": ImageWebP,
+	".heif": ImageHEIF,
+	".raw":  ImageRAW,
+	".tiff": ImageTiff,
+	".dng":  ImageDNG,
+	".nef":  ImageNEF,
+	".rw2":  ImagePanaRAW,
+	".arw":  ImageARW,
+	".crw":  ImageCRW,
+	".gpr":  ImageGPR,
+	".cr3":  ImageCR3,
+	".cr2":  ImageCR2,
+	".psd":  ImagePSD,
+	".xmp":  ImageXMP,
+	".avif": ImageAVIF,
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
