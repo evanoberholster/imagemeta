@@ -15,19 +15,25 @@ const (
 	TiffHeaderLength = 16
 )
 
-// Scan searches an io.Reader for a LittleEndian or BigEndian Tiff Header
-// and returns the TiffHeader
-func Scan(r io.Reader) (meta.ExifHeader, error) {
-	br, ok := r.(*bufio.Reader)
-	if !ok {
-		br = bufio.NewReaderSize(r, 64)
-	}
-	return scan(br)
+// ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
+// and returns the ExifHeader with the imagetype ImageTiff.
+func ScanTiff(r io.Reader) (meta.ExifHeader, error) {
+	return Scan(r, imagetype.ImageTiff)
 }
 
-// scan searchs for the beginning of the EXIF information. The EXIF is near the
+// Scan searches an io.Reader for a LittleEndian or BigEndian Tiff Header
+// and returns the ExifHeader with the given imagetype.
+func Scan(r io.Reader, it imagetype.ImageType) (meta.ExifHeader, error) {
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < 32 {
+		br = bufio.NewReaderSize(r, 32)
+	}
+	return scan(br, it)
+}
+
+// scan searches for the beginning of the EXIF information. The EXIF is near the
 // beginning of most Image files, so this likely doesn't have a high cost.
-func scan(br *bufio.Reader) (header meta.ExifHeader, err error) {
+func scan(br *bufio.Reader, it imagetype.ImageType) (header meta.ExifHeader, err error) {
 	discarded := 0
 
 	var buf []byte
@@ -54,7 +60,7 @@ func scan(br *bufio.Reader) (header meta.ExifHeader, err error) {
 		// Found Tiff Header
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
-		header = meta.NewExifHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, imagetype.ImageTiff)
+		header = meta.NewExifHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, it)
 		header.FirstIfd = ifds.RootIFD
 		return header, nil
 	}
