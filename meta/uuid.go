@@ -64,6 +64,13 @@ func (u UUID) Bytes() []byte {
 // String returns canonical string representation of UUID:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
 func (u UUID) String() string {
+	str, _ := u.MarshalText()
+	return string(str)
+}
+
+// MarshalText implements the TextMarshaler interface that is
+// used by encoding/json
+func (u UUID) MarshalText() (text []byte, err error) {
 	buf := make([]byte, 36)
 
 	hex.Encode(buf[0:8], u[0:4])
@@ -76,13 +83,7 @@ func (u UUID) String() string {
 	buf[23] = '-'
 	hex.Encode(buf[24:], u[10:])
 
-	return string(buf)
-}
-
-// MarshalText implements the TextMarshaler interface that is
-// used by encoding/json
-func (u UUID) MarshalText() (text []byte, err error) {
-	return []byte(u.String()), nil
+	return buf, nil
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
