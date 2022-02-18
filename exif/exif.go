@@ -3,8 +3,10 @@ package exif
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"io"
+	"sort"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
@@ -208,4 +210,80 @@ func (e *Data) RangeTags() chan tag.Tag {
 		close(c)
 	}()
 	return c
+}
+
+// MarshalJSON implements the JSONMarshaler interface that is used by encoding/json
+// This is mostly used for testing and debuging.
+func (e *Data) MarshalJSON() ([]byte, error) {
+	je := jsonExif{It: e.imageType, Make: e.CameraMake(), Model: e.CameraModel(), Width: e.width, Height: e.height}
+	for k, t := range e.tagMap {
+		ifd, ifdIndex, _ := k.Val()
+		value := e.GetTagValue(t)
+		je.addTag(ifd, ifdIndex, t, value)
+	}
+
+	return json.Marshal(je)
+}
+
+func (je *jsonExif) addTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag, v interface{}) {
+	if je.Ifds == nil {
+		je.Ifds = make(map[string]map[uint8]jsonIfds)
+	}
+	ji, ok := je.Ifds[ifd.String()]
+	if !ok {
+		je.Ifds[ifd.String()] = make(map[uint8]jsonIfds)
+		ji = je.Ifds[ifd.String()]
+	}
+	jm, ok := ji[ifdIndex]
+	if !ok {
+		ji[ifdIndex] = jsonIfds{make([]jsonTags, 0)}
+		jm = ji[ifdIndex]
+	}
+	jm.insertSorted(jsonTags{Name: ifd.TagName(t.ID), Type: t.Type(), ID: t.ID, Count: t.UnitCount, Value: v})
+	je.Ifds[ifd.String()][ifdIndex] = jm
+}
+
+func (ji *jsonIfds) insertSorted(e jsonTags) {
+	i := sort.Search(len(ji.Tags), func(i int) bool { return ji.Tags[i].ID > e.ID })
+	ji.Tags = append(ji.Tags, jsonTags{})
+	copy(ji.Tags[i+1:], ji.Tags[i:])
+	ji.Tags[i] = e
+}
+
+type jsonExif struct {
+	Ifds   map[string]map[uint8]jsonIfds `json:"Ifds"`
+	It     imagetype.ImageType           `json:"ImageType"`
+	Make   string
+	Model  string
+	Width  uint16
+	Height uint16
+}
+
+type jsonIfds struct {
+	Tags []jsonTags `json:"Tags"`
+}
+
+type jsonTags struct {
+	ID    tag.ID
+	Name  string
+	Count uint16
+	Type  tag.Type
+	Value interface{}
+}
+
+func (jt jsonTags) MarshalJSON() ([]byte, error) {
+	st := struct {
+		ID    string
+		Name  string
+		Count uint16
+		Type  string
+		Value interface{} `json:"Val"`
+	}{
+		ID:    jt.ID.String(),
+		Name:  jt.Name,
+		Count: jt.Count,
+		Type:  jt.Type.String(),
+		Value: jt.Value,
+	}
+	return json.Marshal(st)
 }
