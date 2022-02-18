@@ -108,7 +108,7 @@ func BenchmarkScanTiff100(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				if _, err := tiff.Scan(br); err != nil {
+				if _, err := tiff.ScanTiff(br); err != nil {
 
 					if err != ErrNoExif {
 						b.Error(err)
