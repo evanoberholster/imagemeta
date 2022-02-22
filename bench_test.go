@@ -9,58 +9,13 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 var (
-	dir            = "../test/img/"
-	benchmarksJPEG = []struct {
-		name     string
-		fileName string
-	}{
-		{"1.jpg", "1.jpg"},
-		{"2.jpg", "2.jpg"},
-		{"3.jpg", "3.jpg"},
-		{"10.jpg", "10.jpg"},
-		{"13.jpg", "13.jpg"},
-		{"14.jpg", "14.jpg"},
-		{"16.jpg", "16.jpg"},
-		{"17.jpg", "17.jpg"},
-		{"20.jpg/NoExif", "20.jpg"},
-		{"21.jpeg", "21.jpeg"},
-		{"24.jpg", "24.jpg"},
-		{"123.jpg", "123.jpg"},
-	}
+	dir = "../test/img/"
 )
-
-func BenchmarkScanJPEG100(b *testing.B) {
-	for _, bm := range benchmarksJPEG {
-		b.Run(bm.name, func(b *testing.B) {
-			f, err := os.Open(dir + bm.fileName)
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
-			buf, _ := ioutil.ReadAll(f)
-			cb := bytes.NewReader(buf)
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				b.StopTimer()
-				cb.Seek(0, 0)
-				br := bufio.NewReader(cb)
-				b.StartTimer()
-				if _, err := jpeg.ScanJPEG(br, &meta.Metadata{}); err != nil {
-					if err != ErrNoExif {
-						b.Fatal(err)
-					}
-				}
-			}
-		})
-	}
-}
 
 var (
 	benchmarksTiff = []struct {
@@ -153,7 +108,7 @@ func BenchmarkScanTiff100(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				if _, err := tiff.Scan(br); err != nil {
+				if _, err := tiff.ScanTiff(br); err != nil {
 
 					if err != ErrNoExif {
 						b.Error(err)

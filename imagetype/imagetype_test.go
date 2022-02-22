@@ -2,9 +2,12 @@ package imagetype
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/tinylib/msgp/msgp"
 )
 
 // Tests
@@ -62,6 +65,7 @@ func TestScan(t *testing.T) {
 func TestImageType(t *testing.T) {
 
 	str := "image/jpeg"
+	ext := "jpg"
 	it := ImageJPEG
 
 	if it.IsUnknown() || !ImageUnknown.IsUnknown() {
@@ -90,6 +94,30 @@ func TestImageType(t *testing.T) {
 	if it2 != it {
 		t.Errorf("Incorrect Imagetype Unmarshal wanted %s got %s", str, it.String())
 	}
+	if ext != it.Extension() {
+		t.Errorf("Incorrect Imagetype extension wanted %s got %s", ext, it.Extension())
+	}
+
+	// Unknown
+	it = ImageType(255)
+	if it.Extension() != "" {
+		t.Errorf("Incorrect Imagetype extension wanted %s got %s", "", it.Extension())
+	}
+	if it.String() != ImageUnknown.String() {
+		t.Errorf("Incorrect Imagetype extension wanted %s got %s", ImageUnknown.String(), it.String())
+	}
+
+	// FromString
+	it = FromString(".jpg")
+	if it != ImageJPEG {
+		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageJPEG, it)
+	}
+
+	it = FromString("hello")
+	if it != ImageUnknown {
+		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, it)
+	}
+
 }
 
 func TestScanImageType(t *testing.T) {
@@ -181,4 +209,36 @@ func TestScanImageType(t *testing.T) {
 		t.Errorf("Incorrect Error wanted %s got %s", ErrDataLength.Error(), err.Error())
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
+}
+
+func TestMsgp(t *testing.T) {
+	var err error
+	it, it2 := ImageJPEG, ImageUnknown
+	b, _ := it.MarshalMsg(nil)
+
+	b, _ = it2.UnmarshalMsg(b)
+	if it != it2 {
+		t.Errorf("Incorrect Imagetype wanted %s got %s", it, it2)
+	}
+
+	if _, err = it2.UnmarshalMsg(b); err != msgp.ErrShortBytes {
+		t.Error(err)
+	}
+
+	it3 := ImageUnknown
+	var buf bytes.Buffer
+
+	if err = msgp.Encode(&buf, &it3); err != nil {
+		t.Error(err)
+	}
+
+	if err = msgp.Decode(&buf, &it3); err != nil {
+		t.Error(err)
+	}
+
+	// Test EOF error
+	if err = msgp.Decode(&buf, &it3); !errors.Is(err, io.EOF) {
+		t.Error(err)
+	}
+
 }

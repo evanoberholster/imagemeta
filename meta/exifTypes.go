@@ -9,9 +9,9 @@ import (
 // FocalLength is a Focal Length expressed in millimeters.
 type FocalLength float32
 
-var (
+const (
 	// FocalLength Suffix in millimeters
-	sufFocalLength = []byte{'m', 'm'}
+	sufFocalLength = "mm"
 )
 
 // NewFocalLength returns a new FocalLength by dividing
@@ -26,10 +26,7 @@ func (fl FocalLength) String() string {
 
 func (fl FocalLength) toBytes() (buf []byte) {
 	f := strconv.AppendFloat(buf, float64(fl), 'f', 2, 32)
-	buf = make([]byte, len(f)+2)
-	copy(buf[len(buf)-2:], sufFocalLength)
-	copy(buf[:len(buf)-2], f)
-	return
+	return append(f, sufFocalLength...)
 }
 
 // MarshalText implements the TextMarshaler interface that is
@@ -51,242 +48,6 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 		return
 	}
 	return nil
-}
-
-// MeteringMode - Mode in which the image was metered.
-type MeteringMode uint8
-
-// NewMeteringMode returns a MeteringMode from the given uint8
-func NewMeteringMode(meteringMode uint8) MeteringMode {
-	if meteringMode < 7 || meteringMode == 255 {
-		return MeteringMode(meteringMode)
-	}
-	return 0
-}
-
-// String - Return Metering Mode as a string
-//
-// MeteringMode values
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-func (mm MeteringMode) String() string {
-	switch mm {
-	case 0:
-		return "Unknown"
-	case 1:
-		return "Average"
-	case 2:
-		return "Center-weighted average"
-	case 3:
-		return "Spot"
-	case 4:
-		return "Multi-spot"
-	case 5:
-		return "Multi-segment"
-	case 6:
-		return "Partial"
-	case 255:
-		return "Other"
-	}
-	return "Unknown"
-}
-
-// MarshalJSON implements the JSONMarshaler interface that is
-// used by encoding/json
-func (mm MeteringMode) MarshalJSON() (buf []byte, err error) {
-	return strconv.AppendUint(buf, uint64(mm), 10), nil
-}
-
-// UnmarshalJSON implements the JSONMarshaler interface that is
-// used by encoding/json
-func (mm *MeteringMode) UnmarshalJSON(buf []byte) error {
-	v, err := strconv.ParseUint(string(buf), 10, 8)
-	*mm = MeteringMode(v)
-	return err
-}
-
-// MarshalText implements the TextMarshaler interface
-func (mm MeteringMode) MarshalText() (text []byte, err error) {
-	return []byte(mm.String()), nil
-}
-
-// UnmarshalText implements the TextUnmarshaler interface that is
-// used by encoding/json
-func (mm *MeteringMode) UnmarshalText(text []byte) (err error) {
-	*mm = mapStringMeteringMode[string(text)]
-	return nil
-}
-
-var mapStringMeteringMode = map[string]MeteringMode{
-	"Unknown":                 0,
-	"Average":                 1,
-	"Center-weighted average": 2,
-	"Spot":                    3,
-	"Multi-spot":              4,
-	"Multi-segment":           5,
-	"Partial":                 6,
-	"Other":                   255,
-}
-
-// ExposureMode is the mode in which the Exposure was taken.
-type ExposureMode uint8
-
-// NewExposureMode returns an ExposureMode from the given uint8
-func NewExposureMode(em uint8) ExposureMode {
-	if em <= 2 {
-		return ExposureMode(em)
-	}
-	return 255
-}
-
-// mapExposureModeString -
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
-var mapExposureModeString = map[ExposureMode]string{
-	0: "Auto",
-	1: "Manual",
-	2: "Auto bracket",
-}
-
-// String returns an ExposureMode as a string
-func (em ExposureMode) String() string {
-	str, ok := mapExposureModeString[em]
-	if ok {
-		return str
-	}
-	return "Unknown"
-}
-
-// ExposureProgram is the program in which the image was taken.
-type ExposureProgram uint8
-
-// NewExposureProgram returns an ExposureProgram from the given uint8
-func NewExposureProgram(ep uint8) ExposureProgram {
-	if ep <= 9 {
-		return ExposureProgram(ep)
-	}
-	return 255
-}
-
-// mapExposureProgramString -
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-var mapExposureProgramString = map[ExposureProgram]string{
-	0: "Not Defined",
-	1: "Manual",
-	2: "Program AE",
-	3: "Aperture-priority AE",
-	4: "Shutter speed priority AE",
-	5: "Creative (Slow speed)",
-	6: "Action (High speed)",
-	7: "Portrait",
-	8: "Landscape",
-	9: "Bulb",
-}
-
-// String returns an ExposureProgram as a string
-func (ep ExposureProgram) String() string {
-	str, ok := mapExposureProgramString[ep]
-	if ok {
-		return str
-	}
-	return "Unknown"
-}
-
-// FlashMode - Mode in which a Flash was used.
-// (uint8) - value of FlashMode
-type FlashMode uint8
-
-// NewFlashMode returns a new FlashMode
-func NewFlashMode(fm uint8) FlashMode {
-	return parseFlashMode(fm)
-}
-
-// Flash Modes
-const (
-	NoFlash           FlashMode = 0
-	FlashFired        FlashMode = 1
-	FlashOffNotFired  FlashMode = 16
-	FlashAutoNotFired FlashMode = 24
-	FlashAutoFired    FlashMode = 25
-)
-
-// String - Return string for FlashMode
-func (fm FlashMode) String() string {
-	return flashValues[fm]
-}
-
-// MarshalText implements the TextMarshaler interface that is
-// used by encoding/json
-func (fm FlashMode) MarshalText() (text []byte, err error) {
-	return strconv.AppendUint(text, uint64(fm), 10), nil
-}
-
-// UnmarshalText implements the TextUnmarshaler interface that is
-// used by encoding/json
-func (fm *FlashMode) UnmarshalText(text []byte) (err error) {
-	var i int
-	i, err = strconv.Atoi(string(text))
-	*fm = parseFlashMode(uint8(i))
-	return err
-}
-
-// Bool returns true if Flash was fired.
-func (fm FlashMode) Bool() bool {
-	switch fm {
-	case FlashFired, FlashAutoFired:
-		return true
-	case NoFlash, FlashAutoNotFired, FlashOffNotFired:
-		return false
-	}
-	return false
-}
-
-// parseFlashMode returns the FlashMode from an Exif flashmode integer
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
-func parseFlashMode(m uint8) FlashMode {
-	switch m {
-	case 0: // NoFlash
-		return NoFlash
-	case 25, 29, 31, 89, 93, 95: // Auto, Fired
-		return FlashAutoFired
-	case 24, 88: // Auto, Did not Fire
-		return FlashAutoNotFired
-	case 1, 5, 7, 9, 13, 15, 65, 69, 71, 73, 77, 79: // On, Fired
-		return FlashFired
-	case 8, 16, 20, 48, 80: // Off, Did not Fire
-		return FlashOffNotFired
-	}
-	return NoFlash
-}
-
-// flashValues -
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
-var flashValues = map[FlashMode]string{
-	0:  "No Flash",
-	1:  "Fired",
-	5:  "Fired, Return not detected",
-	7:  "Fired, Return detected",
-	8:  "On, Did not fire",
-	9:  "On, Fired",
-	13: "On, Return not detected",
-	15: "On, Return detected",
-	16: "Off, Did not fire",
-	20: "Off, Did not fire, Return not detected",
-	24: "Auto, Did not fire",
-	25: "Auto, Fired",
-	29: "Auto, Fired, Return not detected",
-	31: "Auto, Fired, Return detected",
-	32: "No flash function",
-	48: "Off, No flash function",
-	65: "Fired, Red-eye reduction",
-	69: "Fired, Red-eye reduction, Return not detected",
-	71: "Fired, Red-eye reduction, Return detected",
-	73: "On, Red-eye reduction",
-	77: "On, Red-eye reduction, Return not detected",
-	79: "On, Red-eye reduction, Return detected",
-	80: "Off, Red-eye reduction",
-	88: "Auto, Did not fire, Red-eye reduction",
-	89: "Auto, Fired, Red-eye reduction",
-	93: "Auto, Fired, Red-eye reduction, Return not detected",
-	95: "Auto, Fired, Red-eye reduction, Return detected",
 }
 
 // Aperture contains the F-Number.
@@ -345,11 +106,11 @@ func (aa *Aperture) UnmarshalText(text []byte) (err error) {
 // ShutterSpeed contains the shutter speed in seconds.
 // Limit to 1/2 and 1/3 stops
 // [0] Numerator [1] Denominator
-type ShutterSpeed [2]uint16
+type ShutterSpeed [2]uint32
 
 // NewShutterSpeed creates a new ShutterSpeed with "n" as numerator and
 // "d" as denominator
-func NewShutterSpeed(n uint16, d uint16) ShutterSpeed {
+func NewShutterSpeed(n uint32, d uint32) ShutterSpeed {
 	return ShutterSpeed{n, d}
 }
 
@@ -360,7 +121,7 @@ func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
 			if i < len(buf)+1 {
-				return ShutterSpeed{uint16(parseUint(buf[:i])), uint16(parseUint(buf[i+1:]))}
+				return ShutterSpeed{uint32(parseUint(buf[:i])), uint32(parseUint(buf[i+1:]))}
 			}
 		}
 		if buf[i] == '.' {
@@ -372,11 +133,11 @@ func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
 				}
 				ub := parseUint(b)
 				if ub == 0 {
-					return ShutterSpeed{uint16(ua), 1}
+					return ShutterSpeed{uint32(ua), 1}
 				}
 				ua *= 10
 				ua += ub
-				return ShutterSpeed{uint16(ua), 10}
+				return ShutterSpeed{uint32(ua), 10}
 			}
 		}
 	}
@@ -434,6 +195,10 @@ func (ss ShutterSpeed) String() string {
 // Bit16 = Empty
 type ExposureBias int16
 
+const (
+	exposureBiasZero = "0/0"
+)
+
 // NewExposureBias creates a new Exposure Bias from the provided
 // "n" as numerator and "d" as denominator.
 //
@@ -455,13 +220,11 @@ func (eb ExposureBias) String() string {
 // used by encoding/json
 func (eb ExposureBias) MarshalText() (text []byte, err error) {
 	if eb == 0 {
-		return []byte{'0', '/', '0'}, nil
+		return unsafeGetBytes(exposureBiasZero), nil
 	}
+	text = make([]byte, 0, 5)
 	if eb > 0 {
-		text = make([]byte, 1, 5)
-		text[0] = '+' // Sign
-	} else {
-		text = make([]byte, 0, 5)
+		text = append(text, '+')
 	}
 	text = strconv.AppendInt(text, int64(eb>>8), 10)
 	text = append(text, '/')
@@ -496,8 +259,307 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 	return
 }
 
+// MeteringMode is the mode in which the image was metered.
+type MeteringMode uint8
+
+// Metering Modes
+const (
+	MeteringModeUnknown MeteringMode = iota
+	MeteringModeAverage
+	MeteringModeCenterWeightedAverage
+	MeteringModeSpot
+	MeteringModeMultispot
+	MeteringModeMultisegment
+	MeteringModePartial
+	MeteringModeOther MeteringMode = 255
+
+	// MeteringModeName
+	_MeteringModeName = "UnknownAverageCenter-weighted averageSpotMulti-spotMulti-segmentPartial"
+)
+
+// MeteringMode values
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
+var (
+	_MeteringModeIndex    = [...]uint8{0, 7, 14, 37, 41, 51, 64, 71}
+	mapStringMeteringMode = map[string]MeteringMode{
+		"Unknown":                 MeteringModeUnknown,
+		"Average":                 MeteringModeAverage,
+		"Center-weighted average": MeteringModeCenterWeightedAverage,
+		"Spot":                    MeteringModeSpot,
+		"Multi-spot":              MeteringModeMultispot,
+		"Multi-segment":           MeteringModeMultisegment,
+		"Partial":                 MeteringModePartial,
+		"Other":                   MeteringModeOther,
+	}
+)
+
+// NewMeteringMode returns a MeteringMode from the given uint8
+func NewMeteringMode(meteringMode uint8) MeteringMode {
+	if meteringMode < 7 || meteringMode == 255 {
+		return MeteringMode(meteringMode)
+	}
+	return 0
+}
+
+// String - Return Metering Mode as a string
+//
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
+func (mm MeteringMode) String() string {
+	if int(mm) < len(_MeteringModeIndex)-1 {
+		return _MeteringModeName[_MeteringModeIndex[mm]:_MeteringModeIndex[mm+1]]
+	}
+	if mm == MeteringModeOther {
+		return "Other"
+	}
+	return _MeteringModeName[:_MeteringModeIndex[1]]
+}
+
+// MarshalJSON implements the JSONMarshaler interface that is
+// used by encoding/json
+func (mm MeteringMode) MarshalJSON() (buf []byte, err error) {
+	return strconv.AppendUint(buf, uint64(mm), 10), nil
+}
+
+// UnmarshalJSON implements the JSONMarshaler interface that is
+// used by encoding/json
+func (mm *MeteringMode) UnmarshalJSON(buf []byte) error {
+	v, err := strconv.ParseUint(string(buf), 10, 8)
+	*mm = MeteringMode(v)
+	return err
+}
+
+// MarshalText implements the TextMarshaler interface
+func (mm MeteringMode) MarshalText() (text []byte, err error) {
+	return unsafeGetBytes(mm.String()), nil
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (mm *MeteringMode) UnmarshalText(text []byte) (err error) {
+	*mm = mapStringMeteringMode[string(text)]
+	return nil
+}
+
+// ExposureMode is the mode in which the Exposure was taken.
+//
+//  Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
+type ExposureMode uint8
+
+// Exposure Modes
+const (
+	ExposureModeAuto ExposureMode = iota
+	ExposureModeManual
+	ExposureModeAutoBracket
+
+	// ExposureMode Stringer
+	_ExposureModeName = "AutoManualAuto bracket"
+)
+
+// Exposure Mode Values
+var (
+	_ExposureModeIndex    = [...]uint8{0, 4, 10, 22}
+	mapStringExposureMode = map[string]ExposureMode{
+		"Auto":         ExposureModeAuto,
+		"Manual":       ExposureModeManual,
+		"Auto bracket": ExposureModeAutoBracket,
+	}
+)
+
+// NewExposureMode returns an ExposureMode from the given uint8
+func NewExposureMode(em uint8) ExposureMode {
+	if em <= 2 {
+		return ExposureMode(em)
+	}
+	return 0
+}
+
+// String returns an ExposureMode as a string
+func (em ExposureMode) String() string {
+	if int(em) < len(_ExposureModeIndex)-1 {
+		return _ExposureModeName[_ExposureModeIndex[em]:_ExposureModeIndex[em+1]]
+	}
+	return "Unknown"
+}
+
+// MarshalText implements the TextMarshaler interface
+func (em ExposureMode) MarshalText() (text []byte, err error) {
+	return unsafeGetBytes(em.String()), nil
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (em *ExposureMode) UnmarshalText(text []byte) (err error) {
+	*em = mapStringExposureMode[string(text)]
+	return nil
+}
+
+// ExposureProgram is the program in which the image was taken.
+//
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
+// 	0: "Not Defined",
+// 	1: "Manual",
+// 	2: "Program AE",
+// 	3: "Aperture-priority AE",
+// 	4: "Shutter speed priority AE",
+// 	5: "Creative (Slow speed)",
+// 	6: "Action (High speed)",
+// 	7: "Portrait",
+// 	8: "Landscape",
+// 	9: "Bulb",
+type ExposureProgram uint8
+
+// Exposure Programs
+const (
+	ExposureProgramNotDefined ExposureProgram = iota
+	ExposureProgramManual
+	ExposureProgramProgramAE
+	ExposureProgramAperturePriority
+	ExposureProgramShutterSpeedPriority
+	ExposureProgramCreative
+	ExposureProgramAction
+	ExposureProgramPortrait
+	ExposureProgramLandscape
+	ExposureProgramBulb
+
+	// ExposureProgramName
+	_ExposureProgramName = "Not DefinedManualProgram AEAperture-priority AEShutter speed priority AECreative (Slow speed)Action (High speed)PortraitLandscapeBulb"
+)
+
+// ExposureProgramIndex
+var (
+	_ExposureProgramIndex    = [...]uint8{0, 11, 17, 27, 47, 72, 93, 112, 120, 129, 133}
+	mapStringExposureProgram = map[string]ExposureProgram{
+		"Not Defined":               ExposureProgramNotDefined,
+		"Manual":                    ExposureProgramManual,
+		"Program AE":                ExposureProgramProgramAE,
+		"Aperture-priority AE":      ExposureProgramAperturePriority,
+		"Shutter speed priority AE": ExposureProgramShutterSpeedPriority,
+		"Creative (Slow speed)":     ExposureProgramCreative,
+		"Action (High speed)":       ExposureProgramAction,
+		"Portrait":                  ExposureProgramPortrait,
+		"Landscape":                 ExposureProgramLandscape,
+		"Bulb":                      ExposureProgramBulb,
+	}
+)
+
+// NewExposureProgram returns an ExposureProgram from the given uint8
+func NewExposureProgram(ep uint8) ExposureProgram {
+	if ep <= 9 {
+		return ExposureProgram(ep)
+	}
+	return ExposureProgramNotDefined
+}
+
+// String returns an ExposureProgram as a string
+func (ep ExposureProgram) String() string {
+	if int(ep) < len(_ExposureProgramIndex)-1 {
+		return _ExposureProgramName[_ExposureProgramIndex[ep]:_ExposureProgramIndex[ep+1]]
+	}
+	return ExposureProgramNotDefined.String()
+}
+
+// MarshalText implements the TextMarshaler interface
+func (ep ExposureProgram) MarshalText() (text []byte, err error) {
+	return unsafeGetBytes(ep.String()), nil
+}
+
+// UnmarshalText implements the TextUnmarshaler interface that is
+// used by encoding/json
+func (ep *ExposureProgram) UnmarshalText(text []byte) (err error) {
+	*ep = mapStringExposureProgram[string(text)]
+	return nil
+}
+
+// Flash is in bit format and represents the mode in which flash was used.
+//
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
+type Flash uint8
+
+// Flashtypes
+const (
+	FlashNoFlash Flash = 0
+	FlashFired   Flash = 1
+
+	// FlashStringer Strings
+	_FlashStringerStrings = "No FlashFiredFired, Return not detectedFired, Return detectedOn, Did not fireOn, FiredOn, Return not detectedOn, Return detectedOff, Did not fireOff, Did not fire, Return not detectedAuto, Did not fireAuto, FiredAuto, Fired, Return not detectedAuto, Fired, Return detectedNo flash functionOff, No flash functionFired, Red-eye reductionFired, Red-eye reduction, Return not detectedFired, Red-eye reduction, Return detectedOn, Red-eye reductionOn, Red-eye reduction, Return not detectedOn, Red-eye reduction, Return detectedOff, Red-eye reductionAuto, Did not fire, Red-eye reductionAuto, Fired, Red-eye reductionAuto, Fired, Red-eye reduction, Return not detectedAuto, Fired, Red-eye reduction, Return detected"
+)
+
+var (
+	// FlashStringer Index
+	_FlashStringerIndex = [...]uint16{0, 8,
+		13, 13, 13, 13, 39, 39, 61, 77, 86, 86, 86, 86, 109, 109, 128, 145,
+		145, 145, 145, 183, 183, 183, 183, 201, 212, 212, 212, 212, 244, 244,
+		272, 289, 289, 289, 289, 289, 289, 289, 289, 289, 289, 289, 289, 289,
+		289, 289, 289, 311, 311, 311, 311, 311, 311, 311, 311, 311, 311, 311,
+		311, 311, 311, 311, 311, 311, 335, 335, 335, 335, 380, 380, 421, 421, 442,
+		442, 442, 442, 484, 484, 522, 544, 544, 544, 544, 544, 544, 544, 544,
+		581, 611, 611, 611, 611, 662, 662, 709}
+)
+
+// NewFlash returns a new Flash value
+func NewFlash(f uint8) Flash {
+	return Flash(f)
+}
+
+// String returns an ExposureProgram as a string
+func (f Flash) String() string {
+	if int(f) < len(_FlashStringerIndex)-1 {
+		str := _FlashStringerStrings[_FlashStringerIndex[f]:_FlashStringerIndex[f+1]]
+		if len(str) > 0 {
+			return str
+		}
+	}
+	return Flash(0).String()
+}
+
+// FlashMode is what mode the flash was used in
+type FlashMode uint8
+
+// FlashModes
+const (
+	FlashModeNone FlashMode = 0
+	FlashNoReturn FlashMode = 4
+	FlashReturn   FlashMode = 6
+	FlashModeOn   FlashMode = 8
+	FlashModeOff  FlashMode = 16
+	FlashModeAuto FlashMode = 24
+)
+
+// Fired is bit 0, returns true if Flash was fired.
+func (f Flash) Fired() bool {
+	return 0b00000001&f == 0b00000001
+}
+
+// ReturnStatus is bits 1 and 2, returns 4 if "No Return" present and 6 if "Return" present.
+// 	FlashNoReturn: 4
+// 	FlashReturn:  6
+func (f Flash) ReturnStatus() FlashMode {
+	return FlashMode(0b00000110 & f)
+}
+
+// FlashFunction is bit 5, returns true if flash function was not present
+func (f Flash) FlashFunction() bool {
+	return 0b00100000&f == 0b00100000
+}
+
+// Mode is bits 3 and 4, returns 0 if "NoFlash", 8 if "On", 16 if "Off", and 24 if "Auto".
+//  FlashModeNone: 0
+// 	FlashModeOn: 8
+// 	FlashModeOff: 16
+// 	FlashModeAuto: 24
+func (f Flash) Mode() FlashMode {
+	return FlashMode(0b00011000 & f)
+}
+
+// Redeye is bit 6, returns true if "Red-eye reduction" was present
+func (f Flash) Redeye() bool {
+	return 0b01000000&f == 0b01000000
+}
+
+// Orientation of an image
 type Orientation uint8
 
+// Orientation values
 const (
 	OrientationHorizontal                Orientation = 1
 	OrientationMirrorHorizontal          Orientation = 2
@@ -507,26 +569,19 @@ const (
 	OrientationRotate90                  Orientation = 6
 	OrientationMirrorHorizontalRotate90  Orientation = 7
 	OrientationRotate270                 Orientation = 8
+
+	// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
+	_OrientationStringerStrings = "HorizontalMirror horizontalRotate 180Mirror verticalMirror horizontal and rotate 270 CWRotate 90 CWMirror horizontal and rotate 90 CWRotate 270 CW"
 )
 
-// String representation lifted from exiftool.
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
-var orientationValues = map[Orientation]string{
-	OrientationHorizontal:                "Horizontal (normal)",
-	OrientationMirrorHorizontal:          "Mirror horizontal",
-	OrientationRotate180:                 "Rotate 180",
-	OrientationMirrorVertical:            "Mirror vertical",
-	OrientationMirrorHorizontalRotate270: "Mirror horizontal and rotate 270 CW",
-	OrientationRotate90:                  "Rotate 90 CW",
-	OrientationMirrorHorizontalRotate90:  "Mirror horizontal and rotate 90 CW",
-	OrientationRotate270:                 "Rotate 270 CW",
-}
+var (
+	_OrientationStringerIndex = [...]uint{0, 10, 27, 37, 52, 87, 99, 133, 146}
+)
 
-// String returns the value of Orientation as a string
+// String returns an Orientation as a string
 func (o Orientation) String() string {
-	str, ok := orientationValues[o]
-	if ok {
-		return str
+	if int(o) < len(_OrientationStringerIndex)-1 {
+		return _OrientationStringerStrings[_OrientationStringerIndex[o]:_OrientationStringerIndex[o+1]]
 	}
-	return "Unknown"
+	return Orientation(0).String()
 }

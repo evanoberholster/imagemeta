@@ -9,7 +9,6 @@ import (
 	"github.com/evanoberholster/imagemeta/cr3"
 	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
@@ -92,7 +91,8 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseJpeg(br *bufio.Reader) (err error) {
-	_, err = jpeg.ScanJPEG(br, m.Metadata)
+
+	//_, err = jpeg.ScanJPEG(br, m.Metadata)
 	m.images = 1
 	return err
 }
@@ -154,7 +154,7 @@ func (m *Metadata) parseCR3(br *bufio.Reader) (err error) {
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseTiff(br *bufio.Reader) (err error) {
 	// package tiff -> exif
-	m.ExifHeader, err = tiff.Scan(br)
+	m.ExifHeader, err = tiff.ScanTiff(br)
 	if err != nil {
 		return
 	}

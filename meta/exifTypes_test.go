@@ -2,7 +2,6 @@ package meta
 
 import (
 	"bytes"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,13 +59,22 @@ func TestMeteringMode(t *testing.T) {
 		if mm != mm2 {
 			t.Errorf("Incorrect MeteringMode.MarshallText wanted %s (%d) got %s (%d)", mm, uint8(mm), mm2, uint8(mm2))
 		}
-
-		if i >= 7 && i != 255 {
-			if mm.String() != "Unknown" {
-				t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", mm)
+		if i > 7 {
+			if i == 255 {
+				if mm.String() != "Other" {
+					t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Other", mm)
+				}
+			} else {
+				if mm.String() != "Unknown" {
+					t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", mm)
+				}
 			}
-		}
 
+		}
+	}
+
+	if MeteringMode(200).String() != "Unknown" {
+		t.Errorf("Incorrect MeteringMode.String wanted %s got %s", "Unknown", NewMeteringMode(200).String())
 	}
 }
 
@@ -150,61 +158,6 @@ func TestShutterSpeed(t *testing.T) {
 		assert.Equal(t, bm.ss, b1, "UnmarshalText #%s, wanted: %s got: %s", bm.name, bm.str, m)
 
 	}
-}
-
-var fmList = []struct {
-	name string
-	fm   FlashMode
-	str  string
-	m    uint8
-	b    bool
-}{
-	{"test0", NoFlash, "No Flash", 0, false},
-	{"test1", FlashFired, "Fired", 1, true},
-	{"test5", FlashFired, "Fired", 5, true},
-	{"test7", FlashFired, "Fired", 7, true},
-	{"test8", FlashOffNotFired, "Off, Did not fire", 8, false},
-	{"test16", FlashOffNotFired, "Off, Did not fire", 16, false},
-	{"test20", FlashOffNotFired, "Off, Did not fire", 20, false},
-	{"test24", FlashAutoNotFired, "Auto, Did not fire", 24, false},
-	{"test88", FlashAutoNotFired, "Auto, Did not fire", 88, false},
-	{"test25", FlashAutoFired, "Auto, Fired", 25, true},
-	{"test29", FlashAutoFired, "Auto, Fired", 29, true},
-	{"test31", FlashAutoFired, "Auto, Fired", 31, true},
-}
-
-func TestFlashMode(t *testing.T) {
-	for _, fm := range fmList {
-		if a := NewFlashMode(fm.m); a != fm.fm {
-			assert.Equal(t, fm.fm, a, "FlashMode.ParseFlashMode #%s, wanted %s got %s", fm.name, fm.fm, a)
-		}
-
-		// TextMarshall
-		txt, err := fm.fm.MarshalText()
-		if err != nil {
-			t.Errorf("Error FlashMode.MarshallText (%s): %s ", fm.name, err.Error())
-		}
-		b := NewFlashMode(fm.m)
-		assert.Equal(t, []byte(strconv.Itoa(int(b))), txt, "FlashMode.MarshalText #%s, wanted %d got %d", fm.name, fm.m, strconv.Itoa(int(b)))
-
-		// UnmarshalText
-		if err = b.UnmarshalText([]byte(strconv.Itoa(int(fm.m)))); err != nil {
-			t.Errorf("Error FlashMode.UnmarshalText (%s): %s ", fm.name, err.Error())
-		}
-		assert.Equal(t, fm.fm, b, "FlashMode.UnmarshalText #%s, wanted %d got %d", fm.name, fm.fm, b)
-
-		// String
-		assert.Equal(t, fm.str, fm.fm.String(), "FlashMode.String #%s, wanted %s got %s", fm.name, fm.str, fm.fm.String())
-
-		// Bool
-		assert.Equal(t, fm.b, fm.fm.Bool(), "FlashMode.Bool #%s, wanted %s got %s", fm.name, fm.fm, fm.fm.Bool())
-	}
-
-	// Incorrect FlashMode
-	a := FlashMode(250)
-	b := NewFlashMode(250)
-	assert.Equal(t, a.Bool(), false, "FlashMode.Bool #%s, wanted %s got %s", "Incorrect FlashMode", false, a.Bool())
-	assert.NotEqual(t, a, b, "FlashMode.ParseFlashMode #%s, wanted %s got %s", "Incorrect FlashMode", b, a)
 }
 
 var ebList = []struct {
@@ -351,7 +304,7 @@ func TestMsgPack(t *testing.T) {
 	ep := NewExposureProgram(8)
 	testSerial(t, &ep)
 
-	fm := NewFlashMode(8)
+	fm := NewFlash(8)
 	testSerial(t, &fm)
 
 	fl := NewFocalLength(8, 5)
@@ -401,4 +354,77 @@ func testSerial(t *testing.T, v MsgPackInterface) {
 	if len(left) > 0 {
 		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
 	}
+}
+
+// flashTestList contains test data for Flash
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
+var flashTestList = []struct {
+	flash       Flash
+	flashFired  bool
+	noFn        bool
+	flashReturn FlashMode
+	redEye      bool
+	flashMode   FlashMode
+	str         string
+}{
+	{0, false, false, FlashModeNone, false, FlashModeNone, "No Flash"},
+	{1, true, false, FlashModeNone, false, FlashModeNone, "Fired"},
+	{5, true, false, FlashNoReturn, false, FlashModeNone, "Fired, Return not detected"},
+	{7, true, false, FlashReturn, false, FlashModeNone, "Fired, Return detected"},
+	{8, false, false, FlashModeNone, false, FlashModeOn, "On, Did not fire"},
+	{9, true, false, FlashModeNone, false, FlashModeOn, "On, Fired"},
+	{13, true, false, FlashNoReturn, false, FlashModeOn, "On, Return not detected"},
+	{15, true, false, FlashReturn, false, FlashModeOn, "On, Return detected"},
+	{16, false, false, FlashModeNone, false, FlashModeOff, "Off, Did not fire"},
+	{20, false, false, FlashNoReturn, false, FlashModeOff, "Off, Did not fire, Return not detected"},
+	{24, false, false, FlashModeNone, false, FlashModeAuto, "Auto, Did not fire"},
+	{25, true, false, FlashModeNone, false, FlashModeAuto, "Auto, Fired"},
+	{29, true, false, FlashNoReturn, false, FlashModeAuto, "Auto, Fired, Return not detected"},
+	{31, true, false, FlashReturn, false, FlashModeAuto, "Auto, Fired, Return detected"},
+	{32, false, true, FlashModeNone, false, FlashModeNone, "No flash function"},
+	{48, false, true, FlashModeNone, false, FlashModeOff, "Off, No flash function"},
+	{65, true, false, FlashModeNone, true, FlashModeNone, "Fired, Red-eye reduction"},
+	{69, true, false, FlashNoReturn, true, FlashModeNone, "Fired, Red-eye reduction, Return not detected"},
+	{71, true, false, FlashReturn, true, FlashModeNone, "Fired, Red-eye reduction, Return detected"},
+	{73, true, false, FlashModeNone, true, FlashModeOn, "On, Red-eye reduction"},
+	{77, true, false, FlashNoReturn, true, FlashModeOn, "On, Red-eye reduction, Return not detected"},
+	{79, true, false, FlashReturn, true, FlashModeOn, "On, Red-eye reduction, Return detected"},
+	{80, false, false, FlashModeNone, true, FlashModeOff, "Off, Red-eye reduction"},
+	{88, false, false, FlashModeNone, true, FlashModeAuto, "Auto, Did not fire, Red-eye reduction"},
+	{89, true, false, FlashModeNone, true, FlashModeAuto, "Auto, Fired, Red-eye reduction"},
+	{93, true, false, FlashNoReturn, true, FlashModeAuto, "Auto, Fired, Red-eye reduction, Return not detected"},
+	{95, true, false, FlashReturn, true, FlashModeAuto, "Auto, Fired, Red-eye reduction, Return detected"},
+}
+
+func TestFlash(t *testing.T) {
+	for _, f := range flashTestList {
+		// Test Fired
+		if f.flash.Fired() != f.flashFired {
+			t.Errorf("Incorrect Flash Fired on %d wanted %v got %v", f.flash, f.flashFired, f.flash.Fired())
+		}
+		// Test NoFunction
+		if f.flash.FlashFunction() != f.noFn {
+			t.Errorf("Incorrect Flash Function on %d wanted %v got %v", f.flash, f.noFn, f.flash.FlashFunction())
+		}
+		// Test Return and NoReturn
+		if f.flash.ReturnStatus() != f.flashReturn {
+			t.Errorf("Incorrect Flash Return Status on %d wanted %v got %v", f.flash, f.flashReturn, f.flash.ReturnStatus())
+		}
+		// Test Redeye
+		if f.flash.Redeye() != f.redEye {
+			t.Errorf("Incorrect Flash Red-eye on %d wanted %v got %v", f.flash, f.redEye, f.flash.Redeye())
+		}
+		// Test FlashMode
+		if f.flash.Mode() != f.flashMode {
+			t.Errorf("Incorrect Flash Mode on %d wanted %v got %v", f.flash, f.flashMode, f.flash.Mode())
+		}
+		// Test Stringer
+		if f.flash.String() != f.str {
+			t.Errorf("Incorrect Flash String on %d wanted %v got %v", f.flash, f.str, f.flash.String())
+		}
+	}
+
+	// Test TextMarshall
+	// Test TextUnMarshall
+
 }

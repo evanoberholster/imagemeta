@@ -176,3 +176,5 @@ func TestParseExif(t *testing.T) {
 		})
 	}
 }
+
+// jsonExif for testing purposes.
