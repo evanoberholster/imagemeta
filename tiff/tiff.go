@@ -13,22 +13,32 @@ import (
 const (
 	// TiffHeaderLength is 8 bytes
 	TiffHeaderLength = 16
+
+	bufReaderSize = 32
 )
 
-// ScanTiff searches an io.Reader for a LittleEndian or BigEndian Tiff Header
-// and returns the ExifHeader with the imagetype ImageTiff.
-func ScanTiff(r io.Reader) (meta.ExifHeader, error) {
-	return Scan(r, imagetype.ImageTiff)
+// Scan scans a reader for Tiff Image markers then xmpDecodeFn and exifDecodeFn are run at their respective
+// positions during the scan. Returns an error.
+func Scan(r io.Reader, it imagetype.ImageType, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (err error) {
+	defer func() {
+		if state := recover(); state != nil {
+			err = state.(error)
+		}
+	}()
+
+	br := newBufReader(r)
+
+	exifHeader, err := scan(br, it)
+	if err != nil {
+		return err
+	}
+	return exifFn(br, exifHeader)
 }
 
-// Scan searches an io.Reader for a LittleEndian or BigEndian Tiff Header
+// ScanTiffHeader searches an io.Reader for a LittleEndian or BigEndian Tiff Header
 // and returns the ExifHeader with the given imagetype.
-func Scan(r io.Reader, it imagetype.ImageType) (meta.ExifHeader, error) {
-	br, ok := r.(*bufio.Reader)
-	if !ok || br.Size() < 32 {
-		br = bufio.NewReaderSize(r, 32)
-	}
-	return scan(br, it)
+func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (meta.ExifHeader, error) {
+	return scan(newBufReader(r), it)
 }
 
 // scan searches for the beginning of the EXIF information. The EXIF is near the
@@ -64,4 +74,12 @@ func scan(br *bufio.Reader, it imagetype.ImageType) (header meta.ExifHeader, err
 		header.FirstIfd = ifds.RootIFD
 		return header, nil
 	}
+}
+
+func newBufReader(r io.Reader) *bufio.Reader {
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < bufReaderSize {
+		br = bufio.NewReaderSize(r, bufReaderSize)
+	}
+	return br
 }

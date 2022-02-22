@@ -154,7 +154,7 @@ func (m *Metadata) parseCR3(br *bufio.Reader) (err error) {
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseTiff(br *bufio.Reader) (err error) {
 	// package tiff -> exif
-	m.ExifHeader, err = tiff.ScanTiff(br)
+	m.ExifHeader, err = tiff.ScanTiffHeader(br, imagetype.ImageTiff)
 	if err != nil {
 		return
 	}

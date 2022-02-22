@@ -35,7 +35,7 @@ func TestTiff(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			h, err := Scan(br, header.imageType)
+			h, err := ScanTiffHeader(br, header.imageType)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -59,7 +59,7 @@ func TestTiff(t *testing.T) {
 
 	// Error No Tiff Header
 	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	_, err := ScanTiff(bytes.NewReader(buf))
+	_, err := ScanTiffHeader(bytes.NewReader(buf), imagetype.ImageTiff)
 	if err != meta.ErrNoExif {
 		t.Errorf("Incorrect err wanted %s got %s ", meta.ErrNoExif, err)
 	}

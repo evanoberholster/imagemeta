@@ -41,7 +41,7 @@ func ScanExif(r meta.Reader) (e *Data, err error) {
 	}
 
 	// Search Image for Metadata Header using ImageType
-	header, err := tiff.Scan(br, it)
+	header, err := tiff.ScanTiffHeader(br, it)
 	if !header.IsValid() || err != nil {
 		return nil, ErrNoExif
 	}
