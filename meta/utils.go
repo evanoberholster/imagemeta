@@ -1,6 +1,10 @@
 package meta
 
-import "bytes"
+import (
+	"bytes"
+	"reflect"
+	"unsafe"
+)
 
 // parseInt parses a []byte of a string representation of an int64 value and returns the value
 //func parseInt(buf []byte) (i int64) {
@@ -55,4 +59,11 @@ func CleanXMPSuffixWhiteSpace(buf []byte) []byte {
 		}
 	}
 	return buf
+}
+
+func unsafeGetBytes(s string) (b []byte) {
+	(*reflect.SliceHeader)(unsafe.Pointer(&b)).Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
+	(*reflect.SliceHeader)(unsafe.Pointer(&b)).Cap = len(s)
+	(*reflect.SliceHeader)(unsafe.Pointer(&b)).Len = len(s)
+	return
 }

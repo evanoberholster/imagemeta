@@ -50,54 +50,50 @@ func (e *Data) Copyright() (copyright string, err error) {
 
 // CameraSerial convenience func. "IFD/Exif" BodySerialNumber
 func (e *Data) CameraSerial() (serial string, err error) {
+	var t tag.Tag
 	// BodySerialNumber
-	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.BodySerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
-		return
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.BodySerialNumber); err == nil {
+		return e.ParseASCIIValue(t)
 	}
 
 	// CameraSerialNumber
-	t, err = e.GetTag(ifds.RootIFD, 0, ifds.CameraSerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
-		return
+	if t, err = e.GetTag(ifds.RootIFD, 0, ifds.CameraSerialNumber); err == nil {
+		return e.ParseASCIIValue(t)
 	}
 
 	return
 }
 
 // DateTime returns a time.Time that corresponds with when it was created.
-func (e *Data) DateTime() (time.Time, error) {
+func (e *Data) DateTime() (tm time.Time, err error) {
+	var t tag.Tag
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
-	t1, err := e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal)
-	if err == nil {
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
-		return e.ParseTimeStamp(t1, t2, time.UTC)
+		return e.ParseTimeStamp(t, t2, time.UTC)
 	}
 
 	// "IFD/Exif" DateTimeDigitized
 	// "IFD/Exif" SubSecTimeDigitized
 	// TODO: "IFD/Exif" OffsetTimeDigitized
-	t1, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized)
-	if err == nil {
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized)
-		return e.ParseTimeStamp(t1, t2, time.UTC)
+		return e.ParseTimeStamp(t, t2, time.UTC)
 	}
 	return time.Time{}, ErrEmptyTag
 }
 
 // ModifyDate returns a time.Time that corresponds with when it was last modified.
-func (e *Data) ModifyDate() (time.Time, error) {
+func (e *Data) ModifyDate() (tm time.Time, err error) {
 	// "IFD" DateTime
 	// "IFD/Exif" SubSecTime
-	t1, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
+	t, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
 	if err != nil {
-		return time.Time{}, err
+		return
 	}
-	return e.ParseTimeStamp(t1, tag.Tag{}, time.UTC)
+	return e.ParseTimeStamp(t, tag.Tag{}, time.UTC)
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake
@@ -122,11 +118,10 @@ func (e *Data) LensModel() (model string, err error) {
 func (e *Data) LensSerial() (serial string, err error) {
 	// LensSerialNumber
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.LensSerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
+	if err != nil {
 		return
 	}
-	return
+	return e.ParseASCIIValue(t)
 }
 
 // Dimensions convenience func. "IFD" Dimensions
@@ -307,7 +302,7 @@ func (e *Data) ISOSpeed() (iso uint32, err error) {
 }
 
 // Flash convenience func. "IFD/Exif" Flash
-func (e *Data) Flash() (meta.FlashMode, error) {
+func (e *Data) Flash() (meta.Flash, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.Flash)
 	if err != nil {
 		return 0, err
@@ -316,7 +311,7 @@ func (e *Data) Flash() (meta.FlashMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return meta.NewFlashMode(uint8(f)), err
+	return meta.NewFlash(uint8(f)), err
 }
 
 // Orientation convenience func. "IFD" Orientation

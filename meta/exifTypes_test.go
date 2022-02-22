@@ -166,38 +166,7 @@ var fmList = []struct {
 	m     uint8
 	fired bool
 	noFn  bool
-}{
-	//{"test0", NoFlash, "No Flash", 0, false},
-	{NoFlash, "No Flash", 0, false, false},
-	{FlashFired, "Fired", 1, true, false},
-}
-
-func TestFlashMode(t *testing.T) {
-	for _, fm := range fmList {
-		mode := FlashMode(fm.m)
-		// Fired
-		if mode.Fired() != fm.fired {
-			t.Errorf("FlashMode.Fired error expected %v got %v", FlashMode(fm.m).Fired(), fm.fired)
-		}
-
-		// NoFunction
-		if mode.NoFunction() != fm.noFn {
-			t.Errorf("FlashMode.NoFunction error expected %v got %v", mode.NoFunction(), fm.noFn)
-		}
-
-		// Redeye
-
-		// Return
-
-		// Auto
-
-		// TextMarshall
-
-		// UnmarshalText
-
-		// String
-	}
-}
+}{}
 
 var ebList = []struct {
 	name string
@@ -343,7 +312,7 @@ func TestMsgPack(t *testing.T) {
 	ep := NewExposureProgram(8)
 	testSerial(t, &ep)
 
-	fm := NewFlashMode(8)
+	fm := NewFlash(8)
 	testSerial(t, &fm)
 
 	fl := NewFocalLength(8, 5)
@@ -393,4 +362,77 @@ func testSerial(t *testing.T, v MsgPackInterface) {
 	if len(left) > 0 {
 		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
 	}
+}
+
+// flashTestList contains test data for Flash
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
+var flashTestList = []struct {
+	flash       Flash
+	flashFired  bool
+	noFn        bool
+	flashReturn FlashMode
+	redEye      bool
+	flashMode   FlashMode
+	str         string
+}{
+	{0, false, false, FlashModeNone, false, FlashModeNone, "No Flash"},
+	{1, true, false, FlashModeNone, false, FlashModeNone, "Fired"},
+	{5, true, false, FlashNoReturn, false, FlashModeNone, "Fired, Return not detected"},
+	{7, true, false, FlashReturn, false, FlashModeNone, "Fired, Return detected"},
+	{8, false, false, FlashModeNone, false, FlashModeOn, "On, Did not fire"},
+	{9, true, false, FlashModeNone, false, FlashModeOn, "On, Fired"},
+	{13, true, false, FlashNoReturn, false, FlashModeOn, "On, Return not detected"},
+	{15, true, false, FlashReturn, false, FlashModeOn, "On, Return detected"},
+	{16, false, false, FlashModeNone, false, FlashModeOff, "Off, Did not fire"},
+	{20, false, false, FlashNoReturn, false, FlashModeOff, "Off, Did not fire, Return not detected"},
+	{24, false, false, FlashModeNone, false, FlashModeAuto, "Auto, Did not fire"},
+	{25, true, false, FlashModeNone, false, FlashModeAuto, "Auto, Fired"},
+	{29, true, false, FlashNoReturn, false, FlashModeAuto, "Auto, Fired, Return not detected"},
+	{31, true, false, FlashReturn, false, FlashModeAuto, "Auto, Fired, Return detected"},
+	{32, false, true, FlashModeNone, false, FlashModeNone, "No flash function"},
+	{48, false, true, FlashModeNone, false, FlashModeOff, "Off, No flash function"},
+	{65, true, false, FlashModeNone, true, FlashModeNone, "Fired, Red-eye reduction"},
+	{69, true, false, FlashNoReturn, true, FlashModeNone, "Fired, Red-eye reduction, Return not detected"},
+	{71, true, false, FlashReturn, true, FlashModeNone, "Fired, Red-eye reduction, Return detected"},
+	{73, true, false, FlashModeNone, true, FlashModeOn, "On, Red-eye reduction"},
+	{77, true, false, FlashNoReturn, true, FlashModeOn, "On, Red-eye reduction, Return not detected"},
+	{79, true, false, FlashReturn, true, FlashModeOn, "On, Red-eye reduction, Return detected"},
+	{80, false, false, FlashModeNone, true, FlashModeOff, "Off, Red-eye reduction"},
+	{88, false, false, FlashModeNone, true, FlashModeAuto, "Auto, Did not fire, Red-eye reduction"},
+	{89, true, false, FlashModeNone, true, FlashModeAuto, "Auto, Fired, Red-eye reduction"},
+	{93, true, false, FlashNoReturn, true, FlashModeAuto, "Auto, Fired, Red-eye reduction, Return not detected"},
+	{95, true, false, FlashReturn, true, FlashModeAuto, "Auto, Fired, Red-eye reduction, Return detected"},
+}
+
+func TestFlash(t *testing.T) {
+	for _, f := range flashTestList {
+		// Test Fired
+		if f.flash.Fired() != f.flashFired {
+			t.Errorf("Incorrect Flash Fired on %d wanted %v got %v", f.flash, f.flashFired, f.flash.Fired())
+		}
+		// Test NoFunction
+		if f.flash.FlashFunction() != f.noFn {
+			t.Errorf("Incorrect Flash Function on %d wanted %v got %v", f.flash, f.noFn, f.flash.FlashFunction())
+		}
+		// Test Return and NoReturn
+		if f.flash.ReturnStatus() != f.flashReturn {
+			t.Errorf("Incorrect Flash Return Status on %d wanted %v got %v", f.flash, f.flashReturn, f.flash.ReturnStatus())
+		}
+		// Test Redeye
+		if f.flash.Redeye() != f.redEye {
+			t.Errorf("Incorrect Flash Red-eye on %d wanted %v got %v", f.flash, f.redEye, f.flash.Redeye())
+		}
+		// Test FlashMode
+		if f.flash.Mode() != f.flashMode {
+			t.Errorf("Incorrect Flash Mode on %d wanted %v got %v", f.flash, f.flashMode, f.flash.Mode())
+		}
+		// Test Stringer
+		if f.flash.String() != f.str {
+			t.Errorf("Incorrect Flash String on %d wanted %v got %v", f.flash, f.str, f.flash.String())
+		}
+	}
+
+	// Test TextMarshall
+	// Test TextUnMarshall
+
 }
