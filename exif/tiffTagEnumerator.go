@@ -3,6 +3,7 @@ package exif
 import (
 	"encoding/binary"
 	"errors"
+	"strings"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/tag"
@@ -111,35 +112,42 @@ func newTagEnumerator(offset uint32, er *reader) *ifdTagEnumerator {
 	}
 }
 
-// parseUndefinedIfds
-// Makernotes and AdobeDNGData
-func (ite *ifdTagEnumerator) parseUndefinedIfds(e *Data, ifd ifds.IFD) bool {
-	if ifd == ifds.MknoteIFD {
-		switch e.make {
-		case "Canon":
-			// Canon Makernotes do not have a Makernote Header
-			// offset 0
-			// ByteOrder is the same as RootIfd
-			return true
-		case "NIKON CORPORATION", "Nikon":
-			// Nikon v3 maker note is a self-contained Ifd
-			// (offsets are relative to the start of the maker note)
-			byteOrder, err := NikonMkNoteHeader(ite)
-			if err != nil {
-				return false
-			}
+func (ite *ifdTagEnumerator) parseMknoteIFD(e *Data) bool {
+	if e.make == "" {
+		return false
+	}
+	make := strings.ToUpper(e.make)
+	if make == "CANON" {
+		// Canon Makernotes do not have a Makernote Header
+		// offset 0
+		// ByteOrder is the same as RootIfd
+		return true
+	}
+	if make == "NIKON" || make == "NIKON CORPORATION" {
+		// Nikon v3 maker note is a self-contained Ifd
+		// (offsets are relative to the start of the maker note)
+		if byteOrder, err := NikonMkNoteHeader(ite); err == nil {
 			ite.byteOrder = byteOrder
 			// update imagetype
 			if e.imageType == imagetype.ImageTiff {
 				e.imageType = imagetype.ImageNEF
 			}
 			return true
-		case "SONY", "Sony":
-			if e.imageType == imagetype.ImageTiff {
-				e.imageType = imagetype.ImageARW
-			}
 		}
-		return false
+	} else if make == "SONY" {
+		if e.imageType == imagetype.ImageTiff {
+			e.imageType = imagetype.ImageARW
+		}
+	}
+
+	return false
+}
+
+// parseUndefinedIfds
+// Makernotes and AdobeDNGData
+func (ite *ifdTagEnumerator) parseUndefinedIfds(e *Data, ifd ifds.IFD) bool {
+	if ifd == ifds.MknoteIFD {
+		return ite.parseMknoteIFD(e)
 	}
 
 	// TODO: Adobe DNG data
@@ -218,22 +226,17 @@ func (ite *ifdTagEnumerator) ParseIfd(e *Data, ifd ifds.IFD, ifdIndex uint8, doD
 }
 
 // ReadTag reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
-// from an ifdTagEnumerator
-func (ite *ifdTagEnumerator) ReadTag(ifd ifds.IFD) (t tag.Tag, err error) {
-	// Read 12 bytes of Tag
+// from an ifdTagEnumerator. Returns Tag and error. If the tagType is unsupported, returns tag.ErrTagTypeNotValid.
+func (ite *ifdTagEnumerator) ReadTag(ifd ifds.IFD) (tag.Tag, error) {
 	buf, err := ite.ReadBuffer(12)
 	if err != nil {
-		return
+		return tag.Tag{}, err
 	}
-	tagID := tag.ID(ite.byteOrder.Uint16(buf[:2])) // TagID
-
+	tagID := tag.ID(ite.byteOrder.Uint16(buf[:2]))      // TagID
 	tagType := tag.Type(ite.byteOrder.Uint16(buf[2:4])) // TagType
+	unitCount := ite.byteOrder.Uint32(buf[4:8])         // UnitCount
+	valueOffset := ite.byteOrder.Uint32(buf[8:12])      // ValueOffset
 
-	unitCount := ite.byteOrder.Uint32(buf[4:8]) // UnitCount
-
-	valueOffset := ite.byteOrder.Uint32(buf[8:12]) // ValueOffset
-
-	// Creates a newTag. If the TypeFromRaw is unsupported, it returns tag.ErrTagTypeNotValid.
 	return tag.NewTag(tagID, tagType, unitCount, valueOffset, uint8(ifd))
 }
 

@@ -127,8 +127,12 @@ func newData(er *reader, it imagetype.ImageType) *Data {
 
 // AddTag adds a Tag to a tag.TagMap
 func (e *Data) addTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
-	switch ifd {
-	case ifds.RootIFD:
+	// don't add invalid IFD tags
+	if !ifd.Valid() {
+		return
+	}
+
+	if ifd == ifds.RootIFD {
 		switch t.ID {
 		case ifds.Make: // Add Make and Model to Exif struct for future decoding of Makernotes
 			e.make, _ = e.ParseASCIIValue(t)
@@ -143,18 +147,14 @@ func (e *Data) addTag(ifd ifds.IFD, ifdIndex uint8, t tag.Tag) {
 				e.height, _ = e.ParseUint16Value(t)
 			}
 		}
-	case ifds.ExifIFD:
+	}
+	if ifd == ifds.ExifIFD {
 		switch t.ID {
 		case exififd.PixelXDimension:
 			e.width, _ = e.ParseUint16Value(t)
 		case exififd.PixelYDimension:
 			e.height, _ = e.ParseUint16Value(t)
 		}
-	case ifds.SubIFD, ifds.MknoteIFD, ifds.GPSIFD:
-
-	default:
-		// trace UnknownIFD
-		return
 	}
 	e.tagMap[ifds.NewKey(ifd, ifdIndex, t.ID)] = t
 }

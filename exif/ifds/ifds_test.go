@@ -26,12 +26,16 @@ func TestKey(t *testing.T) {
 	for _, v := range tests {
 		key := NewKey(v.ifd, v.ifdIndex, v.tagID)
 		ifd, ifdIndex, tagID := key.Val()
-
 		key2 := NewKey(ifd, ifdIndex, tagID)
+
 		assert.Equal(t, key, key2)
 		assert.Equal(t, v.tagID, tagID)
 		assert.Equal(t, v.ifd, ifd)
 		assert.Equal(t, v.ifdIndex, ifdIndex)
+
+		if !ifd.Valid() {
+			t.Errorf("error wanted %s, got %t", "true", ifd.Valid())
+		}
 	}
 }
 

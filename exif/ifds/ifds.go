@@ -50,6 +50,11 @@ var (
 	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79}
 )
 
+// Valid returns true if IFD is valid
+func (ifd IFD) Valid() bool {
+	return int(ifd) < len(_IFDStringerIndex)-1 && ifd != NullIFD
+}
+
 func (ifd IFD) String() string {
 	if int(ifd) < len(_IFDStringerIndex)-1 {
 		return _IFDStringerString[_IFDStringerIndex[ifd]:_IFDStringerIndex[ifd+1]]
