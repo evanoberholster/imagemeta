@@ -556,8 +556,10 @@ func (f Flash) Redeye() bool {
 	return 0b01000000&f == 0b01000000
 }
 
+// Orientation of an image
 type Orientation uint8
 
+// Orientation values
 const (
 	OrientationHorizontal                Orientation = 1
 	OrientationMirrorHorizontal          Orientation = 2
@@ -567,26 +569,19 @@ const (
 	OrientationRotate90                  Orientation = 6
 	OrientationMirrorHorizontalRotate90  Orientation = 7
 	OrientationRotate270                 Orientation = 8
+
+	// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
+	_OrientationStringerStrings = "HorizontalMirror horizontalRotate 180Mirror verticalMirror horizontal and rotate 270 CWRotate 90 CWMirror horizontal and rotate 90 CWRotate 270 CW"
 )
 
-// String representation lifted from exiftool.
-// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
-var orientationValues = map[Orientation]string{
-	OrientationHorizontal:                "Horizontal (normal)",
-	OrientationMirrorHorizontal:          "Mirror horizontal",
-	OrientationRotate180:                 "Rotate 180",
-	OrientationMirrorVertical:            "Mirror vertical",
-	OrientationMirrorHorizontalRotate270: "Mirror horizontal and rotate 270 CW",
-	OrientationRotate90:                  "Rotate 90 CW",
-	OrientationMirrorHorizontalRotate90:  "Mirror horizontal and rotate 90 CW",
-	OrientationRotate270:                 "Rotate 270 CW",
-}
+var (
+	_OrientationStringerIndex = [...]uint{0, 10, 27, 37, 52, 87, 99, 133, 146}
+)
 
-// String returns the value of Orientation as a string
+// String returns an Orientation as a string
 func (o Orientation) String() string {
-	str, ok := orientationValues[o]
-	if ok {
-		return str
+	if int(o) < len(_OrientationStringerIndex)-1 {
+		return _OrientationStringerStrings[_OrientationStringerIndex[o]:_OrientationStringerIndex[o+1]]
 	}
-	return "Unknown"
+	return Orientation(0).String()
 }
