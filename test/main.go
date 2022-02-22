@@ -10,7 +10,10 @@ import (
 	"github.com/evanoberholster/imagemeta/bmff"
 	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/heic"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
@@ -32,8 +35,35 @@ func main() {
 	}()
 	stdLogger := bmff.STDLogger{}
 	bmff.DebugLogger(stdLogger)
-	parseHeic(f)
+	parseJPG(f)
+	//parseCR2(f)
+	//parseHeic(f)
 	//parseCR3(f)
+}
+
+func parseJPG(f meta.Reader) {
+	exifFn := func(r io.Reader, header meta.ExifHeader) error {
+
+		fmt.Println(header)
+		fmt.Println(header.TiffHeaderOffset, header.FirstIfdOffset, header.FirstIfdOffset-header.TiffHeaderOffset)
+		return nil
+	}
+
+	_, err := jpeg.ScanJPEG(f, exifFn, nil)
+	fmt.Println(err)
+}
+
+func parseCR2(f meta.Reader) {
+
+	exifFn := func(r io.Reader, header meta.ExifHeader) error {
+
+		fmt.Println(header)
+		fmt.Println(header.TiffHeaderOffset, header.FirstIfdOffset, header.FirstIfdOffset-header.TiffHeaderOffset)
+		return nil
+	}
+
+	err := tiff.Scan(f, imagetype.ImageCR2, exifFn, nil)
+	fmt.Println(err)
 }
 
 func parseHeic(f meta.Reader) {
