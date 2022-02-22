@@ -555,3 +555,37 @@ func (f Flash) Mode() FlashMode {
 func (f Flash) Redeye() bool {
 	return 0b01000000&f == 0b01000000
 }
+type Orientation uint8
+
+const (
+	OrientationHorizontal                Orientation = 1
+	OrientationMirrorHorizontal          Orientation = 2
+	OrientationRotate180                 Orientation = 3
+	OrientationMirrorVertical            Orientation = 4
+	OrientationMirrorHorizontalRotate270 Orientation = 5
+	OrientationRotate90                  Orientation = 6
+	OrientationMirrorHorizontalRotate90  Orientation = 7
+	OrientationRotate270                 Orientation = 8
+)
+
+// String representation lifted from exiftool.
+// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
+var orientationValues = map[Orientation]string{
+	OrientationHorizontal:                "Horizontal (normal)",
+	OrientationMirrorHorizontal:          "Mirror horizontal",
+	OrientationRotate180:                 "Rotate 180",
+	OrientationMirrorVertical:            "Mirror vertical",
+	OrientationMirrorHorizontalRotate270: "Mirror horizontal and rotate 270 CW",
+	OrientationRotate90:                  "Rotate 90 CW",
+	OrientationMirrorHorizontalRotate90:  "Mirror horizontal and rotate 90 CW",
+	OrientationRotate270:                 "Rotate 270 CW",
+}
+
+// String returns the value of Orientation as a string
+func (o Orientation) String() string {
+	str, ok := orientationValues[o]
+	if ok {
+		return str
+	}
+	return "Unknown"
+}

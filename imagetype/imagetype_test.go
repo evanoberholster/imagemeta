@@ -24,6 +24,7 @@ func TestScan(t *testing.T) {
 		{"../testImages/AVIF2.avif", ImageAVIF},
 		{"../testImages/CRW.CRW", ImageCRW},
 		{"../testImages/XMP.xmp", ImageXMP},
+		{"../testImages/GIF.gif", ImageGIF},
 		{"../testImages/Unknown.exif", ImageUnknown},
 	}
 	for _, header := range exifHeaderTests {

@@ -25,14 +25,15 @@ var exifTests = []struct {
 	width        uint32
 	height       uint32
 	createdDate  time.Time
+	orientation  meta.Orientation
 }{
 	// TODO: Add test for RW2
-	{"../testImages/JPEG.jpg", imagetype.ImageJPEG, "GoPro", "HERO4 Silver", 113, 2.8, 3, meta.NewShutterSpeed(1, 60), 0, 0, time.Unix(1476205190, 0)},
-	{"../testImages/Hero8.GPR", imagetype.ImageTiff, "GoPro", "HERO8 Black", 317, 2.8, 3, meta.NewShutterSpeed(1, 240), 4000, 3000, time.Unix(1590641247, 0)},
-	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, meta.NewShutterSpeed(1, 100), 4928, 3280, time.Unix(1508673260, 0)},
-	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, meta.NewShutterSpeed(10, 300), 160, 120, time.Unix(1378201522, 0)},
-	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, meta.NewShutterSpeed(1, 40), 5616, 3744, time.Unix(1192715074, 0)},
-	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, meta.NewShutterSpeed(1, 20), 3648, 5472, time.Unix(1575608513, 0)},
+	{"../testImages/JPEG.jpg", imagetype.ImageJPEG, "GoPro", "HERO4 Silver", 113, 2.8, 3, meta.NewShutterSpeed(1, 60), 0, 0, time.Unix(1476205190, 0), meta.OrientationHorizontal},
+	{"../testImages/Hero8.GPR", imagetype.ImageTiff, "GoPro", "HERO8 Black", 317, 2.8, 3, meta.NewShutterSpeed(1, 240), 4000, 3000, time.Unix(1590641247, 0), meta.OrientationMirrorHorizontal},
+	{"../testImages/ARW.exif", imagetype.ImageARW, "SONY", "SLT-A55V", 100, 13.0, 30.0, meta.NewShutterSpeed(1, 100), 4928, 3280, time.Unix(1508673260, 0), meta.OrientationHorizontal},
+	{"../testImages/NEF.exif", imagetype.ImageNEF, "NIKON CORPORATION", "NIKON D7100", 100, 8.0, 50.0, meta.NewShutterSpeed(10, 300), 160, 120, time.Unix(1378201522, 0), meta.OrientationHorizontal},
+	{"../testImages/CR2.exif", imagetype.ImageCR2, "Canon", "Canon EOS-1Ds Mark III", 100, 1.20, 50.0, meta.NewShutterSpeed(1, 40), 5616, 3744, time.Unix(1192715074, 0), meta.OrientationHorizontal},
+	{"../testImages/Heic.exif", imagetype.ImageHEIF, "Canon", "Canon EOS 6D", 500, 5.0, 20.0, meta.NewShutterSpeed(1, 20), 3648, 5472, time.Unix(1575608513, 0), meta.OrientationHorizontal},
 }
 
 //func TestGenSamples(t *testing.T) {
@@ -166,9 +167,12 @@ func TestParseExif(t *testing.T) {
 			assert.Equal(t, wantedExif.focalLength, val, "Focal Length")
 
 			// Created Date
-			date, _ := e.DateTime()
+			date, _ := e.DateTime(nil)
 			assert.Equal(t, wantedExif.createdDate.Unix(), date.Unix())
 
+			// Orientation
+			orientation, _ := e.Orientation()
+			assert.Equal(t, wantedExif.orientation, orientation)
 		})
 	}
 }

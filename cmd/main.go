@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/exif"
@@ -55,6 +56,8 @@ func main() {
 		fmt.Println(e.CameraModel())
 		fmt.Println(e.CameraSerial())
 
+		fmt.Println(e.Orientation())
+
 		fmt.Println(e.LensMake())
 		fmt.Println(e.LensModel())
 		fmt.Println(e.LensSerial())
@@ -72,8 +75,8 @@ func main() {
 
 		c, _ := e.GPSCellID()
 		fmt.Println(c.ToToken())
-		fmt.Println(e.DateTime())
-		fmt.Println(e.ModifyDate())
+		fmt.Println(e.DateTime(time.Local))
+		fmt.Println(e.ModifyDate(time.Local))
 
 		fmt.Println(e.GPSDate(nil))
 	}

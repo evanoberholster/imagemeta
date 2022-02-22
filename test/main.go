@@ -134,6 +134,6 @@ func printExif(e *exif.Data) {
 		fmt.Println(e.GPSDate(nil))
 		fmt.Println(e.GPSCoords())
 
-		fmt.Println(e.DateTime())
+		fmt.Println(e.DateTime(nil))
 	}
 }

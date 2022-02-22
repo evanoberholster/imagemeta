@@ -103,7 +103,12 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 
 // ParseGPSCoord parses the GPS Coordinate (Lat or Lng) with the corresponding reference Tag.
 func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, err error) {
-	if !(refTag.IsEmbedded() && coordTag.UnitCount == 3 && coordTag.Type() == tag.TypeRational) {
+	if !(refTag.IsEmbedded() && coordTag.UnitCount == 3) {
+		return 0.0, ErrParseGPS
+	}
+
+	// Some cameras write tag out of spec using signed rational. We accept that too.
+	if !(coordTag.Type() == tag.TypeRational || coordTag.Type() == tag.TypeSignedRational) {
 		return 0.0, ErrParseGPS
 	}
 
