@@ -4,6 +4,14 @@ import (
 	"testing"
 )
 
+func BenchmarkTagSize(b *testing.B) {
+	for _, tag := range tagTypeTests {
+		for i := 0; i < b.N; i++ {
+			tag.tagType.IsValid()
+		}
+	}
+}
+
 var tagTypeTests = []struct {
 	rawTagType uint16
 	tagType    Type
@@ -20,15 +28,18 @@ var tagTypeTests = []struct {
 	{9, TypeSignedLong, TypeSignedLongSize, "SLONG", nil},
 	{10, TypeSignedRational, TypeSignedRationalSize, "SRATIONAL", nil},
 	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL", nil},
-	{0, TypeUnknown, 0, "UnknownType", ErrTagTypeNotValid},
+	{0, TypeUnknown, 0, "Unknown", ErrTagTypeNotValid},
+	{100, 100, 0, "Unknown", ErrTagTypeNotValid},
 }
 
 func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
 			ty, err := NewTagType(tag.rawTagType)
-			if ty != tag.tagType || err != tag.err {
-				t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
+			if ty != tag.tagType {
+				if err != tag.err {
+					t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
+				}
 			}
 		})
 	}
