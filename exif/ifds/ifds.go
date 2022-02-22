@@ -39,27 +39,22 @@ const (
 	GPSIFD
 	IopIFD
 	MknoteIFD
-	DNGAdobeDataIFD // TODO: Need to implement this
+	DNGAdobeDataIFD
+
+	// IFD Stringer String
+	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeData"
+)
+
+var (
+	// IFD Stringer Index
+	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79}
 )
 
 func (ifd IFD) String() string {
-	switch ifd {
-	case RootIFD:
-		return "Ifd"
-	case SubIFD:
-		return "Ifd/SubIfd"
-	case ExifIFD:
-		return "Ifd/Exif"
-	case GPSIFD:
-		return "Ifd/GPS"
-	case IopIFD:
-		return "Ifd/Iop"
-	case MknoteIFD:
-		return "Ifd/Exif/Makernote"
-	case DNGAdobeDataIFD:
-		return "Ifd/DNGAdobeData"
+	if int(ifd) < len(_IFDStringerIndex)-1 {
+		return _IFDStringerString[_IFDStringerIndex[ifd]:_IFDStringerIndex[ifd+1]]
 	}
-	return "UnknownIfd"
+	return IFD(0).String()
 }
 
 // IsChildIfd returns the IFD if it is a Child of the current ifd

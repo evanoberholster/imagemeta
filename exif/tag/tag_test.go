@@ -4,14 +4,6 @@ import (
 	"testing"
 )
 
-func BenchmarkTagSize(b *testing.B) {
-	for _, tag := range tagTypeTests {
-		for i := 0; i < b.N; i++ {
-			tag.tagType.IsValid()
-		}
-	}
-}
-
 var tagTypeTests = []struct {
 	rawTagType uint16
 	tagType    Type
