@@ -69,3 +69,10 @@ func TestIfdString(t *testing.T) {
 	assert.Equal(t, GPSIFD.TagName(gpsifd.GPSAltitude), "GPSAltitude")
 	assert.Equal(t, MknoteIFD.TagName(mknote.BatteryType), "0x0038")
 }
+
+func TestValidIfd(t *testing.T) {
+	if IFD(100).String() != NullIFD.String() {
+		t.Errorf("Incorrect IFD String, wanted %s got %s", NullIFD.String(), IFD(100).String())
+	}
+
+}

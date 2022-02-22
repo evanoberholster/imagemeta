@@ -44,15 +44,19 @@ type Tag struct {
 	Ifd         uint8  // 1 byte
 }
 
-// NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8) Tag {
+// NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
+// If tagType is Invalid returns ErrTagTypeNotValid
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8) (Tag, error) {
+	if !tagType.IsValid() {
+		return Tag{}, ErrTagTypeNotValid
+	}
 	return Tag{
 		ID:          tagID,
 		t:           tagType,
 		UnitCount:   uint16(unitCount),
 		ValueOffset: valueOffset,
 		Ifd:         ifd,
-	}
+	}, nil
 }
 
 func (t Tag) String() string {
@@ -181,11 +185,7 @@ func tagIsValid(tt Type) bool {
 		tt == TypeUndefined
 }
 
-// NewTagType returns a new TagType and returns an error
-// if the tag type cannot be determined
-func NewTagType(raw uint16) (Type, error) {
-	if tagIsValid(Type(raw)) {
-		return Type(raw), nil
-	}
-	return 0, ErrTagTypeNotValid
+// NewTagType returns a new TagType
+func NewTagType(raw uint16) Type {
+	return Type(raw)
 }

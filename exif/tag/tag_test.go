@@ -27,9 +27,9 @@ var tagTypeTests = []struct {
 func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			ty, err := NewTagType(tag.rawTagType)
+			ty := NewTagType(tag.rawTagType)
 			if ty != tag.tagType {
-				if err != tag.err {
+				if ty.IsValid() {
 					t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
 				}
 			}
@@ -61,7 +61,10 @@ func TestTagType(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	tag := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0)
+	tag, err := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if tag.ID != ID(0x0010) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.ID)
@@ -86,5 +89,10 @@ func TestTag(t *testing.T) {
 	}
 	if tag.ID.String() != "0x0010" {
 		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", tag.ID.String())
+	}
+
+	tag, err = NewTag(ID(0x0010), 100, 16, 0x0002, 0)
+	if err != ErrTagTypeNotValid {
+		t.Errorf("Incorrect error wanted %s, got %s", ErrTagTypeNotValid, err)
 	}
 }

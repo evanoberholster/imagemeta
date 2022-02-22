@@ -227,18 +227,14 @@ func (ite *ifdTagEnumerator) ReadTag(ifd ifds.IFD) (t tag.Tag, err error) {
 	}
 	tagID := tag.ID(ite.byteOrder.Uint16(buf[:2])) // TagID
 
-	tagTypeRaw := ite.byteOrder.Uint16(buf[2:4]) // TagType
+	tagType := tag.Type(ite.byteOrder.Uint16(buf[2:4])) // TagType
 
 	unitCount := ite.byteOrder.Uint32(buf[4:8]) // UnitCount
 
 	valueOffset := ite.byteOrder.Uint32(buf[8:12]) // ValueOffset
 
-	tagType, err := tag.NewTagType(tagTypeRaw)
-	if err != nil {
-		return t, err
-	}
 	// Creates a newTag. If the TypeFromRaw is unsupported, it returns tag.ErrTagTypeNotValid.
-	return tag.NewTag(tagID, tagType, unitCount, valueOffset, uint8(ifd)), err
+	return tag.NewTag(tagID, tagType, unitCount, valueOffset, uint8(ifd))
 }
 
 // ReadUint16 reads a uint16 from an ifdTagEnumerator.
