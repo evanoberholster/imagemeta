@@ -530,7 +530,7 @@ func (f Flash) Fired() bool {
 	return 0b00000001&f == 0b00000001
 }
 
-// Return is bits 1 and 2, returns 4 if "No Return" present and 6 if "Return" present.
+// ReturnStatus is bits 1 and 2, returns 4 if "No Return" present and 6 if "Return" present.
 // 	FlashNoReturn: 4
 // 	FlashReturn:  6
 func (f Flash) ReturnStatus() FlashMode {
@@ -555,6 +555,7 @@ func (f Flash) Mode() FlashMode {
 func (f Flash) Redeye() bool {
 	return 0b01000000&f == 0b01000000
 }
+
 type Orientation uint8
 
 const (

@@ -160,14 +160,6 @@ func TestShutterSpeed(t *testing.T) {
 	}
 }
 
-var fmList = []struct {
-	fm    FlashMode
-	str   string
-	m     uint8
-	fired bool
-	noFn  bool
-}{}
-
 var ebList = []struct {
 	name string
 	eb   ExposureBias

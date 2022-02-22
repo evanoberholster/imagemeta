@@ -67,13 +67,14 @@ func (e *Data) CameraSerial() (serial string, err error) {
 // DateTime returns a time.Time that corresponds with when it was created.
 // Since EXIF data does not contain any timezone information, you should
 // select a timezone using tz. If tz is nil UTC is assumed.
-func (e *Data) DateTime(tz *time.Location) (time.Time, error) {
+func (e *Data) DateTime(tz *time.Location) (tm time.Time, err error) {
+	var t tag.Tag
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
 	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
-		return e.ParseTimeStamp(t1, t2, tz)
+		return e.ParseTimeStamp(t, t2, tz)
 	}
 
 	// "IFD/Exif" DateTimeDigitized
@@ -81,7 +82,7 @@ func (e *Data) DateTime(tz *time.Location) (time.Time, error) {
 	// TODO: "IFD/Exif" OffsetTimeDigitized
 	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized)
-		return e.ParseTimeStamp(t1, t2, tz)
+		return e.ParseTimeStamp(t, t2, tz)
 	}
 	return time.Time{}, ErrEmptyTag
 }
@@ -92,11 +93,11 @@ func (e *Data) DateTime(tz *time.Location) (time.Time, error) {
 func (e *Data) ModifyDate(tz *time.Location) (time.Time, error) {
 	// "IFD" DateTime
 	// "IFD/Exif" SubSecTime
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
-	if err != nil {
-		return
+	t1, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
+	if err == nil {
+		return e.ParseTimeStamp(t1, tag.Tag{}, tz)
 	}
-	return e.ParseTimeStamp(t1, tag.Tag{}, tz)
+	return time.Time{}, ErrEmptyTag
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake
