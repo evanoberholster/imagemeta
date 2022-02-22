@@ -41,6 +41,9 @@ func TestNewTagType(t *testing.T) {
 					t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
 				}
 			}
+			if !ty.IsValid() && tag.err != ErrTagTypeNotValid {
+				t.Errorf("Incorrect err %s", tag.err)
+			}
 		})
 	}
 }
