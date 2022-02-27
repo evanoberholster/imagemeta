@@ -5,10 +5,12 @@ package imagemeta
 import (
 	"bufio"
 	"errors"
+	"io"
 
 	"github.com/evanoberholster/imagemeta/cr3"
 	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
@@ -86,14 +88,24 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 }
 
 // parseJpeg uses the 'jpeg' package to identify the metadata and the
-// 'exif' and 'xmp' packages parse the metadata.
-//
-// Will use the custom decode functions: XmpDecodeFn and
-// ExifDecodeFn if they are not nil.
+// 'exif' and 'xmp' packages to parse the metadata.
 func (m *Metadata) parseJpeg(br *bufio.Reader) (err error) {
+	exifFn := func(r io.Reader, header meta.ExifHeader) error {
+		m.ExifHeader = header
 
-	//_, err = jpeg.ScanJPEG(br, m.Metadata)
+		return m.ExifFn(m.r, m.Metadata)
+	}
+
+	xmpFn := func(r io.Reader, header meta.XmpHeader) error {
+		m.XmpHeader = header
+
+		return m.XmpFn(m.r, m.Metadata)
+	}
+
+	_, err = jpeg.ScanJPEG(br, exifFn, xmpFn)
+
 	m.images = 1
+
 	return err
 }
 
