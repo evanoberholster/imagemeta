@@ -571,11 +571,11 @@ const (
 	OrientationRotate270                 Orientation = 8
 
 	// Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (01/02/2022)
-	_OrientationStringerStrings = "HorizontalMirror horizontalRotate 180Mirror verticalMirror horizontal and rotate 270 CWRotate 90 CWMirror horizontal and rotate 90 CWRotate 270 CW"
+	_OrientationStringerStrings = "UnknownHorizontalMirror horizontalRotate 180Mirror verticalMirror horizontal and rotate 270 CWRotate 90 CWMirror horizontal and rotate 90 CWRotate 270 CW"
 )
 
 var (
-	_OrientationStringerIndex = [...]uint{0, 10, 27, 37, 52, 87, 99, 133, 146}
+	_OrientationStringerIndex = [...]uint{0, 7, 17, 34, 44, 59, 94, 106, 140, 153}
 )
 
 // String returns an Orientation as a string
