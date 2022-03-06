@@ -24,8 +24,8 @@ var (
 
 // Reader that is compatible with imagemeta
 type Reader interface {
+	io.Reader
 	io.ReaderAt
-	io.ReadSeeker
 }
 
 // DecodeFn is a function for decoding Metadata.

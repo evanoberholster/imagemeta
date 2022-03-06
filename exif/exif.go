@@ -28,23 +28,14 @@ var (
 //
 // If no exif information is found ScanExif will return ErrNoExif.
 func ScanExif(r meta.Reader) (e *Data, err error) {
-	if _, err = r.Seek(0, 0); err != nil {
-		return
-	}
 	// Search Image for Metadata Header using ImageType
 	header, err := tiff.ScanTiffHeader(r, imagetype.ImageTiff)
 	if !header.IsValid() || err != nil {
 		return nil, ErrNoExif
 	}
-	// Update Imagetype in ExifHeader
-	header.ImageType = imagetype.ImageTiff
-
 	// Set FirstIfd to RootIfd
 	header.FirstIfd = ifds.IFD0
 
-	if _, err = r.Seek(0, 0); err != nil {
-		return
-	}
 	return ParseExif(r, header)
 }
 

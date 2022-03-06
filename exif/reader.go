@@ -2,12 +2,12 @@ package exif
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif/tag"
-	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/pkg/errors"
 )
@@ -87,6 +87,7 @@ func (r *reader) scanSubIFD(e *Data, t tag.Tag) (err error) {
 	// Fetch SubIfd Values from []Uint32 (LongType)
 	offsets, err := e.ParseUint32Values(t)
 	if err != nil {
+		fmt.Println(offsets, err)
 		return err
 	}
 
@@ -94,7 +95,7 @@ func (r *reader) scanSubIFD(e *Data, t tag.Tag) (err error) {
 		ifdOffset := offsets[ifdIndex]
 		ifd := ifds.NewIFD(ifds.SubIFD, ifdIndex, ifdOffset)
 		if _, err = r.parseIfd(e, ifd, false); err != nil {
-			return err
+			return errors.WithMessage(err, "ScanSubIfds: ParseIfd Error")
 		}
 	}
 	return
@@ -162,6 +163,11 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 		return 0, errors.Errorf("Tagcount too high. Tag Count: %d for %s", tagCount, ifd.String())
 	}
 
+	// Log Ifd Info
+	if isInfo() {
+		logIfdInfo(ifd, tagCount, offset)
+	}
+
 	//fmt.Printf("Parsing %s with %d tags \n", ifd.String(), tagCount)
 
 	// Log info
@@ -187,14 +193,23 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 			return nextIfdOffset, err
 		}
 
+		// Log Tag Info
+		if isInfo() {
+			logTagInfo(ifd, t, offset)
+		}
+
 		// Tag is an Ifd then descend
 		if t.IsIfd() {
 			// Descend into Child IFD
 			childIfd := ifd.ChildIfd(t)
 			if childIfd.IsType(ifds.SubIFD) {
+				fmt.Println(ifd, childIfd, offset)
 				if err := r.scanSubIFD(e, t); err != nil {
+					//logIfdError()
+					// error
+
 					// log error here
-					return offset, err
+					//return offset, err
 				}
 			} else {
 				if err := r.scanIFD(e, childIfd); err != nil {
@@ -217,40 +232,6 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 	}
 
 	return
-}
-
-func (r *reader) parseMknoteIFD(e *Data, ifd ifds.Ifd) (ifds.Ifd, binary.ByteOrder) {
-	if e.make == "" {
-		return ifd, nil
-	}
-	//make := strings.ToUpper(e.make)
-	if e.make == "Canon" {
-		// Canon Makernotes do not have a Makernote Header
-		// offset 0
-		// ByteOrder is the same as RootIfd
-		return ifd, r.byteOrder
-	}
-	if e.make == "Nikon" || e.make == "NIKON CORPORATION" {
-		// Nikon v3 maker note is a self-contained Ifd
-		// (offsets are relative to the start of the maker note)
-
-		if ifd, byteOrder, err := r.isNikonMkNoteHeader(ifd); err == nil {
-			// update imagetype
-			if e.imageType == imagetype.ImageTiff {
-				e.imageType = imagetype.ImageNEF
-			}
-			return ifd, byteOrder
-		}
-		return ifd, nil
-	}
-	if e.make == "Sony" {
-		if e.imageType == imagetype.ImageTiff {
-			e.imageType = imagetype.ImageARW
-		}
-		return ifd, r.byteOrder
-	}
-
-	return ifd, nil
 }
 
 func (r *reader) embeddedTagValue(valueOffset uint32) []byte {

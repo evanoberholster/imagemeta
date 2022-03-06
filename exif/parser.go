@@ -204,7 +204,7 @@ func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 // ParseUint16Values parses the Short value of the tag as a uint16 array
 // and returns an error if it encounters one.
 func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
-	if t.Type() == tag.TypeShort {
+	if t.IsType(tag.TypeShort) {
 		var buf []byte
 		buf, err = e.reader.ReadValue(t)
 		if err != nil {
@@ -228,7 +228,7 @@ func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
 // and returns an error if it encounters one.
 //
 func (e *Data) ParseUint32Values(t tag.Tag) (value []uint32, err error) {
-	if t.Type() == tag.TypeLong {
+	if t.IsType(tag.TypeLong) || t.IsType(tag.TypeIfd) {
 		var buf []byte
 		if buf, err = e.reader.ReadValue(t); err != nil {
 			return nil, err

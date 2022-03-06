@@ -44,14 +44,15 @@ const (
 	MknoteIFD
 	DNGAdobeDataIFD
 	MkNoteCanonIFD
+	MkNoteNikonIFD
 
 	// IFD Stringer String
-	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/Makernote"
+	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/Makernote"
 )
 
 var (
 	// IFD Stringer Index
-	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97}
+	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115}
 )
 
 // Valid returns true if IFD is valid
