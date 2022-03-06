@@ -66,33 +66,6 @@ func (ifdType IfdType) String() string {
 	return NullIFD.String()
 }
 
-// ChildIfd returns the IFD if it is a Child of the current ifd
-// if it is not, it returns NullIFD
-func (ifdType IfdType) ChildIfd(t tag.Tag) IfdType {
-
-	// RootIfd Children
-	if ifdType == IFD0 {
-		switch t.ID {
-		case ExifTag:
-			return ExifIFD
-		case GPSTag:
-			return GPSIFD
-		case SubIFDs:
-			return SubIFD
-		}
-	}
-
-	// ExifIfd Children
-	if ifdType == ExifIFD {
-		switch t.ID {
-		case exififd.MakerNote:
-			return MknoteIFD
-		}
-	}
-
-	return NullIFD
-}
-
 // TagName returns the tagName for the given IFD and tag.ID
 // if tag name is not known returns uint32 representation
 func (ifdType IfdType) TagName(id tag.ID) (name string) {

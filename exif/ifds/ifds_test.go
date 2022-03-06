@@ -97,12 +97,12 @@ func TestIfdString(t *testing.T) {
 
 		// Ifd ChildIfd test
 
-		childIFDtest(t, ifd, IFD0, ExifTag, true)
-		childIFDtest(t, ifd, IFD0, GPSTag, true)
-		childIFDtest(t, ifd, IFD0, SubIFDs, true)
+		childIFDtest(t, ifd, NewIFD(ExifIFD, 0, 0), IFD0, ExifTag, true)
+		childIFDtest(t, ifd, NewIFD(GPSIFD, 0, 0), IFD0, GPSTag, true)
+		childIFDtest(t, ifd, NewIFD(SubIFD, 0, 0), IFD0, SubIFDs, true)
 
-		childIFDtest(t, ifd, ExifIFD, exififd.MakerNote, true)
-		childIFDtest(t, ifd, NullIFD, ExifTag, false)
+		childIFDtest(t, ifd, NewIFD(MknoteIFD, 0, 0), ExifIFD, exififd.MakerNote, true)
+		childIFDtest(t, ifd, NewIFD(v.exifIFD, 0, 0), NullIFD, ExifTag, false)
 	}
 }
 
@@ -113,11 +113,11 @@ func TestValidIfd(t *testing.T) {
 
 }
 
-func childIFDtest(t *testing.T, ifd Ifd, testType IfdType, id tag.ID, a bool) {
+func childIFDtest(t *testing.T, ifd Ifd, childIfd Ifd, testType IfdType, id tag.ID, a bool) {
 	if ifd.IsType(testType) {
-		//if cIfd := ifd.ChildIfd(tag.Tag{ID: id}) {
-		//	t.Errorf("Incorrect Ifd: \"%s\" ChildIFD: \"%s\", wanted \"%t\" got \"%t\"", ifd.Type, cIfd.Type, a, b)
-		//}
+		if cIfd := ifd.ChildIfd(tag.Tag{ID: id}); cIfd != childIfd && a {
+			t.Errorf("Incorrect Ifd: \"%s\" ChildIFD: \"%s\", wanted \"%s\" got \"%s\"", ifd.Type, cIfd.Type, cIfd, childIfd)
+		}
 	}
 }
 
