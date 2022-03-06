@@ -7,13 +7,12 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif/tag"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestKey(t *testing.T) {
 	tests := []struct {
 		tagID    tag.ID
-		ifd      IFD
+		ifdType  IfdType
 		ifdIndex uint8
 	}{
 		{TileLength, RootIFD, 1},
@@ -24,59 +23,108 @@ func TestKey(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		key := NewKey(v.ifd, v.ifdIndex, v.tagID)
-		ifd, ifdIndex, tagID := key.Val()
-		key2 := NewKey(ifd, ifdIndex, tagID)
+		key := NewKey(v.ifdType, v.ifdIndex, v.tagID)
+		ifdType, ifdIndex, tagID := key.Val()
+		key2 := NewKey(ifdType, ifdIndex, tagID)
 
-		assert.Equal(t, key, key2)
-		assert.Equal(t, v.tagID, tagID)
-		assert.Equal(t, v.ifd, ifd)
-		assert.Equal(t, v.ifdIndex, ifdIndex)
+		if key != key2 {
+			t.Errorf("Expected Key %d got %d", key, key2)
+		}
+		if v.tagID != tagID {
+			t.Errorf("Expected TagID %s got %s", v.tagID, tagID)
+		}
+		if v.ifdType != ifdType {
+			t.Errorf("Expected IfdType %d got %d", key, key2)
+		}
+		if v.ifdIndex != ifdIndex {
+			t.Errorf("Expected IfdIndex %d got %d", v.ifdIndex, ifdIndex)
+		}
 
-		if !ifd.Valid() {
-			t.Errorf("error wanted %s, got %t", "true", ifd.Valid())
+		if !ifdType.IsValid() {
+			t.Errorf("Expected %s, got %t", "true", ifdType.IsValid())
 		}
 	}
 }
 
 func TestIfdString(t *testing.T) {
 	testIfds := []struct {
-		ifd     IFD
+		ifdType IfdType
 		str     string
 		rootTag tag.ID
-		rootIFD IFD
+		rootIFD IfdType
 		exifTag tag.ID
-		exifIFD IFD
+		exifIFD IfdType
+		valid   bool
 	}{
-		{RootIFD, "Ifd", 0, NullIFD, 0, NullIFD},
-		{SubIFD, "Ifd/SubIfd", SubIFDs, SubIFD, 0, NullIFD},
-		{ExifIFD, "Ifd/Exif", ExifTag, ExifIFD, 0, NullIFD},
-		{GPSIFD, "Ifd/GPS", GPSTag, GPSIFD, 0, NullIFD},
-		{IopIFD, "Ifd/Iop", 0, NullIFD, 0, NullIFD},
-		{MknoteIFD, "Ifd/Exif/Makernote", exififd.MakerNote, NullIFD, exififd.MakerNote, MknoteIFD},
-		{DNGAdobeDataIFD, "Ifd/DNGAdobeData", 0, NullIFD, 0, NullIFD},
-		{NullIFD, "UnknownIfd", 0, NullIFD, 0, NullIFD},
+		{RootIFD, "Ifd", 0, NullIFD, 0, NullIFD, true},
+		{SubIFD, "Ifd/SubIfd", SubIFDs, SubIFD, 0, NullIFD, true},
+		{ExifIFD, "Ifd/Exif", ExifTag, ExifIFD, 0, NullIFD, true},
+		{GPSIFD, "Ifd/GPS", GPSTag, GPSIFD, 0, NullIFD, true},
+		{IopIFD, "Ifd/Iop", 0, NullIFD, 0, NullIFD, true},
+		{MknoteIFD, "Ifd/Exif/Makernote", exififd.MakerNote, NullIFD, exififd.MakerNote, MknoteIFD, true},
+		{DNGAdobeDataIFD, "Ifd/DNGAdobeData", 0, NullIFD, 0, NullIFD, true},
+		{NullIFD, "UnknownIfd", 0, NullIFD, 0, NullIFD, false},
+		{255, "UnknownIfd", 0, NullIFD, 0, NullIFD, false},
 	}
 
-	for i, v := range testIfds {
-		assert.Equal(t, v.ifd.String(), v.str)
+	for _, v := range testIfds {
+		ifd := NewIFD(v.ifdType, 0, 0)
+
+		// Ifd Valid
+		if ifd.IsValid() != v.valid {
+			t.Errorf("Expected %s valid (%t) got valid (%t)", v.ifdType, v.valid, ifd.IsValid())
+		}
+
+		// Ifd String
+		if v.ifdType.String() != v.str {
+			t.Errorf("Expected \"%s\" got \"%s\"", v.str, v.ifdType)
+		}
+
+		// Ifd testing
+
+		if ifd.String() == "" {
+			t.Errorf("Expected \"%s\" got \"%s\"", "Some text", ifd.String())
+		}
+		// Ifd Tagname test
+		tagTest(t, ifd, RootIFD, ExifTag, "ExifTag")
+		tagTest(t, ifd, ExifIFD, exififd.ApertureValue, "ApertureValue")
+		tagTest(t, ifd, GPSIFD, gpsifd.GPSAltitude, "GPSAltitude")
+		tagTest(t, ifd, MknoteIFD, mknote.CanonAFInfo, "CanonAFInfo")
+		tagTest(t, ifd, 255, ExifTag, "0x8769")
+
 		ta := tag.Tag{}
 		ta.ID = v.rootTag
 
-		assert.Equal(t, v.rootIFD, RootIFD.IsChildIfd(ta), "RootIfd Children: %v")
+		// Ifd ChildIfd test
 
-		ta.ID = v.exifTag
-		assert.Equal(t, v.exifIFD, ExifIFD.IsChildIfd(ta), "ExifIfd Children: %d", i)
+		childIFDtest(t, ifd, RootIFD, ExifTag, true)
+		childIFDtest(t, ifd, RootIFD, GPSTag, true)
+		childIFDtest(t, ifd, RootIFD, SubIFDs, true)
+
+		childIFDtest(t, ifd, ExifIFD, exififd.MakerNote, true)
+		childIFDtest(t, ifd, NullIFD, ExifTag, false)
 	}
-	assert.Equal(t, RootIFD.TagName(ExifTag), "ExifTag")
-	assert.Equal(t, ExifIFD.TagName(exififd.ApertureValue), "ApertureValue")
-	assert.Equal(t, GPSIFD.TagName(gpsifd.GPSAltitude), "GPSAltitude")
-	assert.Equal(t, MknoteIFD.TagName(mknote.BatteryType), "0x0038")
 }
 
 func TestValidIfd(t *testing.T) {
-	if IFD(100).String() != NullIFD.String() {
-		t.Errorf("Incorrect IFD String, wanted %s got %s", NullIFD.String(), IFD(100).String())
+	if IfdType(100).String() != NullIFD.String() {
+		t.Errorf("Incorrect IFD String, wanted %s got %s", NullIFD.String(), IfdType(100).String())
 	}
 
+}
+
+func childIFDtest(t *testing.T, ifd Ifd, testType IfdType, id tag.ID, a bool) {
+	if ifd.IsType(testType) {
+		if cIfd, b := ifd.IsChildIfd(tag.Tag{ID: id}); b != a {
+			t.Errorf("Incorrect Ifd: \"%s\" ChildIFD: \"%s\", wanted \"%t\" got \"%t\"", ifd.Type, cIfd.Type, a, b)
+		}
+	}
+}
+
+func tagTest(t *testing.T, ifd Ifd, testType IfdType, id tag.ID, tagName string) {
+	if ifd.IsType(testType) {
+		if ifd.TagName(id) != tagName {
+			t.Errorf("%s, Expected \"%s\" got \"%s\"", ifd.String(), tagName, ifd.TagName(id))
+		}
+	}
 }

@@ -5,6 +5,52 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
+// TagCanonIDMap is a Map of tag.ID to string for the CanonMakerNote tags
+var TagCanonIDMap = map[tag.ID]string{
+	CanonCameraSettings:        "CanonCameraSettings",
+	CanonFocalLength:           "CanonFocalLength",
+	CanonFlashInfo:             "CanonFlashInfo",
+	CanonShotInfo:              "CanonShotInfo",
+	CanonPanorama:              "CanonPanorama",
+	CanonImageType:             "CanonImageType",
+	CanonFirmwareVersion:       "CanonFirmwareVersion",
+	FileNumber:                 "FileNumber",
+	OwnerName:                  "OwnerName",
+	UnknownD30:                 "UnknownD30",
+	SerialNumber:               "SerialNumber",
+	CanonCameraInfo:            "CanonCameraInfo",
+	CanonFileLength:            "CanonFileLength",
+	CustomFunctions:            "CustomFunctions",
+	CanonModelID:               "CanonModelID",
+	MovieInfo:                  "MovieInfo",
+	CanonAFInfo:                "CanonAFInfo",
+	ThumbnailImageValidArea:    "ThumbnailImageValidArea",
+	SerialNumberFormat:         "SerialNumberFormat",
+	SuperMacro:                 "SuperMacro",
+	DateStampMode:              "DateStampMode",
+	MyColors:                   "MyColors",
+	FirmwareRevision:           "FirmwareRevision",
+	Categories:                 "Categories",
+	FaceDetect1:                "FaceDetect1",
+	FaceDetect2:                "FaceDetect2",
+	CanonAFInfo2:               "CanonAFInfo2",
+	ContrastInfo:               "ContrastInfo",
+	ImageUniqueID:              "ImageUniqueID",
+	WBInfo:                     "WBInfo",
+	FaceDetect3:                "FaceDetect3",
+	TimeInfo:                   "TimeInfo",
+	BatteryType:                "BatteryType",
+	AFInfo3:                    "AFInfo3",
+	RawDataOffset:              "RawDataOffset",
+	OriginalDecisionDataOffset: "OriginalDecisionDataOffset",
+	CustomFunctions1D:          "CustomFunctions1D",
+	PersonalFunctions:          "PersonalFunctions",
+	PersonalFunctionValues:     "PersonalFunctionValues",
+	CanonFileInfo:              "CanonFileInfo",
+	AFPointsInFocus1D:          "AFPointsInFocus1D",
+	LensModel:                  "LensModel",
+}
+
 // CanonMKnoteIFD TagIDs
 // Source: https://exiftool.org/TagNames/Canon.html on 8/05/2020
 const (
