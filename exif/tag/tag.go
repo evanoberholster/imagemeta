@@ -50,6 +50,8 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 	if !tagType.IsValid() {
 		return Tag{}, ErrTagTypeNotValid
 	}
+	// Special tags
+
 	return Tag{
 		ID:          tagID,
 		t:           tagType,
@@ -68,6 +70,11 @@ func (t Tag) IsEmbedded() bool {
 	return t.Size() <= 4
 }
 
+// IsIFD checks if the Tag's value is an IFD
+func (t Tag) IsIfd() bool {
+	return t.t == TypeIfd
+}
+
 // Size returns the size of the Tag's value
 func (t Tag) Size() uint32 {
 	return uint32(t.t.Size()) * uint32(t.UnitCount)
@@ -76,6 +83,16 @@ func (t Tag) Size() uint32 {
 // Type returns the type of Tag
 func (t Tag) Type() Type {
 	return t.t
+}
+
+// IsType returns true if tagType matches query Type
+func (tag Tag) IsType(t Type) bool {
+	return tag.t == t
+}
+
+// Is returns true if tagType matches query Type
+func (tagType Type) Is(t Type) bool {
+	return tagType == t
 }
 
 // Errors
@@ -119,8 +136,13 @@ const (
 	// TypeSignedRational describes an encoded list of signed rationals.
 	TypeSignedRational Type = 10
 
+	// PseudoTypes
+
 	// TypeASCIINoNul is just a pseudo-type, for our own purposes.
 	TypeASCIINoNul Type = 0xf0
+
+	// TypeIfd is a pseudo-type, for our own purposes.
+	TypeIfd Type = 0xf1
 )
 
 // Tag sizes
@@ -133,6 +155,7 @@ const (
 	TypeRationalSize       = 8
 	TypeSignedLongSize     = 4
 	TypeSignedRationalSize = 8
+	TypeIfdSize            = 4
 
 	// TagType Stringer String
 	_TagTypeStringerString = "UnknownBYTEASCIISHORTLONGRATIONALUnknownUNDEFINEDSSHORTSLONGSRATIONAL"
@@ -151,6 +174,9 @@ func (tagType Type) Size() uint8 {
 	if int(tagType) < len(_tagSize) {
 		return uint8(_tagSize[uint8(tagType)])
 	}
+	if tagType == TypeIfd {
+		return TypeIfdSize
+	}
 	if tagType == TypeASCIINoNul {
 		return TypeASCIINoNulSize
 	}
@@ -162,10 +188,13 @@ func (tt Type) String() string {
 	if int(tt) < len(_TagTypeStringerIndex)-1 {
 		return _TagTypeStringerString[_TagTypeStringerIndex[tt]:_TagTypeStringerIndex[tt+1]]
 	}
+	if tt == TypeIfd {
+		return "IFD"
+	}
 	if tt == TypeASCIINoNul {
 		return "_ASCII_NO_NUL"
 	}
-	return Type(0).String()
+	return TypeUnknown.String()
 }
 
 // IsValid returns true if tagType is a valid type.
@@ -182,7 +211,8 @@ func tagIsValid(tt Type) bool {
 		tt == TypeASCIINoNul ||
 		tt == TypeSignedLong ||
 		tt == TypeSignedRational ||
-		tt == TypeUndefined
+		tt == TypeUndefined ||
+		tt == TypeIfd
 }
 
 // NewTagType returns a new TagType
