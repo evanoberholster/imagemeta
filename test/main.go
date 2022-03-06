@@ -143,7 +143,7 @@ func parseHeic(f meta.Reader) {
 //}
 
 func printJSON(e *exif.Data) {
-	buf, err := e.MarshalJSON()
+	buf, err := e.DebugJSON()
 	fmt.Println(string(buf), err)
 }
 
