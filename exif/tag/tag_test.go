@@ -27,7 +27,7 @@ var tagTypeTests = []struct {
 func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			ty := NewTagType(tag.rawTagType)
+			ty := Type(tag.rawTagType)
 			if ty != tag.tagType {
 				if ty.IsValid() {
 					t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)

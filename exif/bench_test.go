@@ -33,9 +33,6 @@ var (
 		//"4.webp",
 		//"20.jpg",
 	}
-	testFilenames2 = []string{
-		"2.CR2",
-	}
 )
 
 func BenchmarkScanExif100(b *testing.B) {

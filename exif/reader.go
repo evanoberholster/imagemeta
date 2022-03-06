@@ -154,8 +154,10 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 
 	offset := ifd.Offset
 
-	// Determine tagCount
 	var tagCount uint16
+	var t tag.Tag
+
+	// Determine tagCount
 	if tagCount, offset, err = r.ReadUint16(byteOrder, offset); err != nil {
 		return 0, errors.Wrapf(err, "Tag Count: %d for %s", tagCount, ifd.String())
 	}
@@ -168,20 +170,7 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 		logIfdInfo(ifd, tagCount, offset)
 	}
 
-	//fmt.Printf("Parsing %s with %d tags \n", ifd.String(), tagCount)
-
-	// Log info
-	// Remove log for now until we have a better solution
-	//log.Info().
-	//	Str("ifd", ifd.String()).
-	//	Uint32("offset", ite.ifdOffset).
-	//	Uint8("ifdIndex", uint8(ifdIndex)).
-	//	Uint16("tagcount", tagCount).
-	//	Msg("Parsing IFD")
-
-	var t tag.Tag
 	for i := 0; i < int(tagCount); i++ {
-
 		if t, offset, err = r.ReadTag(ifd, byteOrder, offset); err != nil {
 			if err == tag.ErrTagTypeNotValid {
 				//fmt.Println(err)
@@ -205,11 +194,7 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 			if childIfd.IsType(ifds.SubIFD) {
 				fmt.Println(ifd, childIfd, offset)
 				if err := r.scanSubIFD(e, t); err != nil {
-					//logIfdError()
-					// error
-
-					// log error here
-					//return offset, err
+					return offset, err
 				}
 			} else {
 				if err := r.scanIFD(e, childIfd); err != nil {

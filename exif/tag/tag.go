@@ -199,10 +199,6 @@ func (tt Type) String() string {
 
 // IsValid returns true if tagType is a valid type.
 func (tt Type) IsValid() bool {
-	return tagIsValid(tt)
-}
-
-func tagIsValid(tt Type) bool {
 	return tt == TypeShort ||
 		tt == TypeLong ||
 		tt == TypeRational ||
@@ -213,9 +209,4 @@ func tagIsValid(tt Type) bool {
 		tt == TypeSignedRational ||
 		tt == TypeUndefined ||
 		tt == TypeIfd
-}
-
-// NewTagType returns a new TagType
-func NewTagType(raw uint16) Type {
-	return Type(raw)
 }
