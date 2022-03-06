@@ -36,7 +36,7 @@ type TagMap map[Key]tag.Tag
 // List of IFDs
 const (
 	NullIFD IfdType = iota
-	RootIFD
+	IFD0
 	SubIFD
 	ExifIFD
 	GPSIFD
@@ -63,15 +63,15 @@ func (ifdType IfdType) String() string {
 	if int(ifdType) < len(_IFDStringerIndex)-1 {
 		return _IFDStringerString[_IFDStringerIndex[ifdType]:_IFDStringerIndex[ifdType+1]]
 	}
-	return IfdType(0).String()
+	return NullIFD.String()
 }
 
-// IsChildIfd returns the IFD if it is a Child of the current ifd
+// ChildIfd returns the IFD if it is a Child of the current ifd
 // if it is not, it returns NullIFD
-func (ifdType IfdType) IsChildIfd(t tag.Tag) IfdType {
+func (ifdType IfdType) ChildIfd(t tag.Tag) IfdType {
 
 	// RootIfd Children
-	if ifdType == RootIFD {
+	if ifdType == IFD0 {
 		switch t.ID {
 		case ExifTag:
 			return ExifIFD
@@ -98,7 +98,7 @@ func (ifdType IfdType) IsChildIfd(t tag.Tag) IfdType {
 func (ifdType IfdType) TagName(id tag.ID) (name string) {
 	var ok bool
 	switch ifdType {
-	case RootIFD, SubIFD:
+	case IFD0, SubIFD:
 		name, ok = RootIfdTagIDMap[id]
 	case ExifIFD:
 		name, ok = exififd.TagIDMap[id]
@@ -135,9 +135,9 @@ func (ifd Ifd) TagName(id tag.ID) (name string) {
 	return ifd.Type.TagName(id)
 }
 
-// IsType returns true if ifdType equals query IfdType
-func (ifd Ifd) IsType(query IfdType) bool {
-	return ifd.Type == query
+// IsType returns true if ifdType equals IfdType
+func (ifd Ifd) IsType(t IfdType) bool {
+	return ifd.Type == t
 }
 
 // IsValid returns IfdType.IsValid
@@ -151,10 +151,26 @@ func (ifd Ifd) String() string {
 
 // ChildIfd returns the Ifd if it is a Child of the current Tag
 // if it is not, it returns NullIFD
-func (ifd Ifd) IsChildIfd(t tag.Tag) (Ifd, bool) {
-	i := ifd.Type.IsChildIfd(t)
-	if i != NullIFD {
-		return NewIFD(i, 0, t.ValueOffset), true
+func (ifd Ifd) ChildIfd(t tag.Tag) Ifd {
+	// RootIfd Children
+	if ifd.IsType(IFD0) {
+		switch t.ID {
+		case ExifTag:
+			return NewIFD(ExifIFD, 0, t.ValueOffset)
+		case GPSTag:
+			return NewIFD(GPSIFD, 0, t.ValueOffset)
+		case SubIFDs:
+			return NewIFD(SubIFD, 0, t.ValueOffset)
+		}
 	}
-	return NewIFD(NullIFD, 0, t.ValueOffset), false
+
+	// ExifIfd Children
+	if ifd.IsType(ExifIFD) {
+		switch t.ID {
+		case exififd.MakerNote:
+			return NewIFD(MknoteIFD, 0, t.ValueOffset)
+		}
+	}
+
+	return NewIFD(NullIFD, 0, t.ValueOffset)
 }
