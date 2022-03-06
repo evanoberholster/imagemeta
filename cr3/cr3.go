@@ -73,7 +73,7 @@ func (hm *Metadata) DecodeExif(r io.Reader) (err error) {
 		hm.ExifHeader = meta.NewExifHeader(cmt.ByteOrder, cmt.FirstIfdOffset, cmt.TiffHeaderOffset, cmt.ExifLength, cmt.ImageType)
 		switch cmt.Bt {
 		case bmff.TypeCMT1:
-			hm.ExifHeader.FirstIfd = ifds.RootIFD
+			hm.ExifHeader.FirstIfd = ifds.IFD0
 		case bmff.TypeCMT2:
 			hm.ExifHeader.FirstIfd = ifds.ExifIFD
 		case bmff.TypeCMT3:

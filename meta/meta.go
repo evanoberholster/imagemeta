@@ -70,7 +70,7 @@ func (m Metadata) ImageType() imagetype.ImageType {
 // a Tiff Directory.
 type ExifHeader struct {
 	ByteOrder        binary.ByteOrder
-	FirstIfd         ifds.IFD
+	FirstIfd         ifds.IfdType
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
@@ -87,7 +87,7 @@ func (h ExifHeader) IsValid() bool {
 func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
-		FirstIfd:         ifds.RootIFD,
+		FirstIfd:         ifds.IFD0,
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,

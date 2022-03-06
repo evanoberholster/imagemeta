@@ -127,7 +127,7 @@ func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err e
 	firstIfdOffset := byteOrder.Uint32(buf[14:18])
 	tiffHeaderOffset := int64(offset) + 10
 	hm.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), hm.It)
-	hm.ExifHeader.FirstIfd = ifds.RootIFD
+	hm.ExifHeader.FirstIfd = ifds.IFD0
 
 	return hm.ExifHeader, err
 }

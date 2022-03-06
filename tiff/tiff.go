@@ -8,11 +8,12 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/pkg/errors"
 )
 
 const (
 	// TiffHeaderLength is 8 bytes
-	TiffHeaderLength = 16
+	TiffHeaderLength = 32
 
 	bufReaderSize = 32
 )
@@ -26,11 +27,11 @@ func Scan(r io.Reader, it imagetype.ImageType, exifFn func(r io.Reader, header m
 		}
 	}()
 
-	br := newBufReader(r)
+	br := bufio.NewReaderSize(r, bufReaderSize)
 
 	exifHeader, err := scan(br, it)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Scan error")
 	}
 	return exifFn(br, exifHeader)
 }
@@ -38,7 +39,7 @@ func Scan(r io.Reader, it imagetype.ImageType, exifFn func(r io.Reader, header m
 // ScanTiffHeader searches an io.Reader for a LittleEndian or BigEndian Tiff Header
 // and returns the ExifHeader with the given imagetype.
 func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (meta.ExifHeader, error) {
-	return scan(newBufReader(r), it)
+	return scan(bufio.NewReaderSize(r, bufReaderSize), it)
 }
 
 // scan searches for the beginning of the EXIF information. The EXIF is near the
@@ -52,6 +53,9 @@ func scan(br *bufio.Reader, it imagetype.ImageType) (header meta.ExifHeader, err
 		if buf, err = br.Peek(TiffHeaderLength); err != nil {
 			err = meta.ErrNoExif
 			return
+		}
+		if discarded == 0 {
+			it, _ = imagetype.Buf(buf)
 		}
 
 		byteOrder := meta.BinaryOrder(buf)
@@ -71,15 +75,7 @@ func scan(br *bufio.Reader, it imagetype.ImageType) (header meta.ExifHeader, err
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
 		header = meta.NewExifHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, it)
-		header.FirstIfd = ifds.RootIFD
+		header.FirstIfd = ifds.IFD0
 		return header, nil
 	}
-}
-
-func newBufReader(r io.Reader) *bufio.Reader {
-	br, ok := r.(*bufio.Reader)
-	if !ok || br.Size() < bufReaderSize {
-		br = bufio.NewReaderSize(r, bufReaderSize)
-	}
-	return br
 }

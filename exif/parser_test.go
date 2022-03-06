@@ -11,12 +11,16 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/stretchr/testify/assert"
 )
 
 func newMockReader(buf []byte) *reader {
-	r := newExifReader(bytes.NewReader(buf), binary.BigEndian, 0x0000, 0)
-	r.ifdExifOffset[ifds.RootIFD] = 0
+	header := meta.ExifHeader{
+		ByteOrder: binary.BigEndian,
+	}
+	r := newReader(bytes.NewReader(buf), header)
+	r.ifdExifOffset[ifds.IFD0] = 0
 	return r
 }
 
@@ -173,7 +177,7 @@ var (
 	tag5, _  = tag.NewTag(ifds.ActiveArea, tag.TypeShort, 2, 1024232342, 0)
 	tag6, _  = tag.NewTag(ifds.ActiveArea, tag.TypeShort, 3, 1024232342, 0)
 	tag7, _  = tag.NewTag(ifds.ActiveArea, tag.TypeShort, 1, 12345773, 0)
-	tag8, _  = tag.NewTag(ifds.ActiveArea, tag.TypeShort, 3, 2, uint8(ifds.RootIFD))
+	tag8, _  = tag.NewTag(ifds.ActiveArea, tag.TypeShort, 3, 2, uint8(ifds.IFD0))
 	tag9, _  = tag.NewTag(ifds.ActiveArea, tag.TypeLong, 2, 2, 0)
 	tag10, _ = tag.NewTag(ifds.ActiveArea, tag.TypeLong, 3, 2, 0)
 	tag11, _ = tag.NewTag(ifds.ActiveArea, tag.TypeLong, 1, 1024232342, 0)

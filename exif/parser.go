@@ -3,6 +3,7 @@ package exif
 import (
 	"time"
 
+	"github.com/evanoberholster/imagemeta/exif/ifds"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/pkg/errors"
 )
@@ -29,7 +30,7 @@ func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag, tz *time.Location) (
 			tz = time.UTC
 		}
 		var buf []byte
-		buf, err = e.er.TagValue(date)
+		buf, err = e.reader.ReadValue(date)
 		if err != nil {
 			err = errors.Wrap(err, "ParseTimeStamp")
 			return
@@ -60,7 +61,7 @@ func (e *Data) ParseTimeStamp(date tag.Tag, subSec tag.Tag, tz *time.Location) (
 // ParseGPSTimeStamp parses the GPSDateStamp, GPSTimeStamp Tags in the given Timezone in UTC.
 // Optionally add subSec tag from Exif.
 func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *time.Location) (t time.Time, err error) {
-	byteOrder := e.er.byteOrder
+	byteOrder := e.reader.byteOrder
 	if !(ts.UnitCount == 3 && ts.Type() == tag.TypeRational && ds.Type() == tag.TypeASCII) {
 		err = errors.Wrap(ErrParseTimeStamp, "ParseGPSTimeStamp TagType")
 		return
@@ -68,7 +69,7 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 
 	// Read GPS DateStamp Tag with the format is "YYYY:MM:DD."
 	var buf []byte
-	buf, err = e.er.TagValue(ds)
+	buf, err = e.reader.ReadValue(ds)
 	if err != nil {
 		err = errors.Wrap(ErrParseBufSize, "ParseGPSTimeStamp DateStamp")
 		return
@@ -81,7 +82,7 @@ func (e *Data) ParseGPSTimeStamp(ds tag.Tag, ts tag.Tag, subSec tag.Tag, tz *tim
 		day := parseUint(buf[8:10])
 
 		// Read GPS TimeStamp Tag
-		buf, err = e.er.TagValue(ts)
+		buf, err = e.reader.ReadValue(ts)
 		if err != nil {
 			err = errors.Wrap(ErrParseBufSize, "ParseGPSTimeStamp TimeStamp")
 			return
@@ -112,10 +113,10 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 		return 0.0, ErrParseGPS
 	}
 
-	byteOrder := e.er.byteOrder
+	byteOrder := e.reader.byteOrder
 	// Read GPS Coord Tag
 	var buf []byte
-	buf, err = e.er.TagValue(coordTag)
+	buf, err = e.reader.ReadValue(coordTag)
 	if err != nil {
 		err = errors.Wrap(err, "ParseGPSCoord")
 		return
@@ -126,7 +127,7 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 
 	// Read Reference Tag
 	// Coordinate is a negative value for a South or West Orientation
-	buf = e.er.embeddedTagValue(refTag.ValueOffset)
+	buf = e.reader.embeddedTagValue(refTag.ValueOffset)
 	if buf[0] == 'S' || buf[0] == 'W' {
 		coord *= -1
 	}
@@ -137,7 +138,7 @@ func (e *Data) ParseGPSCoord(refTag tag.Tag, coordTag tag.Tag) (coord float64, e
 // Returns ErrParseSubSecond if an err occurs
 func (e *Data) ParseSubSec(subSec tag.Tag) (int, error) {
 	if subSec.Type() == tag.TypeASCII && subSec.IsEmbedded() {
-		buf := e.er.embeddedTagValue(subSec.ValueOffset)
+		buf := e.reader.embeddedTagValue(subSec.ValueOffset)
 		return int(parseUint(buf) * 1000000), nil
 	}
 	return 0, ErrParseSubSecond
@@ -152,7 +153,7 @@ func (e *Data) ParseSubSec(subSec tag.Tag) (int, error) {
 func (e *Data) ParseASCIIValue(t tag.Tag) (value string, err error) {
 	if t.Type() == tag.TypeASCII || t.Type() == tag.TypeASCIINoNul {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		if buf, err = e.reader.ReadValue(t); err != nil {
 			err = errors.Wrap(err, "ParseASCIIValue")
 			return
 		}
@@ -182,10 +183,10 @@ func (e *Data) ParseUint16Value(t tag.Tag) (uint16, error) {
 func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 	if t.Type().IsValid() && t.UnitCount == 1 {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		if buf, err = e.reader.ReadValue(t); err != nil {
 			return
 		}
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 
 		if t.Type() == tag.TypeShort {
 			value = uint32(byteOrder.Uint16(buf[:2]))
@@ -205,12 +206,12 @@ func (e *Data) ParseUint32Value(t tag.Tag) (value uint32, err error) {
 func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
 	if t.Type() == tag.TypeShort {
 		var buf []byte
-		buf, err = e.er.TagValue(t)
+		buf, err = e.reader.ReadValue(t)
 		if err != nil {
 			return
 		}
 
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 		count := int(t.UnitCount)
 
 		value = make([]uint16, count)
@@ -229,11 +230,11 @@ func (e *Data) ParseUint16Values(t tag.Tag) (value []uint16, err error) {
 func (e *Data) ParseUint32Values(t tag.Tag) (value []uint32, err error) {
 	if t.Type() == tag.TypeLong {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		if buf, err = e.reader.ReadValue(t); err != nil {
 			return nil, err
 		}
 
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 		count := int(t.UnitCount)
 
 		value = make([]uint32, count)
@@ -254,11 +255,11 @@ func (e *Data) ParseRationalValue(t tag.Tag) (n, d uint32, err error) {
 			return 0, 0, ErrParseRationals
 		}
 		var buf []byte
-		buf, err = e.er.TagValue(t)
+		buf, err = e.reader.ReadValue(t)
 		if err != nil {
 			return
 		}
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 		n = byteOrder.Uint32(buf[:4])
 		d = byteOrder.Uint32(buf[4:8])
 		return
@@ -276,10 +277,10 @@ func (e *Data) ParseSRationalValue(t tag.Tag) (num, denom int32, err error) {
 func (e *Data) ParseRationalValues(t tag.Tag) (value []tag.Rational, err error) {
 	if t.Type() == tag.TypeRational || t.Type() == tag.TypeSignedRational {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		if buf, err = e.reader.ReadValue(t); err != nil {
 			return nil, err
 		}
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 		count := int(t.UnitCount)
 
 		value = make([]tag.Rational, count)
@@ -297,11 +298,11 @@ func (e *Data) ParseRationalValues(t tag.Tag) (value []tag.Rational, err error) 
 func (e *Data) ParseSRationalValues(t tag.Tag) (value []tag.SRational, err error) {
 	if t.Type() == tag.TypeRational || t.Type() == tag.TypeSignedRational {
 		var buf []byte
-		if buf, err = e.er.TagValue(t); err != nil {
+		if buf, err = e.reader.ReadValue(t); err != nil {
 			return nil, err
 		}
 
-		byteOrder := e.er.ByteOrder()
+		byteOrder := e.reader.byteOrder
 		count := int(t.UnitCount)
 
 		value = make([]tag.SRational, count)
@@ -338,4 +339,12 @@ func parseUint(buf []byte) (u uint64) {
 		u += uint64(buf[i] - '0')
 	}
 	return
+}
+
+func (e *Data) parseExifVersion(t tag.Tag) uint16 {
+	if t.Ifd == uint8(ifds.ExifIFD) {
+		i := parseUint(e.reader.embeddedTagValue(t.ValueOffset))
+		return uint16(i)
+	}
+	return 0
 }
