@@ -37,8 +37,8 @@ type SRational struct {
 
 // Tag is an Exif Tag
 type Tag struct {
-	ValueOffset uint32
-	UnitCount   uint16 // 4 bytes
+	ValueOffset uint32 // 4 bytes
+	UnitCount   uint32 // 4 bytes
 	ID          ID     // 2 bytes
 	t           Type   // 1 byte
 	Ifd         uint8  // 1 byte
@@ -53,7 +53,7 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 	return Tag{
 		ID:          tagID,
 		t:           tagType,
-		UnitCount:   uint16(unitCount),
+		UnitCount:   unitCount,
 		ValueOffset: valueOffset,
 		Ifd:         ifd,
 	}, nil
@@ -69,8 +69,8 @@ func (t Tag) IsEmbedded() bool {
 }
 
 // Size returns the size of the Tag's value
-func (t Tag) Size() int {
-	return int(t.t.Size() * uint32(t.UnitCount))
+func (t Tag) Size() uint32 {
+	return uint32(t.t.Size()) * uint32(t.UnitCount)
 }
 
 // Type returns the type of Tag
@@ -147,9 +147,9 @@ var (
 )
 
 // Size returns the size of one atomic unit of the type.
-func (tagType Type) Size() uint32 {
+func (tagType Type) Size() uint8 {
 	if int(tagType) < len(_tagSize) {
-		return uint32(_tagSize[uint8(tagType)])
+		return uint8(_tagSize[uint8(tagType)])
 	}
 	if tagType == TypeASCIINoNul {
 		return TypeASCIINoNulSize

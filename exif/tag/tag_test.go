@@ -7,7 +7,7 @@ import (
 var tagTypeTests = []struct {
 	rawTagType uint16
 	tagType    Type
-	tagSize    uint32
+	tagSize    uint8
 	tagString  string
 	err        error
 }{
@@ -43,7 +43,7 @@ func TestNewTagType(t *testing.T) {
 func TestTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			var s uint32
+			var s uint8
 			if tag.tagType != TypeUndefined {
 				s = tag.tagType.Size()
 			} else {
