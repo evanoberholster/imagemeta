@@ -171,13 +171,13 @@ var (
 
 // Size returns the size of one atomic unit of the type.
 func (tt Type) Size() uint8 {
-	if int(tagType) < len(_tagSize) {
-		return uint8(_tagSize[uint8(tagType)])
+	if int(tt) < len(_tagSize) {
+		return uint8(_tagSize[uint8(tt)])
 	}
-	if tagType == TypeIfd {
+	if tt == TypeIfd {
 		return TypeIfdSize
 	}
-	if tagType == TypeASCIINoNul {
+	if tt == TypeASCIINoNul {
 		return TypeASCIINoNulSize
 	}
 	return 0
