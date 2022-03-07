@@ -70,7 +70,7 @@ func (t Tag) IsEmbedded() bool {
 	return t.Size() <= 4
 }
 
-// IsIFD checks if the Tag's value is an IFD
+// IsIfd checks if the Tag's value is an IFD
 func (t Tag) IsIfd() bool {
 	return t.t == TypeIfd
 }
@@ -86,13 +86,13 @@ func (t Tag) Type() Type {
 }
 
 // IsType returns true if tagType matches query Type
-func (tag Tag) IsType(t Type) bool {
-	return tag.t == t
+func (t Tag) IsType(ty Type) bool {
+	return t.t == ty
 }
 
 // Is returns true if tagType matches query Type
-func (tagType Type) Is(t Type) bool {
-	return tagType == t
+func (tt Type) Is(t Type) bool {
+	return tt == t
 }
 
 // Errors
@@ -170,7 +170,7 @@ var (
 )
 
 // Size returns the size of one atomic unit of the type.
-func (tagType Type) Size() uint8 {
+func (tt Type) Size() uint8 {
 	if int(tagType) < len(_tagSize) {
 		return uint8(_tagSize[uint8(tagType)])
 	}

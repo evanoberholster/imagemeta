@@ -10,7 +10,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
-// IFD is an Information Directory
+// IfdType is the Type of Information Directory
 type IfdType uint8
 
 // Key is a TagMap Key
@@ -55,7 +55,7 @@ var (
 	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115}
 )
 
-// Valid returns true if IFD is valid
+// IsValid returns true if IFD is valid
 func (ifdType IfdType) IsValid() bool {
 	return ifdType != NullIFD && int(ifdType) < len(_IFDStringerIndex)-1
 }
