@@ -43,7 +43,7 @@ func main() {
 	//}
 
 	exifFn := func(r io.Reader, header meta.ExifHeader) error {
-		f.Seek(0, 0)
+		_, _ = f.Seek(0, 0)
 		fmt.Println(header)
 		e, err = exif.ParseExif(f, header)
 		fmt.Println(e)
