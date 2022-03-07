@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -36,9 +35,8 @@ func BenchmarkExif(b *testing.B) {
 
 	var x xmp.XMP
 	var e *exif.Data
-	exifFn := func(r io.Reader, h meta.ExifHeader) error {
-		cb.Seek(0, 0)
-		e, err = exif.ParseExif(cb, h)
+	exifFn := func(r meta.Reader, h meta.ExifHeader) error {
+		e, err = exif.ParseExif(r, h)
 		return nil
 	}
 

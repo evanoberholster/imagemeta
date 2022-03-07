@@ -20,7 +20,7 @@ const (
 
 // Scan scans a reader for Tiff Image markers then xmpDecodeFn and exifDecodeFn are run at their respective
 // positions during the scan. Returns an error.
-func Scan(r io.Reader, it imagetype.ImageType, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (err error) {
+func Scan(r meta.Reader, it imagetype.ImageType, exifFn func(r meta.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
@@ -33,7 +33,7 @@ func Scan(r io.Reader, it imagetype.ImageType, exifFn func(r io.Reader, header m
 	if err != nil {
 		return errors.Wrap(err, "Scan error")
 	}
-	return exifFn(br, exifHeader)
+	return exifFn(r, exifHeader)
 }
 
 // ScanTiffHeader searches an io.Reader for a LittleEndian or BigEndian Tiff Header

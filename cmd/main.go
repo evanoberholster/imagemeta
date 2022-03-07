@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -20,7 +19,7 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//f, err := os.Open(flag.Arg(0))
-	f, err := os.Open("../../test/img/1.NEF")
+	f, err := os.Open("../../test/img/2.CR2")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,36 +29,23 @@ func main() {
 			panic(err)
 		}
 	}()
-	exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
+	//exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
 	//var x xmp.XMP
 	var e *exif.Data
-	//exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-	//	e, err = e.ParseExifWithMetadata(f, m)
-	//	return nil
-	//}
+
 	//xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
 	//	x, err = xmp.ParseXmp(r)
 	//	return err
 	//}
 
-	exifFn := func(r io.Reader, header meta.ExifHeader) error {
-		_, _ = f.Seek(0, 0)
-		fmt.Println(header)
-		e, err = exif.ParseExif(f, header)
-		fmt.Println(e)
+	exifFn := func(r meta.Reader, header meta.ExifHeader) error {
+		e, err = exif.ParseExif(r, header)
 		return err
 	}
-
-	err = tiff.Scan(f, imagetype.ImageTiff, exifFn, nil)
-	if err != nil {
-		panic(err)
-	}
-	//m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
-	if err != nil {
+	if err = tiff.Scan(f, imagetype.ImageTiff, exifFn, nil); err != nil {
 		fmt.Println(err)
 	}
-	//fmt.Println(m.Metadata)
-	//fmt.Println(x)
+
 	if e != nil {
 		fmt.Println(e.ImageWidth())
 		fmt.Println(e.ImageHeight())
@@ -88,14 +74,14 @@ func main() {
 
 		fmt.Println(e.GPSCoords())
 
-		//c, _ := e.GPSCellID()
-		//fmt.Println(c.ToToken())
+		c, _ := e.GPSCellID()
+		fmt.Println(c.ToToken())
 		fmt.Println(e.DateTime(time.Local))
 		fmt.Println(e.ModifyDate(time.Local))
 
-		//fmt.Println(e.GPSDate(nil))
+		fmt.Println(e.GPSDate(nil))
 	}
 
-	b, err := e.DebugJSON()
-	fmt.Println(string(b), err)
+	//b, err := e.DebugJSON()
+	//fmt.Println(string(b), err)
 }
