@@ -49,6 +49,7 @@ func BenchmarkScanExif100(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				cb.Seek(0, 0)
 				_, err = ScanExif(cb)
 				if err != nil {
 					if err != ErrNoExif {

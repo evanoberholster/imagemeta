@@ -20,7 +20,7 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//f, err := os.Open(flag.Arg(0))
-	f, err := os.Open("../../test/img/1.ARW")
+	f, err := os.Open("../../test/img/60D1.CR2")
 	if err != nil {
 		log.Fatal(err)
 	}

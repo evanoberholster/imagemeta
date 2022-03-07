@@ -41,14 +41,6 @@ func BenchmarkExif(b *testing.B) {
 		e, err = exif.ParseExif(cb, h)
 		return nil
 	}
-	//exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-	//	e, err = exif.ParseExif2(f, m)
-	//	return nil
-	//}
-	//xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-	//	x, err = xmp.ParseXmp(r)
-	//	return err
-	//}
 
 	for i := 0; i < b.N; i++ {
 		cb.Seek(0, 0)

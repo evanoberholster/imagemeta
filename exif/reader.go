@@ -2,7 +2,6 @@ package exif
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
@@ -55,10 +54,8 @@ func (r *reader) scanIFD(e *Data, ifd ifds.Ifd) (err error) {
 		}
 	}()
 
-	// Log
-	if isDebug() {
-		//fmt.Println(ifd)
-	}
+	// TODO: Needs log
+
 	var nextIfdOffset uint32
 
 	for ifd.Index = 0; ; ifd.Index++ {
@@ -87,7 +84,6 @@ func (r *reader) scanSubIFD(e *Data, t tag.Tag) (err error) {
 	// Fetch SubIfd Values from []Uint32 (LongType)
 	offsets, err := e.ParseUint32Values(t)
 	if err != nil {
-		fmt.Println(offsets, err)
 		return err
 	}
 
@@ -173,7 +169,6 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 	for i := 0; i < int(tagCount); i++ {
 		if t, offset, err = r.ReadTag(ifd, byteOrder, offset); err != nil {
 			if err == tag.ErrTagTypeNotValid {
-				//fmt.Println(err)
 				//if errors.Is(err, tag.ErrTagTypeNotValid) {
 				// Log TagNotValid Error
 				//ifdEnumerateLogger.Warningf(nil, "Tag in IFD [%s] at position (%d) has invalid type and will be skipped.", fqIfdPath, i)
@@ -192,10 +187,9 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 			// Descend into Child IFD
 			childIfd := ifd.ChildIfd(t)
 			if childIfd.IsType(ifds.SubIFD) {
-				fmt.Println(ifd, childIfd, offset)
-				if err := r.scanSubIFD(e, t); err != nil {
-					return offset, err
-				}
+				//if err := r.scanSubIFD(e, t); err != nil {
+				//	return offset, err
+				//}
 			} else {
 				if err := r.scanIFD(e, childIfd); err != nil {
 					return offset, err
