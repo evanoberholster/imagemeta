@@ -418,7 +418,7 @@ func (e *Data) GPSAltitude() (alt float32, err error) {
 	alt = float32(n) / float32(d)
 
 	t, err = e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSAltitudeRef)
-	if t.Type() == tag.TypeByte && t.IsEmbedded() {
+	if t.IsType(tag.TypeByte) && t.IsEmbedded() {
 		e.reader.byteOrder.PutUint32(e.reader.rawBuffer[:4], t.ValueOffset)
 		if e.reader.rawBuffer[0] == 1 {
 			alt *= -1

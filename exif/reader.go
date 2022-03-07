@@ -54,8 +54,6 @@ func (r *reader) scanIFD(e *Data, ifd ifds.Ifd) (err error) {
 		}
 	}()
 
-	// TODO: Needs log
-
 	var nextIfdOffset uint32
 
 	for ifd.Index = 0; ; ifd.Index++ {
@@ -95,45 +93,6 @@ func (r *reader) scanSubIFD(e *Data, t tag.Tag) (err error) {
 		}
 	}
 	return
-}
-
-// AddTag adds a Tag to a tag.TagMap
-func (e *Data) addTag(ifd ifds.Ifd, t tag.Tag) {
-	if !ifd.IsValid() {
-		return // don't add invalid IFD tags
-	}
-
-	// add tag to tagMap
-	e.tagMap[ifds.NewKey(ifd.Type, ifd.Index, t.ID)] = t
-
-	// Special Ifd0 Tags
-	if ifd.IsType(ifds.IFD0) {
-		switch t.ID {
-		case ifds.Make: // Add Make and Model to Exif struct for future decoding of Makernotes
-			e.make, _ = e.ParseASCIIValue(t)
-		case ifds.Model:
-			e.model, _ = e.ParseASCIIValue(t)
-		case ifds.ImageWidth:
-			if ifd.Index == 0 {
-				e.width, _ = e.ParseUint16Value(t)
-			}
-		case ifds.ImageLength:
-			if ifd.Index == 0 {
-				e.height, _ = e.ParseUint16Value(t)
-			}
-		}
-	}
-	// Special ExifIfd Tags
-	if ifd.IsType(ifds.ExifIFD) {
-		switch t.ID {
-		case exififd.PixelXDimension:
-			e.width, _ = e.ParseUint16Value(t)
-		case exififd.PixelYDimension:
-			e.height, _ = e.ParseUint16Value(t)
-		case exififd.ExifVersion:
-			e.exifVersion = e.parseExifVersion(t)
-		}
-	}
 }
 
 // ParseIfd - enumerates over the ifd using the enumerator.ifdReader
@@ -187,9 +146,9 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 			// Descend into Child IFD
 			childIfd := ifd.ChildIfd(t)
 			if childIfd.IsType(ifds.SubIFD) {
-				//if err := r.scanSubIFD(e, t); err != nil {
-				//	return offset, err
-				//}
+				if err := r.scanSubIFD(e, t); err != nil {
+					return offset, err
+				}
 			} else {
 				if err := r.scanIFD(e, childIfd); err != nil {
 					return offset, err
@@ -307,6 +266,45 @@ func tagIsIfd(ifd ifds.Ifd, tagID tag.ID, tagType tag.Type) tag.Type {
 		}
 	}
 	return tagType
+}
+
+// AddTag adds a Tag to a tag.TagMap
+func (e *Data) addTag(ifd ifds.Ifd, t tag.Tag) {
+	if !ifd.IsValid() {
+		return // don't add invalid IFD tags
+	}
+
+	// add tag to tagMap
+	e.tagMap[ifds.NewKey(ifd.Type, ifd.Index, t.ID)] = t
+
+	// Special Ifd0 Tags
+	if ifd.IsType(ifds.IFD0) {
+		switch t.ID {
+		case ifds.Make: // Add Make and Model to Exif struct for future decoding of Makernotes
+			e.make, _ = e.ParseASCIIValue(t)
+		case ifds.Model:
+			e.model, _ = e.ParseASCIIValue(t)
+		case ifds.ImageWidth:
+			if ifd.Index == 0 {
+				e.width, _ = e.ParseUint16Value(t)
+			}
+		case ifds.ImageLength:
+			if ifd.Index == 0 {
+				e.height, _ = e.ParseUint16Value(t)
+			}
+		}
+	}
+	// Special ExifIfd Tags
+	if ifd.IsType(ifds.ExifIFD) {
+		switch t.ID {
+		case exififd.PixelXDimension:
+			e.width, _ = e.ParseUint16Value(t)
+		case exififd.PixelYDimension:
+			e.height, _ = e.ParseUint16Value(t)
+		case exififd.ExifVersion:
+			e.exifVersion = e.parseExifVersion(t)
+		}
+	}
 }
 
 // ReadBufferAt reads n at offset from the underlying reader.

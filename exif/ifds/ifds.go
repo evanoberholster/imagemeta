@@ -69,23 +69,23 @@ func (ifdType IfdType) String() string {
 
 // TagName returns the tagName for the given IFD and tag.ID
 // if tag name is not known returns uint32 representation
-func (ifdType IfdType) TagName(id tag.ID) (name string) {
-	var ok bool
+func (ifdType IfdType) TagName(id tag.ID) string {
+
 	switch ifdType {
 	case IFD0, SubIFD:
-		name, ok = RootIfdTagIDMap[id]
+		if name, ok := RootIfdTagIDMap[id]; ok {
+			return name
+		}
 	case ExifIFD:
-		name, ok = exififd.TagIDMap[id]
+		return exififd.TagString(id)
 	case GPSIFD:
-		name, ok = gpsifd.TagIDMap[id]
+		return gpsifd.TagString(id)
 	case MknoteIFD:
 		//case MkNoteCanonIFD:
-		name, ok = mknote.TagCanonIDMap[id]
+		return mknote.TagCanonString(id)
 	}
-	if !ok {
-		name = id.String()
-	}
-	return
+
+	return id.String()
 }
 
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.

@@ -20,8 +20,8 @@ func TestTiff(t *testing.T) {
 		tiffHeaderOffset uint32
 		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageARW},
-		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageNEF},
+		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
 		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
 		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
 	}

@@ -20,7 +20,7 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//f, err := os.Open(flag.Arg(0))
-	f, err := os.Open("../../test/img/60D1.CR2")
+	f, err := os.Open("../../test/img/1.NEF")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func main() {
 			panic(err)
 		}
 	}()
-	exif.LogLevel = exif.LogLevelDebug
+	exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
 	//var x xmp.XMP
 	var e *exif.Data
 	//exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {

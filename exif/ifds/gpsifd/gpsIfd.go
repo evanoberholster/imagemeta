@@ -3,6 +3,18 @@ package gpsifd
 
 import "github.com/evanoberholster/imagemeta/exif/tag"
 
+// TagString returns the string representation of a tag.ID
+func TagString(id tag.ID) string {
+	name, ok := TagIDMap[id]
+	if !ok {
+		return id.String()
+	}
+	return name
+}
+
+// TODO: TagTypeMap is a Map of tag.ID to default tag,Type
+// var TagTypeMap = map[tag.ID]tag.Type{}
+
 // TagIDMap is a Map of tag.ID to string for the GPSIfd tags
 var TagIDMap = map[tag.ID]string{
 	GPSAltitude:          "GPSAltitude",

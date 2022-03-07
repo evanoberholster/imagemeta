@@ -58,7 +58,7 @@ func ParseExif(r io.ReaderAt, header meta.ExifHeader) (*Data, error) {
 
 	// Scan the FirstIfd with the FirstIfdOffset from the ExifReader
 	err = reader.scanIFD(e, ifds.NewIFD(header.FirstIfd, 0, header.FirstIfdOffset))
-	//fmt.Println(reader.bufferedLen())
+
 	return e, err
 }
 

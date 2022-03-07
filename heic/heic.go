@@ -140,9 +140,9 @@ func (hm *Metadata) ReadXmp(r meta.Reader) (err error) {
 	if _, err = hm.ReadXmpHeader(r); err != nil {
 		return
 	}
-	if _, err = r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
-		return
-	}
+	//if _, err = r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
+	//	return
+	//}
 	return hm.XmpFn(io.LimitReader(r, int64(hm.XmpHeader.Length)), hm.Metadata)
 }
 

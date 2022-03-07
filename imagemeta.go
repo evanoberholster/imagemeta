@@ -114,9 +114,9 @@ func (m *Metadata) parseXmp(br *bufio.Reader) (err error) {
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
-	if _, err = m.r.Seek(0, 0); err != nil {
-		return
-	}
+	//if _, err = m.r.Seek(0, 0); err != nil {
+	//	return
+	//}
 	hm, err := heic.NewMetadata(br, m.Metadata)
 	if err != nil {
 		return err

@@ -5,6 +5,18 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
+// TagCanonString returns the string representation of a tag.ID for Canon Makernotes
+func TagCanonString(id tag.ID) string {
+	name, ok := TagCanonIDMap[id]
+	if !ok {
+		return id.String()
+	}
+	return name
+}
+
+// TODO: TagTypeMap is a Map of tag.ID to default tag,Type
+// var TagTypeMap = map[tag.ID]tag.Type{}
+
 // TagCanonIDMap is a Map of tag.ID to string for the CanonMakerNote tags
 var TagCanonIDMap = map[tag.ID]string{
 	CanonCameraSettings:             "CanonCameraSettings",
