@@ -26,6 +26,7 @@ var (
 type Reader interface {
 	io.Reader
 	io.ReaderAt
+	io.Seeker
 }
 
 // DecodeFn is a function for decoding Metadata.

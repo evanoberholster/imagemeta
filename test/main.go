@@ -1,40 +1,54 @@
 package main
 
-//func main() {
-//	flag.Parse()
-//	if flag.NArg() != 1 {
-//		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
-//		os.Exit(1)
-//	}
-//	f, err := os.Open(flag.Arg(0))
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer func() {
-//		err = f.Close()
-//		if err != nil {
-//			panic(err)
-//		}
-//	}()
-//	stdLogger := bmff.STDLogger{}
-//	bmff.DebugLogger(stdLogger)
-//	parseJPG(f)
-//	//parseCR2(f)
-//	//parseHeic(f)
-//	//parseCR3(f)
-//}
+import (
+	"flag"
+	"fmt"
+	"image/jpeg"
+	"log"
+	"os"
+
+	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/bmff"
+	"github.com/evanoberholster/imagemeta/meta"
+)
+
+func main() {
+	flag.Parse()
+	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
+		os.Exit(1)
+	}
+	f, err := os.Open(flag.Arg(0))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	stdLogger := bmff.STDLogger{}
+	bmff.DebugLogger(stdLogger)
+	parseJPG(f)
+	//parseCR2(f)
+	//parseHeic(f)
+	//parseCR3(f)
+}
+
 //
-//func parseJPG(f meta.Reader) {
-//	exifFn := func(r io.Reader, header meta.ExifHeader) error {
-//
-//		fmt.Println(header)
-//		fmt.Println(header.TiffHeaderOffset, header.FirstIfdOffset, header.FirstIfdOffset-header.TiffHeaderOffset)
-//		return nil
-//	}
-//
-//	_, err := jpeg.ScanJPEG(f, exifFn, nil)
-//	fmt.Println(err)
-//}
+func parseJPG(f meta.Reader) {
+	m, err := imagemeta.Parse(f)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(m.Exif())
+	fmt.Println(m.Xmp())
+	fmt.Println(m.ImageType())
+	fmt.Println(m.Dimensions())
+	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+}
+
 //
 //func parseCR2(f meta.Reader) {
 //

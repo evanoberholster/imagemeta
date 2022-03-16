@@ -330,18 +330,18 @@ func (e *Data) Flash() (meta.Flash, error) {
 
 // Orientation convenience func. If the tag is missing, OrientationHorizontal (normal)
 // and ErrEmptyTag will be returned.
-func (e *Data) Orientation() (meta.Orientation, error) {
+func (e *Data) Orientation() meta.Orientation {
 	t, err := e.GetTag(ifds.IFD0, 0, ifds.Orientation)
 	if err != nil {
-		return meta.OrientationHorizontal, err
+		return meta.OrientationHorizontal
 	}
 
 	u, err := e.ParseUint16Value(t)
 	if err != nil {
-		return 0, err
+		return 0
 	}
 
-	return meta.Orientation(u), nil
+	return meta.Orientation(u)
 }
 
 // GPSCoords is a convenience func. that retrieves "IFD/GPS" GPSLatitude and GPSLongitude

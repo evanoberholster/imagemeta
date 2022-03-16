@@ -19,8 +19,8 @@ var (
 		"60D1.CR2",
 		"6D.CR2",
 		"7D1.CR2",
-		//"2.CR3",
-		//"1.CR3",
+		"2.CR3",
+		"1.CR3",
 		"1.jpg",
 		//"2.jpg",
 		"1.NEF",
@@ -50,7 +50,7 @@ func BenchmarkScanExif100(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				cb.Seek(0, 0)
-				_, err = ScanExif(cb)
+				//_, err = ScanExif(cb)
 				if err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)

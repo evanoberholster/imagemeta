@@ -9,7 +9,6 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 // Errors
@@ -19,25 +18,6 @@ var (
 	ErrNoExif        = meta.ErrNoExif
 	ErrEmptyTag      = errors.New("error empty tag")
 )
-
-// ScanExif identifies the imageType based on magic bytes and
-// searches for exif headers, then it parses the io.ReaderAt for exif
-// information and returns it.
-// Sets exif imagetype from magicbytes, if not found sets imagetype
-// to imagetypeUnknown.
-//
-// If no exif information is found ScanExif will return ErrNoExif.
-func ScanExif(r meta.Reader) (e *Data, err error) {
-	// Search Image for Metadata Header using ImageType
-	header, err := tiff.ScanTiffHeader(r, imagetype.ImageTiff)
-	if !header.IsValid() || err != nil {
-		return nil, ErrNoExif
-	}
-	// Set FirstIfd to RootIfd
-	header.FirstIfd = ifds.IFD0
-
-	return ParseExif(r, header)
-}
 
 // ParseExif parses Exif metadata from an io.ReaderAt and a TiffHeader
 //

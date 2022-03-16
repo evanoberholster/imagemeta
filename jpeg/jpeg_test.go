@@ -46,9 +46,8 @@ func BenchmarkScanJPEG100(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				r.Seek(0, 0)
-				br := bufio.NewReader(r)
 				b.StartTimer()
-				if _, err := ScanJPEG(br, nil, nil); err != nil {
+				if _, err := ScanJPEG(r, nil, nil); err != nil {
 					if !bm.noExifErr {
 						b.Fatal(err)
 					}
@@ -63,8 +62,8 @@ func TestScanJPEG(t *testing.T) {
 		filename string
 		exif     bool
 		header   meta.ExifHeader
-		width    uint16
-		height   uint16
+		width    uint32
+		height   uint32
 	}{
 		{"../assets/JPEG.jpg", true, meta.NewExifHeader(binary.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
 		{"../assets/NoExif.jpg", true, meta.NewExifHeader(binary.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
@@ -98,7 +97,8 @@ func TestScanJPEG(t *testing.T) {
 			}
 
 			// test Imagesize
-			width, height := m.Size()
+			dim := m.Dimensions()
+			width, height := dim.Size()
 			if width != jpg.width || height != jpg.height {
 				t.Errorf("Incorrect Jpeg Image size wanted width: %d got width: %d ", jpg.width, width)
 				t.Errorf("Incorrect Jpeg Image size wanted height: %d got height: %d ", jpg.height, height)
@@ -172,7 +172,7 @@ func TestScanMarkers(t *testing.T) {
 	}
 
 	// Test Scan JPEG
-	m, err = ScanJPEG(bufio.NewReader(bytes.NewReader(data)), nil, nil)
+	m, err = ScanJPEG(bytes.NewReader(data), nil, nil)
 	if err != ErrNoJPEGMarker {
 		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 	}
