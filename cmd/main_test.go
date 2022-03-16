@@ -56,7 +56,7 @@ func BenchmarkExif(b *testing.B) {
 			_ = e.CameraMake()
 			_ = e.CameraModel()
 			_, _ = e.CameraSerial()
-			_, _ = e.Orientation()
+			_ = e.Orientation()
 			_, _ = e.LensMake()
 			_, _ = e.LensModel()
 			_, _ = e.LensSerial()
