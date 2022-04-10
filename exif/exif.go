@@ -42,6 +42,16 @@ func ParseExif(r io.ReaderAt, header meta.ExifHeader) (*Data, error) {
 	return e, err
 }
 
+func (e *Data) ParseIfd(header meta.ExifHeader) error {
+	if !header.IsValid() || header.FirstIfd == ifds.NullIFD {
+		return ErrInvalidHeader
+	}
+	e.reader.exifLength = header.ExifLength
+	e.reader.exifOffset = header.TiffHeaderOffset
+	e.reader.byteOrder = header.ByteOrder
+	return e.reader.scanIFD(e, ifds.NewIFD(header.FirstIfd, 0, header.FirstIfdOffset))
+}
+
 // newData creates a new initialized Exif object
 func newData(r *reader, it imagetype.ImageType) *Data {
 	return &Data{

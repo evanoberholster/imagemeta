@@ -46,7 +46,9 @@ func Parse(r meta.Reader) (ImageMeta, error) {
 
 	case imagetype.ImageJPEG:
 		return jpeg.ScanJPEG(r, nil, nil)
-	case imagetype.ImageTiff, imagetype.ImageCR2, imagetype.ImageARW, imagetype.ImageCR3, imagetype.ImageHEIF, imagetype.ImageNEF, imagetype.ImagePanaRAW:
+	case imagetype.ImageCR3:
+		return cr3.Parse(r)
+	case imagetype.ImageTiff, imagetype.ImageCR2, imagetype.ImageARW, imagetype.ImageHEIF, imagetype.ImageNEF, imagetype.ImagePanaRAW:
 		return tiff.Parse(r, t)
 	}
 	return nil, nil
@@ -89,8 +91,6 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 		return m.parseTiff(br)
 	case imagetype.ImageCR2:
 		return m.parseTiff(br)
-	case imagetype.ImageCR3:
-		return m.parseCR3(br)
 	case imagetype.ImageHEIF:
 		return m.parseHeic(br)
 	case imagetype.ImageAVIF:
@@ -132,22 +132,6 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 		return
 	}
 	return err
-}
-
-func (m *Metadata) parseCR3(br *bufio.Reader) (err error) {
-	cr3, err := cr3.NewMetadata(br, m.Metadata)
-	if err != nil {
-		return err
-	}
-
-	if err = cr3.DecodeExif(br); err != nil {
-		return
-	}
-	if err = cr3.DecodeXMP(br); err != nil {
-		return
-	}
-	m.Metadata = cr3.Metadata
-	return nil
 }
 
 // parseTiff uses the 'tiff' package to identify the metadata and

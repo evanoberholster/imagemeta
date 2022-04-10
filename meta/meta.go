@@ -4,6 +4,7 @@ package meta
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
@@ -71,10 +72,10 @@ func (m Metadata) ImageType() imagetype.ImageType {
 // a Tiff Directory.
 type ExifHeader struct {
 	ByteOrder        binary.ByteOrder
-	FirstIfd         ifds.IfdType
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
+	FirstIfd         ifds.IfdType
 	ImageType        imagetype.ImageType
 }
 
@@ -82,6 +83,10 @@ type ExifHeader struct {
 // the FirstIfdOffset is greater than 0
 func (h ExifHeader) IsValid() bool {
 	return h.ByteOrder != nil && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
+}
+
+func (h ExifHeader) String() string {
+	return fmt.Sprintf("ByteOrder: %s, Ifd: %s, Offset: 0x%.4x TiffOffset: 0x%.4x Length: %d Imagetype: %s", h.ByteOrder, h.FirstIfd, h.FirstIfdOffset, h.TiffHeaderOffset, h.ExifLength, h.ImageType)
 }
 
 // NewExifHeader returns a new ExifHeader.

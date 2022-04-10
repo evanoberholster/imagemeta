@@ -9,6 +9,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/bmff"
+	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -28,16 +29,17 @@ func main() {
 			panic(err)
 		}
 	}()
+	//exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
 	stdLogger := bmff.STDLogger{}
 	bmff.DebugLogger(stdLogger)
-	parseJPG(f)
+	parse(f)
 	//parseCR2(f)
 	//parseHeic(f)
 	//parseCR3(f)
 }
 
 //
-func parseJPG(f meta.Reader) {
+func parse(f meta.Reader) {
 	m, err := imagemeta.Parse(f)
 	if err != nil {
 		panic(err)
@@ -47,6 +49,12 @@ func parseJPG(f meta.Reader) {
 	fmt.Println(m.ImageType())
 	fmt.Println(m.Dimensions())
 	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+
+	e, _ := m.Exif()
+	fmt.Println(e.Aperture())
+	fmt.Println(e.LensModel())
+
+	fmt.Println(e.(*exif.Data).CanonCameraSettings())
 }
 
 //

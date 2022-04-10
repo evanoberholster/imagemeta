@@ -114,7 +114,7 @@ func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err e
 	}
 
 	// Read BoxType
-	if !(bmff.IsBoxType("Exif", buf[4:8])) {
+	if !(string(buf[4:8]) == "Exif") {
 		err = fmt.Errorf("error wrong Box Type: %d", buf[4:8])
 		return
 	}

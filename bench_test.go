@@ -60,7 +60,7 @@ func BenchmarkImageMeta(b *testing.B) {
 				b.StopTimer()
 				r.Seek(0, 0)
 				b.StartTimer()
-				_, _ = Parse(r)
+				_, err = Parse(r)
 				if err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
