@@ -24,11 +24,15 @@ const (
 	TypeCMT3            // 'CMT3'
 	TypeCMT4            // 'CMT4'
 	TypeCNCV            // 'CNCV'
+	TypeCo64            // 'co64'
 	TypeColr            // 'colr'
+	TypeCRAW            // 'CRAW'
 	TypeCrtt            // 'crtt'
 	TypeCTBO            // 'CTBO'
+	TypeCTMD            // 'CTMD'
 	TypeDimg            // 'dimg'
 	TypeDinf            // 'dinf'
+	TypeDref            // 'dref'
 	TypeEtyp            // 'etyp'
 	TypeFree            // 'free'
 	TypeFtyp            // 'ftyp'
@@ -50,19 +54,30 @@ const (
 	TypeLhvC            // 'lhvC'
 	TypeMdat            // 'mdat'
 	TypeMdft            // 'mdft'
+	TypeMdhd            // 'mdhd'
+	TypeMdia            // 'mdia'
 	TypeMeta            // 'meta'
+	TypeMinf            // 'minf'
 	TypeMoov            // 'moov'
 	TypeMvhd            // 'mvhd'
+	TypeNmhd            // 'nmhd'
 	TypeOinf            // 'oinf'
 	TypePasp            // 'pasp'
 	TypePitm            // 'pitm'
 	TypePixi            // 'pixi'
 	TypePRVW            // 'PRVW'
+	TypeStbl            // 'stbl'
+	TypeStsc            // 'stsc'
+	TypeStsd            // 'stsd'
+	TypeStsz            // 'stsz'
+	TypeStts            // 'stts'
 	TypeThmb            // 'thmb'
 	TypeTHMB            // 'THMB'
+	TypeTkhd            // 'tkhd'
 	TypeTols            // 'tols'
 	TypeTrak            // 'trak'
 	TypeUUID            // 'uuid'
+	TypeVmhd            // 'vmhd'
 )
 
 var mapStringBoxType = map[string]BoxType{
@@ -80,11 +95,15 @@ var mapStringBoxType = map[string]BoxType{
 	"CMT3": TypeCMT3,
 	"CMT4": TypeCMT4,
 	"CNCV": TypeCNCV,
+	"co64": TypeCo64,
 	"colr": TypeColr,
+	"CRAW": TypeCRAW,
 	"crtt": TypeCrtt,
 	"CTBO": TypeCTBO,
+	"CTMD": TypeCTMD,
 	"dimg": TypeDimg,
 	"dinf": TypeDinf,
+	"dref": TypeDref,
 	"etyp": TypeEtyp,
 	"free": TypeFree,
 	"ftyp": TypeFtyp,
@@ -106,19 +125,30 @@ var mapStringBoxType = map[string]BoxType{
 	"lhvC": TypeLhvC,
 	"mdat": TypeMdat,
 	"mdft": TypeMdft,
+	"mdhd": TypeMdhd,
+	"mdia": TypeMdia,
 	"meta": TypeMeta,
+	"minf": TypeMinf,
 	"moov": TypeMoov,
 	"mvhd": TypeMvhd,
+	"nmhd": TypeNmhd,
 	"oinf": TypeOinf,
 	"pasp": TypePasp,
 	"pitm": TypePitm,
 	"pixi": TypePixi,
 	"PRVW": TypePRVW,
+	"stbl": TypeStbl,
+	"stsc": TypeStsc,
+	"stsd": TypeStsd,
+	"stsz": TypeStsz,
+	"stts": TypeStts,
 	"thmb": TypeThmb,
 	"THMB": TypeTHMB,
+	"tkhd": TypeTkhd,
 	"tols": TypeTols,
 	"trak": TypeTrak,
 	"uuid": TypeUUID,
+	"vmhd": TypeVmhd,
 }
 
 var mapBoxTypeString = map[BoxType]string{
@@ -136,11 +166,15 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeCMT3: "CMT3",
 	TypeCMT4: "CMT4",
 	TypeCNCV: "CNCV",
+	TypeCo64: "co64",
 	TypeColr: "colr",
+	TypeCRAW: "CRAW",
 	TypeCrtt: "crtt",
 	TypeCTBO: "CTBO",
+	TypeCTMD: "CTMD",
 	TypeDimg: "dimg",
 	TypeDinf: "dinf",
+	TypeDref: "dref",
 	TypeEtyp: "etyp",
 	TypeFree: "free",
 	TypeFtyp: "ftyp",
@@ -162,19 +196,30 @@ var mapBoxTypeString = map[BoxType]string{
 	TypeLhvC: "lhvC",
 	TypeMdat: "mdat",
 	TypeMdft: "mdft",
+	TypeMdhd: "mdhd",
+	TypeMdia: "mdia",
 	TypeMeta: "meta",
+	TypeMinf: "minf",
 	TypeMoov: "moov",
 	TypeMvhd: "mvhd",
+	TypeNmhd: "nmhd",
 	TypeOinf: "oinf",
 	TypePasp: "pasp",
 	TypePitm: "pitm",
 	TypePixi: "pixi",
 	TypePRVW: "PRVW",
+	TypeStbl: "stbl",
+	TypeStsc: "stsc",
+	TypeStsd: "stsd",
+	TypeStsz: "stsz",
+	TypeStts: "stts",
 	TypeThmb: "thmb",
 	TypeTHMB: "THMB",
+	TypeTkhd: "tkhd",
 	TypeTols: "tols",
 	TypeTrak: "trak",
 	TypeUUID: "uuid",
+	TypeVmhd: "vmhd",
 }
 
 func (t BoxType) String() string {
@@ -185,27 +230,17 @@ func (t BoxType) String() string {
 	return "nnnn"
 }
 
-func isBoxinfe(buf []byte) bool {
-	return buf[0] == 'i' && buf[1] == 'n' && buf[2] == 'f' && buf[3] == 'e'
-}
-
 func boxType(buf []byte) BoxType {
-	if isBoxinfe(buf) { // inital check for performance reasons, TODO: confirm with benchmarks
+	if string(buf[:4]) == "infe" { // inital check for performance reasons
 		return TypeInfe
 	}
-	b, ok := mapStringBoxType[string(buf)]
-	if ok {
+	if b, ok := mapStringBoxType[string(buf)]; ok {
 		return b
 	}
 	if debugFlag {
 		log.Debug("BoxType '%s' not found", buf)
 	}
 	return TypeUnknown
-}
-
-// IsBoxType returns true when bt1 is equal to bt2.
-func IsBoxType(bt1 string, bt2 []byte) bool {
-	return bt1[0] == bt2[0] && bt1[1] == bt2[1] && bt1[2] == bt2[2] && bt1[3] == bt2[3]
 }
 
 // Box is an interface for different BMFF boxes.
@@ -241,6 +276,14 @@ type box struct {
 	bufReader
 	size    int64 // 0 means unknown, will read to end of file (box container)
 	boxType BoxType
+}
+
+func (b *box) read() (buf []byte, err error) {
+	if buf, err = b.peek(b.remain); err != nil {
+		return
+	}
+	err = b.discard(len(buf))
+	return
 }
 
 func (b box) Size() int64   { return b.size }

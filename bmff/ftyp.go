@@ -123,11 +123,13 @@ func brand(buf []byte) Brand {
 	return brandUnknown
 }
 
+var MinorVersionNul = [4]byte{}
+
 // FileTypeBox is a BMFF FileTypeBox
 type FileTypeBox struct {
-	MinorVersion string            // 4 bytes
-	MajorBrand   Brand             // 4 bytes
 	Compatible   [brandCount]Brand // all 4 bytes
+	MinorVersion [4]byte           // 4 bytes
+	MajorBrand   Brand             // 4 bytes
 }
 
 // IsCR3 returns true if major brand is crx (Canon CR3)
@@ -148,19 +150,19 @@ func (b *box) parseFileTypeBox() (ftyp FileTypeBox, err error) {
 	if b.boxType != TypeFtyp {
 		return ftyp, ErrWrongBoxType
 	}
-	buf, err := b.peek(8)
+	buf, err := b.peek(b.remain)
 	if err != nil {
 		return ftyp, err
 	}
 	ftyp.MajorBrand = brand(buf[:4])
-	ftyp.MinorVersion = cleanString(buf[4:8])
-	if err = b.discard(8); err != nil {
-		return
-	}
+	copy(ftyp.MinorVersion[:4], buf[4:8])
+
 	// Read maximum 7 Compatible brands
-	for i := 0; i < brandCount && b.remain >= 4; i++ {
-		ftyp.Compatible[i], _ = b.readBrand()
+	for i, compatibleBrand := 8, 0; i < b.remain && compatibleBrand < brandCount; compatibleBrand++ {
+		ftyp.Compatible[compatibleBrand] = brand(buf[i : i+4])
+		i += 4
 	}
+
 	if debugFlag {
 		traceBox(ftyp, *b)
 	}
