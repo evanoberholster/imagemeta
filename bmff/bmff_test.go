@@ -91,7 +91,6 @@ func TestParseMeta(t *testing.T) {
 }
 
 func TestFileTypeBox(t *testing.T) {
-
 	if brandAvif.String() != "avif" {
 		t.Errorf("Brand Avif String Test Error: got %v, expected %v", brandAvif.String(), "avif")
 	}
@@ -99,7 +98,6 @@ func TestFileTypeBox(t *testing.T) {
 	if brandUnknown.String() != "nnnn" {
 		t.Errorf("Brand Unknown String Test Error: got %v, expected %v", brandUnknown.String(), "nnnn")
 	}
-
 }
 
 func TestParseHandler(t *testing.T) {

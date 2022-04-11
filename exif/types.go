@@ -1,6 +1,11 @@
 package exif
 
-import "github.com/evanoberholster/imagemeta/meta"
+import (
+	"time"
+
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/golang/geo/s2"
+)
 
 // Exif is an interface representation of Exif Information
 type Exif interface {
@@ -65,4 +70,26 @@ type Exif interface {
 
 	// ShutterSpeed convenience func. "IFD/Exif" ExposureTime
 	ShutterSpeed() (meta.ShutterSpeed, error)
+
+	// GPSCoords convenience func. "IFD/GPS" Latitude and Longitude
+	GPSCoords() (lat float64, lng float64, err error)
+
+	// GPSCellID convenience func. "IFD/GPS" Latitude and Longitude converted to S2 cellID
+	GPSCellID() (cellID s2.CellID, err error)
+
+	// DateTime returns a time.Time that corresponds with when it was created.
+	// Since EXIF data does not contain any timezone information, you should
+	// select a timezone using tz. If tz is nil UTC is assumed.
+	DateTime(tz *time.Location) (tm time.Time, err error)
+
+	// ModifyDate returns a time.Time that corresponds with when it was last modified.
+	// Since EXIF data does not contain any timezone information, you should
+	// select a timezone using tz. If tz is nil UTC is assumed.
+	ModifyDate(tz *time.Location) (time.Time, error)
+
+	// GPSDate convenience func. for "IFD/GPS" GPSDateStamp and GPSTimeStamp.
+	// Indicates the time as UTC (Coordinated Universal Time).
+	// Optionally sets subsecond based on "IFD/Exif" SubSecTimeOriginal.
+	// Sets time zone to time.UTC if non-provided.
+	GPSDate(tz *time.Location) (t time.Time, err error)
 }

@@ -2,24 +2,15 @@ package main
 
 import (
 	"fmt"
+	"image/jpeg"
 	"log"
 	"os"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta"
 )
 
 func main() {
-	//flag.Parse()
-	//if flag.NArg() != 1 {
-	//	fmt.Fprintf(os.Stderr, "usage: main <file>\n")
-	//	os.Exit(1)
-	//}
-	//f, err := os.Open(flag.Arg(0))
-	//f, err := os.Open("../../test/img/2.CR2")
 	f, err := os.Open("../testImages/Heic.exif")
 	if err != nil {
 		log.Fatal(err)
@@ -30,27 +21,20 @@ func main() {
 			panic(err)
 		}
 	}()
-	//exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
-	//var x xmp.XMP
-	var e *exif.Data
 
-	//xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-	//	x, err = xmp.ParseXmp(r)
-	//	return err
-	//}
-
-	exifFn := func(r meta.Reader, header meta.ExifHeader) error {
-		fmt.Println(header)
-		e, err = exif.ParseExif(r, header)
-		return err
+	m, err := imagemeta.Parse(f)
+	if err != nil {
+		panic(err)
 	}
-	if err = tiff.Scan(f, imagetype.ImageTiff, exifFn, nil); err != nil {
-		fmt.Println(err)
-	}
+	fmt.Println(m.Exif())
+	fmt.Println(m.Xmp())
+	fmt.Println(m.ImageType())
+	fmt.Println(m.Dimensions())
+	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
 
+	e, _ := m.Exif()
 	if e != nil {
-		fmt.Println(e.ImageWidth())
-		fmt.Println(e.ImageHeight())
+		fmt.Println(e.Dimensions().Size())
 
 		fmt.Println(e.Artist())
 		fmt.Println(e.Copyright())
@@ -71,7 +55,7 @@ func main() {
 		fmt.Println(e.Aperture())
 		fmt.Println(e.ShutterSpeed())
 
-		fmt.Println(e.ExposureValue())
+		fmt.Println(e.Aperture())
 		fmt.Println(e.ExposureBias())
 
 		fmt.Println(e.GPSCoords())
