@@ -52,6 +52,9 @@ func BenchmarkImageMeta(b *testing.B) {
 				panic(err)
 			}
 			buf, err := ioutil.ReadAll(f)
+			if err != nil {
+				b.Fatal(err)
+			}
 			r := bytes.NewReader(buf)
 			defer f.Close()
 			b.ReportAllocs()
@@ -98,7 +101,6 @@ func BenchmarkScanTiff100(b *testing.B) {
 
 					if err != ErrNoExif {
 						b.Error(err)
-						//	//b.Fatal(err)
 					}
 				}
 			}

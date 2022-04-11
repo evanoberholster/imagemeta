@@ -63,27 +63,27 @@ func parseDir(fn func(f *os.File) error) error {
 	return nil
 }
 
-func TestBMFF(t *testing.T) {
-
-	err := parseDir(func(f *os.File) error {
-		br := bufio.NewReader(f)
-		bmr := NewReader(br)
-		ftyp, err := bmr.ReadFtypBox()
-		if err != nil {
-			return err
-		}
-
-		m, err := bmr.ReadMetaBox()
-		if err != nil {
-			return err
-		}
-		fmt.Println(ftyp, m)
-		return nil
-
-	})
-	fmt.Println(err)
-	t.Error("Hello2")
-}
+//func TestBMFF(t *testing.T) {
+//
+//	err := parseDir(func(f *os.File) error {
+//		br := bufio.NewReader(f)
+//		bmr := NewReader(br)
+//		ftyp, err := bmr.ReadFtypBox()
+//		if err != nil {
+//			return err
+//		}
+//
+//		m, err := bmr.ReadMetaBox()
+//		if err != nil {
+//			return err
+//		}
+//		fmt.Println(ftyp, m)
+//		return nil
+//
+//	})
+//	fmt.Println(err)
+//	t.Error("Hello2")
+//}
 
 func BenchmarkReadBox100(b *testing.B) {
 	for _, bm := range benchmarks {
