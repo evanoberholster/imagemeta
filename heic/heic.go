@@ -114,7 +114,7 @@ func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err e
 	}
 
 	// Read BoxType
-	if !(bmff.IsBoxType("Exif", buf[4:8])) {
+	if !(string(buf[4:8]) == "Exif") {
 		err = fmt.Errorf("error wrong Box Type: %d", buf[4:8])
 		return
 	}
@@ -127,7 +127,7 @@ func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err e
 	firstIfdOffset := byteOrder.Uint32(buf[14:18])
 	tiffHeaderOffset := int64(offset) + 10
 	hm.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), hm.It)
-	hm.ExifHeader.FirstIfd = ifds.RootIFD
+	hm.ExifHeader.FirstIfd = ifds.IFD0
 
 	return hm.ExifHeader, err
 }
@@ -140,9 +140,9 @@ func (hm *Metadata) ReadXmp(r meta.Reader) (err error) {
 	if _, err = hm.ReadXmpHeader(r); err != nil {
 		return
 	}
-	if _, err = r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
-		return
-	}
+	//if _, err = r.Seek(int64(hm.XmpHeader.Offset), 0); err != nil {
+	//	return
+	//}
 	return hm.XmpFn(io.LimitReader(r, int64(hm.XmpHeader.Length)), hm.Metadata)
 }
 

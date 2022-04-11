@@ -118,6 +118,12 @@ func TestImageType(t *testing.T) {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, it)
 	}
 
+	err = it.EncodeMsg(msgp.NewWriterSize(&msgp.Writer{}, 0))
+	if err != nil {
+		t.Errorf("Incorrect Error for EncodeMsg wanted %s got %s", err, err)
+
+	}
+
 }
 
 func TestScanImageType(t *testing.T) {

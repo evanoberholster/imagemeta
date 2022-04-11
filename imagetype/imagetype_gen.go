@@ -22,12 +22,7 @@ func (z *ImageType) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z ImageType) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteUint8(uint8(z))
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	return
+	return en.WriteUint8(uint8(z))
 }
 
 // MarshalMsg implements msgp.Marshaler
@@ -54,6 +49,5 @@ func (z *ImageType) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z ImageType) Msgsize() (s int) {
-	s = msgp.Uint8Size
-	return
+	return msgp.Uint8Size
 }

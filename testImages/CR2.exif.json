@@ -534,7 +534,7 @@
         "Tags": [
           {
             "ID": "0x0001",
-            "Name": "0x0001",
+            "Name": "CanonCameraSettings",
             "Count": 47,
             "Type": "SHORT",
             "Val": [
@@ -589,21 +589,21 @@
           },
           {
             "ID": "0x0002",
-            "Name": "0x0002",
+            "Name": "CanonFocalLength",
             "Count": 4,
             "Type": "SHORT",
             "Val": [0, 50, 11353, 50055]
           },
           {
             "ID": "0x0003",
-            "Name": "0x0003",
+            "Name": "CanonFlashInfo",
             "Count": 4,
             "Type": "SHORT",
             "Val": [0, 0, 0, 0]
           },
           {
             "ID": "0x0004",
-            "Name": "0x0004",
+            "Name": "CanonShotInfo",
             "Count": 34,
             "Type": "SHORT",
             "Val": [
@@ -645,56 +645,56 @@
           },
           {
             "ID": "0x0006",
-            "Name": "0x0006",
+            "Name": "CanonImageType",
             "Count": 23,
             "Type": "ASCII",
             "Val": "Canon EOS-1Ds Mark III"
           },
           {
             "ID": "0x0007",
-            "Name": "0x0007",
+            "Name": "CanonFirmwareVersion",
             "Count": 24,
             "Type": "ASCII",
             "Val": "Firmware Version 2.1.2"
           },
           {
             "ID": "0x0009",
-            "Name": "0x0009",
+            "Name": "OwnerName",
             "Count": 32,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x000c",
-            "Name": "0x000c",
+            "Name": "SerialNumber",
             "Count": 1,
             "Type": "LONG",
             "Val": 600005
           },
           {
             "ID": "0x000d",
-            "Name": "0x000d",
+            "Name": "CanonCameraInfo",
             "Count": 1536,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0010",
-            "Name": "0x0010",
+            "Name": "CanonModelID",
             "Count": 1,
             "Type": "LONG",
             "Val": 2147484181
           },
           {
             "ID": "0x0013",
-            "Name": "0x0013",
+            "Name": "ThumbnailImageValidArea",
             "Count": 4,
             "Type": "SHORT",
             "Val": [0, 159, 7, 112]
           },
           {
             "ID": "0x0015",
-            "Name": "0x0015",
+            "Name": "SerialNumberFormat",
             "Count": 1,
             "Type": "LONG",
             "Val": 2684354560
@@ -708,7 +708,7 @@
           },
           {
             "ID": "0x0026",
-            "Name": "0x0026",
+            "Name": "CanonAFInfo2",
             "Count": 198,
             "Type": "SHORT",
             "Val": [
@@ -914,14 +914,14 @@
           },
           {
             "ID": "0x0083",
-            "Name": "0x0083",
+            "Name": "OriginalDecisionDataOffset",
             "Count": 1,
             "Type": "LONG",
             "Val": 0
           },
           {
             "ID": "0x0093",
-            "Name": "0x0093",
+            "Name": "CanonFileInfo",
             "Count": 24,
             "Type": "SHORT",
             "Val": [
@@ -953,21 +953,21 @@
           },
           {
             "ID": "0x0095",
-            "Name": "0x0095",
+            "Name": "LensModel",
             "Count": 70,
             "Type": "ASCII",
             "Val": "EF50mm f/1.2L USM"
           },
           {
             "ID": "0x0096",
-            "Name": "0x0096",
+            "Name": "CanonInternalSerialNumber",
             "Count": 16,
             "Type": "ASCII",
             "Val": "I01328"
           },
           {
             "ID": "0x0097",
-            "Name": "0x0097",
+            "Name": "CanonDustRemovalData",
             "Count": 1024,
             "Type": "UNDEFINED",
             "Val": null
@@ -981,7 +981,7 @@
           },
           {
             "ID": "0x0099",
-            "Name": "0x0099",
+            "Name": "CanonCustomFunctions",
             "Count": 210,
             "Type": "LONG",
             "Val": [
@@ -1199,42 +1199,42 @@
           },
           {
             "ID": "0x009a",
-            "Name": "0x009a",
+            "Name": "CanonAspectInfo",
             "Count": 5,
             "Type": "LONG",
             "Val": [0, 5616, 3744, 0, 0]
           },
           {
             "ID": "0x00a0",
-            "Name": "0x00a0",
+            "Name": "CanonProcessingInfo",
             "Count": 14,
             "Type": "SHORT",
             "Val": [28, 0, 0, 0, 0, 0, 0, 0, 65535, 5500, 132, 0, 0, 0]
           },
           {
             "ID": "0x00aa",
-            "Name": "0x00aa",
+            "Name": "CanonMeasuredColor",
             "Count": 6,
             "Type": "SHORT",
             "Val": [12, 1075, 1024, 1024, 325, 0]
           },
           {
             "ID": "0x00b4",
-            "Name": "0x00b4",
+            "Name": "CanonColorSpace",
             "Count": 1,
             "Type": "SHORT",
             "Val": 2
           },
           {
             "ID": "0x00d0",
-            "Name": "0x00d0",
+            "Name": "CanonVRDOffset",
             "Count": 1,
             "Type": "LONG",
             "Val": 0
           },
           {
             "ID": "0x00e0",
-            "Name": "0x00e0",
+            "Name": "CanonSensorInfo",
             "Count": 17,
             "Type": "SHORT",
             "Val": [
@@ -1259,7 +1259,7 @@
           },
           {
             "ID": "0x4001",
-            "Name": "0x4001",
+            "Name": "CanonColorData",
             "Count": 702,
             "Type": "SHORT",
             "Val": [
@@ -1969,7 +1969,7 @@
           },
           {
             "ID": "0x4002",
-            "Name": "0x4002",
+            "Name": "CanonCRWParam",
             "Count": 6040,
             "Type": "SHORT",
             "Val": [
@@ -8017,14 +8017,14 @@
           },
           {
             "ID": "0x4005",
-            "Name": "0x4005",
+            "Name": "CanonFlavor",
             "Count": 14144,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x4008",
-            "Name": "0x4008",
+            "Name": "CanonPictureStyleUserDef",
             "Count": 3,
             "Type": "SHORT",
             "Val": [129, 129, 129]
@@ -8038,7 +8038,7 @@
           },
           {
             "ID": "0x4010",
-            "Name": "0x4010",
+            "Name": "CanonCustomPictureStyleFileName",
             "Count": 32,
             "Type": "ASCII",
             "Val": ""
@@ -8059,7 +8059,7 @@
           },
           {
             "ID": "0x4013",
-            "Name": "0x4013",
+            "Name": "CanonAFMicroAdj",
             "Count": 5,
             "Type": "LONG",
             "Val": [20, 0, 0, 10, 0]

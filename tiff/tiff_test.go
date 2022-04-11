@@ -20,8 +20,8 @@ func TestTiff(t *testing.T) {
 		tiffHeaderOffset uint32
 		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageARW},
-		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageNEF},
+		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
 		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
 		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
 	}
@@ -35,7 +35,7 @@ func TestTiff(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			h, err := Scan(br, header.imageType)
+			h, err := ScanTiffHeader(br, header.imageType)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -59,7 +59,7 @@ func TestTiff(t *testing.T) {
 
 	// Error No Tiff Header
 	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	_, err := ScanTiff(bytes.NewReader(buf))
+	_, err := ScanTiffHeader(bytes.NewReader(buf), imagetype.ImageTiff)
 	if err != meta.ErrNoExif {
 		t.Errorf("Incorrect err wanted %s got %s ", meta.ErrNoExif, err)
 	}

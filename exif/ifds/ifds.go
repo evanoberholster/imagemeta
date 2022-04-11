@@ -2,29 +2,32 @@
 package ifds
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/exif/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif/ifds/gpsifd"
+	"github.com/evanoberholster/imagemeta/exif/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
-// IFD is an Information Directory
-type IFD uint8
+// IfdType is the Type of Information Directory
+type IfdType uint8
 
 // Key is a TagMap Key
 type Key uint32
 
 // NewKey returns a new TagMap Key
-func NewKey(ifd IFD, ifdIndex uint8, tagID tag.ID) Key {
+func NewKey(ifdType IfdType, ifdIndex uint8, tagID tag.ID) Key {
 	var key uint32
-	key |= (uint32(ifd) << 24)
+	key |= (uint32(ifdType) << 24)
 	key |= (uint32(ifdIndex) << 16)
 	key |= (uint32(tagID))
 	return Key(key)
 }
 
 // Val returns the TagMap's Key as an ifd, ifdIndex and a tagID
-func (k Key) Val() (ifd IFD, ifdIndex uint8, tagID tag.ID) {
-	return IFD(k >> 24), uint8(k << 8 >> 24), tag.ID(k << 16 >> 16)
+func (k Key) Val() (ifdType IfdType, ifdIndex uint8, tagID tag.ID) {
+	return IfdType(k >> 24), uint8(k << 8 >> 24), tag.ID(k << 16 >> 16)
 }
 
 // TagMap is a map of Tags
@@ -32,78 +35,116 @@ type TagMap map[Key]tag.Tag
 
 // List of IFDs
 const (
-	NullIFD IFD = iota
-	RootIFD
+	NullIFD IfdType = iota
+	IFD0
 	SubIFD
 	ExifIFD
 	GPSIFD
 	IopIFD
 	MknoteIFD
-	DNGAdobeDataIFD // TODO: Need to implement this
+	DNGAdobeDataIFD
+	MkNoteCanonIFD
+	MkNoteNikonIFD
+
+	// IFD Stringer String
+	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/Makernote"
 )
 
-func (ifd IFD) String() string {
-	switch ifd {
-	case RootIFD:
-		return "Ifd"
-	case SubIFD:
-		return "Ifd/SubIfd"
-	case ExifIFD:
-		return "Ifd/Exif"
-	case GPSIFD:
-		return "Ifd/GPS"
-	case IopIFD:
-		return "Ifd/Iop"
-	case MknoteIFD:
-		return "Ifd/Exif/Makernote"
-	case DNGAdobeDataIFD:
-		return "Ifd/DNGAdobeData"
-	}
-	return "UnknownIfd"
+var (
+	// IFD Stringer Index
+	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115}
+)
+
+// IsValid returns true if IFD is valid
+func (ifdType IfdType) IsValid() bool {
+	return ifdType != NullIFD && int(ifdType) < len(_IFDStringerIndex)-1
 }
 
-// IsChildIfd returns the IFD if it is a Child of the current ifd
-// if it is not, it returns NullIFD
-func (ifd IFD) IsChildIfd(t tag.Tag) IFD {
-
-	// RootIfd Children
-	if ifd == RootIFD {
-		switch t.ID {
-		case ExifTag:
-			return ExifIFD
-		case GPSTag:
-			return GPSIFD
-		case SubIFDs:
-			return SubIFD
-		}
+func (ifdType IfdType) String() string {
+	if int(ifdType) < len(_IFDStringerIndex)-1 {
+		return _IFDStringerString[_IFDStringerIndex[ifdType]:_IFDStringerIndex[ifdType+1]]
 	}
-
-	// ExifIfd Children
-	if ifd == ExifIFD {
-		switch t.ID {
-		case exififd.MakerNote:
-			return MknoteIFD
-		}
-	}
-
-	return NullIFD
+	return NullIFD.String()
 }
 
 // TagName returns the tagName for the given IFD and tag.ID
 // if tag name is not known returns uint32 representation
-func (ifd IFD) TagName(id tag.ID) (name string) {
-	var ok bool
-	switch ifd {
-	case RootIFD, SubIFD:
-		name, ok = RootIfdTagIDMap[id]
+func (ifdType IfdType) TagName(id tag.ID) string {
+
+	switch ifdType {
+	case IFD0, SubIFD:
+		if name, ok := RootIfdTagIDMap[id]; ok {
+			return name
+		}
 	case ExifIFD:
-		name, ok = exififd.TagIDMap[id]
+		return exififd.TagString(id)
 	case GPSIFD:
-		name, ok = gpsifd.TagIDMap[id]
+		return gpsifd.TagString(id)
 	case MknoteIFD:
+		//case MkNoteCanonIFD:
+		return mknote.TagCanonString(id)
 	}
-	if !ok {
-		name = id.String()
+
+	return id.String()
+}
+
+// Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
+type Ifd struct {
+	Offset uint32
+	Type   IfdType
+	Index  uint8
+}
+
+// NewIFD returns a new IFD from IfdType, index, and offset.
+func NewIFD(ifdType IfdType, index uint8, offset uint32) Ifd {
+	return Ifd{
+		Type:   ifdType,
+		Offset: offset,
+		Index:  index,
 	}
-	return
+}
+
+// TagName returns the Tagname for the given tag.ID
+func (ifd Ifd) TagName(id tag.ID) (name string) {
+	return ifd.Type.TagName(id)
+}
+
+// IsType returns true if ifdType equals IfdType
+func (ifd Ifd) IsType(t IfdType) bool {
+	return ifd.Type == t
+}
+
+// IsValid returns IfdType.IsValid
+func (ifd Ifd) IsValid() bool {
+	return ifd.Type.IsValid()
+}
+
+func (ifd Ifd) String() string {
+	return fmt.Sprintf("IFD [%s] (%d) at offset (0x%04x)", ifd.Type, ifd.Index, ifd.Offset)
+}
+
+// ChildIfd returns the Ifd if it is a Child of the current Tag
+// if it is not, it returns NullIFD
+func (ifd Ifd) ChildIfd(t tag.Tag) Ifd {
+	// RootIfd Children
+	if ifd.IsType(IFD0) {
+		switch t.ID {
+		case ExifTag:
+			return NewIFD(ExifIFD, 0, t.ValueOffset)
+		case GPSTag:
+			return NewIFD(GPSIFD, 0, t.ValueOffset)
+		case SubIFDs:
+			return NewIFD(SubIFD, 0, t.ValueOffset)
+		}
+	}
+
+	// ExifIfd Children
+	if ifd.IsType(ExifIFD) {
+		switch t.ID {
+		case exififd.MakerNote:
+			return NewIFD(MknoteIFD, 0, t.ValueOffset)
+		}
+	}
+
+	return NewIFD(NullIFD, 0, t.ValueOffset)
 }

@@ -3,15 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
+	"image/jpeg"
 	"log"
 	"os"
 
+	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/bmff"
 	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 func main() {
@@ -30,63 +29,99 @@ func main() {
 			panic(err)
 		}
 	}()
+	//exif.InfoLogger = log.New(os.Stdout, "", log.Ltime)
 	stdLogger := bmff.STDLogger{}
 	bmff.DebugLogger(stdLogger)
-	parseHeic(f)
+	parse(f)
+	//parseCR2(f)
+	//parseHeic(f)
 	//parseCR3(f)
 }
 
-func parseHeic(f meta.Reader) {
-	var err error
-	m := &meta.Metadata{}
-
-	var e *exif.Data
-	var x xmp.XMP
-
-	m.ExifFn = func(r io.Reader, m *meta.Metadata) error {
-		e, err = exif.ParseExif(f, m.ExifHeader)
-		return nil
-	}
-	m.XmpFn = func(r io.Reader, m *meta.Metadata) error {
-		x, err = xmp.ParseXmp(r)
-		return nil
-	}
-	hm, err := heic.NewMetadata(f, m)
+//
+func parse(f meta.Reader) {
+	m, err := imagemeta.Parse(f)
 	if err != nil {
+		panic(err)
+	}
+	fmt.Println(m.Exif())
+	fmt.Println(m.Xmp())
+	fmt.Println(m.ImageType())
+	fmt.Println(m.Dimensions())
+	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
 
-		fmt.Println(err)
-		// Error retrieving Heic Metadata
-	}
-	_, err = hm.ReadExifHeader(f)
-	if err != nil {
-		fmt.Println(err)
-	}
-	if err != meta.ErrNoExif {
-		if err = m.ExifFn(f, m); err != nil {
-			panic(err)
-		}
-		printJSON(e)
-		printExif(e)
-	}
+	e, _ := m.Exif()
+	fmt.Println(e.Aperture())
+	fmt.Println(e.LensModel())
 
-	if _, err = hm.ReadXmpHeader(f); err == nil {
-		_, err = f.Seek(int64(hm.XmpHeader.Offset), 0)
-		if err = m.XmpFn(f, m); err != nil {
-			panic(err)
-		}
-		fmt.Println(x)
-	}
-
-	fmt.Println(m.XmpHeader)
-	fmt.Println(m.ExifHeader)
-	fmt.Println(m.It, m.Dim)
+	fmt.Println(e.(*exif.Data).CanonCameraSettings())
 }
 
 //
-//func parseCR3(f meta.Reader) {
-//	m, err := cr3.NewMetadata(f, meta.Metadata{})
-//	fmt.Println(m, err)
-//	var XMP xmp.XMP
+//func parseCR2(f meta.Reader) {
+//
+//	exifFn := func(r io.Reader, header meta.ExifHeader) error {
+//
+//		fmt.Println(header)
+//		fmt.Println(header.TiffHeaderOffset, header.FirstIfdOffset, header.FirstIfdOffset-header.TiffHeaderOffset)
+//		return nil
+//	}
+//
+//	err := tiff.Scan(f, imagetype.ImageCR2, exifFn, nil)
+//	fmt.Println(err)
+//}
+//
+//func parseHeic(f meta.Reader) {
+//	var err error
+//	m := &meta.Metadata{}
+//
+//	var e *exif.Data
+//	var x xmp.XMP
+//
+//	m.ExifFn = func(r io.Reader, m *meta.Metadata) error {
+//		e, err = exif.ParseExif(f, m.ExifHeader)
+//		return nil
+//	}
+//	m.XmpFn = func(r io.Reader, m *meta.Metadata) error {
+//		x, err = xmp.ParseXmp(r)
+//		return nil
+//	}
+//	hm, err := heic.NewMetadata(f, m)
+//	if err != nil {
+//
+//		fmt.Println(err)
+//		// Error retrieving Heic Metadata
+//	}
+//	_, err = hm.ReadExifHeader(f)
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	if err != meta.ErrNoExif {
+//		if err = m.ExifFn(f, m); err != nil {
+//			panic(err)
+//		}
+//		printJSON(e)
+//		printExif(e)
+//	}
+//
+//	if _, err = hm.ReadXmpHeader(f); err == nil {
+//		//_, err = f.Seek(int64(hm.XmpHeader.Offset), 0)
+//		if err = m.XmpFn(f, m); err != nil {
+//			panic(err)
+//		}
+//		fmt.Println(x)
+//	}
+//
+//	fmt.Println(m.XmpHeader)
+//	fmt.Println(m.ExifHeader)
+//	fmt.Println(m.It, m.Dim)
+//}
+//
+////
+////func parseCR3(f meta.Reader) {
+////	m, err := cr3.NewMetadata(f, meta.Metadata{})
+////	fmt.Println(m, err)
+////	var XMP xmp.XMP
 //	m.XmpDecodeFn = func(r io.Reader, header meta.XmpHeader) error {
 //		start := time.Now()
 //		XMP, err = xmp.ParseXmp(r)
@@ -112,28 +147,28 @@ func parseHeic(f meta.Reader) {
 //	printExif(e)
 //}
 
-func printJSON(e *exif.Data) {
-	buf, err := e.MarshalJSON()
-	fmt.Println(string(buf), err)
-}
-
-func printExif(e *exif.Data) {
-	if e != nil {
-		fmt.Println(e.Artist())
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.ExposureValue())
-		fmt.Println(e.ExposureBias())
-
-		fmt.Println(e.GPSDate(nil))
-		fmt.Println(e.GPSCoords())
-
-		fmt.Println(e.DateTime(nil))
-	}
-}
+//func printJSON(e *exif.Data) {
+//	buf, err := e.DebugJSON()
+//	fmt.Println(string(buf), err)
+//}
+//
+//func printExif(e *exif.Data) {
+//	if e != nil {
+//		fmt.Println(e.Artist())
+//		fmt.Println(e.CameraMake())
+//		fmt.Println(e.CameraModel())
+//		fmt.Println(e.ISOSpeed())
+//		fmt.Println(e.FocalLength())
+//		fmt.Println(e.LensModel())
+//		fmt.Println(e.Aperture())
+//		fmt.Println(e.ShutterSpeed())
+//
+//		fmt.Println(e.ExposureValue())
+//		fmt.Println(e.ExposureBias())
+//
+//		fmt.Println(e.GPSDate(nil))
+//		fmt.Println(e.GPSCoords())
+//
+//		fmt.Println(e.DateTime(nil))
+//	}
+//}

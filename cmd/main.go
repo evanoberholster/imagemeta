@@ -1,26 +1,17 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"io"
+	"image/jpeg"
 	"log"
 	"os"
 	"time"
 
 	"github.com/evanoberholster/imagemeta"
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 func main() {
-	flag.Parse()
-	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
-		os.Exit(1)
-	}
-	f, err := os.Open(flag.Arg(0))
+	f, err := os.Open("../testImages/Heic.exif")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,24 +22,20 @@ func main() {
 		}
 	}()
 
-	var x xmp.XMP
-	var e *exif.Data
-	exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-		e, err = e.ParseExifWithMetadata(f, m)
-		return nil
-	}
-	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-		x, err = xmp.ParseXmp(r)
-		return err
-	}
-
-	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
+	m, err := imagemeta.Parse(f)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
-	fmt.Println(m.Metadata)
-	fmt.Println(x)
+	fmt.Println(m.Exif())
+	fmt.Println(m.Xmp())
+	fmt.Println(m.ImageType())
+	fmt.Println(m.Dimensions())
+	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+
+	e, _ := m.Exif()
 	if e != nil {
+		fmt.Println(e.Dimensions().Size())
+
 		fmt.Println(e.Artist())
 		fmt.Println(e.Copyright())
 
@@ -68,7 +55,7 @@ func main() {
 		fmt.Println(e.Aperture())
 		fmt.Println(e.ShutterSpeed())
 
-		fmt.Println(e.ExposureValue())
+		fmt.Println(e.Aperture())
 		fmt.Println(e.ExposureBias())
 
 		fmt.Println(e.GPSCoords())
@@ -80,4 +67,7 @@ func main() {
 
 		fmt.Println(e.GPSDate(nil))
 	}
+
+	//b, err := e.DebugJSON()
+	//fmt.Println(string(b), err)
 }

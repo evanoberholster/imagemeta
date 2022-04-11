@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"errors"
 	"math"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/golang/geo/s2"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -30,24 +30,6 @@ func (e *Data) CameraModel() (model string) {
 	return e.model
 }
 
-// Artist convenience func. "IFD" Artist
-func (e *Data) Artist() (artist string, err error) {
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Artist)
-	if err != nil {
-		return
-	}
-	return e.ParseASCIIValue(t)
-}
-
-// Copyright convenience func. "IFD" Copyright
-func (e *Data) Copyright() (copyright string, err error) {
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Copyright)
-	if err != nil {
-		return
-	}
-	return e.ParseASCIIValue(t)
-}
-
 // CameraSerial convenience func. "IFD/Exif" BodySerialNumber
 func (e *Data) CameraSerial() (serial string, err error) {
 	var t tag.Tag
@@ -57,11 +39,29 @@ func (e *Data) CameraSerial() (serial string, err error) {
 	}
 
 	// CameraSerialNumber
-	if t, err = e.GetTag(ifds.RootIFD, 0, ifds.CameraSerialNumber); err == nil {
+	if t, err = e.GetTag(ifds.IFD0, 0, ifds.CameraSerialNumber); err == nil {
 		return e.ParseASCIIValue(t)
 	}
 
 	return
+}
+
+// Artist convenience func. "IFD" Artist
+func (e *Data) Artist() (artist string, err error) {
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Artist)
+	if err != nil {
+		return
+	}
+	return e.ParseASCIIValue(t)
+}
+
+// Copyright convenience func. "IFD" Copyright
+func (e *Data) Copyright() (copyright string, err error) {
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Copyright)
+	if err != nil {
+		return
+	}
+	return e.ParseASCIIValue(t)
 }
 
 // DateTime returns a time.Time that corresponds with when it was created.
@@ -93,7 +93,7 @@ func (e *Data) DateTime(tz *time.Location) (tm time.Time, err error) {
 func (e *Data) ModifyDate(tz *time.Location) (time.Time, error) {
 	// "IFD" DateTime
 	// "IFD/Exif" SubSecTime
-	t1, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
+	t1, err := e.GetTag(ifds.IFD0, 0, ifds.DateTime)
 	if err == nil {
 		return e.ParseTimeStamp(t1, tag.Tag{}, tz)
 	}
@@ -128,6 +128,16 @@ func (e *Data) LensSerial() (serial string, err error) {
 	return e.ParseASCIIValue(t)
 }
 
+// ImageHeight retturns the main image height
+func (e *Data) ImageHeight() uint16 {
+	return e.height
+}
+
+// ImageWidth returns the main image width
+func (e *Data) ImageWidth() uint16 {
+	return e.width
+}
+
 // Dimensions convenience func. "IFD" Dimensions
 func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 	if e.width > 0 && e.height > 0 {
@@ -144,11 +154,11 @@ func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 		}
 	}
 
-	t, err = e.GetTag(ifds.RootIFD, 0, ifds.ImageWidth)
+	t, err = e.GetTag(ifds.IFD0, 0, ifds.ImageWidth)
 	if err == nil {
 		e.width, err = e.ParseUint16Value(t)
 		if err == nil {
-			if t, _ = e.GetTag(ifds.RootIFD, 0, ifds.ImageLength); err == nil {
+			if t, _ = e.GetTag(ifds.IFD0, 0, ifds.ImageLength); err == nil {
 				e.height, _ = e.ParseUint16Value(t)
 				return meta.NewDimensions(uint32(e.width), uint32(e.height))
 			}
@@ -320,18 +330,18 @@ func (e *Data) Flash() (meta.Flash, error) {
 
 // Orientation convenience func. If the tag is missing, OrientationHorizontal (normal)
 // and ErrEmptyTag will be returned.
-func (e *Data) Orientation() (meta.Orientation, error) {
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Orientation)
+func (e *Data) Orientation() meta.Orientation {
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Orientation)
 	if err != nil {
-		return meta.OrientationHorizontal, err
+		return meta.OrientationHorizontal
 	}
 
 	u, err := e.ParseUint16Value(t)
 	if err != nil {
-		return 0, err
+		return 0
 	}
 
-	return meta.Orientation(u), nil
+	return meta.Orientation(u)
 }
 
 // GPSCoords is a convenience func. that retrieves "IFD/GPS" GPSLatitude and GPSLongitude
@@ -370,7 +380,7 @@ func (e *Data) GPSCoords() (lat float64, lng float64, err error) {
 	if err != nil {
 		return
 	}
-	return
+	return lat, lng, err
 }
 
 // GPSDate convenience func. for "IFD/GPS" GPSDateStamp and GPSTimeStamp.
@@ -408,9 +418,9 @@ func (e *Data) GPSAltitude() (alt float32, err error) {
 	alt = float32(n) / float32(d)
 
 	t, err = e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSAltitudeRef)
-	if t.Type() == tag.TypeByte && t.IsEmbedded() {
-		e.er.byteOrder.PutUint32(e.er.rawBuffer[:4], t.ValueOffset)
-		if e.er.rawBuffer[0] == 1 {
+	if t.IsType(tag.TypeByte) && t.IsEmbedded() {
+		e.reader.byteOrder.PutUint32(e.reader.rawBuffer[:4], t.ValueOffset)
+		if e.reader.rawBuffer[0] == 1 {
 			alt *= -1
 		}
 	}
@@ -432,10 +442,9 @@ func (e *Data) GPSCellID() (cellID s2.CellID, err error) {
 	latLng := s2.LatLngFromDegrees(lat, lng)
 	cellID = s2.CellIDFromLatLng(latLng)
 
-	if !cellID.IsValid() {
-		err = ErrGpsCoordsNotValid
-		return
+	if cellID.IsValid() {
+		return cellID, nil
 	}
 
-	return cellID, nil
+	return cellID, ErrGpsCoordsNotValid
 }

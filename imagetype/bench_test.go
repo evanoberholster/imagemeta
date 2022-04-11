@@ -14,7 +14,7 @@ var (
 		{".CR2/GPS", "2.CR2"},
 		{".CR2/7D", "7D2.CR2"},
 		{".CR3", "1.CR3"},
-		{".CR3/R6", "canonR6.cr3"},
+		//{".CR3/R6", "canonR6.cr3"},
 		{".JPG/GPS", "17.jpg"},
 		{".HEIC", "1.heic"},
 		{".HEIC/iPhone11", "iPhone11Pro.heic"},

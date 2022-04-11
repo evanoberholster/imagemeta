@@ -4,6 +4,7 @@ package meta
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
@@ -24,8 +25,9 @@ var (
 
 // Reader that is compatible with imagemeta
 type Reader interface {
+	io.Reader
 	io.ReaderAt
-	io.ReadSeeker
+	io.Seeker
 }
 
 // DecodeFn is a function for decoding Metadata.
@@ -70,10 +72,10 @@ func (m Metadata) ImageType() imagetype.ImageType {
 // a Tiff Directory.
 type ExifHeader struct {
 	ByteOrder        binary.ByteOrder
-	FirstIfd         ifds.IFD
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
+	FirstIfd         ifds.IfdType
 	ImageType        imagetype.ImageType
 }
 
@@ -83,11 +85,15 @@ func (h ExifHeader) IsValid() bool {
 	return h.ByteOrder != nil && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
 }
 
+func (h ExifHeader) String() string {
+	return fmt.Sprintf("ByteOrder: %s, Ifd: %s, Offset: 0x%.4x TiffOffset: 0x%.4x Length: %d Imagetype: %s", h.ByteOrder, h.FirstIfd, h.FirstIfdOffset, h.TiffHeaderOffset, h.ExifLength, h.ImageType)
+}
+
 // NewExifHeader returns a new ExifHeader.
 func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
-		FirstIfd:         ifds.RootIFD,
+		FirstIfd:         ifds.IFD0,
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,

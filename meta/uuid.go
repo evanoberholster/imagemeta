@@ -56,6 +56,12 @@ func UUIDFromBytes(buf []byte) (UUID, error) {
 	return UUID(u), err
 }
 
+func UUIDFromString(str string) UUID {
+	var u UUID
+	_ = u.UnmarshalText([]byte(str))
+	return u
+}
+
 // Bytes returns bytes slice representation of UUID.
 func (u UUID) Bytes() []byte {
 	return u[:]
