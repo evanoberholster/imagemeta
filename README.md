@@ -48,24 +48,54 @@ func main() {
 		}
 	}()
 
-	var x xmp.XMP
-	var e *exif.Data
-	exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-		e, err = e.ParseExifWithMetadata(f, m)
-		return nil
-	}
-	xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-		x, err = xmp.ParseXmp(r)
-		return err
-	}
-
-	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
+	m, err := imagemeta.Parse(f)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
-	fmt.Println(m.Metadata)
-	fmt.Println(x)
+	fmt.Println(m.Exif())
+	fmt.Println(m.Xmp())
+	fmt.Println(m.ImageType())
+	fmt.Println(m.Dimensions())
+	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+
+	e, _ := m.Exif()
 	if e != nil {
+		// ImageWidth and ImageHeight
+		fmt.Println(e.Dimensions().Size())
+
+		fmt.Println(e.Artist())
+		fmt.Println(e.Copyright())
+
+		fmt.Println(e.CameraMake())
+		fmt.Println(e.CameraModel())
+		fmt.Println(e.CameraSerial())
+
+		fmt.Println(e.Orientation())
+
+		fmt.Println(e.LensMake())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.LensSerial())
+
+		fmt.Println(e.ISOSpeed())
+		fmt.Println(e.FocalLength())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.Aperture())
+		fmt.Println(e.ShutterSpeed())
+
+		fmt.Println(e.Dimensions().Size())
+
+		fmt.Println(e.Artist())
+		fmt.Println(e.Copyright())
+
+		fmt.Println(e.ISOSpeed())
+		fmt.Println(e.FocalLength())
+		fmt.Println(e.LensModel())
+		fmt.Println(e.Aperture())
+		fmt.Println(e.ShutterSpeed())
+
+		fmt.Println(e.Aperture())
+		fmt.Println(e.ExposureBias())
+
 		fmt.Println(e.Artist())
 		fmt.Println(e.Copyright())
 
@@ -77,41 +107,38 @@ func main() {
 		fmt.Println(e.LensModel())
 		fmt.Println(e.LensSerial())
 
-    // Example Tags
-	  fmt.Println(e.Dimensions())
+		// Example Tags
+		fmt.Println(e.Dimensions())
 
-	  // Makernote Tags
-	  fmt.Println(e.CanonCameraSettings())
-	  fmt.Println(e.CanonFileInfo())
-	  fmt.Println(e.CanonShotInfo())
-	  fmt.Println(e.CanonAFInfo())
-	
-	  // Time Tags
-	  fmt.Println(e.ModifyDate())
-	  fmt.Println(e.DateTime())
-	  fmt.Println(e.GPSDate(time.UTC))
-    fmt.Println(e.GPSDate(nil))
-	
-	  // GPS Tags
-	  fmt.Println(e.GPSCoords())
-	  fmt.Println(e.GPSAltitude())
-	
-	  // Other Tags
-	  fmt.Println(e.ExposureProgram())
-	  fmt.Println(e.MeteringMode())
-	  fmt.Println(e.ShutterSpeed())
-	  fmt.Println(e.Aperture())
-	  fmt.Println(e.FocalLength())
-	  fmt.Println(e.FocalLengthIn35mmFilm())
-	  fmt.Println(e.ISOSpeed())
-	  fmt.Println(e.Flash())
+		// Makernote Tags
+		fmt.Println(e.CanonCameraSettings())
+		fmt.Println(e.CanonFileInfo())
+		fmt.Println(e.CanonShotInfo())
+		fmt.Println(e.CanonAFInfo())
 
-		fmt.Println(e.ExposureValue())
-		fmt.Println(e.ExposureBias())
+		// Time Tags
+		fmt.Println(e.DateTime(time.Local))
+		fmt.Println(e.ModifyDate(time.Local))
+		fmt.Println(e.GPSDate(time.UTC))
 
+		// GPS Tags
+		fmt.Println(e.GPSCoords())
+		fmt.Println(e.GPSAltitude())
 		fmt.Println(e.GPSCoords())
 		c, _ := e.GPSCellID()
-		fmt.Println(c.ToToken())		
+		fmt.Println(c.ToToken())
+
+		// Other Tags
+		fmt.Println(e.ExposureProgram())
+		fmt.Println(e.MeteringMode())
+		fmt.Println(e.ShutterSpeed())
+		fmt.Println(e.Aperture())
+		fmt.Println(e.FocalLength())
+		fmt.Println(e.FocalLengthIn35mmFilm())
+		fmt.Println(e.ISOSpeed())
+		fmt.Println(e.Flash())
+		fmt.Println(e.ExposureValue())
+		fmt.Println(e.ExposureBias())
 	}
 }
 ```
@@ -126,22 +153,29 @@ This was benchmarked without the retrival of values.
 To run your own benchmarks see bench_test.go
 
 ```go
-BenchmarkImagemeta100/.CR2/60D         	   15552	     69759 ns/op	   11281 B/op	      30 allocs/op
-BenchmarkImagemeta100/.CR2/GPS         	   14929	     83673 ns/op	   11332 B/op	      32 allocs/op
-BenchmarkImagemeta100/.CR2/7D          	   14068	     83297 ns/op	   11333 B/op	      32 allocs/op
-BenchmarkImagemeta100/.JPG/GPS         	   19404	     59828 ns/op	    5629 B/op	      24 allocs/op
-BenchmarkImagemeta100/.JPF/GoPro6      	   25165	     47939 ns/op	    5607 B/op	      24 allocs/op
-BenchmarkImagemeta100/.HEIC            	   31309	     35531 ns/op	   12608 B/op	      76 allocs/op
-BenchmarkImagemeta100/.HEIC/CanonR5    	   14814	     81757 ns/op	   17655 B/op	      67 allocs/op
-BenchmarkImagemeta100/.HEIC/CanonR6    	   13557	     86212 ns/op	   17367 B/op	      65 allocs/op
-BenchmarkImagemeta100/.HEIC/iPhone11   	   15961	     68563 ns/op	   17101 B/op	      93 allocs/op
-BenchmarkImagemeta100/.HEIC/iPhone12   	   18288	     64648 ns/op	   14561 B/op	      94 allocs/op
-BenchmarkImagemeta100/.NEF/Nikon       	   13954	     84132 ns/op	   11443 B/op	      34 allocs/op
-BenchmarkImagemeta100/.NEF/Nikon#01    	   14503	     96479 ns/op	   11442 B/op	      34 allocs/op
-BenchmarkImagemeta100/.RW2/Panasonic   	   22882	     51855 ns/op	    5558 B/op	      22 allocs/op
-BenchmarkImagemeta100/.ARW/Sony        	   16862	     71868 ns/op	    5856 B/op	      31 allocs/op
-BenchmarkImagemeta100/.DNG/Adobe       	    8196	    131020 ns/op	   22138 B/op	      43 allocs/op
-BenchmarkImagemeta100/.JPG/NoExif      	 1609324	       756 ns/op	     352 B/op	       3 allocs/op
+BenchmarkImageMeta/.CR2/6D-12         			   80455	     20820 ns/op	   10218 B/op	      22 allocs/op
+BenchmarkImageMeta/.CR2/7DMkII-12     	 		   75770	     17921 ns/op	   10219 B/op	      21 allocs/op
+BenchmarkImageMeta/.CR2/CanonM6MkII-12         	   63640	     18128 ns/op	    9261 B/op	      21 allocs/op
+BenchmarkImageMeta/.CR3/CanonR-12              	   72705	     16597 ns/op	    9236 B/op	      21 allocs/op
+BenchmarkImageMeta/.CR3/CanonRP-12             	   59492	     17623 ns/op	    9216 B/op	      20 allocs/op
+BenchmarkImageMeta/.CR3/CanonR3-12             	   57465	     20322 ns/op	   14632 B/op	      22 allocs/op
+BenchmarkImageMeta/.CR3/CanonR5-12             	   55514	     19874 ns/op	   14632 B/op	      22 allocs/op
+BenchmarkImageMeta/.CR3/CanonR6-12             	   76044	     16234 ns/op	    9234 B/op	      21 allocs/op
+BenchmarkImageMeta/.HEIC/CanonR5-12            	   32150	     43434 ns/op	   10198 B/op	      21 allocs/op
+BenchmarkImageMeta/.HEIC/CanonR6-12            	   34396	     37288 ns/op	   10196 B/op	      21 allocs/op
+BenchmarkImageMeta/.JPG/GPS-12                 	  117636	      9807 ns/op	     280 B/op	       4 allocs/op
+BenchmarkImageMeta/.JPG/GoPro6-12              	  154758	      6528 ns/op	     280 B/op	       4 allocs/op
+BenchmarkImageMeta/.HEIC-12                    	    8442	    194884 ns/op	    4540 B/op	      15 allocs/op
+BenchmarkImageMeta/.HEIC/iPhone11-12           	    6170	    185167 ns/op	    4569 B/op	      15 allocs/op
+BenchmarkImageMeta/.HEIC/iPhone12-12           	   26725	     48433 ns/op	    1716 B/op	      11 allocs/op
+BenchmarkImageMeta/.HEIC/iPhone13-12           	    6726	    152748 ns/op	    4561 B/op	      15 allocs/op
+BenchmarkImageMeta/.NEF/Nikon-12               	   54534	     22582 ns/op	   10242 B/op	      23 allocs/op
+BenchmarkImageMeta/.NEF/Nikon#01-12            	   53985	     23082 ns/op	   10244 B/op	      23 allocs/op
+BenchmarkImageMeta/.RW2/Panasonic-12           	   52309	     20677 ns/op	    4555 B/op	      15 allocs/op
+BenchmarkImageMeta/.ARW/Sony-12                	   99100	     11576 ns/op	    4769 B/op	      22 allocs/op
+BenchmarkImageMeta/.WEBP/Webp-12               	 4978038	     285.9 ns/op	      24 B/op	       1 allocs/op
+BenchmarkImageMeta/.DNG/Adobe-12               	   34141	     35345 ns/op	   20866 B/op	      30 allocs/op
+BenchmarkImageMeta/.JPG/NoExif-12              	 1290793	     942.1 ns/op	     280 B/op	       4 allocs/op
 
 ```
 

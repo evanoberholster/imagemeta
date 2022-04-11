@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/canon"
 	"github.com/golang/geo/s2"
 )
 
@@ -92,4 +93,27 @@ type Exif interface {
 	// Optionally sets subsecond based on "IFD/Exif" SubSecTimeOriginal.
 	// Sets time zone to time.UTC if non-provided.
 	GPSDate(tz *time.Location) (t time.Time, err error)
+
+	// GPSAltitude convenience func. for "IFD/GPS" GPSAltitude and GPSAltitudeRef.
+	// Altitude is expressed as one RATIONAL value. The reference unit is meters.
+	GPSAltitude() (alt float32, err error)
+
+	// ExposureValue convenience func. "IFD/Exif" ShutterSpeedValue
+	ExposureValue() (ev float32, err error)
+
+	// CanonCameraSettings convenience func. "IFD/Exif/Makernotes.Canon" CanonCameraSettings
+	// Canon Camera Settings from the Makernote
+	CanonCameraSettings() (canon.CameraSettings, error)
+
+	// CanonFileInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonFileInfo
+	// Canon Camera File Info from the Makernote
+	CanonFileInfo() (canon.FileInfo, error)
+
+	// CanonShotInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonShotInfo
+	// Canon Camera Shot Info from the Makernote
+	CanonShotInfo() (canon.ShotInfo, error)
+
+	// CanonAFInfo convenience func. "IFD/Exif/Makernotes.Canon" CanonAFInfo
+	// Canon Camera AutoFocus Information from the Makernote
+	CanonAFInfo() (afInfo canon.AFInfo, err error)
 }
