@@ -16,13 +16,13 @@ var testFtyp = []struct {
 	err      error
 	assert   bool
 }{
-	{"Sample 1", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/1.sample", 30, nil, true},
-	{"Sample 2", FileTypeBox{MajorBrand: brandMif1, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/2.sample", 30, nil, true},
-	{"Sample 3", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandHeic, brandMif1}}, "", "samples/3.sample", 20, nil, true},
-	{"iPhone 11", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone11.sample", 20, nil, true},
-	{"iPhone 12", FileTypeBox{MajorBrand: brandHeic, MinorVersion: "", Compatible: [brandCount]Brand{brandMif1, brandMiHE, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone12.sample", 20, nil, true},
-	{"CanonR6 CR3", FileTypeBox{MajorBrand: brandCrx, MinorVersion: "\x00\x00\x00\x01", Compatible: [brandCount]Brand{brandCrx, brandIsom}}, "", "samples/canonR6.sample", 20, nil, true},
-	{"Avif Ftyp", FileTypeBox{MajorBrand: brandAvif, MinorVersion: "", Compatible: [brandCount]Brand{brandAvif, brandMif1, brandMiaf, brandMA1B}}, "", "samples/avif.sample", 20, nil, true},
+	{"Sample 1", FileTypeBox{MajorBrand: brandHeic, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/1.sample", 30, nil, true},
+	{"Sample 2", FileTypeBox{MajorBrand: brandMif1, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandMif1, brandHeic}}, "", "samples/2.sample", 30, nil, true},
+	{"Sample 3", FileTypeBox{MajorBrand: brandHeic, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandHeic, brandMif1}}, "", "samples/3.sample", 20, nil, true},
+	{"iPhone 11", FileTypeBox{MajorBrand: brandHeic, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandMif1, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone11.sample", 20, nil, true},
+	{"iPhone 12", FileTypeBox{MajorBrand: brandHeic, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandMif1, brandMiHE, brandMiaf, brandMiHB, brandHeic}}, "", "samples/iPhone12.sample", 20, nil, true},
+	{"CanonR6 CR3", FileTypeBox{MajorBrand: brandCrx, MinorVersion: [4]byte{0, 0, 0, 1}, Compatible: [brandCount]Brand{brandCrx, brandIsom}}, "", "samples/canonR6.sample", 20, nil, true},
+	{"Avif Ftyp", FileTypeBox{MajorBrand: brandAvif, MinorVersion: MinorVersionNul, Compatible: [brandCount]Brand{brandAvif, brandMif1, brandMiaf, brandMA1B}}, "", "samples/avif.sample", 20, nil, true},
 }
 
 //func TestGenSamples(t *testing.T) {
@@ -91,15 +91,6 @@ func TestParseMeta(t *testing.T) {
 }
 
 func TestFileTypeBox(t *testing.T) {
-	ftyp := FileTypeBox{}
-
-	if ftyp.Type() != TypeFtyp {
-		t.Errorf("Expected TypeFtyp")
-	}
-	if cleanString([]byte("abcd")) != "abcd" {
-		t.Errorf("Expected complete string")
-	}
-
 	if brandAvif.String() != "avif" {
 		t.Errorf("Brand Avif String Test Error: got %v, expected %v", brandAvif.String(), "avif")
 	}
@@ -107,7 +98,6 @@ func TestFileTypeBox(t *testing.T) {
 	if brandUnknown.String() != "nnnn" {
 		t.Errorf("Brand Unknown String Test Error: got %v, expected %v", brandUnknown.String(), "nnnn")
 	}
-
 }
 
 func TestParseHandler(t *testing.T) {

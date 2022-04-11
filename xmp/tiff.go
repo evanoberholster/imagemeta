@@ -1,6 +1,7 @@
 package xmp
 
 import (
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
@@ -15,7 +16,7 @@ type Tiff struct {
 	ImageDescription []string
 	ImageWidth       uint16
 	ImageLength      uint16
-	Orientation      uint8
+	Orientation      meta.Orientation
 }
 
 func (t *Tiff) parse(p property) error {
@@ -29,21 +30,9 @@ func (t *Tiff) parse(p property) error {
 	case xmpns.ImageLength:
 		t.ImageLength = uint16(parseUint(p.Value()))
 	case xmpns.Orientation:
-		t.Orientation = uint8(parseUint(p.Value()))
+		t.Orientation = meta.Orientation(parseUint(p.Value()))
 	default:
 		return ErrPropertyNotSet
 	}
 	return nil
 }
-
-// Orientation represents image orientation
-type Orientation uint8
-
-//1 = Horizontal (normal)
-//2 = Mirror horizontal
-//3 = Rotate 180
-//4 = Mirror vertical
-//5 = Mirror horizontal and rotate 270 CW
-//6 = Rotate 90 CW
-//7 = Mirror horizontal and rotate 90 CW
-//8 = Rotate 270 CW

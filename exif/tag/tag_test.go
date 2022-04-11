@@ -7,7 +7,7 @@ import (
 var tagTypeTests = []struct {
 	rawTagType uint16
 	tagType    Type
-	tagSize    uint32
+	tagSize    uint8
 	tagString  string
 	err        error
 }{
@@ -20,15 +20,21 @@ var tagTypeTests = []struct {
 	{9, TypeSignedLong, TypeSignedLongSize, "SLONG", nil},
 	{10, TypeSignedRational, TypeSignedRationalSize, "SRATIONAL", nil},
 	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL", nil},
-	{0, TypeUnknown, 0, "UnknownType", ErrTagTypeNotValid},
+	{0, TypeUnknown, 0, "Unknown", ErrTagTypeNotValid},
+	{100, 100, 0, "Unknown", ErrTagTypeNotValid},
 }
 
 func TestNewTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			ty, err := NewTagType(tag.rawTagType)
-			if ty != tag.tagType || err != tag.err {
-				t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
+			ty := Type(tag.rawTagType)
+			if ty != tag.tagType {
+				if ty.IsValid() {
+					t.Errorf("Incorrect Tag Type wanted %s got %s", tag.tagType, ty)
+				}
+			}
+			if !ty.IsValid() && tag.err != ErrTagTypeNotValid {
+				t.Errorf("Incorrect err %s", tag.err)
 			}
 		})
 	}
@@ -37,7 +43,7 @@ func TestNewTagType(t *testing.T) {
 func TestTagType(t *testing.T) {
 	for _, tag := range tagTypeTests {
 		t.Run(tag.tagType.String(), func(t *testing.T) {
-			var s uint32
+			var s uint8
 			if tag.tagType != TypeUndefined {
 				s = tag.tagType.Size()
 			} else {
@@ -55,12 +61,15 @@ func TestTagType(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	tag := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0)
+	tag, err := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if tag.ID != ID(0x0010) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.ID)
 	}
-	if tag.Type() != TypeASCII {
+	if tag.Type() != TypeASCII || !tag.IsType(TypeASCII) || !tag.t.Is(TypeASCII) {
 		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.Type())
 	}
 	if tag.UnitCount != 16 {
@@ -80,5 +89,21 @@ func TestTag(t *testing.T) {
 	}
 	if tag.ID.String() != "0x0010" {
 		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", tag.ID.String())
+	}
+
+	tag, err = NewTag(ID(0x0010), 100, 16, 0x0002, 0)
+	if err != ErrTagTypeNotValid {
+		t.Errorf("Incorrect error wanted %s, got %s", ErrTagTypeNotValid, err)
+	}
+	tag.t = TypeIfd
+	tag.UnitCount = 1
+	if !tag.IsIfd() {
+		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeIfd, tag.Type())
+	}
+	if tag.Type().String() != "IFD" {
+		t.Errorf("Incorrect Tag String wanted %s got %s", "IFD", tag.Type().String())
+	}
+	if tag.Size() != TypeIfdSize {
+		t.Errorf("Incorrect Tag Size wanted %d got %d", TypeIfdSize, tag.Size())
 	}
 }

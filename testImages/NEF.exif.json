@@ -481,56 +481,56 @@
         "Tags": [
           {
             "ID": "0x0001",
-            "Name": "0x0001",
+            "Name": "CanonCameraSettings",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0002",
-            "Name": "0x0002",
+            "Name": "CanonFocalLength",
             "Count": 2,
             "Type": "SHORT",
             "Val": [0, 100]
           },
           {
             "ID": "0x0004",
-            "Name": "0x0004",
+            "Name": "CanonShotInfo",
             "Count": 8,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x0005",
-            "Name": "0x0005",
+            "Name": "CanonPanorama",
             "Count": 13,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x0007",
-            "Name": "0x0007",
+            "Name": "CanonFirmwareVersion",
             "Count": 7,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x0008",
-            "Name": "0x0008",
+            "Name": "FileNumber",
             "Count": 13,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x0009",
-            "Name": "0x0009",
+            "Name": "OwnerName",
             "Count": 20,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x000c",
-            "Name": "0x000c",
+            "Name": "SerialNumber",
             "Count": 4,
             "Type": "RATIONAL",
             "Val": [
@@ -554,35 +554,35 @@
           },
           {
             "ID": "0x000d",
-            "Name": "0x000d",
+            "Name": "CanonCameraInfo",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x000e",
-            "Name": "0x000e",
+            "Name": "CanonFileLength",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0011",
-            "Name": "0x0011",
+            "Name": "MovieInfo",
             "Count": 1,
             "Type": "LONG",
             "Val": 23370
           },
           {
             "ID": "0x0012",
-            "Name": "0x0012",
+            "Name": "CanonAFInfo",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0013",
-            "Name": "0x0013",
+            "Name": "ThumbnailImageValidArea",
             "Count": 2,
             "Type": "SHORT",
             "Val": [0, 100]
@@ -622,21 +622,21 @@
           },
           {
             "ID": "0x001c",
-            "Name": "0x001c",
+            "Name": "DateStampMode",
             "Count": 3,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x001d",
-            "Name": "0x001d",
+            "Name": "MyColors",
             "Count": 8,
             "Type": "ASCII",
             "Val": ""
           },
           {
             "ID": "0x001e",
-            "Name": "0x001e",
+            "Name": "FirmwareRevision",
             "Count": 1,
             "Type": "SHORT",
             "Val": 1
@@ -657,21 +657,21 @@
           },
           {
             "ID": "0x0023",
-            "Name": "0x0023",
+            "Name": "Categories",
             "Count": 58,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0024",
-            "Name": "0x0024",
+            "Name": "FaceDetect1",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0025",
-            "Name": "0x0025",
+            "Name": "FaceDetect2",
             "Count": 14,
             "Type": "UNDEFINED",
             "Val": null
@@ -723,7 +723,7 @@
           },
           {
             "ID": "0x0083",
-            "Name": "0x0083",
+            "Name": "OriginalDecisionDataOffset",
             "Count": 1,
             "Type": "BYTE",
             "Val": ""
@@ -789,35 +789,35 @@
           },
           {
             "ID": "0x0091",
-            "Name": "0x0091",
+            "Name": "PersonalFunctions",
             "Count": 15654,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0093",
-            "Name": "0x0093",
+            "Name": "CanonFileInfo",
             "Count": 1,
             "Type": "SHORT",
             "Val": 3
           },
           {
             "ID": "0x0095",
-            "Name": "0x0095",
+            "Name": "LensModel",
             "Count": 5,
             "Type": "ASCII",
             "Val": "a*D\ufffd7"
           },
           {
             "ID": "0x0096",
-            "Name": "0x0096",
+            "Name": "CanonInternalSerialNumber",
             "Count": 46,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x0097",
-            "Name": "0x0097",
+            "Name": "CanonDustRemovalData",
             "Count": 584,
             "Type": "UNDEFINED",
             "Val": null
@@ -831,7 +831,7 @@
           },
           {
             "ID": "0x0099",
-            "Name": "0x0099",
+            "Name": "CanonCustomFunctions",
             "Count": 2,
             "Type": "SHORT",
             "Val": [3018, 2010]
@@ -856,14 +856,14 @@
           },
           {
             "ID": "0x00a3",
-            "Name": "0x00a3",
+            "Name": "CanonSharpnessFreqTable",
             "Count": 1,
             "Type": "BYTE",
             "Val": ""
           },
           {
             "ID": "0x00a4",
-            "Name": "0x00a4",
+            "Name": "CanonWhiteBalanceTable",
             "Count": 4,
             "Type": "UNDEFINED",
             "Val": null
@@ -891,21 +891,21 @@
           },
           {
             "ID": "0x00b0",
-            "Name": "0x00b0",
+            "Name": "CanonCanonFlags",
             "Count": 16,
             "Type": "UNDEFINED",
             "Val": null
           },
           {
             "ID": "0x00b1",
-            "Name": "0x00b1",
+            "Name": "CanonModifiedInfo",
             "Count": 1,
             "Type": "SHORT",
             "Val": 4
           },
           {
             "ID": "0x00b6",
-            "Name": "0x00b6",
+            "Name": "CanonPreviewImageInfo",
             "Count": 8,
             "Type": "UNDEFINED",
             "Val": null
@@ -954,7 +954,7 @@
           },
           {
             "ID": "0x00c0",
-            "Name": "0x00c0",
+            "Name": "Canon0x00c0",
             "Count": 8,
             "Type": "UNDEFINED",
             "Val": null

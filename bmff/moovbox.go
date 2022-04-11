@@ -37,10 +37,10 @@ func (b *box) parseMoovBox() (moov MoovBox, err error) {
 		if err != nil {
 			return
 		}
-		if inner.boxType == TypeUUID {
-			uBox, err := inner.parseUUIDBox()
-			fmt.Println(uBox, err)
-		}
+		//if inner.boxType == TypeUUID {
+		//	uBox, err := inner.parseUUIDBox()
+		//	fmt.Println(uBox, err)
+		//}
 
 		if err = b.closeInnerBox(&inner); err != nil {
 			break
@@ -57,24 +57,4 @@ type UUIDBox struct {
 
 func (uuidBox UUIDBox) String() string {
 	return fmt.Sprintf("uuid | %s\t", uuidBox.uuid.String())
-}
-
-// Type returns TypeUUID
-func (uuidBox UUIDBox) Type() BoxType {
-	return TypeUUID
-}
-
-func (b *box) parseUUIDBox() (Box, error) {
-	if b.boxType != TypeUUID {
-		return nil, ErrWrongBoxType
-	}
-	uuid, err := b.readUUID()
-	if err != nil {
-		return nil, err
-	}
-	switch uuid {
-	case CR3MetaBoxUUID:
-		return parseCR3MetaBox(b)
-	}
-	return nil, nil
 }

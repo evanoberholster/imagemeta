@@ -3,6 +3,17 @@ package exififd
 
 import "github.com/evanoberholster/imagemeta/exif/tag"
 
+func TagString(id tag.ID) string {
+	name, ok := TagIDMap[id]
+	if !ok {
+		return id.String()
+	}
+	return name
+}
+
+// TODO: TagTypeMap is a Map of tag.ID to default tag,Type
+// var TagTypeMap = map[tag.ID]tag.Type{}
+
 // TagIDMap is a Map of tag.ID to string for the ExifIfd tags
 var TagIDMap = map[tag.ID]string{
 	ExposureTime:              "ExposureTime",

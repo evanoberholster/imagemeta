@@ -5,13 +5,16 @@ package imagemeta
 import (
 	"bufio"
 	"errors"
+	"io"
 
 	"github.com/evanoberholster/imagemeta/cr3"
+	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/heic"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 // Errors
@@ -22,6 +25,34 @@ var (
 	ErrImageTypeNotFound    = imagetype.ErrImageTypeNotFound
 	ErrMetadataNotSupported = errors.New("error metadata reading not supported for this imagetype")
 )
+
+// ImageMeta interface for Image Metadata
+type ImageMeta interface {
+	Dimensions() meta.Dimensions
+	ImageType() imagetype.ImageType
+	PreviewImage() io.Reader
+	Exif() (exif.Exif, error)
+	Xmp() (xmp.XMP, error)
+}
+
+// Parse meta.Reader for Image Metadata returns ImageMeta corresponding
+// to identified image type.
+func Parse(r meta.Reader) (ImageMeta, error) {
+	t, err := imagetype.ReadAt(r)
+	if err != nil {
+		return nil, err
+	}
+	switch t {
+
+	case imagetype.ImageJPEG:
+		return jpeg.ScanJPEG(r, nil, nil)
+	case imagetype.ImageCR3:
+		return cr3.Parse(r)
+	case imagetype.ImageTiff, imagetype.ImageCR2, imagetype.ImageARW, imagetype.ImageHEIF, imagetype.ImageNEF, imagetype.ImagePanaRAW:
+		return tiff.Parse(r, t)
+	}
+	return nil, nil
+}
 
 // Metadata from an Image. The ExifDecodeFn and XmpDecodeFn
 // are responsible for decoding their respective data.
@@ -53,10 +84,6 @@ func NewMetadata(r meta.Reader, xmpFn meta.DecodeFn, exifFn meta.DecodeFn) (m *M
 
 func (m *Metadata) parse(br *bufio.Reader) (err error) {
 	switch m.It {
-	case imagetype.ImageXMP:
-		return m.parseXmp(br)
-	case imagetype.ImageJPEG:
-		return m.parseJpeg(br)
 	case imagetype.ImageWebP:
 		err = ErrMetadataNotSupported
 		return
@@ -64,8 +91,6 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 		return m.parseTiff(br)
 	case imagetype.ImageCR2:
 		return m.parseTiff(br)
-	case imagetype.ImageCR3:
-		return m.parseCR3(br)
 	case imagetype.ImageHEIF:
 		return m.parseHeic(br)
 	case imagetype.ImageAVIF:
@@ -86,37 +111,15 @@ func (m *Metadata) parse(br *bufio.Reader) (err error) {
 	}
 }
 
-// parseJpeg uses the 'jpeg' package to identify the metadata and the
-// 'exif' and 'xmp' packages parse the metadata.
-//
-// Will use the custom decode functions: XmpDecodeFn and
-// ExifDecodeFn if they are not nil.
-func (m *Metadata) parseJpeg(br *bufio.Reader) (err error) {
-	_, err = jpeg.ScanJPEG(br, m.Metadata)
-	m.images = 1
-	return err
-}
-
-// parseXmp uses the 'xmp' package to identify and parse the metadata.
-//
-// Will use the custom decode function: XmpDecodeFn if it is not nil.
-func (m *Metadata) parseXmp(br *bufio.Reader) (err error) {
-	if m.XmpFn != nil {
-		m.Metadata.XmpHeader = meta.NewXMPHeader(0, 0)
-		return m.XmpFn(br, m.Metadata)
-	}
-	return ErrNoXmpDecodeFn
-}
-
 // parseHeic uses the 'heic' package to identify the metadata and the
 // 'exif' and 'xmp' packages parse the metadata.
 //
 // Will use the custom decode functions: XmpDecodeFn and
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
-	if _, err = m.r.Seek(0, 0); err != nil {
-		return
-	}
+	//if _, err = m.r.Seek(0, 0); err != nil {
+	//	return
+	//}
 	hm, err := heic.NewMetadata(br, m.Metadata)
 	if err != nil {
 		return err
@@ -131,22 +134,6 @@ func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
 	return err
 }
 
-func (m *Metadata) parseCR3(br *bufio.Reader) (err error) {
-	cr3, err := cr3.NewMetadata(br, m.Metadata)
-	if err != nil {
-		return err
-	}
-
-	if err = cr3.DecodeExif(br); err != nil {
-		return
-	}
-	if err = cr3.DecodeXMP(br); err != nil {
-		return
-	}
-	m.Metadata = cr3.Metadata
-	return nil
-}
-
 // parseTiff uses the 'tiff' package to identify the metadata and
 // the 'exif' and 'xmp' packages to parse the metadata.
 //
@@ -154,7 +141,7 @@ func (m *Metadata) parseCR3(br *bufio.Reader) (err error) {
 // ExifDecodeFn if they are not nil.
 func (m *Metadata) parseTiff(br *bufio.Reader) (err error) {
 	// package tiff -> exif
-	m.ExifHeader, err = tiff.Scan(br)
+	m.ExifHeader, err = tiff.ScanTiffHeader(br, imagetype.ImageTiff)
 	if err != nil {
 		return
 	}

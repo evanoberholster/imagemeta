@@ -37,26 +37,32 @@ type SRational struct {
 
 // Tag is an Exif Tag
 type Tag struct {
-	ValueOffset uint32
-	UnitCount   uint16 // 4 bytes
+	ValueOffset uint32 // 4 bytes
+	UnitCount   uint32 // 4 bytes
 	ID          ID     // 2 bytes
 	t           Type   // 1 byte
 	Ifd         uint8  // 1 byte
 }
 
-// NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8) Tag {
+// NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
+// If tagType is Invalid returns ErrTagTypeNotValid
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8) (Tag, error) {
+	if !tagType.IsValid() {
+		return Tag{}, ErrTagTypeNotValid
+	}
+	// Special tags
+
 	return Tag{
 		ID:          tagID,
 		t:           tagType,
-		UnitCount:   uint16(unitCount),
+		UnitCount:   unitCount,
 		ValueOffset: valueOffset,
 		Ifd:         ifd,
-	}
+	}, nil
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("0x%04x\t | %s ", uint16(t.ID), t.t)
+	return fmt.Sprintf("%s\t | %s ", t.ID, t.t)
 }
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset
@@ -64,14 +70,29 @@ func (t Tag) IsEmbedded() bool {
 	return t.Size() <= 4
 }
 
+// IsIfd checks if the Tag's value is an IFD
+func (t Tag) IsIfd() bool {
+	return t.t == TypeIfd
+}
+
 // Size returns the size of the Tag's value
-func (t Tag) Size() int {
-	return int(t.t.Size() * uint32(t.UnitCount))
+func (t Tag) Size() uint32 {
+	return uint32(t.t.Size()) * uint32(t.UnitCount)
 }
 
 // Type returns the type of Tag
 func (t Tag) Type() Type {
 	return t.t
+}
+
+// IsType returns true if tagType matches query Type
+func (t Tag) IsType(ty Type) bool {
+	return t.t == ty
+}
+
+// Is returns true if tagType matches query Type
+func (tt Type) Is(t Type) bool {
+	return tt == t
 }
 
 // Errors
@@ -115,8 +136,13 @@ const (
 	// TypeSignedRational describes an encoded list of signed rationals.
 	TypeSignedRational Type = 10
 
+	// PseudoTypes
+
 	// TypeASCIINoNul is just a pseudo-type, for our own purposes.
 	TypeASCIINoNul Type = 0xf0
+
+	// TypeIfd is a pseudo-type, for our own purposes.
+	TypeIfd Type = 0xf1
 )
 
 // Tag sizes
@@ -129,75 +155,58 @@ const (
 	TypeRationalSize       = 8
 	TypeSignedLongSize     = 4
 	TypeSignedRationalSize = 8
+	TypeIfdSize            = 4
+
+	// TagType Stringer String
+	_TagTypeStringerString = "UnknownBYTEASCIISHORTLONGRATIONALUnknownUNDEFINEDSSHORTSLONGSRATIONAL"
+)
+
+var (
+	//Tag sizes
+	_tagSize = [...]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize}
+
+	// TagType Stringer Index
+	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69}
 )
 
 // Size returns the size of one atomic unit of the type.
-func (tagType Type) Size() uint32 {
-	switch tagType {
-	case TypeByte:
-		return TypeByteSize
-	case TypeASCII, TypeASCIINoNul:
-		return TypeASCIISize
-	case TypeShort:
-		return TypeShortSize
-	case TypeLong:
-		return TypeLongSize
-	case TypeRational:
-		return TypeRationalSize
-	case TypeSignedLong:
-		return TypeSignedLongSize
-	case TypeSignedRational:
-		return TypeSignedRationalSize
-	default:
-		return 0
-		//panic(fmt.Errorf("can not determine tag-value size for type (%d): [%s]", tagType, tagType.String()))
+func (tt Type) Size() uint8 {
+	if int(tt) < len(_tagSize) {
+		return uint8(_tagSize[uint8(tt)])
 	}
-}
-
-// IsValid returns true if tagType is a valid type.
-func (tagType Type) IsValid() bool {
-	return tagType == TypeShort ||
-		tagType == TypeLong ||
-		tagType == TypeRational ||
-		tagType == TypeByte ||
-		tagType == TypeASCII ||
-		tagType == TypeASCIINoNul ||
-		tagType == TypeSignedLong ||
-		tagType == TypeSignedRational ||
-		tagType == TypeUndefined
+	if tt == TypeIfd {
+		return TypeIfdSize
+	}
+	if tt == TypeASCIINoNul {
+		return TypeASCIINoNulSize
+	}
+	return 0
 }
 
 // String returns the name of the Tag Type
-func (tagType Type) String() string {
-	switch tagType {
-	case TypeByte:
-		return "BYTE"
-	case TypeASCII:
-		return "ASCII"
-	case TypeASCIINoNul:
-		return "_ASCII_NO_NUL"
-	case TypeShort:
-		return "SHORT"
-	case TypeLong:
-		return "LONG"
-	case TypeRational:
-		return "RATIONAL"
-	case TypeSignedLong:
-		return "SLONG"
-	case TypeSignedRational:
-		return "SRATIONAL"
-	case TypeUndefined:
-		return "UNDEFINED"
+func (tt Type) String() string {
+	if int(tt) < len(_TagTypeStringerIndex)-1 {
+		return _TagTypeStringerString[_TagTypeStringerIndex[tt]:_TagTypeStringerIndex[tt+1]]
 	}
-	return "UnknownType"
+	if tt == TypeIfd {
+		return "IFD"
+	}
+	if tt == TypeASCIINoNul {
+		return "_ASCII_NO_NUL"
+	}
+	return TypeUnknown.String()
 }
 
-// NewTagType returns a new TagType and returns an error
-// if the tag type cannot be determined
-func NewTagType(raw uint16) (Type, error) {
-	tagType := Type(raw)
-	if !tagType.IsValid() {
-		return 0, ErrTagTypeNotValid
-	}
-	return tagType, nil
+// IsValid returns true if tagType is a valid type.
+func (tt Type) IsValid() bool {
+	return tt == TypeShort ||
+		tt == TypeLong ||
+		tt == TypeRational ||
+		tt == TypeByte ||
+		tt == TypeASCII ||
+		tt == TypeASCIINoNul ||
+		tt == TypeSignedLong ||
+		tt == TypeSignedRational ||
+		tt == TypeUndefined ||
+		tt == TypeIfd
 }

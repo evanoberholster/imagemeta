@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"errors"
 	"math"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/golang/geo/s2"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -30,9 +30,25 @@ func (e *Data) CameraModel() (model string) {
 	return e.model
 }
 
+// CameraSerial convenience func. "IFD/Exif" BodySerialNumber
+func (e *Data) CameraSerial() (serial string, err error) {
+	var t tag.Tag
+	// BodySerialNumber
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.BodySerialNumber); err == nil {
+		return e.ParseASCIIValue(t)
+	}
+
+	// CameraSerialNumber
+	if t, err = e.GetTag(ifds.IFD0, 0, ifds.CameraSerialNumber); err == nil {
+		return e.ParseASCIIValue(t)
+	}
+
+	return
+}
+
 // Artist convenience func. "IFD" Artist
 func (e *Data) Artist() (artist string, err error) {
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Artist)
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Artist)
 	if err != nil {
 		return
 	}
@@ -41,63 +57,47 @@ func (e *Data) Artist() (artist string, err error) {
 
 // Copyright convenience func. "IFD" Copyright
 func (e *Data) Copyright() (copyright string, err error) {
-	t, err := e.GetTag(ifds.RootIFD, 0, ifds.Copyright)
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Copyright)
 	if err != nil {
 		return
 	}
 	return e.ParseASCIIValue(t)
 }
 
-// CameraSerial convenience func. "IFD/Exif" BodySerialNumber
-func (e *Data) CameraSerial() (serial string, err error) {
-	// BodySerialNumber
-	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.BodySerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
-		return
-	}
-
-	// CameraSerialNumber
-	t, err = e.GetTag(ifds.RootIFD, 0, ifds.CameraSerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
-		return
-	}
-
-	return
-}
-
 // DateTime returns a time.Time that corresponds with when it was created.
-func (e *Data) DateTime() (time.Time, error) {
+// Since EXIF data does not contain any timezone information, you should
+// select a timezone using tz. If tz is nil UTC is assumed.
+func (e *Data) DateTime(tz *time.Location) (tm time.Time, err error) {
+	var t tag.Tag
 	// "IFD/Exif" DateTimeOriginal
 	// "IFD/Exif" SubSecTimeOriginal
 	// TODO: "IFD/Exif" OffsetTimeOriginal
-	t1, err := e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal)
-	if err == nil {
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeOriginal); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeOriginal)
-		return e.ParseTimeStamp(t1, t2, time.UTC)
+		return e.ParseTimeStamp(t, t2, tz)
 	}
 
 	// "IFD/Exif" DateTimeDigitized
 	// "IFD/Exif" SubSecTimeDigitized
 	// TODO: "IFD/Exif" OffsetTimeDigitized
-	t1, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized)
-	if err == nil {
+	if t, err = e.GetTag(ifds.ExifIFD, 0, exififd.DateTimeDigitized); err == nil {
 		t2, _ := e.GetTag(ifds.ExifIFD, 0, exififd.SubSecTimeDigitized)
-		return e.ParseTimeStamp(t1, t2, time.UTC)
+		return e.ParseTimeStamp(t, t2, tz)
 	}
 	return time.Time{}, ErrEmptyTag
 }
 
 // ModifyDate returns a time.Time that corresponds with when it was last modified.
-func (e *Data) ModifyDate() (time.Time, error) {
+// Since EXIF data does not contain any timezone information, you should
+// select a timezone using tz. If tz is nil UTC is assumed.
+func (e *Data) ModifyDate(tz *time.Location) (time.Time, error) {
 	// "IFD" DateTime
 	// "IFD/Exif" SubSecTime
-	t1, err := e.GetTag(ifds.RootIFD, 0, ifds.DateTime)
-	if err != nil {
-		return time.Time{}, err
+	t1, err := e.GetTag(ifds.IFD0, 0, ifds.DateTime)
+	if err == nil {
+		return e.ParseTimeStamp(t1, tag.Tag{}, tz)
 	}
-	return e.ParseTimeStamp(t1, tag.Tag{}, time.UTC)
+	return time.Time{}, ErrEmptyTag
 }
 
 // LensMake convenience func. "IFD/Exif" LensMake
@@ -122,11 +122,20 @@ func (e *Data) LensModel() (model string, err error) {
 func (e *Data) LensSerial() (serial string, err error) {
 	// LensSerialNumber
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.LensSerialNumber)
-	if err == nil {
-		serial, err = e.ParseASCIIValue(t)
+	if err != nil {
 		return
 	}
-	return
+	return e.ParseASCIIValue(t)
+}
+
+// ImageHeight retturns the main image height
+func (e *Data) ImageHeight() uint16 {
+	return e.height
+}
+
+// ImageWidth returns the main image width
+func (e *Data) ImageWidth() uint16 {
+	return e.width
 }
 
 // Dimensions convenience func. "IFD" Dimensions
@@ -145,11 +154,11 @@ func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 		}
 	}
 
-	t, err = e.GetTag(ifds.RootIFD, 0, ifds.ImageWidth)
+	t, err = e.GetTag(ifds.IFD0, 0, ifds.ImageWidth)
 	if err == nil {
 		e.width, err = e.ParseUint16Value(t)
 		if err == nil {
-			if t, _ = e.GetTag(ifds.RootIFD, 0, ifds.ImageLength); err == nil {
+			if t, _ = e.GetTag(ifds.IFD0, 0, ifds.ImageLength); err == nil {
 				e.height, _ = e.ParseUint16Value(t)
 				return meta.NewDimensions(uint32(e.width), uint32(e.height))
 			}
@@ -223,7 +232,7 @@ func (e *Data) ShutterSpeed() (meta.ShutterSpeed, error) {
 	if err != nil {
 		return meta.ShutterSpeed{}, err
 	}
-	return meta.NewShutterSpeed(uint16(num), uint16(denom)), err
+	return meta.NewShutterSpeed(num, denom), err
 }
 
 // ExposureValue convenience func. "IFD/Exif" ShutterSpeedValue
@@ -307,7 +316,7 @@ func (e *Data) ISOSpeed() (iso uint32, err error) {
 }
 
 // Flash convenience func. "IFD/Exif" Flash
-func (e *Data) Flash() (meta.FlashMode, error) {
+func (e *Data) Flash() (meta.Flash, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.Flash)
 	if err != nil {
 		return 0, err
@@ -316,14 +325,23 @@ func (e *Data) Flash() (meta.FlashMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return meta.NewFlashMode(uint8(f)), err
+	return meta.NewFlash(uint8(f)), err
 }
 
-// Orientation convenience func. "IFD" Orientation
-// TODO: Add Orientation Function
-func (e *Data) Orientation() (string, error) {
-	// Orientation
-	return "", nil
+// Orientation convenience func. If the tag is missing, OrientationHorizontal (normal)
+// and ErrEmptyTag will be returned.
+func (e *Data) Orientation() meta.Orientation {
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Orientation)
+	if err != nil {
+		return meta.OrientationHorizontal
+	}
+
+	u, err := e.ParseUint16Value(t)
+	if err != nil {
+		return 0
+	}
+
+	return meta.Orientation(u)
 }
 
 // GPSCoords is a convenience func. that retrieves "IFD/GPS" GPSLatitude and GPSLongitude
@@ -362,7 +380,7 @@ func (e *Data) GPSCoords() (lat float64, lng float64, err error) {
 	if err != nil {
 		return
 	}
-	return
+	return lat, lng, err
 }
 
 // GPSDate convenience func. for "IFD/GPS" GPSDateStamp and GPSTimeStamp.
@@ -400,9 +418,9 @@ func (e *Data) GPSAltitude() (alt float32, err error) {
 	alt = float32(n) / float32(d)
 
 	t, err = e.GetTag(ifds.GPSIFD, 0, gpsifd.GPSAltitudeRef)
-	if t.Type() == tag.TypeByte && t.IsEmbedded() {
-		e.er.byteOrder.PutUint32(e.er.rawBuffer[:4], t.ValueOffset)
-		if e.er.rawBuffer[0] == 1 {
+	if t.IsType(tag.TypeByte) && t.IsEmbedded() {
+		e.reader.byteOrder.PutUint32(e.reader.rawBuffer[:4], t.ValueOffset)
+		if e.reader.rawBuffer[0] == 1 {
 			alt *= -1
 		}
 	}
@@ -424,10 +442,9 @@ func (e *Data) GPSCellID() (cellID s2.CellID, err error) {
 	latLng := s2.LatLngFromDegrees(lat, lng)
 	cellID = s2.CellIDFromLatLng(latLng)
 
-	if !cellID.IsValid() {
-		err = ErrGpsCoordsNotValid
-		return
+	if cellID.IsValid() {
+		return cellID, nil
 	}
 
-	return cellID, nil
+	return cellID, ErrGpsCoordsNotValid
 }

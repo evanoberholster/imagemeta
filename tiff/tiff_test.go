@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -17,11 +18,12 @@ func TestTiff(t *testing.T) {
 		byteOrder        binary.ByteOrder
 		firstIfdOffset   uint32
 		tiffHeaderOffset uint32
+		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00},
-		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00},
-		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00},
-		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178},
+		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
+		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {
@@ -33,7 +35,7 @@ func TestTiff(t *testing.T) {
 			defer f.Close()
 			// Search for Tiff header
 			br := bufio.NewReader(f)
-			h, err := Scan(br)
+			h, err := ScanTiffHeader(br, header.imageType)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -46,6 +48,9 @@ func TestTiff(t *testing.T) {
 			if h.TiffHeaderOffset != header.tiffHeaderOffset {
 				t.Errorf("Incorrect tiff Header Offset wanted 0x%04x got 0x%04x ", header.tiffHeaderOffset, h.TiffHeaderOffset)
 			}
+			if h.ImageType != header.imageType {
+				t.Errorf("Incorrect tiff Imagetype wanted: %s got: %s ", header.imageType, h.ImageType)
+			}
 			if !h.IsValid() {
 				t.Errorf("Wanted valid tiff Header")
 			}
@@ -54,7 +59,7 @@ func TestTiff(t *testing.T) {
 
 	// Error No Tiff Header
 	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	_, err := Scan(bytes.NewReader(buf))
+	_, err := ScanTiffHeader(bytes.NewReader(buf), imagetype.ImageTiff)
 	if err != meta.ErrNoExif {
 		t.Errorf("Incorrect err wanted %s got %s ", meta.ErrNoExif, err)
 	}

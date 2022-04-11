@@ -3,84 +3,40 @@ package imagemeta
 import (
 	"bufio"
 	"bytes"
-	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/jpeg"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 var (
-	dir            = "../test/img/"
-	benchmarksJPEG = []struct {
-		name     string
-		fileName string
-	}{
-		{"1.jpg", "1.jpg"},
-		{"2.jpg", "2.jpg"},
-		{"3.jpg", "3.jpg"},
-		{"10.jpg", "10.jpg"},
-		{"13.jpg", "13.jpg"},
-		{"14.jpg", "14.jpg"},
-		{"16.jpg", "16.jpg"},
-		{"17.jpg", "17.jpg"},
-		{"20.jpg/NoExif", "20.jpg"},
-		{"21.jpeg", "21.jpeg"},
-		{"24.jpg", "24.jpg"},
-		{"123.jpg", "123.jpg"},
-	}
+	dir = "../test/img/"
 )
-
-func BenchmarkScanJPEG100(b *testing.B) {
-	for _, bm := range benchmarksJPEG {
-		b.Run(bm.name, func(b *testing.B) {
-			f, err := os.Open(dir + bm.fileName)
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
-			buf, _ := ioutil.ReadAll(f)
-			cb := bytes.NewReader(buf)
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				b.StopTimer()
-				cb.Seek(0, 0)
-				br := bufio.NewReader(cb)
-				b.StartTimer()
-				if _, err := jpeg.ScanJPEG(br, &meta.Metadata{}); err != nil {
-					if err != ErrNoExif {
-						b.Fatal(err)
-					}
-				}
-			}
-		})
-	}
-}
 
 var (
 	benchmarksTiff = []struct {
 		name     string
 		fileName string
 	}{
-		{".CR2/60D", "60D.CR2"},
-		{".CR2/GPS", "2.CR2"},
-		{".CR2/7D", "7D2.CR2"},
-		{".CR3", "1.CR3"},
-		{".CR3/90D", "90D.cr3"},
-		{".CR3/R6", "canonR6.cr3"},
+		{".CR2/6D", "2.CR2"},
+		{".CR2/7DMkII", "7D2.CR2"},
+		{".CR2/CanonM6MkII", "CanonM6MkII_1.CR3"},
+		{".CR3/CanonR", "CanonR_1.CR3"},
+		{".CR3/CanonRP", "CanonRP_1.CR3"},
+		{".CR3/CanonR3", "CanonR3_1.CR3"},
+		{".CR3/CanonR5", "CanonR5_1.CR3"},
+		{".CR3/CanonR6", "CanonR6_1.CR3"},
+		{".HEIC/CanonR5", "CanonR5_1.HIF"},
+		{".HEIC/CanonR6", "CanonR6_1.HIF"},
 		{".JPG/GPS", "17.jpg"},
-		{".JPF/GoPro6", "hero6.jpg"},
+		{".JPG/GoPro6", "hero6.jpg"},
 		{".HEIC", "1.heic"},
-		{".HEIC/CanonR5", "canonR5.hif"},
-		{".HEIC/CanonR6", "canonR6.hif"},
-		{".HEIC/iPhone11", "iPhone11Pro.heic"},
+		{".HEIC/iPhone11", "iPhone11.heic"},
 		{".HEIC/iPhone12", "iPhone12.heic"},
-		{".AVIF", "image1.avif"},
+		{".HEIC/iPhone13", "iPhone13.heic"},
+		//{".AVIF", "image1.avif"},
 		{".NEF/Nikon", "1.NEF"},
 		{".NEF/Nikon", "2.NEF"},
 		{".RW2/Panasonic", "4.RW2"},
@@ -91,7 +47,7 @@ var (
 	}
 )
 
-func BenchmarkImagemeta100(b *testing.B) {
+func BenchmarkImageMeta(b *testing.B) {
 	for _, bm := range benchmarksTiff {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -99,6 +55,9 @@ func BenchmarkImagemeta100(b *testing.B) {
 				panic(err)
 			}
 			buf, err := ioutil.ReadAll(f)
+			if err != nil {
+				b.Fatal(err)
+			}
 			r := bytes.NewReader(buf)
 			defer f.Close()
 			b.ReportAllocs()
@@ -106,20 +65,8 @@ func BenchmarkImagemeta100(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
 				r.Seek(0, 0)
-
-				exifDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-					b.StopTimer()
-					b.StartTimer()
-					exif.ParseExif(f, m.ExifHeader)
-					return nil
-				}
-				xmpDecodeFn := func(r io.Reader, m *meta.Metadata) error {
-					b.StopTimer()
-					b.StartTimer()
-					return err
-				}
 				b.StartTimer()
-				_, err := NewMetadata(r, xmpDecodeFn, exifDecodeFn)
+				_, err = Parse(r)
 				if err != nil {
 					if err != ErrNoExif {
 						b.Fatal(err)
@@ -130,13 +77,14 @@ func BenchmarkImagemeta100(b *testing.B) {
 	}
 }
 
-//BenchmarkImagemeta100/.JPG/GPS         	  209788	     10444 ns/op	    4352 B/op	       5 allocs/op
-//BenchmarkImagemeta100/.HEIC            	   42448	     31201 ns/op	   15728 B/op	      69 allocs/op
-//BenchmarkImagemeta100/.HEIC/iPhone11   	   32762	     33636 ns/op	   15792 B/op	      72 allocs/op
-//BenchmarkImagemeta100/.HEIC/iPhone12   	   36987	     33406 ns/op	   16144 B/op	      77 allocs/op
-//BenchmarkImagemeta100/.GoPro/6         	  325867	      4101 ns/op	    4352 B/op	       5 allocs/op
-//BenchmarkImagemeta100/.JPG/NoExif      	  663433	      1898 ns/op	    4288 B/op	       3 allocs/op
-//
+// BenchmarkImageMeta/.CR2/GPS-12         	   78484	     17255 ns/op	   10218 B/op	      22 allocs/op
+// BenchmarkImageMeta/.CR2/7D-12          	   53593	     18817 ns/op	   10216 B/op	      21 allocs/op
+// BenchmarkImageMeta/.CR3-12             	   87937	     15560 ns/op	    9236 B/op	      21 allocs/op
+// BenchmarkImageMeta/.JPG/GPS-12         	  110964	     10347 ns/op	     280 B/op	       4 allocs/op
+// BenchmarkImageMeta/.JPG/GoPro6-12      	  164203	      7023 ns/op	     280 B/op	       4 allocs/op
+// BenchmarkImageMeta/.NEF/Nikon-12       	   58136	     23389 ns/op	   10241 B/op	      23 allocs/op
+// BenchmarkImageMeta/.NEF/Nikon#01-12    	   49773	     23771 ns/op	   10243 B/op	      23 allocs/op
+// BenchmarkImageMeta/.RW2/Panasonic-12   	   51008	     20251 ns/op	    4556 B/op	      15 allocs/op
 
 func BenchmarkScanTiff100(b *testing.B) {
 	for _, bm := range benchmarksTiff {
@@ -153,11 +101,10 @@ func BenchmarkScanTiff100(b *testing.B) {
 				f.Seek(0, 0)
 				br := bufio.NewReader(f)
 				b.StartTimer()
-				if _, err := tiff.Scan(br); err != nil {
+				if _, err := tiff.ScanTiffHeader(br, imagetype.ImageTiff); err != nil {
 
 					if err != ErrNoExif {
 						b.Error(err)
-						//	//b.Fatal(err)
 					}
 				}
 			}

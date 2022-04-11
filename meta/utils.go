@@ -1,6 +1,8 @@
 package meta
 
-import "bytes"
+import (
+	"bytes"
+)
 
 // parseInt parses a []byte of a string representation of an int64 value and returns the value
 //func parseInt(buf []byte) (i int64) {
@@ -41,16 +43,26 @@ func parseUint(buf []byte) (u uint64) {
 //	return buf, nil
 //}
 
+var closeTagXMP = []byte("</x:xmpmeta>")
+
 // CleanXMPSuffixWhiteSpace returns the same slice with the whitespace after "</x:xmpmeta>" removed.
 func CleanXMPSuffixWhiteSpace(buf []byte) []byte {
 	for i := len(buf) - 1; i > 12; i-- {
 		if buf[i] == '>' && buf[i-1] == 'a' {
 			// </x:xmpmeta>
-			if bytes.Equal([]byte("</x:xmpmeta>"), buf[i-11:i+1]) {
+			if bytes.Equal(closeTagXMP, buf[i-11:i+1]) {
 				buf = buf[:i+1]
 				return buf
 			}
 		}
 	}
 	return buf
+}
+
+func unsafeGetBytes(s string) (b []byte) {
+	return []byte(s)
+	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
+	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Cap = len(s)
+	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Len = len(s)
+	//return
 }

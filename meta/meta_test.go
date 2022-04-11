@@ -36,9 +36,9 @@ func TestXmpHeader(t *testing.T) {
 }
 
 func TestExifHeader(t *testing.T) {
-	h1 := ExifHeader{ByteOrder: binary.BigEndian, FirstIfd: ifds.RootIFD, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
+	h1 := ExifHeader{ByteOrder: binary.BigEndian, FirstIfd: ifds.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
 	h2 := NewExifHeader(binary.BigEndian, 1234, 16, 1024, imagetype.ImagePNG)
-	h2.FirstIfd = ifds.RootIFD
+	h2.FirstIfd = ifds.IFD0
 
 	assert.Equal(t, h1, h2, "")
 	assert.True(t, h2.IsValid(), "IsValid")

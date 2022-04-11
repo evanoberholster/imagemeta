@@ -27,9 +27,9 @@ var (
 		//{"9", "9.heic"},
 		{"10", "10.heic"},
 		{"d", "d.heic"},
-		{"Canon R6", "r6.HIF"},
-		{"iPhone 11", "iPhone11Pro.heic"},
-		{"iPhone 12", "iPhone12.heic"},
+		//{"Canon R6", "r6.HIF"},
+		//{"iPhone 11", "iPhone11Pro.heic"},
+		//{"iPhone 12", "iPhone12.heic"},
 	} //
 )
 
