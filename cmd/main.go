@@ -19,7 +19,8 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//f, err := os.Open(flag.Arg(0))
-	f, err := os.Open("../../test/img/2.CR2")
+	//f, err := os.Open("../../test/img/2.CR2")
+	f, err := os.Open("../testImages/Heic.exif")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,6 +40,7 @@ func main() {
 	//}
 
 	exifFn := func(r meta.Reader, header meta.ExifHeader) error {
+		fmt.Println(header)
 		e, err = exif.ParseExif(r, header)
 		return err
 	}

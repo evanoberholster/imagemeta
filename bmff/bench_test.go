@@ -2,17 +2,13 @@ package bmff
 
 import (
 	"bufio"
-	"fmt"
 	"os"
-	"path"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 var (
-	dir        = "../../test/img/"
-	dir2       = "../../test/samples/"
+	dir = "../../test/img/"
+	//dir2       = "../../test/samples/"
 	benchmarks = []struct {
 		name     string
 		fileName string
@@ -34,34 +30,34 @@ var (
 	} //
 )
 
-func parseDir(fn func(f *os.File) error) error {
-	files, err := os.ReadDir(dir2)
-	if err != nil {
-		return err
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		info, err := f.Info()
-		if err != nil {
-			return err
-		}
-		if path.Ext(info.Name()) == ".CR2" || path.Ext(info.Name()) == ".CR3" {
-			continue
-		}
-		f2, err := os.Open(dir2 + info.Name())
-		if err != nil {
-			return err
-		}
-		defer f2.Close()
-		if err = fn(f2); err != nil {
-			return errors.WithMessage(err, info.Name())
-		}
-		fmt.Println(dir2 + info.Name())
-	}
-	return nil
-}
+//func parseDir(fn func(f *os.File) error) error {
+//	files, err := os.ReadDir(dir2)
+//	if err != nil {
+//		return err
+//	}
+//	for _, f := range files {
+//		if f.IsDir() {
+//			continue
+//		}
+//		info, err := f.Info()
+//		if err != nil {
+//			return err
+//		}
+//		if path.Ext(info.Name()) == ".CR2" || path.Ext(info.Name()) == ".CR3" {
+//			continue
+//		}
+//		f2, err := os.Open(dir2 + info.Name())
+//		if err != nil {
+//			return err
+//		}
+//		defer f2.Close()
+//		if err = fn(f2); err != nil {
+//			return errors.WithMessage(err, info.Name())
+//		}
+//		fmt.Println(dir2 + info.Name())
+//	}
+//	return nil
+//}
 
 //func TestBMFF(t *testing.T) {
 //

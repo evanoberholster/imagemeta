@@ -17,18 +17,18 @@ import (
 
 // Metadata is an Heic file's Metadata
 type Metadata struct {
-	mr          meta.Reader
-	ExifHeader  meta.ExifHeader
-	XmpHeader   meta.XmpHeader
-	jpegOffsets [2]uint32
+	mr         meta.Reader
+	ExifHeader meta.ExifHeader
+	XmpHeader  meta.XmpHeader
+	//jpegOffsets [2]uint32
 
 	FileType bmff.FileTypeBox
 	CrxMoov  bmff.CrxMoovBox
 
 	e *exif.Data
 	// Decode Functions for EXIF and XMP metadata
-	exifFn func(r io.Reader, header meta.ExifHeader) error
-	xmpFn  func(r io.Reader, header meta.XmpHeader) error
+	//exifFn func(r io.Reader, header meta.ExifHeader) error
+	//xmpFn  func(r io.Reader, header meta.XmpHeader) error
 }
 
 // Dimensions returns the dimensions (width and height) of the image

@@ -7,17 +7,13 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/xmp"
 )
 
 func BenchmarkExif(b *testing.B) {
-	f, err := os.Open("../../test/img/2.CR2")
+	f, err := os.Open("../../test/img/1.CR3")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,20 +30,23 @@ func BenchmarkExif(b *testing.B) {
 	b.ReportAllocs()
 
 	var x xmp.XMP
-	var e *exif.Data
-	exifFn := func(r meta.Reader, h meta.ExifHeader) error {
-		e, err = exif.ParseExif(r, h)
-		return nil
-	}
+	//var e *exif.Data
+	//exifFn := func(r meta.Reader, h meta.ExifHeader) error {
+	//	e, err = exif.ParseExif(r, h)
+	//	return nil
+	//}
 
 	for i := 0; i < b.N; i++ {
 		cb.Seek(0, 0)
-		err := tiff.Scan(cb, imagetype.ImageTiff, exifFn, nil)
-		//	m, err := imagemeta.NewMetadata(f, xmpDecodeFn, exifDecodeFn)
+		//err := tiff.Scan(cb, imagetype.ImageCR3, exifFn, nil)
+		m, err := imagemeta.Parse(cb)
 		if err != nil {
 			fmt.Println(err)
 		}
-		//_ = m.Metadata
+		e, err := m.Exif()
+		if err != nil {
+			panic(err)
+		}
 		_ = x
 		if e != nil {
 
@@ -65,14 +64,14 @@ func BenchmarkExif(b *testing.B) {
 			_, _ = e.LensModel()
 			_, _ = e.Aperture()
 			_, _ = e.ShutterSpeed()
-			_, _ = e.ExposureValue()
+			//_, _ = e.ExposureValue()
 			_, _ = e.ExposureBias()
 
-			_, _, _ = e.GPSCoords()
-			c, _ := e.GPSCellID()
-			_ = c.ToToken()
-			_, _ = e.DateTime(time.Local)
-			_, _ = e.ModifyDate(time.Local)
+			//_, _, _ = e.GPSCoords()
+			//c, _ := e.GPSCellID()
+			//_ = c.ToToken()
+			//_, _ = e.DateTime(time.Local)
+			//_, _ = e.ModifyDate(time.Local)
 
 			//fmt.Println(e.GPSDate(nil))
 		}
