@@ -41,6 +41,22 @@ type CrxMoovBox struct {
 	Trak [4]CR3Trak
 }
 
+// CR3MetaBox is a uuidBox that contains Metadata for CR3 files
+type CR3MetaBox struct {
+	//CCTP CCTPBox
+	//THMB THMBBox
+	CNCV CNCVBox
+	CTBO CTBOBox
+	Exif [4]meta.ExifHeader
+}
+
+// CR3Trak is a Canon CR3 Trak box
+type CR3Trak struct {
+	Width, Height     uint16
+	Depth, ImageType  uint16
+	ImageSize, Offset uint32
+}
+
 // ReadCrxMoovBox is a performance focused method for parsing the moov box from a .CR3 file.
 func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 	// Parse Moov Box
@@ -49,11 +65,10 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 		return cmb, errors.Wrapf(err, "Box 'moov' (readBox) error")
 	}
 	if moovBox.boxType != TypeMoov {
-		err = errors.Wrapf(ErrWrongBoxType, "Box %s", moovBox.boxType)
-		return
+		return cmb, errors.Wrapf(ErrWrongBoxType, "Box %s", moovBox.boxType)
 	}
 	if debugFlag {
-		traceBox(moovBox, moovBox)
+		tracebox(moovBox)
 	}
 	var inner box
 	i := 0
@@ -79,11 +94,11 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 			}
 			i++
 			if debugFlag {
-				traceBox(moovBox, inner)
+				tracebox(inner)
 			}
 		default:
 			if debugFlag {
-				traceBox(moovBox, inner)
+				traceBoxWithMsg(inner, "discard")
 			}
 		}
 		if err = moovBox.closeInnerBox(&inner); err != nil {
@@ -95,24 +110,24 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 	return
 }
 
-type CR3Trak struct {
-	Width, Height     uint16
-	Depth, ImageType  uint16
-	ImageSize, Offset uint32
-}
-
 func ParseCrxTrak(trak *box) (t CR3Trak, err error) {
-	buf, err := trak.read()
-	if err != nil {
+	var bt BoxType
+	var size int
+	var buf []byte
+	if buf, err = trak.read(); err != nil {
 		return
 	}
-	var size int
+
 	for remain := len(buf); remain > 0; remain -= size {
 		size = int(binary.BigEndian.Uint32(buf[:4]))
-		switch boxType(buf[4:8]) {
+		bt = boxType(buf[4:8])
+		switch bt {
 		case TypeMdia, TypeMinf, TypeStbl: // open box
 			size = 8
 		case TypeHdlr:
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: trak.offset}}, "hdlr | type: "+string(buf[16:20]))
+			}
 			// skip any trak whose hdlr type is not "vide"
 			if string(buf[16:20]) != "vide" {
 				return
@@ -124,62 +139,37 @@ func ParseCrxTrak(trak *box) (t CR3Trak, err error) {
 				t.Depth = crxBinaryOrder.Uint16(buf[82+stsdHeaderSize : 84+stsdHeaderSize])
 				t.ImageType = crxBinaryOrder.Uint16(buf[86+stsdHeaderSize : 88+stsdHeaderSize])
 			}
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: trak.offset}}, fmt.Sprintf("stsd | width:%d, height:%d, depth:%d, imagetype:%d", t.Width, t.Height, t.Depth, t.ImageType))
+			}
 		case TypeStsz:
 			if size == 20 {
 				t.ImageSize = crxBinaryOrder.Uint32(buf[12+8+4 : 16+8+4])
 			} else if size == 24 {
 				t.ImageSize = crxBinaryOrder.Uint32(buf[12+8 : 16+8])
 			}
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: trak.offset}}, fmt.Sprintf("stsz | imageSize:%d", t.ImageSize))
+			}
 		case TypeCo64:
 			t.Offset = crxBinaryOrder.Uint32(buf[12+8 : 16+8])
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: trak.offset}}, fmt.Sprintf("co64 | imageOffset:%d", t.Offset))
+			}
 		default: // skip other types:
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: trak.offset}}, "discard")
+			}
 		}
 		buf = buf[size:]
 	}
 	return
 }
 
-// ReadXPacketUUIDBox -
-func (r *Reader) ReadXPacketUUIDBox() (err error) {
-	// Parse UUID Box
-	outer, err := r.readBox()
-	if err != nil {
-		err = errors.Wrapf(err, "Box 'uuid' (readBox) error")
-		return
-	}
-	fmt.Println(outer.size, outer.remain, outer.offset)
-	switch outer.boxType {
-	case TypeUUID:
-		uuid, err := outer.readUUID()
-		if err != nil {
-			return err
-		}
-		switch uuid {
-		case CR3XPacketUUID:
-			//cr3, err := parseCR3MetaBox(&inner)
-			//fmt.Println(cr3, err)
-		}
-		//fmt.Println(uuid, uuid.Bytes())
-	default:
-		//fmt.Println(inner)
-	}
-
-	return outer.discard(outer.remain)
-}
-
-// CR3MetaBox is a uuidBox that contains Metadata for CR3 files
-type CR3MetaBox struct {
-	CNCV CNCVBox
-	//CCTP CCTPBox
-	CTBO CTBOBox
-	//THMB THMBBox
-	Exif [4]meta.ExifHeader
-}
-
 // XPacketData returns CTBO[0] which corresponds to XPacket data
 // First 24 bytes are a UUID box. uuid = be7acfcb-97a9-42e8-9c71-999491e3afac
 func (cr3 CR3MetaBox) XPacketData() (offset, length uint32, err error) {
-	item := cr3.CTBO.items[1]
+	item := cr3.CTBO.items[0]
 	return item.offset, item.length, nil
 }
 
@@ -197,19 +187,37 @@ func parseCR3MetaBox(outer *box) (m CR3MetaBox, err error) {
 		switch bt {
 		case TypeCNCV:
 			copy(m.CNCV.val[:], buf[8:38])
+			if debugFlag {
+				traceBoxWithMsg(*outer, m.CNCV.String())
+			}
 		case TypeCTBO:
 			if buf, err = outer.peek(size); err != nil {
 				return
 			}
 			m.CTBO, err = parseCTBO(buf[8:])
+			if debugFlag {
+				traceBoxWithMsg(*outer, m.CTBO.String())
+			}
 		case TypeCMT1:
 			m.Exif[0], err = parseCMT(buf[8:16], ifds.IFD0, uint32(outer.offset+8), uint32(size-8))
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[0].String())
+			}
 		case TypeCMT2:
 			m.Exif[1], err = parseCMT(buf[8:16], ifds.ExifIFD, uint32(outer.offset+8), uint32(size-8))
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[1].String())
+			}
 		case TypeCMT3:
 			m.Exif[2], err = parseCMT(buf[8:16], ifds.MknoteIFD, uint32(outer.offset+8), uint32(size-8))
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[2].String())
+			}
 		case TypeCMT4:
 			m.Exif[3], err = parseCMT(buf[8:16], ifds.GPSIFD, uint32(outer.offset+8), uint32(size-8))
+			if debugFlag {
+				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[3].String())
+			}
 		}
 		if err != nil {
 			return
@@ -225,11 +233,6 @@ type CNCVBox struct {
 	//format [9]byte
 	//version [6]uint8
 	val [30]byte
-}
-
-// Type returns TypeCNCV
-func (cncv CNCVBox) Type() BoxType {
-	return TypeCNCV
 }
 
 func (cncv CNCVBox) String() string {
@@ -253,7 +256,7 @@ func (ctbo CTBOBox) String() string {
 	for idx, item := range ctbo.items {
 		sb.WriteString(fmt.Sprintf("\t | Index:%d, Offset:%d, Size:%d \n", idx, item.offset, item.length))
 	}
-	return sb.String()
+	return sb.String()[:sb.Len()-1]
 }
 
 // IndexOffset has an offset and a length.

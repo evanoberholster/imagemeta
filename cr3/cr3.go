@@ -20,15 +20,11 @@ type Metadata struct {
 	mr         meta.Reader
 	ExifHeader meta.ExifHeader
 	XmpHeader  meta.XmpHeader
-	//jpegOffsets [2]uint32
 
 	FileType bmff.FileTypeBox
 	CrxMoov  bmff.CrxMoovBox
 
 	e *exif.Data
-	// Decode Functions for EXIF and XMP metadata
-	//exifFn func(r io.Reader, header meta.ExifHeader) error
-	//xmpFn  func(r io.Reader, header meta.XmpHeader) error
 }
 
 // Dimensions returns the dimensions (width and height) of the image
@@ -53,6 +49,7 @@ func (m Metadata) Exif() (exif.Exif, error) {
 
 // Xmp returns parsed Xmp data from JPEG
 func (m Metadata) Xmp() (xmp.XMP, error) {
+	m.CrxMoov.Meta.XPacketData()
 	sr := io.NewSectionReader(m.mr, int64(m.XmpHeader.Offset), int64(m.XmpHeader.Length))
 	return xmp.ParseXmp(sr)
 }
@@ -87,6 +84,7 @@ func (m *Metadata) getMeta() (err error) {
 			return err
 		}
 	}
+
 	return nil
 }
 

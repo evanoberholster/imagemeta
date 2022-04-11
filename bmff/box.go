@@ -315,7 +315,7 @@ func init() {
 	parsers = map[BoxType]parserFunc{
 		//boxType("dref"): parseDataReferenceBox,
 		TypeDinf: parseDinf,
-		TypeFtyp: parseFtyp,
+		//TypeFtyp: parseFtyp,
 		TypeHdlr: parseHdlr,
 		TypeIinf: parseIinf,
 		TypeInfe: parseInfe,

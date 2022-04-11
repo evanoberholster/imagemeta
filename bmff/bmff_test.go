@@ -91,14 +91,6 @@ func TestParseMeta(t *testing.T) {
 }
 
 func TestFileTypeBox(t *testing.T) {
-	ftyp := FileTypeBox{}
-
-	if ftyp.Type() != TypeFtyp {
-		t.Errorf("Expected TypeFtyp")
-	}
-	if cleanString([]byte("abcd")) != "abcd" {
-		t.Errorf("Expected complete string")
-	}
 
 	if brandAvif.String() != "avif" {
 		t.Errorf("Brand Avif String Test Error: got %v, expected %v", brandAvif.String(), "avif")
