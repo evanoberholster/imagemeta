@@ -272,8 +272,8 @@ func parseCTBO(buf []byte) (ctbo CTBOBox, err error) {
 	// Each item is 20 bytes in length
 	for i := 4; i+20 <= len(buf); i += 20 {
 		idx := crxBinaryOrder.Uint32(buf[i : i+4])
-		if int(idx) < len(ctbo.items) {
-			ctbo.items[idx] = IndexOffset{
+		if int(idx-1) < len(ctbo.items) {
+			ctbo.items[idx-1] = IndexOffset{
 				offset: uint32(crxBinaryOrder.Uint64(buf[i+4 : i+12])),
 				length: uint32(crxBinaryOrder.Uint64(buf[i+12 : i+20])),
 			}

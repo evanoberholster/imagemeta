@@ -42,15 +42,18 @@ func (m Metadata) PreviewImage() io.Reader {
 	return io.NewSectionReader(m.mr, int64(m.CrxMoov.Trak[0].Offset), int64(m.CrxMoov.Trak[0].ImageSize))
 }
 
-// Exif returns parsed Exif data from JPEG
+// Exif returns parsed Exif data from CR3
 func (m Metadata) Exif() (exif.Exif, error) {
 	return m.e, nil
 }
 
-// Xmp returns parsed Xmp data from JPEG
+// Xmp returns parsed Xmp data from CR3
 func (m Metadata) Xmp() (xmp.XMP, error) {
-	m.CrxMoov.Meta.XPacketData()
-	sr := io.NewSectionReader(m.mr, int64(m.XmpHeader.Offset), int64(m.XmpHeader.Length))
+	offset, length, err := m.CrxMoov.Meta.XPacketData()
+	if err != nil {
+		return xmp.XMP{}, err
+	}
+	sr := io.NewSectionReader(m.mr, int64(offset)+64, int64(length))
 	return xmp.ParseXmp(sr)
 }
 
