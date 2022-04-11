@@ -40,12 +40,12 @@ func TestParseTimeStamp(t *testing.T) {
 	//
 	buf = []byte("1997:09:01")
 	d = newData(newMockReader(buf), imagetype.ImageUnknown)
-	ts, err = d.ParseTimeStamp(wrongTag, tag.Tag{}, nil)
+	_, err = d.ParseTimeStamp(wrongTag, tag.Tag{}, nil)
 	if assert.Error(t, err) {
 		assert.Equal(t, ErrParseTimeStamp, err)
 	}
 
-	ts, err = d.ParseTimeStamp(dateTag, tag.Tag{}, nil)
+	_, err = d.ParseTimeStamp(dateTag, tag.Tag{}, nil)
 	if assert.Error(t, err) {
 		assert.ErrorIs(t, err, io.EOF)
 	}
