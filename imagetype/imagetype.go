@@ -11,18 +11,18 @@ var (
 	ErrDataLength = errors.New("error the data is not long enough")
 
 	// ImageType stringer Index
-	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293}
+	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293, 316}
 
 	// ImageType extension Index
-	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61}
+	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61, 64}
 )
 
 const (
 	// ImageType stringer Names
-	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avif"
+	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avifimage/x-portable-pixmap"
 
 	// ImageType extension Names
-	_ImageTypeExtString = "jpgpnggifbmpwebp4heifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavif"
+	_ImageTypeExtString = "jpgpnggifbmpwebpheifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavifppm"
 )
 
 //go:generate msgp
@@ -48,6 +48,7 @@ const (
 //		ImagePSD:     "image/vnd.adobe.photoshop"
 //		ImageXMP:     "application/rdf+xml"
 //		ImageAVIF:    "image/avif"
+//		ImagePPM:     "image/x-portable-pixmap"
 type ImageType uint8
 
 // IsUnknown returns true if the Image Type is unknown
@@ -118,6 +119,7 @@ const (
 	ImagePSD
 	ImageXMP
 	ImageAVIF
+	ImagePPM
 )
 
 // ImageTypeValues maps a content-type string with an imagetype.
@@ -142,6 +144,7 @@ var imageTypeValues = map[string]ImageType{
 	"image/vnd.adobe.photoshop": ImagePSD,
 	"application/rdf+xml":       ImageXMP,
 	"image/avif":                ImageAVIF,
+	"image/x-portable-pixmap":   ImagePPM,
 }
 
 // ImageTypeExtensions maps filename extensions with an imagetype.
@@ -166,6 +169,7 @@ var imageTypeExtensions = map[string]ImageType{
 	".psd":  ImagePSD,
 	".xmp":  ImageXMP,
 	".avif": ImageAVIF,
+	".ppm":  ImagePPM,
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
@@ -374,4 +378,10 @@ func isGIF(buf []byte) bool {
 		buf[3] == '8' &&
 		(buf[4] == '7' || buf[4] == '9') &&
 		buf[5] == 'a'
+}
+
+func isPPM(buf []byte) bool {
+	return buf[0] == 'P' &&
+		(buf[1] == '3' || buf[1] == '6') &&
+		(buf[2] == '\n' || buf[2] == '\r' || buf[2] == '\t' || buf[2] == ' ')
 }

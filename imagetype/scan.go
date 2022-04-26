@@ -151,5 +151,10 @@ func parseBuffer(buf []byte) ImageType {
 		return ImageGIF
 	}
 
+	// Netpbm color image format
+	if isPPM(buf) {
+		return ImagePPM
+	}
+
 	return ImageUnknown
 }
