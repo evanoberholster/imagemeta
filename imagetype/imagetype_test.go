@@ -26,6 +26,8 @@ func TestScan(t *testing.T) {
 		{"../testImages/XMP.xmp", ImageXMP},
 		{"../testImages/GIF.gif", ImageGIF},
 		{"../testImages/Unknown.exif", ImageUnknown},
+		{"../testImages/ppm-ascii.ppm", ImagePPM},
+		{"../testImages/ppm-raw.ppm", ImagePPM},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {
@@ -59,6 +61,45 @@ func TestScan(t *testing.T) {
 				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType.String(), imageType.String())
 			}
 		})
+	}
+}
+
+func TestImageTypeIndices(t *testing.T) {
+	cases := map[ImageType]struct {
+		ext string
+		mt  string
+	}{
+		ImageUnknown: {"", "application/octet-stream"},
+		ImageJPEG:    {"jpg", "image/jpeg"},
+		ImagePNG:     {"png", "image/png"},
+		ImageGIF:     {"gif", "image/gif"},
+		ImageBMP:     {"bmp", "image/bmp"},
+		ImageWebP:    {"webp", "image/webp"},
+		ImageHEIF:    {"heif", "image/heif"},
+		ImageRAW:     {"RAW", "image/raw"},
+		ImageTiff:    {"TIFF", "image/tiff"},
+		ImageDNG:     {"DNG", "image/x-adobe-dng"},
+		ImageNEF:     {"NEF", "image/x-nikon-nef"},
+		ImagePanaRAW: {"RW2", "image/x-panasonic-raw"},
+		ImageARW:     {"ARW", "image/x-sony-arw"},
+		ImageCRW:     {"CRW", "image/x-canon-crw"},
+		ImageGPR:     {"GPR", "image/x-gopro-gpr"},
+		ImageCR3:     {"CR3", "image/x-canon-cr3"},
+		ImageCR2:     {"CR2", "image/x-canon-cr2"},
+		ImagePSD:     {"PSD", "image/vnd.adobe.photoshop"},
+		ImageXMP:     {"XMP", "application/rdf+xml"},
+		ImageAVIF:    {"avif", "image/avif"},
+		ImagePPM:     {"ppm", "image/x-portable-pixmap"},
+	}
+
+	for it, exp := range cases {
+		if it.Extension() != exp.ext {
+			t.Errorf("%d.Extension() returned '%s', '%s' expected", it, it.Extension(), exp.ext)
+		}
+
+		if it.String() != exp.mt {
+			t.Errorf("%d.String() returned '%s', '%s' expected", it, it.String(), exp.mt)
+		}
 	}
 }
 

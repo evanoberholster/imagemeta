@@ -5,14 +5,17 @@ import "fmt"
 //go:generate msgp
 
 // Dimensions stores width and height
-type Dimensions uint64
+type Dimensions struct {
+	Width  uint32
+	Height uint32
+}
 
 // NewDimensions returns Dimensions with the given width and height
 func NewDimensions(width, height uint32) Dimensions {
 	if width == 0 || height == 0 {
-		return Dimensions(0)
+		return Dimensions{}
 	}
-	return Dimensions(uint64(width)<<32 + uint64(height))
+	return Dimensions{Width: width, Height: height}
 }
 
 func (d Dimensions) String() string {
@@ -22,18 +25,15 @@ func (d Dimensions) String() string {
 
 // Size returns width and height from underlying dimensions
 func (d Dimensions) Size() (width, height uint32) {
-	height = uint32(uint64(d) << 32 >> 32)
-	width = uint32(uint64(d) >> 32)
-	return
+	return d.Width, d.Height
 }
 
 // AspectRatio calculates the Aspect ratio of the Image (Width/Height)
 func (d Dimensions) AspectRatio() float32 {
-	if uint64(d) == 0 {
+	if d.Width == 0 {
 		return 0.0
 	}
-	width, height := d.Size()
-	return float32(width) / float32(height)
+	return float32(d.Width) / float32(d.Height)
 }
 
 // Orientation -
