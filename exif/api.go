@@ -165,7 +165,7 @@ func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 		}
 	}
 
-	return meta.Dimensions(0)
+	return meta.NewDimensions(0, 0)
 }
 
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram

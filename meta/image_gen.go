@@ -8,23 +8,66 @@ import (
 
 // DecodeMsg implements msgp.Decodable
 func (z *Dimensions) DecodeMsg(dc *msgp.Reader) (err error) {
-	{
-		var zb0001 uint64
-		zb0001, err = dc.ReadUint64()
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
 		}
-		(*z) = Dimensions(zb0001)
+		switch msgp.UnsafeString(field) {
+		case "Width":
+			z.Width, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "Width")
+				return
+			}
+		case "Height":
+			z.Height, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "Height")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
 	}
 	return
 }
 
 // EncodeMsg implements msgp.Encodable
 func (z Dimensions) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteUint64(uint64(z))
+	// map header, size 2
+	// write "Width"
+	err = en.Append(0x82, 0xa5, 0x57, 0x69, 0x64, 0x74, 0x68)
 	if err != nil {
-		err = msgp.WrapError(err)
+		return
+	}
+	err = en.WriteUint32(z.Width)
+	if err != nil {
+		err = msgp.WrapError(err, "Width")
+		return
+	}
+	// write "Height"
+	err = en.Append(0xa6, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.Height)
+	if err != nil {
+		err = msgp.WrapError(err, "Height")
 		return
 	}
 	return
@@ -33,20 +76,53 @@ func (z Dimensions) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z Dimensions) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendUint64(o, uint64(z))
+	// map header, size 2
+	// string "Width"
+	o = append(o, 0x82, 0xa5, 0x57, 0x69, 0x64, 0x74, 0x68)
+	o = msgp.AppendUint32(o, z.Width)
+	// string "Height"
+	o = append(o, 0xa6, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74)
+	o = msgp.AppendUint32(o, z.Height)
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *Dimensions) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	{
-		var zb0001 uint64
-		zb0001, bts, err = msgp.ReadUint64Bytes(bts)
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
 		}
-		(*z) = Dimensions(zb0001)
+		switch msgp.UnsafeString(field) {
+		case "Width":
+			z.Width, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Width")
+				return
+			}
+		case "Height":
+			z.Height, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Height")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
 	}
 	o = bts
 	return
@@ -54,6 +130,6 @@ func (z *Dimensions) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z Dimensions) Msgsize() (s int) {
-	s = msgp.Uint64Size
+	s = 1 + 6 + msgp.Uint32Size + 7 + msgp.Uint32Size
 	return
 }
