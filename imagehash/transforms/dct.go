@@ -1,3 +1,5 @@
+// Package transforms provides the transformations for imagehash
+
 // Copyright 2017 The goimagehash Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -73,13 +75,13 @@ func DCT2D(input [][]float64, w int, h int) [][]float64 {
 	return output
 }
 
-func col_DCT1D(wg *sync.WaitGroup, input []float64) {
+func colDCT1D(wg *sync.WaitGroup, input []float64) {
 	temp := [pHashSize]float64{}
 	forwardTransform(input, temp[:], len(input))
 	wg.Done()
 }
 
-func row_DCT1D(wg *sync.WaitGroup, input []float64, i int) {
+func rowDCT1D(wg *sync.WaitGroup, input []float64, i int) {
 	temp := [pHashSize]float64{}
 	row := [pHashSize]float64{}
 	for j := 0; j < pHashSize; j++ {
@@ -96,20 +98,19 @@ func row_DCT1D(wg *sync.WaitGroup, input []float64, i int) {
 const pHashSize = 64
 
 // DCT2D function returns a result of DCT2D by using the seperable property.
-func DCT2D_new(pixels []float64) {
+func DCT2DFast(pixels []float64) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < pHashSize; i++ { // height
 		wg.Add(1)
 		//pool.DCT1DCol <- msg_DCT1DCol{wg: wg, input: pixels[i*pHashSize : (i*pHashSize)+pHashSize]}
-		go col_DCT1D(wg, pixels[i*pHashSize:(i*pHashSize)+pHashSize])
+		go colDCT1D(wg, pixels[i*pHashSize:(i*pHashSize)+pHashSize])
 	}
 	wg.Wait()
 
 	for i := 0; i < pHashSize; i++ { // width
 		wg.Add(1)
 		//pool.DCT1DRow <- msg_DCT1DRow{wg: wg, input: pixels, i: i}
-		go row_DCT1D(wg, pixels, i)
+		go rowDCT1D(wg, pixels, i)
 	}
 	wg.Wait()
-	return
 }

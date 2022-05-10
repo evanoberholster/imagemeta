@@ -22,7 +22,7 @@ func BenchmarkPHash(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err = NewPHashFast(resized)
+		_, err = NewPHash(resized)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -42,7 +42,7 @@ func TestPhash(t *testing.T) {
 	pixels := transforms.Rgb2Gray(resized)
 
 	pixels_new := make([]float64, 4096)
-	transforms.Rgb2Gray_new(resized, pixels_new)
+	transforms.Rgb2GrayFast(resized, pixels_new)
 
 	for j := 0; j < len(pixels[0]); j++ {
 		if pixels_new[j] != pixels[0][j] {
@@ -51,7 +51,7 @@ func TestPhash(t *testing.T) {
 	}
 
 	dct := transforms.DCT2D(pixels, 64, 64)
-	transforms.DCT2D_new(pixels_new)
+	transforms.DCT2DFast(pixels_new)
 
 	for i := 0; i < len(dct); i++ {
 		if pixels_new[i] != dct[0][i] {

@@ -9,7 +9,7 @@ import (
 )
 
 // Rgb2Gray function converts RGB to a gray scale array.
-func Rgb2Gray_new(colorImg image.Image, pixels []float64) {
+func Rgb2GrayFast(colorImg image.Image, pixels []float64) {
 	bounds := colorImg.Bounds()
 	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
 	if w != h && w != pHashSize {
@@ -17,21 +17,19 @@ func Rgb2Gray_new(colorImg image.Image, pixels []float64) {
 	}
 	switch c := colorImg.(type) {
 	case *image.YCbCr:
-		rgb2Gray_YCbCR(c, pixels, w)
+		rgb2GrayYCbCR(c, pixels, w)
 	case *image.RGBA:
-		rgb2Gray_RGBA(c, pixels, w)
+		rgb2GrayRGBA(c, pixels, w)
 	default:
-		rgb2Gray_default(c, pixels, w)
+		rgb2GrayDefault(c, pixels, w)
 	}
-
-	return
 }
 
 func color2Pixel(r, g, b, a uint32) float64 {
 	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
 }
 
-func rgb2Gray_default(colorImg image.Image, pixels []float64, s int) {
+func rgb2GrayDefault(colorImg image.Image, pixels []float64, s int) {
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
 			pixels[j+(i*s)] = color2Pixel(colorImg.At(j, i).RGBA())
@@ -39,22 +37,20 @@ func rgb2Gray_default(colorImg image.Image, pixels []float64, s int) {
 	}
 }
 
-func rgb2Gray_YCbCR(colorImg *image.YCbCr, pixels []float64, s int) {
+func rgb2GrayYCbCR(colorImg *image.YCbCr, pixels []float64, s int) {
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
 			pixels[j+(i*s)] = color2Pixel(colorImg.At(j, i).RGBA())
 		}
 	}
-	return
 }
 
-func rgb2Gray_RGBA(colorImg *image.RGBA, pixels []float64, s int) {
+func rgb2GrayRGBA(colorImg *image.RGBA, pixels []float64, s int) {
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
 			pixels[(i*s)+j] = color2Pixel(colorImg.At(j, i).RGBA())
 		}
 	}
-	return
 }
 
 // Rgb2Gray function converts RGB to a gray scale array.

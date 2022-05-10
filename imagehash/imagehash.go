@@ -1,3 +1,5 @@
+// Package imagehash processes a Perception hash and Average hash from an image.
+
 // Copyright 2022 Evan Oberholster
 // Copyright 2017 The goimagehash Authors.
 // All rights reserved. Use of this source code is governed by a BSD-style
@@ -23,12 +25,14 @@ type Phash uint64
 // Ahash is a 64bit Average Hash
 type Ahash uint64
 
+// Constants
 const (
 	NilPhash    Phash = 0
 	NilAhash    Ahash = 0
 	LengthPHash       = 8
 )
 
+// Variables
 var (
 	ErrImageObject = errors.New("image object can not be nil")
 
@@ -58,28 +62,32 @@ func NewPHash(img image.Image) (phash Phash, err error) {
 }
 
 var pixelsPool = sync.Pool{
-	New: func() interface{} { return make([]float64, 4096) },
+	New: func() interface{} {
+		p := make([]float64, 4096)
+		return &p
+	},
 }
 
-// NewPHash is a Perception Hash function returns a hash computation of phash.
+// NewPHashFast is a Perception Hash function returns a hash computation of phash.
 // Implementation follows
 // http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+// Has been manually optimized for perforance and reduced memory footprint.
 func NewPHashFast(img image.Image) (phash Phash, err error) {
 	if img == nil {
 		return NilPhash, ErrImageObject
 	}
 
-	pixels := pixelsPool.Get().([]float64)
+	pixels := pixelsPool.Get().(*[]float64)
 	defer pixelsPool.Put(pixels)
 
-	transforms.Rgb2Gray_new(img, pixels)
-	transforms.DCT2D_new(pixels)
+	transforms.Rgb2GrayFast(img, *pixels)
+	transforms.DCT2DFast(*pixels)
 
-	median := transforms.MedianOfPixels_new(pixels)
+	median := transforms.MedianOfPixelsFast(*pixels)
 
-	for idx, p := range pixels {
+	for idx, p := range *pixels {
 		if p > median {
-			phash |= 1 << uint(len(pixels)-idx-1) // leftShiftSet
+			phash |= 1 << uint(len(*pixels)-idx-1) // leftShiftSet
 		}
 	}
 	return phash, nil
