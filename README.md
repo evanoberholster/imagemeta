@@ -143,6 +143,19 @@ func main() {
 }
 ```
 
+## Imagehash
+Comparison between PHash and PHashFast
+```go
+name      old time/op    new time/op    delta
+PHash-12     400µs ± 8%     203µs ± 6%  -49.25%  (p=0.000 n=19+20)
+
+name      old alloc/op   new alloc/op   delta
+PHash-12     193kB ± 0%       6kB ± 0%  -96.81%  (p=0.000 n=19+19)
+
+name      old allocs/op  new allocs/op  delta
+PHash-12     4.68k ± 0%     0.13k ± 0%  -97.24%  (p=0.000 n=20+20)
+```
+
 ## Contributing
 
 Suggestions and pull requests are welcome.

@@ -22,7 +22,7 @@ func BenchmarkPHash(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err = NewPHash(resized)
+		_, err = NewPHashFast(resized)
 		if err != nil {
 			b.Fatal(err)
 		}
