@@ -11,18 +11,18 @@ var (
 	ErrDataLength = errors.New("error the data is not long enough")
 
 	// ImageType stringer Index
-	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293, 316}
+	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293, 316, 325, 338, 350}
 
 	// ImageType extension Index
-	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61, 64}
+	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61, 64, 67, 70, 76}
 )
 
 const (
 	// ImageType stringer Names
-	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avifimage/x-portable-pixmap"
+	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avifimage/x-portable-pixmapimage/jp2image/svg+xmlimage/magick"
 
 	// ImageType extension Names
-	_ImageTypeExtString = "jpgpnggifbmpwebpheifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavifppm"
+	_ImageTypeExtString = "jpgpnggifbmpwebpheifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavifppmjp2svgmagick"
 )
 
 //go:generate msgp
@@ -120,6 +120,9 @@ const (
 	ImageXMP
 	ImageAVIF
 	ImagePPM
+	ImageJP2K   // JP2K represents the JPEG 2000 image type.
+	ImageSVG    // SVG represents the SVG image type.
+	ImageMAGICK // MAGICK represents the libmagick compatible genetic image type.
 )
 
 // ImageTypeValues maps a content-type string with an imagetype.
@@ -145,31 +148,37 @@ var imageTypeValues = map[string]ImageType{
 	"application/rdf+xml":       ImageXMP,
 	"image/avif":                ImageAVIF,
 	"image/x-portable-pixmap":   ImagePPM,
+	"image/jp2":                 ImageJP2K,
+	"image/svg+xml":             ImageSVG,
+	"image/magick":              ImageMAGICK,
 }
 
 // ImageTypeExtensions maps filename extensions with an imagetype.
 var imageTypeExtensions = map[string]ImageType{
-	"":      ImageUnknown,
-	".jpg":  ImageJPEG,
-	".png":  ImagePNG,
-	".gif":  ImageGIF,
-	".bmp":  ImageBMP,
-	".webp": ImageWebP,
-	".heif": ImageHEIF,
-	".raw":  ImageRAW,
-	".tiff": ImageTiff,
-	".dng":  ImageDNG,
-	".nef":  ImageNEF,
-	".rw2":  ImagePanaRAW,
-	".arw":  ImageARW,
-	".crw":  ImageCRW,
-	".gpr":  ImageGPR,
-	".cr3":  ImageCR3,
-	".cr2":  ImageCR2,
-	".psd":  ImagePSD,
-	".xmp":  ImageXMP,
-	".avif": ImageAVIF,
-	".ppm":  ImagePPM,
+	"":        ImageUnknown,
+	".jpg":    ImageJPEG,
+	".png":    ImagePNG,
+	".gif":    ImageGIF,
+	".bmp":    ImageBMP,
+	".webp":   ImageWebP,
+	".heif":   ImageHEIF,
+	".raw":    ImageRAW,
+	".tiff":   ImageTiff,
+	".dng":    ImageDNG,
+	".nef":    ImageNEF,
+	".rw2":    ImagePanaRAW,
+	".arw":    ImageARW,
+	".crw":    ImageCRW,
+	".gpr":    ImageGPR,
+	".cr3":    ImageCR3,
+	".cr2":    ImageCR2,
+	".psd":    ImagePSD,
+	".xmp":    ImageXMP,
+	".avif":   ImageAVIF,
+	".ppm":    ImagePPM,
+	".jp2":    ImageJP2K,
+	".svg":    ImageSVG,
+	".magick": ImageMAGICK,
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
