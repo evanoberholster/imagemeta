@@ -1,6 +1,6 @@
 module github.com/evanoberholster/imagemeta
 
-go 1.17
+go 1.18
 
 require (
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551
