@@ -1,10 +1,9 @@
 // Package transforms provides the transformations for imagehash
+package transforms
 
 // Copyright 2017 The goimagehash Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-package transforms
 
 import (
 	"math"
@@ -97,7 +96,7 @@ func rowDCT1D(wg *sync.WaitGroup, input []float64, i int) {
 // pHashSize is PHash Bitsize
 const pHashSize = 64
 
-// DCT2D function returns a result of DCT2D by using the seperable property.
+// DCT2DFast function returns a result of DCT2D by using the seperable property.
 func DCT2DFast(pixels []float64) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < pHashSize; i++ { // height

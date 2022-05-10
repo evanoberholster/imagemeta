@@ -1,11 +1,10 @@
 // Package imagehash processes a Perception hash and Average hash from an image.
+package imagehash
 
 // Copyright 2022 Evan Oberholster
 // Copyright 2017 The goimagehash Authors.
 // All rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-package imagehash
 
 import (
 	"encoding/binary"

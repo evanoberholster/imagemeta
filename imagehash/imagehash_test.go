@@ -41,21 +41,21 @@ func TestPhash(t *testing.T) {
 	resized := resize.Resize(64, 64, img, resize.Bilinear)
 	pixels := transforms.Rgb2Gray(resized)
 
-	pixels_new := make([]float64, 4096)
-	transforms.Rgb2GrayFast(resized, pixels_new)
+	pixelsFast := make([]float64, 4096)
+	transforms.Rgb2GrayFast(resized, pixelsFast)
 
 	for j := 0; j < len(pixels[0]); j++ {
-		if pixels_new[j] != pixels[0][j] {
-			t.Errorf("Pixels wanted %0.6f got %0.6f", pixels[0][j], pixels_new[j])
+		if pixelsFast[j] != pixels[0][j] {
+			t.Errorf("Pixels wanted %0.6f got %0.6f", pixels[0][j], pixelsFast[j])
 		}
 	}
 
 	dct := transforms.DCT2D(pixels, 64, 64)
-	transforms.DCT2DFast(pixels_new)
+	transforms.DCT2DFast(pixelsFast)
 
 	for i := 0; i < len(dct); i++ {
-		if pixels_new[i] != dct[0][i] {
-			t.Errorf("DCT wanted %0.6f got %0.6f", dct[0][i], pixels_new[i])
+		if pixelsFast[i] != dct[0][i] {
+			t.Errorf("DCT wanted %0.6f got %0.6f", dct[0][i], pixelsFast[i])
 		}
 	}
 }

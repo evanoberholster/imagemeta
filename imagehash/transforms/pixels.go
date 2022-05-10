@@ -8,7 +8,7 @@ import (
 	"image"
 )
 
-// Rgb2Gray function converts RGB to a gray scale array.
+// Rgb2GrayFast function converts RGB to a gray scale array.
 func Rgb2GrayFast(colorImg image.Image, pixels []float64) {
 	bounds := colorImg.Bounds()
 	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
