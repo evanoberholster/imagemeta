@@ -9,7 +9,7 @@ import (
 )
 
 // Rgb2GrayFast function converts RGB to a gray scale array.
-func Rgb2GrayFast(colorImg image.Image, pixels []float64) {
+func Rgb2GrayFast(colorImg image.Image, pixels *[]float64) {
 	bounds := colorImg.Bounds()
 	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
 	if w != h && w != pHashSize {
@@ -17,11 +17,11 @@ func Rgb2GrayFast(colorImg image.Image, pixels []float64) {
 	}
 	switch c := colorImg.(type) {
 	case *image.YCbCr:
-		rgb2GrayYCbCR(c, pixels, w)
+		rgb2GrayYCbCR(c, *pixels, w)
 	case *image.RGBA:
-		rgb2GrayRGBA(c, pixels, w)
+		rgb2GrayRGBA(c, *pixels, w)
 	default:
-		rgb2GrayDefault(c, pixels, w)
+		rgb2GrayDefault(c, *pixels, w)
 	}
 }
 

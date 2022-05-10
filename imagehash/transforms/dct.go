@@ -74,21 +74,21 @@ func DCT2D(input [][]float64, w int, h int) [][]float64 {
 	return output
 }
 
-func colDCT1D(wg *sync.WaitGroup, input []float64) {
+func colDCT1D(wg *sync.WaitGroup, input *[]float64, i int) {
 	temp := [pHashSize]float64{}
-	forwardTransform(input, temp[:], len(input))
+	forwardTransform((*input)[i*pHashSize:(i*pHashSize)+pHashSize], temp[:], len(temp))
 	wg.Done()
 }
 
-func rowDCT1D(wg *sync.WaitGroup, input []float64, i int) {
+func rowDCT1D(wg *sync.WaitGroup, input *[]float64, i int) {
 	temp := [pHashSize]float64{}
 	row := [pHashSize]float64{}
 	for j := 0; j < pHashSize; j++ {
-		row[j] = input[i+(j*pHashSize)]
+		row[j] = (*input)[i+(j*pHashSize)]
 	}
 	forwardTransform(row[:], temp[:], len(row[:]))
 	for j := 0; j < len(row); j++ {
-		input[i+(j*pHashSize)] = row[j]
+		(*input)[i+(j*pHashSize)] = row[j]
 	}
 	wg.Done()
 }
@@ -97,19 +97,35 @@ func rowDCT1D(wg *sync.WaitGroup, input []float64, i int) {
 const pHashSize = 64
 
 // DCT2DFast function returns a result of DCT2D by using the seperable property.
-func DCT2DFast(pixels []float64) {
+func DCT2DFast(pixels *[]float64) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < pHashSize; i++ { // height
 		wg.Add(1)
-		//pool.DCT1DCol <- msg_DCT1DCol{wg: wg, input: pixels[i*pHashSize : (i*pHashSize)+pHashSize]}
-		go colDCT1D(wg, pixels[i*pHashSize:(i*pHashSize)+pHashSize])
+		//wp.DCT1DCol(wg, pixels, i)
+		go colDCT1D(wg, pixels, i)
 	}
 	wg.Wait()
 
 	for i := 0; i < pHashSize; i++ { // width
 		wg.Add(1)
-		//pool.DCT1DRow <- msg_DCT1DRow{wg: wg, input: pixels, i: i}
+		//wp.DCT1DRow(wg, pixels, i)
 		go rowDCT1D(wg, pixels, i)
+	}
+	wg.Wait()
+}
+
+func (wp *WorkerPool) DCT2DFast(pixels *[]float64) {
+	wg := wp.wgPool.Get().(*sync.WaitGroup)
+	defer wp.wgPool.Put(wg)
+	for i := 0; i < pHashSize; i++ { // height
+		wg.Add(1)
+		wp.sendDCT1DCol(wg, pixels, i)
+	}
+	wg.Wait()
+
+	for i := 0; i < pHashSize; i++ { // width
+		wg.Add(1)
+		wp.sendDCT1DRow(wg, pixels, i)
 	}
 	wg.Wait()
 }

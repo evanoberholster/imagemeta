@@ -79,8 +79,33 @@ func NewPHashFast(img image.Image) (phash Phash, err error) {
 	pixels := pixelsPool.Get().(*[]float64)
 	defer pixelsPool.Put(pixels)
 
-	transforms.Rgb2GrayFast(img, *pixels)
-	transforms.DCT2DFast(*pixels)
+	transforms.Rgb2GrayFast(img, pixels)
+	transforms.DCT2DFast(pixels)
+
+	median := transforms.MedianOfPixelsFast(*pixels)
+
+	for idx, p := range *pixels {
+		if p > median {
+			phash |= 1 << uint(len(*pixels)-idx-1) // leftShiftSet
+		}
+	}
+	return phash, nil
+}
+
+// NewPHashFastPool is a Perception Hash function returns a hash computation of phash.
+// Implementation follows
+// http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+// Has been manually optimized for perforance and reduced memory footprint.
+func NewPHashFastPool(img image.Image, wp *transforms.WorkerPool) (phash Phash, err error) {
+	if img == nil {
+		return NilPhash, ErrImageObject
+	}
+
+	pixels := pixelsPool.Get().(*[]float64)
+	defer pixelsPool.Put(pixels)
+
+	transforms.Rgb2GrayFast(img, pixels)
+	wp.DCT2DFast(pixels)
 
 	median := transforms.MedianOfPixelsFast(*pixels)
 
