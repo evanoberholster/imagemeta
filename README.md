@@ -144,16 +144,19 @@ func main() {
 ```
 
 ## Imagehash
-Comparison between PHash and PHashFast
+ github.com/evanoberholster/imagemeta/imagehash contains zero allocation Perceptual Hash algorithm called PHashFast. Based on [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
 ```go
-name      old time/op    new time/op    delta
-PHash-12     400µs ± 8%     203µs ± 6%  -49.25%  (p=0.000 n=19+20)
+name                      old time/op    new time/op    delta
+PHash/Regular-12           358µs ±26%     370µs ±17%  +3.28%  (p=0.000 n=189+179)
+PHash/Fast-12             84.8µs ± 7%    84.8µs ± 7%    ~     (p=0.819 n=160+160)
 
-name      old alloc/op   new alloc/op   delta
-PHash-12     193kB ± 0%       6kB ± 0%  -96.81%  (p=0.000 n=19+19)
+name                      old alloc/op   new alloc/op   delta
+PHash/Regular-12           193kB ± 0%     193kB ± 0%    ~     (p=0.683 n=198+196)
+PHash/Fast-12              17.0B ± 0%     17.0B ± 0%    ~     (all equal)
 
-name      old allocs/op  new allocs/op  delta
-PHash-12     4.68k ± 0%     0.13k ± 0%  -97.24%  (p=0.000 n=20+20)
+name                      old allocs/op  new allocs/op  delta
+PHash/Regular-12           4.68k ± 0%     4.68k ± 0%    ~     (all equal)
+PHash/Fast-12               0.00           0.00         ~     (all equal)
 ```
 
 ## Contributing
@@ -255,6 +258,10 @@ Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://g
 - The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
 - Laurent Clévy (@Lorenzo2472) (https://github.com/lclevy/canon_cr3) for Canon CR3 structure.
 - Lasse Heikkilä (https://trepo.tuni.fi/bitstream/handle/123456789/24147/heikkila.pdf) for HEIF structure from his thesis.
+
+### Contributors
+- Anders Brander [abrander](https://github.com/abrander)
+- Dobrosław Żybort [matrixik](https://github.com/matrixik)
 
 ## LICENSE
 

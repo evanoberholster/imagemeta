@@ -5,6 +5,7 @@
 package transforms
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -71,4 +72,32 @@ func TestDCT2D(t *testing.T) {
 			t.Errorf("DCT2D(%v) is expected %v but got %v.", tt.input, tt.output, out)
 		}
 	}
+}
+
+func BenchmarkForward(b *testing.B) {
+
+	arr1 := make([]float64, 64)
+	temp := make([]float64, 64)
+	for i := 0; i < len(arr1); i++ {
+		arr1[i] = float64(rand.Int63n(100000)) * 0.001
+	}
+	b.Run("forward", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			forwardTransform(arr1, temp, len(arr1))
+
+		}
+	})
+	b.Run("forwardFast", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			forwardTransformFast(arr1, temp, len(arr1))
+		}
+	})
+
+	b.Run("forwardStatic", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			DCT1DFast64(arr1)
+		}
+	})
+	//
+
 }

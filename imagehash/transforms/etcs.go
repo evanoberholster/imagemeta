@@ -33,7 +33,7 @@ func MedianOfPixels(pixels []float64) float64 {
 // MedianOfPixelsFast function returns a median value of pixels.
 // It uses quick selection algorithm.
 func MedianOfPixelsFast(pixels []float64) float64 {
-	tmp := [pHashSize * pHashSize]float64{}
+	tmp := [64]float64{}
 	copy(tmp[:], pixels)
 	l := len(tmp)
 	pos := l / 2
