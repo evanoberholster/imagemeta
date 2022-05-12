@@ -49,7 +49,7 @@ func NewPHash(img image.Image) (phash Phash, err error) {
 
 	pixels := transforms.Rgb2Gray(img)
 	dct := transforms.DCT2D(pixels, 64, 64)
-	flattens := transforms.FlattenPixels(dct, 64, 64)
+	flattens := transforms.FlattenPixels(dct, 8, 8)
 	median := transforms.MedianOfPixels(flattens)
 
 	for idx, p := range flattens {
@@ -77,16 +77,17 @@ func NewPHashFast(img image.Image) (phash Phash, err error) {
 	}
 
 	pixels := pixelsPool.Get().(*[]float64)
-	defer pixelsPool.Put(pixels)
 
 	transforms.Rgb2GrayFast(img, pixels)
 	transforms.DCT2DFast(pixels)
+	flattens := transforms.FlattenPixelsFast64(*pixels, 8, 8)
+	pixelsPool.Put(pixels)
 
-	median := transforms.MedianOfPixelsFast(*pixels)
+	median := transforms.MedianOfPixelsFast(flattens)
 
-	for idx, p := range *pixels {
+	for idx, p := range flattens {
 		if p > median {
-			phash |= 1 << uint(len(*pixels)-idx-1) // leftShiftSet
+			phash |= 1 << uint(len(flattens)-idx-1) // leftShiftSet
 		}
 	}
 	return phash, nil

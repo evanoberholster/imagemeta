@@ -86,3 +86,14 @@ func FlattenPixels(pixels [][]float64, x int, y int) []float64 {
 	}
 	return flattens
 }
+
+// FlattenPixelsFast function flattens 2d array into 1d array.
+func FlattenPixelsFast64(pixels []float64, x int, y int) []float64 {
+	flattens := [64]float64{}
+	for i := 0; i < y; i++ {
+		for j := 0; j < x; j++ {
+			flattens[y*i+j] = pixels[(i*64)+j]
+		}
+	}
+	return flattens[:]
+}
