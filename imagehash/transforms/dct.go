@@ -86,7 +86,7 @@ func DCT2DFast(input *[]float64) {
 		panic("Incorrect forward transform size")
 	}
 	for i := 0; i < pHashSize; i++ { // height
-		forwardTransformStatic64((*input)[i*pHashSize : (i*pHashSize)+pHashSize])
+		DCT1DFast64((*input)[i*pHashSize : (i*pHashSize)+pHashSize])
 	}
 
 	for i := 0; i < pHashSize; i++ { // width
@@ -94,11 +94,19 @@ func DCT2DFast(input *[]float64) {
 		for j := 0; j < pHashSize; j++ {
 			row[j] = (*input)[i+((j)*pHashSize)]
 		}
-		forwardTransformStatic64(row[:])
+		DCT1DFast64(row[:])
 		for j := 0; j < len(row); j++ {
 			(*input)[i+(j*pHashSize)] = row[j]
 		}
 	}
+}
+
+// DCT1DFast function returns result of DCT-II.
+// DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
+func DCT1DFast(input []float64) []float64 {
+	temp := make([]float64, len(input))
+	forwardTransform(input, temp, len(input))
+	return input
 }
 
 func forwardTransformFast(input, temp []float64, Len int) {

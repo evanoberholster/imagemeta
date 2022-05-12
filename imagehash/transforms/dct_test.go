@@ -95,7 +95,7 @@ func BenchmarkForward(b *testing.B) {
 
 	b.Run("forwardStatic", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			forwardTransformStatic64(arr1)
+			DCT1DFast64(arr1)
 		}
 	})
 	//

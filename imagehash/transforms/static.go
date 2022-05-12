@@ -1,6 +1,6 @@
 package transforms
 
-func forwardTransformStatic64(input []float64) {
+func DCT1DFast64(input []float64) {
 	var temp [64]float64
 	for i := 0; i < 32; i++ {
 		x, y := input[i], input[63-i]
