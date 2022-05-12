@@ -87,7 +87,7 @@ func FlattenPixels(pixels [][]float64, x int, y int) []float64 {
 	return flattens
 }
 
-// FlattenPixelsFast function flattens 2d array into 1d array.
+// FlattenPixelsFast64 function flattens pixels array from DCT2D into [64]float array.
 func FlattenPixelsFast64(pixels []float64, x int, y int) []float64 {
 	flattens := [64]float64{}
 	for i := 0; i < y; i++ {
