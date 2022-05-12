@@ -22,6 +22,7 @@ func BenchmarkPHash64(b *testing.B) {
 	resized := resize.Resize(64, 64, img, resize.Bicubic)
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	b.Run("Regular", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, err = NewPHash(resized)
@@ -39,6 +40,7 @@ func BenchmarkPHash64(b *testing.B) {
 			}
 		}
 	})
+
 	b.Run("Parallel", func(b *testing.B) {
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
