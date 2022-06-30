@@ -6,6 +6,7 @@ package transforms
 
 import (
 	"image"
+	"math"
 )
 
 // Rgb2GrayFast function converts RGB to a gray scale array.
@@ -87,13 +88,33 @@ func FlattenPixels(pixels [][]float64, x int, y int) []float64 {
 	return flattens
 }
 
-// FlattenPixelsFast64 function flattens pixels array from DCT2D into [64]float array.
-func FlattenPixelsFast64(pixels []float64, x int, y int) []float64 {
-	flattens := [64]float64{}
-	for i := 0; i < y; i++ {
-		for j := 0; j < x; j++ {
-			flattens[y*i+j] = pixels[(i*64)+j]
+// FlattenPixelsFast function flattens pixels array from DCT2D into [64]float array.
+func FlattenPixelsFast(pixels *[]float64) []float64 {
+	flattens := [pHashSize]float64{}
+	for i := 0; i < 8; i++ {
+		for j := 0; j < 8; j++ {
+			flattens[8*i+j] = (*pixels)[64*i+j]
 		}
 	}
 	return flattens[:]
+}
+
+func LinearTosRGB(value float64) int {
+	v := math.Max(0, math.Min(1, value))
+	if v <= 0.0031308 {
+		return int(v*12.92*255 + 0.5)
+	}
+	return int((1.055*math.Pow(v, 1/2.4)-0.055)*255 + 0.5)
+}
+
+func SRGBToLinear(value int) float64 {
+	v := float64(value) / 255
+	if v <= 0.04045 {
+		return v / 12.92
+	}
+	return math.Pow((v+0.055)/1.055, 2.4)
+}
+
+func SignPow(value, exp float64) float64 {
+	return math.Copysign(math.Pow(math.Abs(value), exp), value)
 }
