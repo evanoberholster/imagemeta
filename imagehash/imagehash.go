@@ -80,7 +80,7 @@ func NewPHashFast(img image.Image) (phash Phash, err error) {
 
 	transforms.Rgb2GrayFast(img, pixels)
 	transforms.DCT2DFast(pixels)
-	flattens := transforms.FlattenPixelsFast64(*pixels, 8, 8)
+	flattens := transforms.FlattenPixelsFast(pixels)
 	pixelsPool.Put(pixels)
 
 	median := transforms.MedianOfPixelsFast(flattens)
