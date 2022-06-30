@@ -80,27 +80,15 @@ func forwardTransformStatic8(input []float64) {
 }
 
 func forwardTransformStatic4(input []float64) {
-	var (
-		t0, t1, t2, t3 float64
-	)
-	x0, y0 := input[0], input[3]
-	x1, y1 := input[1], input[2]
+	x0, x1, y1, y0 := input[0], input[1], input[2], input[3]
 
-	t0 = x0 + y0
-	t1 = x1 + y1
-	t2 = (x0 - y0) / 1.8477590650225735
-	t3 = (x1 - y1) / 0.7653668647301797
+	t0 := x0 + y0
+	t1 := x1 + y1
+	t2 := (x0 - y0) / 1.8477590650225735
+	t3 := (x1 - y1) / 0.7653668647301797
 
-	x, y := t0, t1
-	t0 += t1
-	t1 = (x - y) / 1.4142135623730951
-
-	x, y = t2, t3
-	t2 += t3
-	t3 = (x - y) / 1.4142135623730951
-
-	input[0] = t0
-	input[1] = t2 + t3
-	input[2] = t1
-	input[3] = t3
+	input[0] = t0 + t1
+	input[1] = t2 + t3 + (t2-t3)/1.4142135623730951
+	input[2] = (t0 - t1) / 1.4142135623730951
+	input[3] = (t2 - t3) / 1.4142135623730951
 }
