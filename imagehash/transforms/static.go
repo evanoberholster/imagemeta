@@ -3,7 +3,7 @@ package transforms
 func DCT1DFast64(input []float64) {
 	var temp [64]float64
 	for i := 0; i < 32; i++ {
-		x, y := input[i], input[63-i]
+		x, y := input[i], input[64-1-i]
 		temp[i] = x + y
 		temp[i+32] = (x - y) / dct64[i]
 	}
@@ -19,7 +19,7 @@ func DCT1DFast64(input []float64) {
 func forwardTransformStatic32(input []float64) {
 	var temp [32]float64
 	for i := 0; i < 16; i++ {
-		x, y := input[i], input[31-i]
+		x, y := input[i], input[32-1-i]
 		temp[i] = x + y
 		temp[i+16] = (x - y) / dct32[i]
 	}
@@ -40,8 +40,8 @@ func forwardTransformStatic16(input []float64) {
 		temp[i] = x + y
 		temp[i+8] = (x - y) / dct16[i]
 	}
-	forwardTransformStatic8(temp[:8])
-	forwardTransformStatic8(temp[8:])
+	forwardDCT8(temp[:8])
+	forwardDCT8(temp[8:])
 	for i := 0; i < 8-1; i++ {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+8] + temp[i+8+1]
@@ -50,45 +50,47 @@ func forwardTransformStatic16(input []float64) {
 	input[16-2], input[16-1] = temp[8-1], temp[16-1]
 }
 
-func forwardTransformStatic8(input []float64) {
-	var temp [8]float64
-	x0, y0 := input[0], input[7]
-	x1, y1 := input[1], input[6]
-	x2, y2 := input[2], input[5]
-	x3, y3 := input[3], input[4]
+func forwardDCT8(input []float64) {
+	x0 := input[0]
+	x1 := input[1]
+	x2 := input[2]
+	x3 := input[3]
+	x4 := input[4]
+	x5 := input[5]
+	x6 := input[6]
+	x7 := input[7]
 
-	temp[0] = x0 + y0
-	temp[1] = x1 + y1
-	temp[2] = x2 + y2
-	temp[3] = x3 + y3
-	temp[4] = (x0 - y0) / 1.9615705608064609
-	temp[5] = (x1 - y1) / 1.6629392246050907
-	temp[6] = (x2 - y2) / 1.1111404660392046
-	temp[7] = (x3 - y3) / 0.3901806440322566
+	tmp0 := x0 + x7
+	tmp1 := x1 + x6
+	tmp2 := x2 + x5
+	tmp3 := x3 + x4
 
-	forwardTransformStatic4(temp[:4])
-	forwardTransformStatic4(temp[4:])
+	tmp4 := (x0 - x7) / 1.9615705608064609
+	tmp5 := (x1 - x6) / 1.6629392246050907
+	tmp6 := (x2 - x5) / 1.1111404660392046
+	tmp7 := (x3 - x4) / 0.3901806440322566
 
-	input[0] = temp[0]
-	input[1] = temp[4] + temp[5]
-	input[2] = temp[1]
-	input[3] = temp[5] + temp[6]
-	input[4] = temp[2]
-	input[5] = temp[6] + temp[7]
-	input[6] = temp[3]
-	input[7] = temp[7]
-}
+	a0 := tmp0 + tmp3
+	a1 := tmp1 + tmp2
+	a2 := (tmp0 - tmp3) / 1.8477590650225735
+	a3 := (tmp1 - tmp2) / 0.7653668647301797
 
-func forwardTransformStatic4(input []float64) {
-	x0, x1, y1, y0 := input[0], input[1], input[2], input[3]
+	a4 := tmp4 + tmp7
+	a5 := tmp5 + tmp6
+	a6 := (tmp4 - tmp7) / 1.8477590650225735
+	a7 := (tmp5 - tmp6) / 0.7653668647301797
 
-	t0 := x0 + y0
-	t1 := x1 + y1
-	t2 := (x0 - y0) / 1.8477590650225735
-	t3 := (x1 - y1) / 0.7653668647301797
+	b0 := (a0 - a1) / 1.4142135623730951
+	b1 := (a4 - a5) / 1.4142135623730951
+	b2 := (a2 - a3) / 1.4142135623730951
+	b3 := (a6 - a7) / 1.4142135623730951
 
-	input[0] = t0 + t1
-	input[1] = t2 + t3 + (t2-t3)/1.4142135623730951
-	input[2] = (t0 - t1) / 1.4142135623730951
-	input[3] = (t2 - t3) / 1.4142135623730951
+	input[0] = a0 + a1
+	input[1] = a4 + a5 + a6 + a7 + b3
+	input[2] = a2 + a3 + b2
+	input[3] = a6 + a7 + b1 + b3
+	input[4] = b0
+	input[5] = b1 + b3
+	input[6] = b2
+	input[7] = b3
 }

@@ -89,8 +89,8 @@ func DCT2DFast(input *[]float64) {
 		DCT1DFast64((*input)[i*pHashSize : (i*pHashSize)+pHashSize])
 	}
 
+	var row [pHashSize]float64
 	for i := 0; i < pHashSize; i++ { // width
-		row := [pHashSize]float64{}
 		for j := 0; j < pHashSize; j++ {
 			row[j] = (*input)[i+((j)*pHashSize)]
 		}
@@ -109,49 +109,8 @@ func DCT1DFast(input []float64) []float64 {
 	return input
 }
 
-func forwardTransformFast(input, temp []float64, Len int) {
-	if Len == 1 {
-		return
-	}
-
-	halfLen := Len / 2
-	t := dctTables[halfLen>>1]
-	for i := 0; i < halfLen; i++ {
-		x, y := input[i], input[Len-1-i]
-		temp[i] = x + y
-		temp[i+halfLen] = (x - y) / t[i]
-	}
-	forwardTransformFast(temp, input, halfLen)
-	forwardTransformFast(temp[halfLen:], input, halfLen)
-	for i := 0; i < halfLen-1; i++ {
-		input[i*2+0] = temp[i]
-		input[i*2+1] = temp[i+halfLen] + temp[i+halfLen+1]
-	}
-
-	input[Len-2], input[Len-1] = temp[halfLen-1], temp[Len-1]
-}
-
 // DCT Tables
 var (
-	dctTables = [][]float64{
-		dct2[:],  //0
-		dct4[:],  //1
-		dct8[:],  //2
-		nil,      //3
-		dct16[:], //4
-		nil,      //5
-		nil,      //6
-		nil,      //7
-		dct32[:], //8
-		nil,      //9
-		nil,      //10
-		nil,      //11
-		nil,      //12
-		nil,      //13
-		nil,      //14
-		nil,      //15
-		dct64[:], //16
-	}
 	dct64 = [32]float64{
 		(math.Cos((float64(0)+0.5)*math.Pi/64) * 2),
 		(math.Cos((float64(1)+0.5)*math.Pi/64) * 2),
@@ -213,18 +172,5 @@ var (
 		(math.Cos((float64(5)+0.5)*math.Pi/16) * 2),
 		(math.Cos((float64(6)+0.5)*math.Pi/16) * 2),
 		(math.Cos((float64(7)+0.5)*math.Pi/16) * 2),
-	}
-	dct8 = [4]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/8) * 2),
-		(math.Cos((float64(1)+0.5)*math.Pi/8) * 2),
-		(math.Cos((float64(2)+0.5)*math.Pi/8) * 2),
-		(math.Cos((float64(3)+0.5)*math.Pi/8) * 2),
-	}
-	dct4 = [2]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/4) * 2),
-		(math.Cos((float64(1)+0.5)*math.Pi/4) * 2),
-	}
-	dct2 = [1]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/2) * 2),
 	}
 )
