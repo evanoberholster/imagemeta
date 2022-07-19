@@ -85,17 +85,17 @@ func DCT2DFast(input *[]float64) {
 	if len(*input) != 4096 {
 		panic("Incorrect forward transform size")
 	}
-	for i := 0; i < pHashSize; i++ { // height
+	for i := 0; i < 64; i++ { // height
 		DCT1DFast64((*input)[i*pHashSize : (i*pHashSize)+pHashSize])
 	}
 
 	var row [pHashSize]float64
-	for i := 0; i < pHashSize; i++ { // width
-		for j := 0; j < pHashSize; j++ {
+	for i := 0; i < 8; i++ { // width
+		for j := 0; j < 64; j++ {
 			row[j] = (*input)[i+((j)*pHashSize)]
 		}
 		DCT1DFast64(row[:])
-		for j := 0; j < len(row); j++ {
+		for j := 0; j < 64; j++ {
 			(*input)[i+(j*pHashSize)] = row[j]
 		}
 	}
