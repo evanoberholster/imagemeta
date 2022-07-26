@@ -44,7 +44,7 @@ func newPHash(img image.Image) (phash PHash64, err error) {
 	return phash, nil
 }
 
-// NewPHashFast is a Perception Hash function returns a hash computation of phash.
+// NewPHash64 is a Perception Hash function returns a hash computation of phash.
 // Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 // Optimized for performance and reduced memory footprint.
 func NewPHash64(img image.Image) (phash PHash64, err error) {
@@ -101,7 +101,7 @@ func newPHashExt(img image.Image) (phash PHash256, err error) {
 	return phash, nil
 }
 
-// NewPHashFast256 is a Perception Hash function returns a 256bit hash computation
+// NewPHash256 is a Perception Hash function returns a 256bit hash computation
 // Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 // Optimized for performance and reduced memory footprint.
 func NewPHash256(img image.Image) (phash PHash256, err error) {
@@ -186,7 +186,7 @@ var (
 // Ahash is a 64bit Average Hash
 type Ahash uint64
 
-// PHash is a 64bit Perception Hash
+// PHash64 is a 64bit Perception Hash
 type PHash64 uint64
 
 // Distance between Phash values

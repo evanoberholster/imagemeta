@@ -30,7 +30,7 @@ func MedianOfPixels(pixels []float64) float64 {
 	return v
 }
 
-// MedianOfPixelsHash64 function returns a median value of pixels.
+// MedianOfPixels64 function returns a median value of pixels.
 // It uses quick selection algorithm.
 func MedianOfPixels64(pixels []float64) float64 {
 	tmp := [64]float64{}
@@ -40,7 +40,7 @@ func MedianOfPixels64(pixels []float64) float64 {
 	return quickSelectMedian(tmp[:], 0, l-1, pos)
 }
 
-// MedianOfPixelsHash256 function returns a median value of pixels.
+// MedianOfPixels256 function returns a median value of pixels.
 // It uses quick selection algorithm.
 func MedianOfPixels256(pixels []float64) float64 {
 	tmp := [256]float64{}

@@ -40,7 +40,7 @@ func rgb2GrayDefault(colorImg image.Image, pixels []float64, s int) {
 	}
 }
 
-// rgb2GrayYCbCR uses *image.YCbCr which is signifiantly faster than the image.Image interface.
+// YCbCR2Gray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
 func YCbCR2Gray(colorImg *image.YCbCr, pixels []float64) {
 	s := colorImg.Rect.Dx()
 	for i := 0; i < s; i++ {
@@ -94,7 +94,7 @@ func PixelYCnCRGray(img *image.YCbCr, pixels []float64) {
 	}
 }
 
-// rgb2GrayYCbCR uses *image.YCbCr which is signifiantly faster than the image.Image interface.
+// OldYCbCR2Gray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
 func OldYCbCR2Gray(colorImg *image.YCbCr, pixels []float64, s int) {
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
@@ -140,17 +140,6 @@ func FlattenPixels(pixels [][]float64, x int, y int) []float64 {
 		}
 	}
 	return flattens
-}
-
-// FlattenPixelsHash64 function flattens pixels array from DCT2D into [64]float64 array.
-func FlattenPixelsFast(pixels *[]float64) []float64 {
-	flattens := [64]float64{}
-	for j := 0; j < 8; j++ {
-		for i := 0; i < 8; i++ {
-			flattens[8*j+i] = (*pixels)[64*j+i]
-		}
-	}
-	return flattens[:]
 }
 
 func LinearTosRGB(value float64) int {
