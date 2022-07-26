@@ -1,4 +1,4 @@
-# Exif Tool
+# Imagemeta
 
 [![License][License-Image]][License-Url]
 [![Godoc][Godoc-Image]][Godoc-Url]
@@ -6,7 +6,7 @@
 [![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-Image Metadata (Exif and XMP) extraction for JPEG, HEIC, WebP, AVIF, TIFF and Camera Raw in golang. Focus is on providing wide variety of features while being perfomance oriented.
+Image Metadata (Exif and XMP) extraction for JPEG, HEIC, WebP, AVIF, TIFF, and Camera Raw in golang. Imagetype identifcation. Zero allocation Perceptual Image Hash. Goal is features that are performance oriented for working with images.
 
 ## Documentation
 
@@ -144,19 +144,25 @@ func main() {
 ```
 
 ## Imagehash
- github.com/evanoberholster/imagemeta/imagehash contains zero allocation Perceptual Hash algorithm called PHashFast. Based on [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
+Zero allocation Perceptual Hash algorithm for 64bit and 256bit hash [github.com/evanoberholster/imagemeta/imagehash](https://github.com/evanoberholster/imagemeta/imagehash). Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html. Images will need to be resized prior to imagehashing, either 64x64 or 256x256 respectively.
 ```go
-name                      old time/op    new time/op    delta
-PHash/Regular-12           358µs ±26%     370µs ±17%  +3.28%  (p=0.000 n=189+179)
-PHash/Fast-12             84.8µs ± 7%    84.8µs ± 7%    ~     (p=0.819 n=160+160)
+name                       time/op
+PHash64/Fast-12           40.8µs ± 1%
+PHash64/Fast-Parallel-12  6.55µs ± 1%
+PHash256/Fast-12            761µs ± 1%
+PHash256/Fast-Parallel-12   122µs ± 1%
 
-name                      old alloc/op   new alloc/op   delta
-PHash/Regular-12           193kB ± 0%     193kB ± 0%    ~     (p=0.683 n=198+196)
-PHash/Fast-12              17.0B ± 0%     17.0B ± 0%    ~     (all equal)
+name                       alloc/op
+PHash64/Fast-12           0.75B ±167%
+PHash64/Fast-Parallel-12   0.00B     
+PHash256/Fast-12            225B ±100%
+PHash256/Fast-Parallel-12  0.69B ±336%
 
-name                      old allocs/op  new allocs/op  delta
-PHash/Regular-12           4.68k ± 0%     4.68k ± 0%    ~     (all equal)
-PHash/Fast-12               0.00           0.00         ~     (all equal)
+name                       allocs/op
+PHash64/Fast-12             0.00     
+PHash64/Fast-Parallel-12    0.00  
+PHash256/Fast-12             0.00     
+PHash256/Fast-Parallel-12    0.00     
 ```
 
 ## Contributing
@@ -258,6 +264,7 @@ Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://g
 - The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
 - Laurent Clévy (@Lorenzo2472) (https://github.com/lclevy/canon_cr3) for Canon CR3 structure.
 - Lasse Heikkilä (https://trepo.tuni.fi/bitstream/handle/123456789/24147/heikkila.pdf) for HEIF structure from his thesis.
+- Imagehash authors (https://github.com/corona10/goimagehash)
 
 ### Contributors
 - Anders Brander [abrander](https://github.com/abrander)
