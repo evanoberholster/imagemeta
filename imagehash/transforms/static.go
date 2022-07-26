@@ -7,8 +7,8 @@ func forwardDCT256(input []float64) {
 		temp[i] = x + y
 		temp[i+128] = (x - y) / dct256[i]
 	}
-	forwardDCT64(temp[:128])
-	forwardDCT64(temp[128:])
+	forwardDCT128(temp[:128])
+	forwardDCT128(temp[128:])
 	for i := 0; i < 128-1; i++ {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+128] + temp[i+128+1]
@@ -29,7 +29,7 @@ func forwardDCT128(input []float64) {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+64] + temp[i+64+1]
 	}
-	input[64-2], input[128-1] = temp[64-1], temp[128-1]
+	input[128-2], input[128-1] = temp[64-1], temp[128-1]
 }
 
 func forwardDCT64(input []float64) {

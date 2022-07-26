@@ -99,6 +99,56 @@ func DCT2DFast(input *[]float64) {
 	}
 }
 
+// DCT2DHash64 function returns a result of DCT2D by using the seperable property.
+// DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
+// Cusstom built for Hash64. Returns flattened pixels
+func DCT2DHash64(input *[]float64) [64]float64 {
+	var flattens [64]float64
+	if len(*input) != 64*64 {
+		panic("Incorrect forward transform size")
+	}
+	for i := 0; i < 64; i++ { // height
+		forwardDCT64((*input)[i*64 : 64*i+64])
+	}
+
+	var row [64]float64
+	for i := 0; i < 8; i++ { // width
+		for j := 0; j < 64; j++ {
+			row[j] = (*input)[64*j+i]
+		}
+		forwardDCT64(row[:])
+		for j := 0; j < 8; j++ {
+			flattens[8*j+i] = row[j]
+		}
+	}
+	return flattens
+}
+
+// DCT2DHash256 function returns a result of DCT2D by using the seperable property.
+// DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
+// Cusstom built for Hash256. Returns flattened pixels
+func DCT2DHash256(input *[]float64) [256]float64 {
+	var flattens [256]float64
+	if len(*input) != 256*256 {
+		panic("Incorrect forward transform size")
+	}
+	for i := 0; i < 256; i++ { // height
+		forwardDCT256((*input)[i*256 : 256*i+256])
+	}
+
+	var row [4096]float64
+	for i := 0; i < 16; i++ { // width
+		for j := 0; j < 256; j++ {
+			row[j] = (*input)[256*j+i]
+		}
+		forwardDCT256(row[:])
+		for j := 0; j < 16; j++ {
+			flattens[16*j+i] = row[j]
+		}
+	}
+	return flattens
+}
+
 // DCT1DFast function returns result of DCT-II.
 func DCT1DFast(input []float64) []float64 {
 	temp := make([]float64, len(input))

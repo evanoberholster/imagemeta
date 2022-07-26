@@ -13,7 +13,7 @@ import (
 func Rgb2GrayFast(colorImg image.Image, pixels *[]float64) {
 	bounds := colorImg.Bounds()
 	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
-	if w != h && w != 64 {
+	if w != h {
 		return
 	}
 	switch c := colorImg.(type) {
@@ -142,7 +142,7 @@ func FlattenPixels(pixels [][]float64, x int, y int) []float64 {
 	return flattens
 }
 
-// FlattenPixelsFast function flattens pixels array from DCT2D into [64]float array.
+// FlattenPixelsHash64 function flattens pixels array from DCT2D into [64]float64 array.
 func FlattenPixelsFast(pixels *[]float64) []float64 {
 	flattens := [64]float64{}
 	for j := 0; j < 8; j++ {
