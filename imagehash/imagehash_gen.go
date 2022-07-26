@@ -59,7 +59,85 @@ func (z Ahash) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *Phash) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *PHash256) DecodeMsg(dc *msgp.Reader) (err error) {
+	var zb0001 uint32
+	zb0001, err = dc.ReadArrayHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	if zb0001 != uint32(4) {
+		err = msgp.ArrayError{Wanted: uint32(4), Got: zb0001}
+		return
+	}
+	for za0001 := range z {
+		z[za0001], err = dc.ReadUint64()
+		if err != nil {
+			err = msgp.WrapError(err, za0001)
+			return
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *PHash256) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteArrayHeader(uint32(4))
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for za0001 := range z {
+		err = en.WriteUint64(z[za0001])
+		if err != nil {
+			err = msgp.WrapError(err, za0001)
+			return
+		}
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *PHash256) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendArrayHeader(o, uint32(4))
+	for za0001 := range z {
+		o = msgp.AppendUint64(o, z[za0001])
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *PHash256) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	if zb0001 != uint32(4) {
+		err = msgp.ArrayError{Wanted: uint32(4), Got: zb0001}
+		return
+	}
+	for za0001 := range z {
+		z[za0001], bts, err = msgp.ReadUint64Bytes(bts)
+		if err != nil {
+			err = msgp.WrapError(err, za0001)
+			return
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *PHash256) Msgsize() (s int) {
+	s = msgp.ArrayHeaderSize + (4 * (msgp.Uint64Size))
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *PHash64) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
 		var zb0001 uint64
 		zb0001, err = dc.ReadUint64()
@@ -67,13 +145,13 @@ func (z *Phash) DecodeMsg(dc *msgp.Reader) (err error) {
 			err = msgp.WrapError(err)
 			return
 		}
-		(*z) = Phash(zb0001)
+		(*z) = PHash64(zb0001)
 	}
 	return
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z Phash) EncodeMsg(en *msgp.Writer) (err error) {
+func (z PHash64) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteUint64(uint64(z))
 	if err != nil {
 		err = msgp.WrapError(err)
@@ -83,14 +161,14 @@ func (z Phash) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z Phash) MarshalMsg(b []byte) (o []byte, err error) {
+func (z PHash64) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	o = msgp.AppendUint64(o, uint64(z))
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *Phash) UnmarshalMsg(bts []byte) (o []byte, err error) {
+func (z *PHash64) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	{
 		var zb0001 uint64
 		zb0001, bts, err = msgp.ReadUint64Bytes(bts)
@@ -98,14 +176,14 @@ func (z *Phash) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			err = msgp.WrapError(err)
 			return
 		}
-		(*z) = Phash(zb0001)
+		(*z) = PHash64(zb0001)
 	}
 	o = bts
 	return
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z Phash) Msgsize() (s int) {
+func (z PHash64) Msgsize() (s int) {
 	s = msgp.Uint64Size
 	return
 }

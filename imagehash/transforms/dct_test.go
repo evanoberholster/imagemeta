@@ -74,8 +74,55 @@ func TestDCT2D(t *testing.T) {
 	}
 }
 
-func BenchmarkForward(b *testing.B) {
+func TestFastDCT2D(t *testing.T) {
+	size := 64
+	arr := make([]float64, size*size)
+	arr2 := make([][]float64, size)
 
+	for x := 0; x < size; x++ {
+		arr2[x] = make([]float64, size)
+		for i := 0; i < size; i++ {
+			val := rand.Float64()
+			arr[64*i+x] = val
+			arr2[x][i] = val
+		}
+	}
+
+	arr2 = DCT2D(arr2, 64, 64)
+	DCT2DFast(&arr)
+
+	for x := 0; x < size; x++ {
+		for i := 0; i < size; i++ {
+			if float32(arr[64*i+x]) != float32(arr2[x][i]) {
+				t.Error(arr[64*i+x], "!=", arr2[x][i])
+			}
+		}
+	}
+}
+
+func TestForwardDC256(t *testing.T) {
+	size := 256
+	arr := make([]float64, size)
+	arr2 := make([]float64, size)
+
+	for x := 0; x < size; x++ {
+		val := rand.Float64()
+		arr[x] = val
+		arr2[x] = val
+	}
+	temp := make([]float64, size)
+	forwardTransform(arr, temp, len(arr))
+	forwardDCT256(arr2)
+
+	for i := 0; i < size; i++ {
+		if arr[i] != arr2[i] {
+			t.Error(i, arr[i], "!=", arr2[i])
+		}
+	}
+
+}
+
+func BenchmarkForwardDCT64(b *testing.B) {
 	arr1 := make([]float64, 64)
 	temp := make([]float64, 64)
 	for i := 0; i < len(arr1); i++ {
@@ -84,20 +131,12 @@ func BenchmarkForward(b *testing.B) {
 	b.Run("forward", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			forwardTransform(arr1, temp, len(arr1))
-
-		}
-	})
-	b.Run("forwardFast", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			forwardTransformFast(arr1, temp, len(arr1))
 		}
 	})
 
 	b.Run("forwardStatic", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			DCT1DFast64(arr1)
+			forwardDCT64(arr1)
 		}
 	})
-	//
-
 }
