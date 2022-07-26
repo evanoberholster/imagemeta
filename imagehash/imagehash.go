@@ -186,6 +186,9 @@ var (
 // Ahash is a 64bit Average Hash
 type Ahash uint64
 
+// Phash is a type alias for PHash64
+type Phash = PHash64
+
 // PHash64 is a 64bit Perception Hash
 type PHash64 uint64
 
