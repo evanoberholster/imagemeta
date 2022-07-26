@@ -18,10 +18,10 @@ import (
 
 //go:generate msgp
 
-// NewPHashSlow is a Perception Hash function returns a hash computation of phash.
+// newPHash is a Perception Hash function returns a hash computation of phash.
 // Implementation follows
 // http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-func NewPHash(img image.Image) (phash PHash64, err error) {
+func newPHash(img image.Image) (phash PHash64, err error) {
 	var size image.Point
 	v := 16
 	if img != nil {
@@ -69,6 +69,33 @@ func NewPHash64(img image.Image) (phash PHash64, err error) {
 	for idx, p := range flattens {
 		if p > median {
 			phash |= 1 << uint(len(flattens)-idx-1) // leftShiftSet
+		}
+	}
+	return phash, nil
+}
+
+// newPHashExt is a Perception Hash function returns a hash computation of phash.
+// Implementation follows
+// http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+func newPHashExt(img image.Image) (phash PHash256, err error) {
+	var size image.Point
+	v := 16
+	if img != nil {
+		size = img.Bounds().Size()
+	}
+	if size.X == 64 {
+		v = 8
+	}
+
+	pixels := transforms.Rgb2Gray(img)
+	dct := transforms.DCT2D(pixels, size.X, size.X)
+	flattens := transforms.FlattenPixels(dct, v, v)
+	median := transforms.MedianOfPixels(flattens)
+
+	for idx, p := range flattens {
+		indexOfArray := idx / 64
+		if p > median {
+			phash[indexOfArray] |= 1 << uint(64-idx%64-1) // leftShiftSet
 		}
 	}
 	return phash, nil

@@ -100,8 +100,8 @@ func TestFastDCT2D(t *testing.T) {
 	}
 }
 
-func TestDCT8(t *testing.T) {
-	size := 8
+func TestForwardDC256(t *testing.T) {
+	size := 256
 	arr := make([]float64, size)
 	arr2 := make([]float64, size)
 
@@ -112,7 +112,7 @@ func TestDCT8(t *testing.T) {
 	}
 	temp := make([]float64, size)
 	forwardTransform(arr, temp, len(arr))
-	forwardDCT8(arr2)
+	forwardDCT256(arr2)
 
 	for i := 0; i < size; i++ {
 		if arr[i] != arr2[i] {

@@ -148,10 +148,3 @@ func DCT2DHash256(input *[]float64) [256]float64 {
 	}
 	return flattens
 }
-
-// DCT1DFast function returns result of DCT-II.
-func DCT1DFast(input []float64) []float64 {
-	temp := make([]float64, len(input))
-	forwardTransform(input, temp, len(input))
-	return input
-}
