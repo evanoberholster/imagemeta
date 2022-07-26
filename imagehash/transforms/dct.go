@@ -76,101 +76,32 @@ func DCT2D(input [][]float64, w int, h int) [][]float64 {
 	return output
 }
 
-// pHashSize is PHash Bitsize
-const pHashSize = 64
-
 // DCT2DFast function returns a result of DCT2D by using the seperable property.
+// DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
 // Fast version only works with pHashSize 64 will panic if another since is given.
 func DCT2DFast(input *[]float64) {
 	if len(*input) != 4096 {
 		panic("Incorrect forward transform size")
 	}
 	for i := 0; i < 64; i++ { // height
-		DCT1DFast64((*input)[i*pHashSize : (i*pHashSize)+pHashSize])
+		forwardDCT64((*input)[i*64 : 64*i+64])
 	}
 
-	var row [pHashSize]float64
-	for i := 0; i < 8; i++ { // width
+	var row [64]float64
+	for i := 0; i < 64; i++ { // width
 		for j := 0; j < 64; j++ {
-			row[j] = (*input)[i+((j)*pHashSize)]
+			row[j] = (*input)[64*j+i]
 		}
-		DCT1DFast64(row[:])
+		forwardDCT64(row[:])
 		for j := 0; j < 64; j++ {
-			(*input)[i+(j*pHashSize)] = row[j]
+			(*input)[64*j+i] = row[j]
 		}
 	}
 }
 
 // DCT1DFast function returns result of DCT-II.
-// DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
 func DCT1DFast(input []float64) []float64 {
 	temp := make([]float64, len(input))
 	forwardTransform(input, temp, len(input))
 	return input
 }
-
-// DCT Tables
-var (
-	dct64 = [32]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(1)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(2)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(3)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(4)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(5)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(6)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(7)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(8)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(9)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(10)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(11)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(12)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(13)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(14)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(15)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(16)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(17)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(18)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(19)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(20)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(21)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(22)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(23)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(24)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(25)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(26)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(27)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(28)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(29)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(30)+0.5)*math.Pi/64) * 2),
-		(math.Cos((float64(31)+0.5)*math.Pi/64) * 2),
-	}
-	dct32 = [16]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(1)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(2)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(3)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(4)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(5)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(6)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(7)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(8)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(9)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(10)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(11)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(12)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(13)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(14)+0.5)*math.Pi/32) * 2),
-		(math.Cos((float64(15)+0.5)*math.Pi/32) * 2),
-	}
-	dct16 = [8]float64{
-		(math.Cos((float64(0)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(1)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(2)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(3)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(4)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(5)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(6)+0.5)*math.Pi/16) * 2),
-		(math.Cos((float64(7)+0.5)*math.Pi/16) * 2),
-	}
-)
