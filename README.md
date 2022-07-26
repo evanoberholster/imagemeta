@@ -144,7 +144,7 @@ func main() {
 ```
 
 ## Imagehash
-Zero allocation Perceptual Hash algorithm for 64bit and 256bit hash [github.com/evanoberholster/imagemeta/imagehash](https://github.com/evanoberholster/imagemeta/imagehash). Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html. Images will need to be resized prior to imagehashing, either 64x64 or 256x256 respectively.
+Zero allocation Perceptual Hash algorithm for 64bit and 256bit hash. Optimized for performance. Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html. Images will need to be resized prior to imagehashing, either 64x64 or 256x256 respectively.
 ```go
 name                       time/op
 PHash64/Fast-12           40.8µs ± 1%
