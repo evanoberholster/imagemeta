@@ -214,7 +214,7 @@ func TestPhash64(t *testing.T) {
 		}
 
 		dct := transforms.DCT2D(pixels, 64, 64)
-		transforms.DCT2DFast(pixelsFast)
+		transforms.DCT2DHash64(pixelsFast)
 
 		for j := 0; j < len(dct); j++ {
 			for i := 0; i < len(dct); i++ {
@@ -256,7 +256,7 @@ func TestPhash256(t *testing.T) {
 		}
 
 		dct := transforms.DCT2D(pixels, 256, 256)
-		transforms.DCT2DFast(pixelsFast)
+		transforms.DCT2DHash256(pixelsFast)
 
 		for j := 0; j < len(dct); j++ {
 			for i := 0; i < len(dct); i++ {

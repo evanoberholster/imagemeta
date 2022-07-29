@@ -89,7 +89,7 @@ func TestFastDCT2D(t *testing.T) {
 	}
 
 	arr2 = DCT2D(arr2, 64, 64)
-	DCT2DFast(&arr)
+	dct2dFast(&arr)
 
 	for x := 0; x < size; x++ {
 		for i := 0; i < size; i++ {
@@ -139,4 +139,24 @@ func BenchmarkForwardDCT64(b *testing.B) {
 			forwardDCT64(arr1)
 		}
 	})
+}
+
+func dct2dFast(input *[]float64) {
+	if len(*input) != 4096 {
+		panic("Incorrect forward transform size")
+	}
+	for i := 0; i < 64; i++ { // height
+		forwardDCT64((*input)[i*64 : 64*i+64])
+	}
+
+	var row [64]float64
+	for i := 0; i < 64; i++ { // width
+		for j := 0; j < 64; j++ {
+			row[j] = (*input)[64*j+i]
+		}
+		forwardDCT64(row[:])
+		for j := 0; j < 64; j++ {
+			(*input)[64*j+i] = row[j]
+		}
+	}
 }
