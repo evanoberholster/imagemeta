@@ -14,9 +14,8 @@ import (
 func (e *Data) DebugJSON() ([]byte, error) {
 	je := debugExif{It: e.imageType, Make: e.CameraMake(), Model: e.CameraModel(), Width: e.ImageWidth(), Height: e.ImageHeight()}
 	for k, t := range e.tagMap {
-		ifd, ifdIndex, _ := k.Val()
 		value := e.GetTagValue(t)
-		je.addTag(ifd, ifdIndex, t, value)
+		je.addTag(k.Type, k.Index, t, value)
 	}
 
 	return json.Marshal(je)

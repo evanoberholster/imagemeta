@@ -275,7 +275,7 @@ func (e *Data) addTag(ifd ifds.Ifd, t tag.Tag) {
 	}
 
 	// add tag to tagMap
-	e.tagMap[ifds.NewKey(ifd.Type, ifd.Index, t.ID)] = t
+	e.tagMap[ifds.Key{Type: ifd.Type, Index: ifd.Index, TagID: t.ID}] = t
 
 	// Special Ifd0 Tags
 	if ifd.IsType(ifds.IFD0) {

@@ -75,7 +75,7 @@ type Data struct {
 
 // GetTag returns a tag from Exif and returns an error if tag doesn't exist
 func (e *Data) GetTag(ifd ifds.IfdType, ifdIndex uint8, tagID tag.ID) (tag.Tag, error) {
-	if t, ok := e.tagMap[ifds.NewKey(ifd, ifdIndex, tagID)]; ok {
+	if t, ok := e.tagMap[ifds.Key{Type: ifd, Index: ifdIndex, TagID: tagID}]; ok {
 		return t, nil
 	}
 	return tag.Tag{}, ErrEmptyTag

@@ -14,20 +14,10 @@ import (
 type IfdType uint8
 
 // Key is a TagMap Key
-type Key uint32
-
-// NewKey returns a new TagMap Key
-func NewKey(ifdType IfdType, ifdIndex uint8, tagID tag.ID) Key {
-	var key uint32
-	key |= (uint32(ifdType) << 24)
-	key |= (uint32(ifdIndex) << 16)
-	key |= (uint32(tagID))
-	return Key(key)
-}
-
-// Val returns the TagMap's Key as an ifd, ifdIndex and a tagID
-func (k Key) Val() (ifdType IfdType, ifdIndex uint8, tagID tag.ID) {
-	return IfdType(k >> 24), uint8(k << 8 >> 24), tag.ID(k << 16 >> 16)
+type Key struct {
+	Type  IfdType
+	Index uint8
+	TagID tag.ID
 }
 
 // TagMap is a map of Tags

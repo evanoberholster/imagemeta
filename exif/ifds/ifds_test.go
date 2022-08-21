@@ -9,43 +9,6 @@ import (
 	"github.com/evanoberholster/imagemeta/exif/tag"
 )
 
-func TestKey(t *testing.T) {
-	tests := []struct {
-		tagID    tag.ID
-		ifdType  IfdType
-		ifdIndex uint8
-	}{
-		{TileLength, IFD0, 1},
-		{TileByteCounts, ExifIFD, 2},
-		{CacheVersion, GPSIFD, 3},
-		{OpcodeList3, MknoteIFD, 4},
-		{OpcodeList2, IFD0, 5},
-	}
-
-	for _, v := range tests {
-		key := NewKey(v.ifdType, v.ifdIndex, v.tagID)
-		ifdType, ifdIndex, tagID := key.Val()
-		key2 := NewKey(ifdType, ifdIndex, tagID)
-
-		if key != key2 {
-			t.Errorf("Expected Key %d got %d", key, key2)
-		}
-		if v.tagID != tagID {
-			t.Errorf("Expected TagID %s got %s", v.tagID, tagID)
-		}
-		if v.ifdType != ifdType {
-			t.Errorf("Expected IfdType %d got %d", key, key2)
-		}
-		if v.ifdIndex != ifdIndex {
-			t.Errorf("Expected IfdIndex %d got %d", v.ifdIndex, ifdIndex)
-		}
-
-		if !ifdType.IsValid() {
-			t.Errorf("Expected %s, got %t", "true", ifdType.IsValid())
-		}
-	}
-}
-
 func TestIfdString(t *testing.T) {
 	testIfds := []struct {
 		ifdType IfdType
