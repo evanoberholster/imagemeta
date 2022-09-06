@@ -92,3 +92,20 @@ func tagTest(t *testing.T, ifd Ifd, testType IfdType, id tag.ID, tagName string)
 		}
 	}
 }
+
+func TestTagString(t *testing.T) {
+	tests := []struct {
+		id  tag.ID
+		str string
+	}{
+
+		{0, "0x0000"},
+		{Make, "Make"},
+		{Model, "Model"},
+	}
+	for _, v := range tests {
+		if TagString(v.id) != v.str {
+			t.Errorf("expected \"%s\" got \"%s\"", v.str, TagString(v.id))
+		}
+	}
+}

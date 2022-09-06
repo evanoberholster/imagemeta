@@ -19,7 +19,10 @@ var tagTypeTests = []struct {
 	{7, TypeUndefined, 0, "UNDEFINED", nil},
 	{9, TypeSignedLong, TypeSignedLongSize, "SLONG", nil},
 	{10, TypeSignedRational, TypeSignedRationalSize, "SRATIONAL", nil},
+	{11, TypeFloat, TypeFloatSize, "FLOAT", nil},
+	{12, TypeDouble, TypeDoubleSize, "DOUBLE", nil},
 	{0xf0, TypeASCIINoNul, TypeASCIINoNulSize, "_ASCII_NO_NUL", nil},
+	{0xf1, TypeIfd, TypeIfdSize, "IFD", nil},
 	{0, TypeUnknown, 0, "Unknown", ErrTagTypeNotValid},
 	{100, 100, 0, "Unknown", ErrTagTypeNotValid},
 }
@@ -84,8 +87,10 @@ func TestTag(t *testing.T) {
 	if tag.Size() != 16 {
 		t.Errorf("Incorrect Tag Size wanted %d got %d", 16, tag.Size())
 	}
-	if tag.String() != "0x0010\t | ASCII " {
-		t.Errorf("Incorrect Tag String wanted %v got %v", "0x0010\t | ASCII ", tag.String())
+
+	tagString := "0x0010\t | ASCII | Size: 16"
+	if tag.String() != tagString {
+		t.Errorf("Incorrect Tag String wanted %v got %v", tagString, tag.String())
 	}
 	if tag.ID.String() != "0x0010" {
 		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", tag.ID.String())

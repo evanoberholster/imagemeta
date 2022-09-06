@@ -10,14 +10,15 @@ import (
 
 // Errors
 var (
-	ErrEmptyTag      = errors.New("error empty tag")
-	ErrTagNotValid   = errors.New("error tag not valid")
-	ErrNotEnoughData = errors.New("error not enough data to parse tag")
+	ErrEmptyTag        = errors.New("error empty tag")
+	ErrNotEnoughData   = errors.New("error not enough data to parse tag")
+	ErrTagTypeNotValid = errors.New("error tag type not valid")
 )
 
 // ID is the uint16 representation of an IFD tag
 type ID uint16
 
+// String is the Stringer interface for ID
 func (id ID) String() string {
 	return fmt.Sprintf("0x%04x", uint16(id))
 }
@@ -51,6 +52,7 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 	return t, nil
 }
 
+// String is the Stringer interface for Tag
 func (t Tag) String() string {
 	return fmt.Sprintf("%s\t | %s | Size: %d", t.ID, t.t, t.UnitCount)
 }
@@ -85,17 +87,13 @@ func (tt Type) Is(t Type) bool {
 	return tt == t
 }
 
-// Errors
-var (
-	ErrTagTypeNotValid = errors.New("Tag type not valid")
-)
-
 // Type is the type of Tag
 type Type uint8
 
 // TagTypes defined
 // Copied from dsoprea/go-exif
 const (
+	// TypeUnknown is an unknown TagType.
 	TypeUnknown Type = 0
 	// TypeByte describes an encoded list of bytes.
 	TypeByte Type = 1
@@ -161,8 +159,8 @@ const (
 
 var (
 	//Tag sizes
-	_tagSize       = [13]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
-	_tagSizeLength = 13
+	_tagSize       = [...]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
+	_tagSizeLength = len(_tagSize)
 	// TagType Stringer Index
 	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69, 74, 80}
 )
@@ -181,7 +179,7 @@ func (tt Type) Size() uint8 {
 	return 0
 }
 
-// String returns the name of the Tag Type
+// String is the stringer interface for TagType
 func (tt Type) String() string {
 	if int(tt) < len(_TagTypeStringerIndex)-1 {
 		return _TagTypeStringerString[_TagTypeStringerIndex[tt]:_TagTypeStringerIndex[tt+1]]
