@@ -104,35 +104,9 @@ func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 			return
 		}
 	}
-	panic("error tagBufferMaxLength is too short")
-}
-
-// addTag adds a non embedded tag to buffer
-func (b *buffer) addTag(t tag.Tag) {
-	if b.len < tagMaxLength {
-		for i := b.len; i > 0; i-- {
-			if t.ValueOffset > b.tag[i-1].ValueOffset {
-				if i != b.len {
-					copy(b.tag[i+1:b.len+1], b.tag[i:b.len])
-				}
-				b.tag[i] = t
-				b.len++
-				return
-			}
-		}
-		if b.len == 0 {
-			b.tag[0] = t
-			b.len++
-			return
-		}
-		if t.ValueOffset < b.tag[0].ValueOffset {
-			copy(b.tag[0+1:b.len+1], b.tag[0:b.len])
-			b.tag[0] = t
-			b.len++
-			return
-		}
+	if ir.logError() {
+		ir.logger.Error().Int32("tagBufferLength", tagMaxLength).Msg("error tagBufferMaxLength is too short")
 	}
-	panic("error tagBufferMaxLength is too short")
 }
 
 func (b *buffer) String() string {

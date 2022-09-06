@@ -32,7 +32,7 @@ type Exif struct {
 	XResolution               Resolution           // IFD0 / 0x011a rational64u
 	YResolution               Resolution           // IFD0 / 0x011b
 	SubjectDistance           RationalU            // ExifIFD / 0x9206
-	ExposureTime              ExposureTime         // 0x829a
+	ExposureTime              meta.ExposureTime    // 0x829a
 	FocalLength               meta.FocalLength     // ExifIFD / 0x920a
 	FocalLengthIn35mmFormat   meta.FocalLength     // ExifIFD / 0xa405
 	StripOffsets              uint32               // IFD0 / 0x0111 PreviewImageStart
@@ -109,7 +109,7 @@ func (e Exif) String() string {
 	sb.WriteString(fmt.Sprintf("LensSerial: \t%s\n", e.LensSerial))
 	sb.WriteString(fmt.Sprintf("Image Size: \t%dx%d\n", e.ImageWidth, e.ImageHeight))
 	sb.WriteString(fmt.Sprintf("Orientation: \t%s\n", e.Orientation))
-	sb.WriteString(fmt.Sprintf("ShutterSpeed: \t%d/%d\n", e.ExposureTime[0], e.ExposureTime[1]))
+	sb.WriteString(fmt.Sprintf("ShutterSpeed: \t%s\n", e.ExposureTime))
 	sb.WriteString(fmt.Sprintf("Aperture: \t%0.2f\n", e.FNumber))
 	sb.WriteString(fmt.Sprintf("ISO: \t\t%d\n", e.ISOSpeed))
 	sb.WriteString(fmt.Sprintf("Flash: \t\t%s\n", e.Flash))
@@ -140,24 +140,21 @@ type ColorSpace uint16
 type SubjectArea []uint16
 
 type GPSInfo struct {
-	latitude     float64   // Combination of GPSLatitudeRef and GPSLatitude
-	longitude    float64   // Combination of GPSLongitudeRef and GPSLongitude
-	altitude     float32   // Combination of GPSAltitudeRef and GPSAltitude
-	date         [2]uint16 // [0]months since AD0 [1]day
-	time         uint32    // time in seconds
+	latitude     float64 // Combination of GPSLatitudeRef and GPSLatitude
+	longitude    float64 // Combination of GPSLongitudeRef and GPSLongitude
+	date         time.Time
+	time         uint32  // time in seconds
+	altitude     float32 // Combination of GPSAltitudeRef and GPSAltitude
 	latitudeRef  bool
 	longitudeRef bool
 	altitudeRef  bool
 }
 
 func (g GPSInfo) Date() time.Time {
-	year := int(g.date[0] / 12)
-	month := int(g.date[0] % 12)
-	day := int(g.date[1])
-	hour := int(g.time / 3600)
-	min := (int(g.time) - (hour * 3600)) / 60
-	sec := (int(g.time) - (hour * 3600) - (min * 60))
-	return time.Date(year, time.Month(month), day, hour, min, sec, 0, time.UTC)
+	if g.time != 0 {
+		return g.date.Add(time.Duration(g.time) * time.Second)
+	}
+	return g.date
 }
 
 func (g GPSInfo) Latitude() float64 {
