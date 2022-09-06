@@ -7,6 +7,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 func TestIfdString(t *testing.T) {
@@ -31,7 +32,7 @@ func TestIfdString(t *testing.T) {
 	}
 
 	for _, v := range testIfds {
-		ifd := NewIFD(tag.LittleEndian, v.ifdType, 0, 0)
+		ifd := NewIFD(meta.LittleEndian, v.ifdType, 0, 0)
 
 		// Ifd Valid
 		if ifd.IsValid() != v.valid {

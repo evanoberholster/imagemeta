@@ -9,10 +9,15 @@ import (
 )
 
 type Exif struct {
+	ApplicationNotes          []byte               // 0x02bc
+	Makernote                 string               // ExifIFD / MakerNote
+	GPS                       GPSInfo              // 0x8825
 	ProcessingSoftware        string               // IFD0 / 0x000b
 	DocumentName              string               // IFD0 / 0x010d
 	ImageDescription          string               // IFD0 / 0x010e
 	Software                  string               // IFD0 / 0x0131
+	Artist                    string               // IFD0 / 0x013b
+	Copyright                 string               // IFD0 / 0x8298
 	Make                      string               // IFD0 / 0x010f
 	Model                     string               // IFD0 / 0x0110
 	LensMake                  string               // ExifIFD / 0xa433
@@ -21,49 +26,45 @@ type Exif struct {
 	ImageUniqueID             string               // ExifIFD / 0xa420
 	OwnerName                 string               // ExifIFD / 0xa430	(called CameraOwnerName by the EXIF spec.)
 	CameraSerial              string               // ExifIFD / 0xa431	(called BodySerialNumber by the EXIF spec.)
+	modifyDate                time.Time            // IFD0 / 0x0132
+	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
+	createDate                time.Time            // ExifIFD / 0x9004
+	XResolution               Resolution           // IFD0 / 0x011a rational64u
+	YResolution               Resolution           // IFD0 / 0x011b
+	SubjectDistance           RationalU            // ExifIFD / 0x9206
+	ExposureTime              ExposureTime         // 0x829a
+	FocalLength               meta.FocalLength     // ExifIFD / 0x920a
+	FocalLengthIn35mmFormat   meta.FocalLength     // ExifIFD / 0xa405
+	StripOffsets              uint32               // IFD0 / 0x0111 PreviewImageStart
+	StripByteCounts           uint32               // IFD0 / 0x0117 PreviewImageLength
+	ThumbnailOffset           uint32               // 0x0201
+	ThumbnailLength           uint32               // 0x0202
 	SubfileType               uint32               // IFD0 / 0x00fe
+	ISOSpeed                  uint32               // ExifIFD / 0x8833
+	ImageNumber               uint32               // ExifIFD / 0x9211
 	ImageWidth                uint16               // IFD0 / 0x0100
 	ImageHeight               uint16               // IFD0 / 0x0101
 	Compression               Compression          // IFD0 / 0x0103
 	PhotometricInterpretation uint16               // IFD0 / 0x0106
 	Orientation               meta.Orientation     // IFD0 / 0x0112
-	StripOffsets              uint32               // IFD0 / 0x0111 PreviewImageStart
-	StripByteCounts           uint32               // IFD0 / 0x0117 PreviewImageLength
-	XResolution               Resolution           // IFD0 / 0x011a rational64u
-	YResolution               Resolution           // IFD0 / 0x011b
 	ResolutionUnit            uint16               // IFD0 / 0x0128
-	modifyDate                time.Time            // IFD0 / 0x0132
-	Artist                    string               // IFD0 / 0x013b
-	ThumbnailOffset           uint32               // 0x0201
-	ThumbnailLength           uint32               // 0x0202
-	ApplicationNotes          []byte               // 0x02bc
 	Rating                    uint16               // 0x4746
-	Copyright                 string               // 0x8298
-	ExposureTime              ExposureTime         // 0x829a
-	FNumber                   FNumber              // 0x829d
+	FNumber                   meta.Aperture        // 0x829d
 	ExposureProgram           meta.ExposureProgram // 0x8822
 	ExposureBias              meta.ExposureBias    // 0x0d34
 	ExposureMode              meta.ExposureMode    // ExifIFD / 0xa402
-	GPS                       GPSInfo              // 0x8825
 	ISO                       uint16               // ExifIFD / 0x8827 // FixMe
 	TimeZoneOffset            [2]int8              // ExifIFD / 0x882a // FixMe (1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate)
 	SelfTimerMode             uint16               // ExifIFD / 0x882b
-	ISOSpeed                  uint32               // ExifIFD / 0x8833
-	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
-	createDate                time.Time            // ExifIFD / 0x9004
 	subSecTime                uint16               // ExifIFD / 0x9290
 	subSecTimeOriginal        uint16               // ExifIFD / 0x9291
 	subSecTimeDigitized       uint16               // ExifIFD / 0x9292
-	SubjectDistance           RationalU            // ExifIFD / 0x9206
 	MeteringMode              meta.MeteringMode    // ExifIFD / 0x9207
 	Flash                     meta.Flash           // ExifIFD / 0x9209
-	FocalLength               meta.FocalLength     // ExifIFD / 0x920a
-	ImageNumber               uint32               // ExifIFD / 0x9211
 	SubjectArea               SubjectArea          // ExifIFD / 0x9214
-	Makernote                 string               // ExifIFD / MakerNote
 	ColorSpace                ColorSpace           // ExifIFD / 0xa001
-	FocalLengthIn35mmFormat   meta.FocalLength     // ExifIFD / 0xa405
-	LensInfo                  LensInfo             // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
+
+	LensInfo LensInfo // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
 	// 0xa002	ExifImageWidth	int16u:	ExifIFD	(called PixelXDimension by the EXIF spec.)
 	// 0xa003	ExifImageHeight	int16u:	ExifIFD	(called PixelYDimension by the EXIF spec.)
 	// 0xa20e	FocalPlaneXResolution	rational64u	ExifIFD
@@ -123,6 +124,8 @@ func (e Exif) String() string {
 	sb.WriteString(fmt.Sprintf("Date GPS: \t%s\n", e.GPS.Date()))
 	sb.WriteString(fmt.Sprintf("Artist: \t%s\n", e.Artist))
 	sb.WriteString(fmt.Sprintf("Copyright: \t%s\n", e.Copyright))
+	sb.WriteString(fmt.Sprintf("Software: \t%s\n", e.Software))
+	sb.WriteString(fmt.Sprintf("Image Desc: \t%s\n", e.ImageDescription))
 	sb.WriteString(fmt.Sprintf("GPS Altitude: \t%0.2f\n", e.GPS.Altitude()))
 	sb.WriteString(fmt.Sprintf("GPS Latitude: \t%f\n", e.GPS.Latitude()))
 	sb.WriteString(fmt.Sprintf("GPS Longitude: \t%f\n", e.GPS.Longitude()))

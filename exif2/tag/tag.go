@@ -2,46 +2,11 @@
 package tag
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
-
-type ByteOrder int8
-
-const (
-	LittleEndian = iota
-	BigEndian
-)
-
-func (bo ByteOrder) Uint16(buf []byte) uint16 {
-	if bo == BigEndian {
-		return binary.BigEndian.Uint16(buf)
-	}
-	return binary.LittleEndian.Uint16(buf)
-}
-
-func (bo ByteOrder) Uint32(buf []byte) uint32 {
-	if bo == BigEndian {
-		return binary.BigEndian.Uint32(buf)
-	}
-	return binary.LittleEndian.Uint32(buf)
-}
-
-func (bo ByteOrder) Uint64(buf []byte) uint64 {
-	if bo == BigEndian {
-		return binary.BigEndian.Uint64(buf)
-	}
-	return binary.LittleEndian.Uint64(buf)
-}
-
-func (bo ByteOrder) PutUint32(b []byte, v uint32) {
-	if bo == BigEndian {
-		binary.BigEndian.PutUint32(b, v)
-		return
-	}
-	binary.LittleEndian.PutUint32(b, v)
-}
 
 // Errors
 var (
@@ -57,41 +22,21 @@ func (id ID) String() string {
 	return fmt.Sprintf("0x%04x", uint16(id))
 }
 
-// Offset for reading data
-type Offset uint32
-
-// Rational is a rational value
-type Rational struct {
-	Numerator   uint32
-	Denominator uint32
-}
-
-// SRational is a signed rational value
-type SRational struct {
-	Numerator   int32
-	Denominator int32
-}
-
 // Tag is an Exif Tag (16bytes)
 type Tag struct {
-	ValueOffset uint32    // 4 bytes
-	UnitCount   uint32    // 4 bytes
-	ID          ID        // 2 bytes
-	t           Type      // 1 byte
-	Ifd         uint8     // 1 byte
-	IfdIndex    uint8     // 1 byte
-	ByteOrder   ByteOrder // 1 byte
+	ValueOffset uint32         // 4 bytes
+	UnitCount   uint32         // 4 bytes
+	ID          ID             // 2 bytes
+	t           Type           // 1 byte
+	Ifd         uint8          // 1 byte
+	IfdIndex    uint8          // 1 byte
+	ByteOrder   meta.ByteOrder // 1 byte
 }
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
 // If tagType is Invalid returns ErrTagTypeNotValid
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex uint8, byteOrder ByteOrder) (Tag, error) {
-	if !tagType.IsValid() {
-		return Tag{}, ErrTagTypeNotValid
-	}
-	// Special tags
-
-	return Tag{
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex uint8, byteOrder meta.ByteOrder) (Tag, error) {
+	t := Tag{
 		ID:          tagID,
 		t:           tagType,
 		UnitCount:   unitCount,
@@ -99,7 +44,11 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 		Ifd:         ifd,
 		IfdIndex:    ifdIndex,
 		ByteOrder:   byteOrder,
-	}, nil
+	}
+	if !tagType.IsValid() {
+		return t, ErrTagTypeNotValid
+	}
+	return t, nil
 }
 
 func (t Tag) String() string {
@@ -177,6 +126,12 @@ const (
 	// TypeSignedRational describes an encoded list of signed rationals.
 	TypeSignedRational Type = 10
 
+	// TypeFloat describes an encoded float (float32).
+	TypeFloat Type = 11
+
+	// TypeDouble describes an emcoded double (uint64).
+	TypeDouble Type = 12
+
 	// PseudoTypes
 
 	// TypeASCIINoNul is just a pseudo-type, for our own purposes.
@@ -196,18 +151,20 @@ const (
 	TypeRationalSize       = 8
 	TypeSignedLongSize     = 4
 	TypeSignedRationalSize = 8
+	TypeFloatSize          = 4
+	TypeDoubleSize         = 8
 	TypeIfdSize            = 4
 
 	// TagType Stringer String
-	_TagTypeStringerString = "UnknownBYTEASCIISHORTLONGRATIONALUnknownUNDEFINEDSSHORTSLONGSRATIONAL"
+	_TagTypeStringerString = "UnknownBYTEASCIISHORTLONGRATIONALUnknownUNDEFINEDSSHORTSLONGSRATIONALFLOATDOUBLE"
 )
 
 var (
 	//Tag sizes
-	_tagSize       = [11]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize}
-	_tagSizeLength = 11
+	_tagSize       = [13]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
+	_tagSizeLength = 13
 	// TagType Stringer Index
-	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69}
+	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69, 74, 80}
 )
 
 // Size returns the size of one atomic unit of the type.
@@ -248,6 +205,8 @@ func (tt Type) IsValid() bool {
 		tt == TypeASCIINoNul ||
 		tt == TypeSignedLong ||
 		tt == TypeSignedRational ||
+		tt == TypeFloat ||
+		tt == TypeDouble ||
 		tt == TypeUndefined ||
 		tt == TypeIfd
 }

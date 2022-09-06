@@ -10,10 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (ir *ifdReader) parseFNumber(t tag.Tag) FNumber {
-	return FNumber(ir.parseRationalU(t).AsFloat())
+func (ir *ifdReader) parseAperture(t tag.Tag) meta.Aperture {
+	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {
+		return meta.Aperture(ir.parseRationalU(t).AsFloat())
+	}
+	if ir.logWarn() {
+		ir.logger.Warn().Str("func", "parseAperture").Uint32("units", t.UnitCount).Stringer("id", t.ID).Stringer("ifd", t.Type()).Uint32("size", t.Size()).Send()
+	}
+	return 0.0
 }
-
 func (ir *ifdReader) parseExposureTime(t tag.Tag) ExposureTime {
 	return ExposureTime(ir.parseRationalU(t))
 }
@@ -97,7 +102,7 @@ func (ir *ifdReader) parseUint16(t tag.Tag) uint16 {
 func (ir *ifdReader) parseString(t tag.Tag) string {
 	if t.IsEmbedded() {
 		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
-		return string(ir.buffer.buf[:t.Size()])
+		return trimNULString(ir.buffer.buf[:t.Size()])
 	}
 	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
 		buf, err := ir.readTagValue()
@@ -107,7 +112,8 @@ func (ir *ifdReader) parseString(t tag.Tag) string {
 		if t.IsType(tag.TypeASCIINoNul) {
 			return string(buf)
 		}
-		return string(buf[:len(buf)-1])
+		// Trim function
+		return trimNULString(buf)
 	}
 	return ""
 }
@@ -231,11 +237,11 @@ func (ir *ifdReader) parseGPSRef(t tag.Tag) bool {
 		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
 		switch t.ID {
 		case gpsifd.GPSAltitudeRef:
-			return t.IsType(tag.TypeByte) && (ir.buffer.buf[1] == byte(1))
+			return t.IsType(tag.TypeByte) && (ir.buffer.buf[0] == byte(1))
 		case gpsifd.GPSLatitudeRef:
-			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[1] == 'S')
+			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'S')
 		case gpsifd.GPSLongitudeRef:
-			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[1] == 'W')
+			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'W')
 		}
 	}
 	return false

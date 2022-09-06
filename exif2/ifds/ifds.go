@@ -8,6 +8,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // IfdType is the Type of Information Directory
@@ -78,13 +79,13 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
 type Ifd struct {
 	Offset    uint32
-	ByteOrder tag.ByteOrder
+	ByteOrder meta.ByteOrder
 	Type      IfdType
 	Index     uint8
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.
-func NewIFD(byteOrder tag.ByteOrder, ifdType IfdType, index uint8, offset uint32) Ifd {
+func NewIFD(byteOrder meta.ByteOrder, ifdType IfdType, index uint8, offset uint32) Ifd {
 	return Ifd{
 		ByteOrder: byteOrder,
 		Type:      ifdType,

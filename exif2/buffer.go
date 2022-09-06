@@ -33,9 +33,13 @@ func (b *buffer) currentTag() tag.Tag {
 	return b.tag[b.pos]
 }
 
-// nextTag increments the position by 1
 func (b *buffer) nextTag() tag.Tag {
-	if b.pos <= b.len {
+	return b.tag[b.pos+1]
+}
+
+// nextTag increments the position by 1
+func (b *buffer) advanceBuffer() tag.Tag {
+	if b.pos < b.len {
 		b.pos++
 		return b.tag[b.pos]
 	}
@@ -44,7 +48,7 @@ func (b *buffer) nextTag() tag.Tag {
 
 // validTag returns true if the tag is valid
 func (b *buffer) validTag() bool {
-	return b.pos <= b.len && b.len > 0 && b.tag[b.pos].ValueOffset != 0
+	return b.pos < b.len && b.len > 0
 }
 
 // readTagValue discards until tag.ValueOffset and reads length of tag
@@ -69,6 +73,38 @@ func (b *buffer) resetPosition() {
 		b.pos = 0
 		//fmt.Println("Position: ", ir.po, ir.tagBuf.pos, ir.tagBuf.len)
 	}
+}
+
+func (ir *ifdReader) addTagBuffer(t tag.Tag) {
+	if t.ValueOffset < ir.po {
+		ir.logTagWarn(t, "Uncompatible reverse exif tag")
+		return
+	}
+	b := ir.buffer
+	if b.len < tagMaxLength {
+		for i := b.len; i > 0; i-- {
+			if t.ValueOffset > b.tag[i-1].ValueOffset {
+				if i != b.len {
+					copy(b.tag[i+1:b.len+1], b.tag[i:b.len])
+				}
+				b.tag[i] = t
+				b.len++
+				return
+			}
+		}
+		if b.len == 0 {
+			b.tag[0] = t
+			b.len++
+			return
+		}
+		if t.ValueOffset < b.tag[0].ValueOffset {
+			copy(b.tag[0+1:b.len+1], b.tag[0:b.len])
+			b.tag[0] = t
+			b.len++
+			return
+		}
+	}
+	panic("error tagBufferMaxLength is too short")
 }
 
 // addTag adds a non embedded tag to buffer

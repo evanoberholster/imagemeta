@@ -10,3 +10,13 @@ func parseStrUint(buf []byte) (u uint) {
 	}
 	return
 }
+
+func trimNULString(buf []byte) string {
+	for i := len(buf) - 1; i > 0; i-- {
+		if buf[i] == 0 || buf[i] == ' ' {
+			continue
+		}
+		return string(buf[:i+1])
+	}
+	return ""
+}
