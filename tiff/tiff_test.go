@@ -3,7 +3,6 @@ package tiff
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"os"
 	"testing"
 
@@ -15,15 +14,15 @@ import (
 func TestTiff(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename         string
-		byteOrder        binary.ByteOrder
+		byteOrder        meta.ByteOrder
 		firstIfdOffset   uint32
 		tiffHeaderOffset uint32
 		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
-		{"../testImages/NEF.exif", binary.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
-		{"../testImages/CR2.exif", binary.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
-		{"../testImages/Heic.exif", binary.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
+		{"../testImages/ARW.exif", meta.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/NEF.exif", meta.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/CR2.exif", meta.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
+		{"../testImages/Heic.exif", meta.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {

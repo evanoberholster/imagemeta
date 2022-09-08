@@ -22,6 +22,7 @@ import (
 	"bufio"
 	"io"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/pkg/errors"
 )
 
@@ -49,6 +50,7 @@ type Reader struct {
 	br          bufReader
 	brand       Brand
 	noMoreBoxes bool // a box with size 0 (the final box) was seen
+	ExifReader  func(r io.Reader, h meta.ExifHeader) error
 }
 
 // ReadAndParseBox wraps the ReadBox method, ensuring that the read box is of type typ

@@ -20,3 +20,13 @@ func trimNULString(buf []byte) string {
 	}
 	return ""
 }
+
+func trimNULBuffer(buf []byte) []byte {
+	for i := len(buf) - 1; i > 0; i-- {
+		if buf[i] == 0 || buf[i] == ' ' || buf[i] == '\n' {
+			continue
+		}
+		return buf[:i+1]
+	}
+	return nil
+}

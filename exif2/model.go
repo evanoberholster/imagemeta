@@ -8,10 +8,13 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
+// Exif data structure
 type Exif struct {
 	ApplicationNotes          []byte               // 0x02bc
-	Makernote                 string               // ExifIFD / MakerNote
 	GPS                       GPSInfo              // 0x8825
+	SubjectArea               SubjectArea          // ExifIFD / 0x9214
+	LensInfo                  LensInfo             // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
+	Makernote                 string               // ExifIFD / MakerNote
 	ProcessingSoftware        string               // IFD0 / 0x000b
 	DocumentName              string               // IFD0 / 0x010d
 	ImageDescription          string               // IFD0 / 0x010e
@@ -29,10 +32,10 @@ type Exif struct {
 	modifyDate                time.Time            // IFD0 / 0x0132
 	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
 	createDate                time.Time            // ExifIFD / 0x9004
-	XResolution               Resolution           // IFD0 / 0x011a rational64u
-	YResolution               Resolution           // IFD0 / 0x011b
-	SubjectDistance           RationalU            // ExifIFD / 0x9206
+	XResolution               uint32               // IFD0 / 0x011a rational64u
+	YResolution               uint32               // IFD0 / 0x011b
 	ExposureTime              meta.ExposureTime    // 0x829a
+	SubjectDistance           float32              // ExifIFD / 0x9206
 	FocalLength               meta.FocalLength     // ExifIFD / 0x920a
 	FocalLengthIn35mmFormat   meta.FocalLength     // ExifIFD / 0xa405
 	StripOffsets              uint32               // IFD0 / 0x0111 PreviewImageStart
@@ -40,41 +43,34 @@ type Exif struct {
 	ThumbnailOffset           uint32               // 0x0201
 	ThumbnailLength           uint32               // 0x0202
 	SubfileType               uint32               // IFD0 / 0x00fe
+	FNumber                   meta.Aperture        // 0x829d
 	ISOSpeed                  uint32               // ExifIFD / 0x8833
 	ImageNumber               uint32               // ExifIFD / 0x9211
-	ImageWidth                uint16               // IFD0 / 0x0100
-	ImageHeight               uint16               // IFD0 / 0x0101
-	Compression               Compression          // IFD0 / 0x0103
+	ImageWidth                uint16               // IFD0 / 0x0100 // ExifIFD	/ 0xa002	ExifImageWidth	int16u:	(called PixelXDimension by the EXIF spec.)
+	ImageHeight               uint16               // IFD0 / 0x0101 // ExifIFD	/ 0xa003	ExifImageHeight	int16u:	(called PixelYDimension by the EXIF spec.)
+	Compression               meta.Compression     // IFD0 / 0x0103
 	PhotometricInterpretation uint16               // IFD0 / 0x0106
 	Orientation               meta.Orientation     // IFD0 / 0x0112
 	ResolutionUnit            uint16               // IFD0 / 0x0128
 	Rating                    uint16               // 0x4746
-	FNumber                   meta.Aperture        // 0x829d
 	ExposureProgram           meta.ExposureProgram // 0x8822
 	ExposureBias              meta.ExposureBias    // 0x0d34
 	ExposureMode              meta.ExposureMode    // ExifIFD / 0xa402
 	ISO                       uint16               // ExifIFD / 0x8827 // FixMe
 	TimeZoneOffset            [2]int8              // ExifIFD / 0x882a // FixMe (1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate)
 	SelfTimerMode             uint16               // ExifIFD / 0x882b
-	subSecTime                uint16               // ExifIFD / 0x9290
-	subSecTimeOriginal        uint16               // ExifIFD / 0x9291
-	subSecTimeDigitized       uint16               // ExifIFD / 0x9292
+	subSecTime                uint16               // ExifIFD / 0x9290 (fractional seconds for ModifyDate)
+	subSecTimeOriginal        uint16               // ExifIFD / 0x9291 (fractional seconds for DateTimeOriginal)
+	subSecTimeDigitized       uint16               // ExifIFD / 0x9292 (fractional seconds for CreateDate)
 	MeteringMode              meta.MeteringMode    // ExifIFD / 0x9207
 	Flash                     meta.Flash           // ExifIFD / 0x9209
-	SubjectArea               SubjectArea          // ExifIFD / 0x9214
 	ColorSpace                ColorSpace           // ExifIFD / 0xa001
 
-	LensInfo LensInfo // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
-	// 0xa002	ExifImageWidth	int16u:	ExifIFD	(called PixelXDimension by the EXIF spec.)
-	// 0xa003	ExifImageHeight	int16u:	ExifIFD	(called PixelYDimension by the EXIF spec.)
 	// 0xa20e	FocalPlaneXResolution	rational64u	ExifIFD
 	// 0xa20f	FocalPlaneYResolution	rational64u	ExifIFD
 	// OffsetTime          string          // ExifIFD / 0x9010 (time zone for ModifyDate)
 	// OffsetTimeOriginal  string          // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
 	// OffsetTimeDigitized string          // ExifIFD / 0x9012 (time zone for CreateDate)
-	// 0x9290	SubSecTime			string	ExifIFD	(fractional seconds for ModifyDate)
-	// 0x9291	SubSecTimeOriginal	string	ExifIFD	(fractional seconds for DateTimeOriginal)
-	// 0x9292	SubSecTimeDigitized	string	ExifIFD	(fractional seconds for CreateDate)
 }
 
 func (e Exif) ModifyDate() time.Time {
@@ -133,12 +129,13 @@ func (e Exif) String() string {
 	return sb.String()
 }
 
-type LensInfo [4]RationalU
+type LensInfo [8]uint32
 
 type ColorSpace uint16
 
 type SubjectArea []uint16
 
+// GPS data sctructure
 type GPSInfo struct {
 	latitude     float64 // Combination of GPSLatitudeRef and GPSLatitude
 	longitude    float64 // Combination of GPSLongitudeRef and GPSLongitude
@@ -150,6 +147,7 @@ type GPSInfo struct {
 	altitudeRef  bool
 }
 
+// Date returns the GPSDatesamp and GPSTimestamp tags as a composite
 func (g GPSInfo) Date() time.Time {
 	if g.time != 0 {
 		return g.date.Add(time.Duration(g.time) * time.Second)
@@ -157,6 +155,7 @@ func (g GPSInfo) Date() time.Time {
 	return g.date
 }
 
+// Latitude returns the GPS Latitude and GPS Latitude Reference as a composite.
 func (g GPSInfo) Latitude() float64 {
 	if g.latitudeRef {
 		return -1 * g.latitude
@@ -164,6 +163,7 @@ func (g GPSInfo) Latitude() float64 {
 	return g.latitude
 }
 
+// Longitude returns the GPS Longitude and GPS Longitude Reference as a composite.
 func (g GPSInfo) Longitude() float64 {
 	if g.longitudeRef {
 		return -1 * g.longitude
@@ -171,6 +171,7 @@ func (g GPSInfo) Longitude() float64 {
 	return g.longitude
 }
 
+// Altitude retursn the GPS Altitude and GPS Altitude Reference as a composite.
 func (g GPSInfo) Altitude() float32 {
 	if g.altitudeRef {
 		return -1 * g.altitude
@@ -178,87 +179,7 @@ func (g GPSInfo) Altitude() float32 {
 	return g.altitude
 }
 
-type Flash uint16
+type ApplicationNotes []byte
 
-type FocalLength RationalU
-
-type SonyRaw struct {
-	//SonyRawFileType // 0x7000
+type CanonMaterNotes struct {
 }
-
-type FNumber float32
-
-type ExposureTime RationalU
-
-type Resolution RationalU
-
-type RationalU [2]uint32
-
-func (rU RationalU) AsFloat() float32 {
-	return float32(rU[0]) / float32(rU[1])
-}
-
-// Compression is Exif Compression.
-type Compression uint16
-
-//1		= Uncompressed
-//2		= CCITT 1D
-//3		= T4/Group 3 Fax
-//4		= T6/Group 4 Fax
-//5		= LZW
-//6		= JPEG (old-style)
-//7		= JPEG
-//8		= Adobe Deflate
-//9		= JBIG B&W
-//10		= JBIG Color
-//99		= JPEG
-//262		= Kodak 262
-//32766	= Next
-//32767	= Sony ARW Compressed
-//32769	= Packed RAW
-//32770	= Samsung SRW Compressed
-//32771	= CCIRLEW
-//32772	= Samsung SRW Compressed 2
-//32773	= PackBits
-//32809	= Thunderscan
-//32867	= Kodak KDC Compressed
-//32895	= IT8CTPAD
-//32896	= IT8LW
-//32897	= IT8MP
-//32898	= IT8BL
-//32908	= PixarFilm
-//32909	= PixarLog
-//32946	= Deflate
-//32947	= DCS
-//33003	= Aperio JPEG 2000 YCbCr
-//33005	= Aperio JPEG 2000 RGB
-//34661	= JBIG
-//34676	= SGILog
-//34677	= SGILog24
-//34712	= JPEG 2000
-//34713	= Nikon NEF Compressed
-//34715	= JBIG2 TIFF FX
-//34718	= Microsoft Document Imaging (MDI) Binary Level Codec
-//34719	= Microsoft Document Imaging (MDI) Progressive Transform Codec
-//34720	= Microsoft Document Imaging (MDI) Vector
-//34887	= ESRI Lerc
-//34892	= Lossy JPEG
-//34925	= LZMA2
-//34926	= Zstd
-//34927	= WebP
-//34933	= PNG
-//34934	= JPEG XR
-//65000	= Kodak DCR Compressed
-//65535	= Pentax PEF Compressed
-
-// Orientation is Exif Orientation
-type Orientation uint16
-
-// 1 = Horizontal (normal)
-// 2 = Mirror horizontal
-// 3 = Rotate 180
-// 4 = Mirror vertical
-// 5 = Mirror horizontal and rotate 270 CW
-// 6 = Rotate 90 CW
-// 7 = Mirror horizontal and rotate 90 CW
-// 8 = Rotate 270 CW

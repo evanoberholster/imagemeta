@@ -78,14 +78,14 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
 type Ifd struct {
-	Offset    uint32
+	Offset    tag.Offset
 	ByteOrder meta.ByteOrder
 	Type      IfdType
-	Index     uint8
+	Index     int8
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.
-func NewIFD(byteOrder meta.ByteOrder, ifdType IfdType, index uint8, offset uint32) Ifd {
+func NewIFD(byteOrder meta.ByteOrder, ifdType IfdType, index int8, offset tag.Offset) Ifd {
 	return Ifd{
 		ByteOrder: byteOrder,
 		Type:      ifdType,

@@ -87,7 +87,7 @@ var RootIfdTagIDMap = map[tag.ID]string{
 	YCbCrSubSampling:            "YCbCrSubSampling",
 	YCbCrPositioning:            "YCbCrPositioning",
 	ReferenceBlackWhite:         "ReferenceBlackWhite",
-	XMLPacket:                   "XMLPacket",
+	ApplicationNotes:            "ApplicationNotes",
 	Rating:                      "Rating",
 	RatingPercent:               "RatingPercent",
 	ImageID:                     "ImageID",
@@ -300,7 +300,7 @@ const (
 	YCbCrSubSampling            tag.ID = 0x0212
 	YCbCrPositioning            tag.ID = 0x0213
 	ReferenceBlackWhite         tag.ID = 0x0214
-	XMLPacket                   tag.ID = 0x02bc
+	ApplicationNotes            tag.ID = 0x02bc
 	Rating                      tag.ID = 0x4746
 	RatingPercent               tag.ID = 0x4749
 	ImageID                     tag.ID = 0x800d

@@ -44,3 +44,8 @@ func BenchmarkExif(b *testing.B) {
 // BenchmarkExif-12    	  171722	      7073 ns/op	    1319 B/op	      27 allocs/op
 
 //BenchmarkExif-12    	  197877	      6190 ns/op	    1073 B/op	      20 allocs/op
+
+//BenchmarkExif-12    	  205184	      5861 ns/op	     762 B/op	       8 allocs/op
+
+// Application Notes
+// BenchmarkExif-12    	  182654	      6498 ns/op	    1287 B/op	       9 allocs/op

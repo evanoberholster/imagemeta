@@ -39,7 +39,7 @@ func TestFocalLength(t *testing.T) {
 
 func TestMeteringMode(t *testing.T) {
 	for i := 0; i < 256; i++ {
-		mm := NewMeteringMode(uint8(i))
+		mm := NewMeteringMode(uint16(i))
 		mm2 := NewMeteringMode(0)
 
 		buf, err := mm.MarshalText()

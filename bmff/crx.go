@@ -38,7 +38,7 @@ var (
 // CrxMoovBox is a Canon Raw Moov Box
 type CrxMoovBox struct {
 	Meta CR3MetaBox
-	Trak [4]CR3Trak
+	Trak [5]CR3Trak
 }
 
 // CR3MetaBox is a uuidBox that contains Metadata for CR3 files
@@ -83,11 +83,12 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 				return cmb, err
 			}
 			if uuid == CR3MetaBoxUUID {
-				if cmb.Meta, err = parseCR3MetaBox(&inner); err != nil {
+				if cmb.Meta, err = r.parseCR3MetaBox(&inner); err != nil {
 					return cmb, err
 				}
 			}
 		case TypeTrak:
+			return
 			cmb.Trak[i], err = ParseCrxTrak(&inner)
 			if err != nil {
 				return
@@ -174,7 +175,7 @@ func (cr3 CR3MetaBox) XPacketData() (offset, length uint32, err error) {
 }
 
 // parseCR3MetaBox parses a uuid box with the uuid of 85c0b687 820f 11e0 8111 f4ce462b6a48
-func parseCR3MetaBox(outer *box) (m CR3MetaBox, err error) {
+func (r *Reader) parseCR3MetaBox(outer *box) (m CR3MetaBox, err error) {
 	var size int
 	var bt BoxType
 	var buf []byte
@@ -203,20 +204,44 @@ func parseCR3MetaBox(outer *box) (m CR3MetaBox, err error) {
 			if debugFlag {
 				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[0].String())
 			}
+			if r.ExifReader != nil {
+				r.ExifReader(outer, m.Exif[0])
+				outer.offset += size
+				outer.remain -= size
+				continue
+			}
 		case TypeCMT2:
 			m.Exif[1], err = parseCMT(buf[8:16], ifds.ExifIFD, uint32(outer.offset+8), uint32(size-8))
 			if debugFlag {
 				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[1].String())
+			}
+			if r.ExifReader != nil {
+				r.ExifReader(outer, m.Exif[1])
+				outer.offset += size
+				outer.remain -= size
+				continue
 			}
 		case TypeCMT3:
 			m.Exif[2], err = parseCMT(buf[8:16], ifds.MknoteIFD, uint32(outer.offset+8), uint32(size-8))
 			if debugFlag {
 				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[2].String())
 			}
+			//if r.ExifReader != nil {
+			//	r.ExifReader(outer, m.Exif[2])
+			//	outer.offset += size
+			//	outer.remain -= size
+			//	continue
+			//}
 		case TypeCMT4:
 			m.Exif[3], err = parseCMT(buf[8:16], ifds.GPSIFD, uint32(outer.offset+8), uint32(size-8))
 			if debugFlag {
 				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+m.Exif[3].String())
+			}
+			if r.ExifReader != nil {
+				r.ExifReader(outer, m.Exif[3])
+				outer.offset += size
+				outer.remain -= size
+				continue
 			}
 		}
 		if err != nil {

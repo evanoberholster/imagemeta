@@ -116,7 +116,7 @@ func scan(br *bufio.Reader, it imagetype.ImageType) (header meta.ExifHeader, err
 		}
 
 		byteOrder := meta.BinaryOrder(buf)
-		if byteOrder == nil {
+		if byteOrder == meta.UnknownEndian {
 			// Exif not identified. Move forward by one byte.
 			if buf[1] == 0x49 || buf[1] == 0x4d {
 				_, _ = br.Discard(1)

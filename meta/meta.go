@@ -2,7 +2,6 @@
 package meta
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -71,7 +70,7 @@ func (m Metadata) ImageType() imagetype.ImageType {
 // Image type for the parsing of the Exif information from
 // a Tiff Directory.
 type ExifHeader struct {
-	ByteOrder        binary.ByteOrder
+	ByteOrder        ByteOrder
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
@@ -82,7 +81,7 @@ type ExifHeader struct {
 // IsValid returns true if the ExifHeader ByteOrder is not nil and
 // the FirstIfdOffset is greater than 0
 func (h ExifHeader) IsValid() bool {
-	return h.ByteOrder != nil && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
+	return h.ByteOrder != UnknownEndian && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
 }
 
 func (h ExifHeader) String() string {
@@ -90,7 +89,7 @@ func (h ExifHeader) String() string {
 }
 
 // NewExifHeader returns a new ExifHeader.
-func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
+func NewExifHeader(byteOrder ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
 		FirstIfd:         ifds.IFD0,
@@ -119,14 +118,14 @@ func NewXMPHeader(offset, length uint32) XmpHeader {
 // Good reference:
 // CIPA DC-008-2016; JEITA CP-3451D
 // -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
-func BinaryOrder(buf []byte) binary.ByteOrder {
+func BinaryOrder(buf []byte) ByteOrder {
 	if isTiffBigEndian(buf[:4]) {
-		return binary.BigEndian
+		return BigEndian
 	}
 	if isTiffLittleEndian(buf[:4]) {
-		return binary.LittleEndian
+		return LittleEndian
 	}
-	return nil
+	return UnknownEndian
 }
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature

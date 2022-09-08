@@ -2,7 +2,6 @@ package exif2
 
 import (
 	"fmt"
-	"io"
 	"strings"
 	"sync"
 
@@ -12,7 +11,7 @@ import (
 
 const (
 	tagMaxLength = 56
-	bufferLength = 256
+	bufferLength = 2048
 )
 
 // buffer for data and tags
@@ -28,11 +27,12 @@ var bufferPool = sync.Pool{
 	New: func() interface{} { return new(buffer) },
 }
 
-// currentTag returns the current tag
+// currentTag returns the current tag in tagBuffer
 func (b *buffer) currentTag() tag.Tag {
 	return b.tag[b.pos]
 }
 
+// nextTag returns the next tag in tagBuffer
 func (b *buffer) nextTag() tag.Tag {
 	return b.tag[b.pos+1]
 }
@@ -59,10 +59,7 @@ func (ir *ifdReader) readTagValue() ([]byte, error) {
 	}
 	n, err := ir.reader.Read(ir.buffer.buf[:t.Size()])
 	ir.po += uint32(n)
-	if err != nil {
-		return nil, err
-	}
-	return ir.buffer.buf[:n], nil
+	return ir.buffer.buf[:n], err
 }
 
 // resetPosition resets the tag buffer to only include unread tags
@@ -75,8 +72,9 @@ func (b *buffer) resetPosition() {
 	}
 }
 
+// addTagBuffer adds the given tag to the tagBuffer
 func (ir *ifdReader) addTagBuffer(t tag.Tag) {
-	if t.ValueOffset < ir.po {
+	if uint32(t.ValueOffset) < ir.po {
 		ir.logTagWarn(t, "Uncompatible reverse exif tag")
 		return
 	}
@@ -109,21 +107,46 @@ func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 	}
 }
 
+// discard, discards n amount from ir.Reader
+func (ir *ifdReader) discard(n int) error {
+	if n == 0 {
+		return nil
+	}
+	var discarded int
+	var err error
+	for n > 0 {
+		if bufferLength > n {
+			discarded, err = ir.reader.Read(ir.buffer.buf[:n])
+		} else {
+			discarded, err = ir.reader.Read(ir.buffer.buf[:])
+		}
+		ir.po += uint32(discarded)
+		n -= discarded
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+// discard, discards the given amount from ir.Reader
+//func (ir *ifdReader) discard2(n int) error {
+//	if n == 0 {
+//		return nil
+//	}
+//
+//	discarded, err := io.CopyN(io.Discard, ir.reader, int64(n))
+//	ir.po += uint32(discarded)
+//	return err
+//}
+
+// String is the stringer interface for buffer
 func (b *buffer) String() string {
 	sb := strings.Builder{}
 	for i := b.pos; i < b.len; i++ {
 		sb.WriteString(tagString(b.tag[i]) + "\n")
 	}
 	return sb.String()
-}
-
-func (ir *ifdReader) discard(n int) error {
-	if n == 0 {
-		return nil
-	}
-	discarded, err := io.CopyN(io.Discard, ir.reader, int64(n))
-	ir.po += uint32(discarded)
-	return err
 }
 
 func tagString(t tag.Tag) string {

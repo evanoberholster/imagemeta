@@ -59,6 +59,58 @@ func (z Aperture) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *Compression) DecodeMsg(dc *msgp.Reader) (err error) {
+	{
+		var zb0001 uint16
+		zb0001, err = dc.ReadUint16()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = Compression(zb0001)
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z Compression) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteUint16(uint16(z))
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z Compression) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendUint16(o, uint16(z))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *Compression) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	{
+		var zb0001 uint16
+		zb0001, bts, err = msgp.ReadUint16Bytes(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = Compression(zb0001)
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z Compression) Msgsize() (s int) {
+	s = msgp.Uint16Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *ExposureBias) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
 		var zb0001 int16
@@ -425,8 +477,8 @@ func (z FocalLength) Msgsize() (s int) {
 // DecodeMsg implements msgp.Decodable
 func (z *MeteringMode) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
-		var zb0001 uint8
-		zb0001, err = dc.ReadUint8()
+		var zb0001 uint16
+		zb0001, err = dc.ReadUint16()
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -438,7 +490,7 @@ func (z *MeteringMode) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z MeteringMode) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteUint8(uint8(z))
+	err = en.WriteUint16(uint16(z))
 	if err != nil {
 		err = msgp.WrapError(err)
 		return
@@ -449,15 +501,15 @@ func (z MeteringMode) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z MeteringMode) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendUint8(o, uint8(z))
+	o = msgp.AppendUint16(o, uint16(z))
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *MeteringMode) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	{
-		var zb0001 uint8
-		zb0001, bts, err = msgp.ReadUint8Bytes(bts)
+		var zb0001 uint16
+		zb0001, bts, err = msgp.ReadUint16Bytes(bts)
 		if err != nil {
 			err = msgp.WrapError(err)
 			return
@@ -470,7 +522,7 @@ func (z *MeteringMode) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z MeteringMode) Msgsize() (s int) {
-	s = msgp.Uint8Size
+	s = msgp.Uint16Size
 	return
 }
 

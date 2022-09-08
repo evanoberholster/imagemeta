@@ -202,7 +202,7 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 }
 
 // MeteringMode is the mode in which the image was metered.
-type MeteringMode uint8
+type MeteringMode uint16
 
 // Metering Modes
 const (
@@ -235,8 +235,8 @@ var (
 	}
 )
 
-// NewMeteringMode returns a MeteringMode from the given uint8
-func NewMeteringMode(meteringMode uint8) MeteringMode {
+// NewMeteringMode returns a MeteringMode from the given uint16
+func NewMeteringMode(meteringMode uint16) MeteringMode {
 	if meteringMode < 7 || meteringMode == 255 {
 		return MeteringMode(meteringMode)
 	}
@@ -529,4 +529,113 @@ func (o Orientation) String() string {
 		return _OrientationStringerStrings[_OrientationStringerIndex[o]:_OrientationStringerIndex[o+1]]
 	}
 	return Orientation(0).String()
+}
+
+// Compression is Exif Compression.
+type Compression uint16
+
+// String is for Compression stringer interface
+func (c Compression) String() string {
+	switch c {
+	case 1:
+		return "Uncompressed"
+	case 2:
+		return "CCITT 1D"
+	case 3:
+		return "T4/Group 3 Fax"
+	case 4:
+		return "T6/Group 4 Fax"
+	case 5:
+		return "LZW"
+	case 6:
+		return "JPEG (old-style)"
+	case 7:
+		return "JPEG"
+	case 8:
+		return "Adobe Deflate"
+	case 9:
+		return "JBIG B&W"
+	case 10:
+		return "JBIG Color"
+	case 99:
+		return "JPEG"
+	case 262:
+		return "Kodak 262"
+	case 32766:
+		return "Next"
+	case 32767:
+		return "Sony ARW Compressed"
+	case 32769:
+		return "Packed RAW"
+	case 32770:
+		return "Samsung SRW Compressed"
+	case 32771:
+		return "CCIRLEW"
+	case 32772:
+		return "Samsung SRW Compressed 2"
+	case 32773:
+		return "PackBits"
+	case 32809:
+		return "Thunderscan"
+	case 32867:
+		return "Kodak KDC Compressed"
+	case 32895:
+		return "IT8CTPAD"
+	case 32896:
+		return "IT8LW"
+	case 32897:
+		return "IT8MP"
+	case 32898:
+		return "IT8BL"
+	case 32908:
+		return "PixarFilm"
+	case 32909:
+		return "PixarLog"
+	case 32946:
+		return "Deflate"
+	case 32947:
+		return "DCS"
+	case 33003:
+		return "Aperio JPEG 2000 YCbCr"
+	case 33005:
+		return "Aperio JPEG 2000 RGB"
+	case 34661:
+		return "JBIG"
+	case 34676:
+		return "SGILog"
+	case 34677:
+		return "SGILog24"
+	case 34712:
+		return "JPEG 2000"
+	case 34713:
+		return "Nikon NEF Compressed"
+	case 34715:
+		return "JBIG2 TIFF FX"
+	case 34718:
+		return "Microsoft Document Imaging (MDI) Binary Level Codec"
+	case 34719:
+		return "Microsoft Document Imaging (MDI) Progressive Transform Codec"
+	case 34720:
+		return "Microsoft Document Imaging (MDI) Vector"
+	case 34887:
+		return "ESRI Lerc"
+	case 34892:
+		return "Lossy JPEG"
+	case 34925:
+		return "LZMA2"
+	case 34926:
+		return "Zstd"
+	case 34927:
+		return "WebP"
+	case 34933:
+		return "PNG"
+	case 34934:
+		return "JPEG XR"
+	case 65000:
+		return "Kodak DCR Compressed"
+	case 65535:
+		return "Pentax PEF Compressecase: "
+	default:
+		return "Unkown"
+	}
 }

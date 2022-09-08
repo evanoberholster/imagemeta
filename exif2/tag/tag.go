@@ -23,25 +23,33 @@ func (id ID) String() string {
 	return fmt.Sprintf("0x%04x", uint16(id))
 }
 
+// Offset is the uint32 representation of a tag's Offset
+type Offset uint32
+
+// String is the Stringer interface for ID
+func (o Offset) String() string {
+	return fmt.Sprintf("0x%04x", uint32(o))
+}
+
 // Tag is an Exif Tag (16bytes)
 type Tag struct {
-	ValueOffset uint32         // 4 bytes
+	ValueOffset Offset         // 4 bytes
 	UnitCount   uint32         // 4 bytes
 	ID          ID             // 2 bytes
 	t           Type           // 1 byte
 	Ifd         uint8          // 1 byte
-	IfdIndex    uint8          // 1 byte
+	IfdIndex    int8           // 1 byte
 	ByteOrder   meta.ByteOrder // 1 byte
 }
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
 // If tagType is Invalid returns ErrTagTypeNotValid
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex uint8, byteOrder meta.ByteOrder) (Tag, error) {
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex int8, byteOrder meta.ByteOrder) (Tag, error) {
 	t := Tag{
 		ID:          tagID,
 		t:           tagType,
 		UnitCount:   unitCount,
-		ValueOffset: valueOffset,
+		ValueOffset: Offset(valueOffset),
 		Ifd:         ifd,
 		IfdIndex:    ifdIndex,
 		ByteOrder:   byteOrder,
@@ -55,6 +63,11 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 // String is the Stringer interface for Tag
 func (t Tag) String() string {
 	return fmt.Sprintf("%s\t | %s | Size: %d", t.ID, t.t, t.UnitCount)
+}
+
+// EmbeddedValue fills the buf with the tag's embedded value, always <= 4 bytes
+func (t Tag) EmbeddedValue(buf []byte) {
+	t.ByteOrder.PutUint32(buf, uint32(t.ValueOffset))
 }
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset

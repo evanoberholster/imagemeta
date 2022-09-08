@@ -20,13 +20,13 @@ func (ir *ifdReader) logError() bool {
 
 func (ir *ifdReader) logTagInfo(t tag.Tag) {
 	if ir.logInfo() {
-		ir.logger.Debug().Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Uint32("offset", t.ValueOffset).Stringer("type", t.Type()).Send()
+		ir.logger.Debug().Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Stringer("offset", t.ValueOffset).Stringer("type", t.Type()).Send()
 	}
 }
 
 func (ir *ifdReader) logTagWarn(t tag.Tag, msg string) {
 	if ir.logWarn() {
-		ir.logger.Warn().Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Uint32("offset", t.ValueOffset).Uint32("reader.offset", ir.po).Stringer("type", t.Type()).Msg(msg)
+		ir.logger.Warn().Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Stringer("offset", t.ValueOffset).Uint32("reader.offset", ir.po).Stringer("type", t.Type()).Msg(msg)
 	}
 }
 
@@ -36,6 +36,6 @@ func (ir *ifdReader) logParseWarn(t tag.Tag, fnName string, msg string, err erro
 		if err != nil {
 			l = l.Err(err)
 		}
-		l.Str("func", fnName).Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Uint32("offset", t.ValueOffset).Uint32("reader.offset", ir.po).Stringer("type", t.Type()).Msg(msg)
+		l.Str("func", fnName).Stringer("id", t.ID).Uint32("units", t.UnitCount).Str("tag", ifds.IfdType(t.Ifd).TagName(t.ID)).Stringer("offset", t.ValueOffset).Uint32("reader.offset", ir.po).Stringer("type", t.Type()).Msg(msg)
 	}
 }

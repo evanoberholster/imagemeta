@@ -1,25 +1,165 @@
 package exif2
 
 import (
+	"math"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
+func (ir *ifdReader) processTag(t tag.Tag) {
+	switch ifds.IfdType(t.Ifd) {
+	case ifds.IFD0:
+		switch t.ID {
+		case ifds.Make:
+			ir.exif.Make = ir.parseString(t)
+		case ifds.Model:
+			ir.exif.Model = ir.parseString(t)
+		case ifds.Artist:
+			ir.exif.Artist = ir.parseString(t)
+		case ifds.Copyright:
+			ir.exif.Copyright = ir.parseString(t)
+		case ifds.ImageWidth:
+			ir.exif.ImageWidth = uint16(ir.parseUint32(t))
+		case ifds.ImageLength:
+			ir.exif.ImageHeight = uint16(ir.parseUint32(t))
+		case ifds.StripOffsets:
+			ir.exif.StripOffsets = ir.parseUint32(t)
+		case ifds.StripByteCounts:
+			ir.exif.StripByteCounts = ir.parseUint32(t)
+		case ifds.Orientation:
+			ir.exif.Orientation = ir.parseOrientation(t)
+		case ifds.Software:
+			ir.exif.Software = ir.parseString(t)
+		case ifds.ImageDescription:
+			ir.exif.ImageDescription = ir.parseString(t)
+		case ifds.DateTime:
+			ir.exif.modifyDate = ir.parseDate(t)
+		case ifds.CameraSerialNumber:
+			if ir.exif.CameraSerial == "" {
+				ir.exif.CameraSerial = ir.parseString(t)
+			}
+		case ifds.ApplicationNotes:
+			ir.exif.ApplicationNotes = ir.parseApplicationNotes(t)
+			//default:
+			//	fmt.Println(tagString(t))
+		}
+	case ifds.ExifIFD:
+		switch t.ID {
+		case exififd.LensMake:
+			ir.exif.LensMake = ir.parseString(t)
+		case exififd.LensModel:
+			ir.exif.LensModel = ir.parseString(t)
+		case exififd.LensSerialNumber:
+			ir.exif.LensSerial = ir.parseString(t)
+		case exififd.BodySerialNumber:
+			if ir.exif.CameraSerial == "" {
+				ir.exif.CameraSerial = ir.parseString(t)
+			}
+		case exififd.PixelXDimension:
+			if ir.exif.ImageWidth == 0 {
+				ir.exif.ImageWidth = uint16(ir.parseUint32(t))
+			}
+		case exififd.PixelYDimension:
+			if ir.exif.ImageHeight == 0 {
+				ir.exif.ImageHeight = uint16(ir.parseUint32(t))
+			}
+		case exififd.ExposureTime:
+			ir.exif.ExposureTime = ir.parseExposureTime(t)
+		case exififd.ApertureValue:
+			if ir.exif.FNumber == 0.0 {
+				r := ir.parseRationalU(t)
+				f := float64(r[0]) / float64(r[1])
+				ir.exif.FNumber = meta.Aperture(math.Round(math.Pow(math.Sqrt2, float64(f))*100) / 100)
+			}
+		case exififd.FNumber:
+			ir.exif.FNumber = ir.parseAperture(t)
+		case exififd.ExposureProgram:
+			ir.exif.ExposureProgram = meta.ExposureProgram(ir.parseUint16(t))
+		case exififd.ExposureBiasValue:
+			ir.exif.ExposureBias = ir.parseExposureBias(t)
+		case exififd.ExposureMode:
+			ir.exif.ExposureMode = meta.ExposureMode(ir.parseUint16(t))
+		case exififd.MeteringMode:
+			ir.exif.MeteringMode = meta.MeteringMode(ir.parseUint16(t))
+		case exififd.ISOSpeedRatings:
+			ir.exif.ISOSpeed = ir.parseUint32(t)
+		case ifds.DateTimeOriginal:
+			ir.exif.dateTimeOriginal = ir.parseDate(t)
+		case ifds.DateTimeDigitized:
+			ir.exif.createDate = ir.parseDate(t)
+		case ifds.Flash:
+			ir.exif.Flash = meta.Flash(ir.parseUint16(t))
+		case ifds.FocalLength:
+			ir.exif.FocalLength = ir.parseFocalLength(t)
+		case exififd.FocalLengthIn35mmFilm:
+			ir.exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
+		case exififd.LensSpecification:
+			ir.exif.LensInfo = ir.parseLensInfo(t)
+		case exififd.SubSecTime:
+			ir.exif.subSecTime = ir.parseSubSecTime(t)
+		case exififd.SubSecTimeOriginal:
+			ir.exif.subSecTimeOriginal = ir.parseSubSecTime(t)
+		case exififd.SubSecTimeDigitized:
+			ir.exif.subSecTimeDigitized = ir.parseSubSecTime(t)
+		}
+	case ifds.GPSIFD:
+		switch t.ID {
+		case gpsifd.GPSAltitudeRef:
+			ir.exif.GPS.altitudeRef = ir.parseGPSRef(t)
+		case gpsifd.GPSLatitudeRef:
+			ir.exif.GPS.latitudeRef = ir.parseGPSRef(t)
+		case gpsifd.GPSLongitudeRef:
+			ir.exif.GPS.longitudeRef = ir.parseGPSRef(t)
+		case gpsifd.GPSAltitude:
+			ir.exif.GPS.altitude = ir.parseGPSAltitude(t)
+		case gpsifd.GPSLatitude:
+			ir.exif.GPS.latitude = ir.parseGPSCoord(t)
+		case gpsifd.GPSLongitude:
+			ir.exif.GPS.longitude = ir.parseGPSCoord(t)
+		case gpsifd.GPSTimeStamp:
+			ir.exif.GPS.time = ir.parseGPSTimeStamp(t)
+		case gpsifd.GPSDateStamp:
+			ir.exif.GPS.date = ir.parseGPSDateStamp(t)
+		}
+	}
+}
+
+func (ir *ifdReader) parseApplicationNotes(t tag.Tag) ApplicationNotes {
+	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
+		return nil
+	}
+
+	n, err := ir.reader.Read(ir.buffer.buf[:bufferLength])
+	ir.po += uint32(n)
+	if err != nil {
+		ir.logParseWarn(t, "parseApplicationNotes", "unrecognized tag type", err)
+	}
+	res1 := trimNULBuffer(ir.buffer.buf[:n])
+	res2 := make([]byte, len(res1))
+	copy(res2, res1)
+	return res2
+}
+
 func (ir *ifdReader) parseAperture(t tag.Tag) meta.Aperture {
 	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {
-		return meta.Aperture(ir.parseRationalU(t).AsFloat())
+		r := ir.parseRationalU(t)
+		return meta.Aperture(float32(r[0]) / float32(r[1]))
 	}
-	if ir.logWarn() {
-		ir.logger.Warn().Str("func", "parseAperture").Uint32("units", t.UnitCount).Stringer("id", t.ID).Stringer("ifd", t.Type()).Uint32("size", t.Size()).Send()
-	}
+	ir.logParseWarn(t, "parseAperture", "unrecognized tag type", nil)
 	return 0.0
 }
 func (ir *ifdReader) parseExposureTime(t tag.Tag) meta.ExposureTime {
-	r := ir.parseRationalU(t)
-	return meta.ExposureTime(float32(r[0]) / float32(r[1]))
+	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {
+		r := ir.parseRationalU(t)
+		return meta.ExposureTime(float32(r[0]) / float32(r[1]))
+	}
+	ir.logParseWarn(t, "parseExposureTime", "unrecognized tag type", nil)
+	return 0.0
 }
 
 func (ir *ifdReader) parseOrientation(t tag.Tag) meta.Orientation {
@@ -27,21 +167,34 @@ func (ir *ifdReader) parseOrientation(t tag.Tag) meta.Orientation {
 }
 
 func (ir *ifdReader) parseExposureBias(t tag.Tag) meta.ExposureBias {
-	eb := ir.parseRationalU(t)
-	return meta.NewExposureBias(int16(eb[0]), int16(eb[1]))
+	if !t.IsEmbedded() {
+		r := ir.parseRationalU(t)
+		return meta.NewExposureBias(int16(r[0]), int16(r[1]))
+	}
+	return meta.NewExposureBias(0, 0)
 }
 
+// parseFocalLength supports tag type Rational, SRational, Short, and Long
 func (ir *ifdReader) parseFocalLength(t tag.Tag) meta.FocalLength {
 	if t.IsType(tag.TypeShort) || t.IsType(tag.TypeLong) {
 		return meta.NewFocalLength(ir.parseUint32(t), 1)
 	}
-	r := ir.parseRationalU(t)
-	return meta.NewFocalLength(r[0], r[1])
+	if !t.IsEmbedded() && (t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
+		buf, err := ir.readTagValue()
+		if err != nil {
+			ir.logParseWarn(t, "parseFocalLength", "", err)
+			return meta.FocalLength(0)
+		}
+
+		return meta.FocalLength(float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
+	}
+	ir.logParseWarn(t, "parseFocalLength", "unrecognized tag type", nil)
+	return meta.FocalLength(0)
 }
 
 func (ir *ifdReader) parseSubSecTime(t tag.Tag) uint16 {
 	if t.IsEmbedded() && (t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul)) {
-		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
+		t.EmbeddedValue(ir.buffer.buf[:4])
 		return uint16(parseStrUint(ir.buffer.buf[:4]))
 	}
 	return 0
@@ -51,41 +204,37 @@ func (ir *ifdReader) parseLensInfo(t tag.Tag) LensInfo {
 	if !t.IsEmbedded() {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			if ir.logWarn() {
-				ir.logger.Warn().Err(err).Str("func", "parseLensInfo").Uint32("units", t.UnitCount).Stringer("id", t.ID).Stringer("ifd", t.Type()).Uint32("size", t.Size()).Send()
-			}
+			ir.logParseWarn(t, "parseLensInfo", "", err)
 			return LensInfo{}
 		}
 
 		return LensInfo{
-			RationalU{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])},
-			RationalU{t.ByteOrder.Uint32(buf[8:12]), t.ByteOrder.Uint32(buf[12:16])},
-			RationalU{t.ByteOrder.Uint32(buf[16:20]), t.ByteOrder.Uint32(buf[20:24])},
-			RationalU{t.ByteOrder.Uint32(buf[24:28]), t.ByteOrder.Uint32(buf[28:32])}}
+			t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8]),
+			t.ByteOrder.Uint32(buf[8:12]), t.ByteOrder.Uint32(buf[12:16]),
+			t.ByteOrder.Uint32(buf[16:20]), t.ByteOrder.Uint32(buf[20:24]),
+			t.ByteOrder.Uint32(buf[24:28]), t.ByteOrder.Uint32(buf[28:32])}
 	}
 	return LensInfo{}
 }
 
-func (ir *ifdReader) parseRationalU(t tag.Tag) RationalU {
+func (ir *ifdReader) parseRationalU(t tag.Tag) [2]uint32 {
 	if !t.IsEmbedded() {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			if ir.logWarn() {
-				ir.logger.Warn().Err(err).Str("func", "parseRationalU").Uint32("units", t.UnitCount).Stringer("id", t.ID).Stringer("ifd", t.Type()).Uint32("size", t.Size()).Send()
-			}
-			return RationalU{}
+			ir.logParseWarn(t, "parseRationalU", "", err)
+			return [2]uint32{}
 		}
-		return RationalU{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
+		return [2]uint32{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
 	}
-	return RationalU{}
+	return [2]uint32{}
 }
 
 func (ir *ifdReader) parseUint32(t tag.Tag) uint32 {
 	switch t.Type() {
 	case tag.TypeLong:
-		return t.ValueOffset
+		return uint32(t.ValueOffset)
 	case tag.TypeShort:
-		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
+		t.EmbeddedValue(ir.buffer.buf[:4])
 		return uint32(t.ByteOrder.Uint16(ir.buffer.buf[:4]))
 	default:
 		return 0
@@ -94,7 +243,7 @@ func (ir *ifdReader) parseUint32(t tag.Tag) uint32 {
 
 func (ir *ifdReader) parseUint16(t tag.Tag) uint16 {
 	if t.IsEmbedded() && t.IsType(tag.TypeShort) {
-		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
+		t.EmbeddedValue(ir.buffer.buf[:4])
 		return t.ByteOrder.Uint16(ir.buffer.buf[:2])
 	}
 	return 0
@@ -102,15 +251,13 @@ func (ir *ifdReader) parseUint16(t tag.Tag) uint16 {
 
 func (ir *ifdReader) parseString(t tag.Tag) string {
 	if t.IsEmbedded() {
-		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
+		t.EmbeddedValue(ir.buffer.buf[:4])
 		return trimNULString(ir.buffer.buf[:t.Size()])
 	}
 	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			if ir.logWarn() {
-				ir.logger.Warn().Err(err).Str("func", "parseString").Uint32("units", t.UnitCount).Stringer("id", t.ID).Stringer("ifd", t.Type()).Uint32("size", t.Size()).Send()
-			}
+			ir.logParseWarn(t, "parseString", "", err)
 		}
 		// Trim function
 		return trimNULString(buf)
@@ -239,7 +386,7 @@ func (ir *ifdReader) parseGPSDateStamp(t tag.Tag) time.Time {
 
 func (ir *ifdReader) parseGPSRef(t tag.Tag) bool {
 	if t.IsEmbedded() {
-		t.ByteOrder.PutUint32(ir.buffer.buf[:4], t.ValueOffset)
+		t.EmbeddedValue(ir.buffer.buf[:4])
 		switch t.ID {
 		case gpsifd.GPSAltitudeRef:
 			return t.IsType(tag.TypeByte) && (ir.buffer.buf[0] == byte(1))
