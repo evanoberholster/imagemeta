@@ -7,7 +7,8 @@ import (
 	"testing"
 )
 
-// BenchmarkCrx10-12    	  345901	      4140 ns/op	    4592 B/op	       2 allocs/op
+// BenchmarkCrx10-12    	  393583	      3175 ns/op	    4518 B/op	       2 allocs/op
+// BenchmarkCrx10-12    	  375272	      3269 ns/op	    4582 B/op	       3 allocs/op
 func BenchmarkCrx10(b *testing.B) {
 	f, err := os.Open("../../test/samples/CanonR6_1.CR3")
 	if err != nil {

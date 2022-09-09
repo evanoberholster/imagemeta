@@ -23,6 +23,6 @@
 | 0x80000464 |	EOS R7              | 05/2022	    | _     |
 | 0x80000465 |	EOS R10	            | 05/2022	    | _     |
 
-## Inspired by:
-https://github.com/go4org/go4
-https://github.com/lclevy/canon_cr3
+#### Inspired by:
+- https://github.com/go4org/go4
+- https://github.com/lclevy/canon_cr3
