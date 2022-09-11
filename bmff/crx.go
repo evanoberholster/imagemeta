@@ -89,7 +89,7 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 			}
 		case TypeTrak:
 			//return
-			cmb.Trak[i], err = ParseCrxTrak(&inner)
+			cmb.Trak[i], err = parseCrxTrak(&inner)
 			if err != nil {
 				return
 			}
@@ -111,7 +111,7 @@ func (r *Reader) ReadCrxMoovBox() (cmb CrxMoovBox, err error) {
 	return
 }
 
-func ParseCrxTrak(outer *box) (t CR3Trak, err error) {
+func parseCrxTrak(outer *box) (t CR3Trak, err error) {
 	buf, err := outer.read()
 	if err != nil {
 		return
@@ -219,7 +219,7 @@ func (r *Reader) parseCR3MetaBox(outer *box) (m CR3MetaBox, err error) {
 				traceBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "Exif Header: "+header.String())
 			}
 			if r.ExifReader != nil {
-				r.ExifReader(outer, header)
+				r.ExifReader(outer.bufReader.Reader, header)
 				outer.offset += size
 				outer.remain -= size
 				continue
