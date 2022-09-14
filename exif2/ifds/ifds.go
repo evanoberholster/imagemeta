@@ -115,9 +115,10 @@ func (ifd Ifd) String() string {
 
 // ChildIfd returns the Ifd if it is a Child of the current Tag
 // if it is not, it returns NullIFD
-func (ifd Ifd) ChildIfd(t tag.Tag) Ifd {
+func ChildIfd(t tag.Tag) Ifd {
 	// RootIfd Children
-	if ifd.IsType(IFD0) {
+	switch IfdType(t.Ifd) {
+	case IFD0: // IFD0 Children
 		switch t.ID {
 		case ExifTag:
 			return NewIFD(t.ByteOrder, ExifIFD, t.IfdIndex, t.ValueOffset)
@@ -126,10 +127,7 @@ func (ifd Ifd) ChildIfd(t tag.Tag) Ifd {
 		case SubIFDs:
 			return NewIFD(t.ByteOrder, SubIFD, t.IfdIndex, t.ValueOffset)
 		}
-	}
-
-	// ExifIfd Children
-	if ifd.IsType(ExifIFD) {
+	case ExifIFD: // ExifIfd Children
 		switch t.ID {
 		case exififd.MakerNote:
 			return NewIFD(t.ByteOrder, MknoteIFD, t.IfdIndex, t.ValueOffset)

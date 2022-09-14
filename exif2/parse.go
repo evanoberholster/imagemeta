@@ -16,115 +16,115 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 	case ifds.IFD0:
 		switch t.ID {
 		case ifds.Make:
-			ir.exif.Make = ir.parseString(t)
+			ir.Exif.Make = ir.parseString(t)
 		case ifds.Model:
-			ir.exif.Model = ir.parseString(t)
+			ir.Exif.Model = ir.parseString(t)
 		case ifds.Artist:
-			ir.exif.Artist = ir.parseString(t)
+			ir.Exif.Artist = ir.parseString(t)
 		case ifds.Copyright:
-			ir.exif.Copyright = ir.parseString(t)
+			ir.Exif.Copyright = ir.parseString(t)
 		case ifds.ImageWidth:
-			ir.exif.ImageWidth = uint16(ir.parseUint32(t))
+			ir.Exif.ImageWidth = uint16(ir.parseUint32(t))
 		case ifds.ImageLength:
-			ir.exif.ImageHeight = uint16(ir.parseUint32(t))
+			ir.Exif.ImageHeight = uint16(ir.parseUint32(t))
 		case ifds.StripOffsets:
-			ir.exif.StripOffsets = ir.parseUint32(t)
+			ir.Exif.StripOffsets = ir.parseUint32(t)
 		case ifds.StripByteCounts:
-			ir.exif.StripByteCounts = ir.parseUint32(t)
+			ir.Exif.StripByteCounts = ir.parseUint32(t)
 		case ifds.Orientation:
-			ir.exif.Orientation = ir.parseOrientation(t)
+			ir.Exif.Orientation = ir.parseOrientation(t)
 		case ifds.Software:
-			ir.exif.Software = ir.parseString(t)
+			ir.Exif.Software = ir.parseString(t)
 		case ifds.ImageDescription:
-			ir.exif.ImageDescription = ir.parseString(t)
+			ir.Exif.ImageDescription = ir.parseString(t)
 		case ifds.DateTime:
-			ir.exif.modifyDate = ir.parseDate(t)
+			ir.Exif.modifyDate = ir.parseDate(t)
 		case ifds.CameraSerialNumber:
-			if ir.exif.CameraSerial == "" {
-				ir.exif.CameraSerial = ir.parseString(t)
+			if ir.Exif.CameraSerial == "" {
+				ir.Exif.CameraSerial = ir.parseString(t)
 			}
 		case ifds.ApplicationNotes:
-			ir.exif.ApplicationNotes = ir.parseApplicationNotes(t)
+			ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
 			//default:
 			//	fmt.Println(tagString(t))
 		}
 	case ifds.ExifIFD:
 		switch t.ID {
 		case exififd.LensMake:
-			ir.exif.LensMake = ir.parseString(t)
+			ir.Exif.LensMake = ir.parseString(t)
 		case exififd.LensModel:
-			ir.exif.LensModel = ir.parseString(t)
+			ir.Exif.LensModel = ir.parseString(t)
 		case exififd.LensSerialNumber:
-			ir.exif.LensSerial = ir.parseString(t)
+			ir.Exif.LensSerial = ir.parseString(t)
 		case exififd.BodySerialNumber:
-			if ir.exif.CameraSerial == "" {
-				ir.exif.CameraSerial = ir.parseString(t)
+			if ir.Exif.CameraSerial == "" {
+				ir.Exif.CameraSerial = ir.parseString(t)
 			}
 		case exififd.PixelXDimension:
-			if ir.exif.ImageWidth == 0 {
-				ir.exif.ImageWidth = uint16(ir.parseUint32(t))
+			if ir.Exif.ImageWidth == 0 {
+				ir.Exif.ImageWidth = uint16(ir.parseUint32(t))
 			}
 		case exififd.PixelYDimension:
-			if ir.exif.ImageHeight == 0 {
-				ir.exif.ImageHeight = uint16(ir.parseUint32(t))
+			if ir.Exif.ImageHeight == 0 {
+				ir.Exif.ImageHeight = uint16(ir.parseUint32(t))
 			}
 		case exififd.ExposureTime:
-			ir.exif.ExposureTime = ir.parseExposureTime(t)
+			ir.Exif.ExposureTime = ir.parseExposureTime(t)
 		case exififd.ApertureValue:
-			if ir.exif.FNumber == 0.0 {
+			if ir.Exif.FNumber == 0.0 {
 				r := ir.parseRationalU(t)
 				f := float64(r[0]) / float64(r[1])
-				ir.exif.FNumber = meta.Aperture(math.Round(math.Pow(math.Sqrt2, float64(f))*100) / 100)
+				ir.Exif.FNumber = meta.Aperture(math.Round(math.Pow(math.Sqrt2, float64(f))*100) / 100)
 			}
 		case exififd.FNumber:
-			ir.exif.FNumber = ir.parseAperture(t)
+			ir.Exif.FNumber = ir.parseAperture(t)
 		case exififd.ExposureProgram:
-			ir.exif.ExposureProgram = meta.ExposureProgram(ir.parseUint16(t))
+			ir.Exif.ExposureProgram = meta.ExposureProgram(ir.parseUint16(t))
 		case exififd.ExposureBiasValue:
-			ir.exif.ExposureBias = ir.parseExposureBias(t)
+			ir.Exif.ExposureBias = ir.parseExposureBias(t)
 		case exififd.ExposureMode:
-			ir.exif.ExposureMode = meta.ExposureMode(ir.parseUint16(t))
+			ir.Exif.ExposureMode = meta.ExposureMode(ir.parseUint16(t))
 		case exififd.MeteringMode:
-			ir.exif.MeteringMode = meta.MeteringMode(ir.parseUint16(t))
+			ir.Exif.MeteringMode = meta.MeteringMode(ir.parseUint16(t))
 		case exififd.ISOSpeedRatings:
-			ir.exif.ISOSpeed = ir.parseUint32(t)
+			ir.Exif.ISOSpeed = ir.parseUint32(t)
 		case ifds.DateTimeOriginal:
-			ir.exif.dateTimeOriginal = ir.parseDate(t)
+			ir.Exif.dateTimeOriginal = ir.parseDate(t)
 		case ifds.DateTimeDigitized:
-			ir.exif.createDate = ir.parseDate(t)
+			ir.Exif.createDate = ir.parseDate(t)
 		case ifds.Flash:
-			ir.exif.Flash = meta.Flash(ir.parseUint16(t))
+			ir.Exif.Flash = meta.Flash(ir.parseUint16(t))
 		case ifds.FocalLength:
-			ir.exif.FocalLength = ir.parseFocalLength(t)
+			ir.Exif.FocalLength = ir.parseFocalLength(t)
 		case exififd.FocalLengthIn35mmFilm:
-			ir.exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
+			ir.Exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
 		case exififd.LensSpecification:
-			ir.exif.LensInfo = ir.parseLensInfo(t)
+			ir.Exif.LensInfo = ir.parseLensInfo(t)
 		case exififd.SubSecTime:
-			ir.exif.subSecTime = ir.parseSubSecTime(t)
+			ir.Exif.subSecTime = ir.parseSubSecTime(t)
 		case exififd.SubSecTimeOriginal:
-			ir.exif.subSecTimeOriginal = ir.parseSubSecTime(t)
+			ir.Exif.subSecTimeOriginal = ir.parseSubSecTime(t)
 		case exififd.SubSecTimeDigitized:
-			ir.exif.subSecTimeDigitized = ir.parseSubSecTime(t)
+			ir.Exif.subSecTimeDigitized = ir.parseSubSecTime(t)
 		}
 	case ifds.GPSIFD:
 		switch t.ID {
 		case gpsifd.GPSAltitudeRef:
-			ir.exif.GPS.altitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.altitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSLatitudeRef:
-			ir.exif.GPS.latitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.latitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSLongitudeRef:
-			ir.exif.GPS.longitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.longitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSAltitude:
-			ir.exif.GPS.altitude = ir.parseGPSAltitude(t)
+			ir.Exif.GPS.altitude = ir.parseGPSAltitude(t)
 		case gpsifd.GPSLatitude:
-			ir.exif.GPS.latitude = ir.parseGPSCoord(t)
+			ir.Exif.GPS.latitude = ir.parseGPSCoord(t)
 		case gpsifd.GPSLongitude:
-			ir.exif.GPS.longitude = ir.parseGPSCoord(t)
+			ir.Exif.GPS.longitude = ir.parseGPSCoord(t)
 		case gpsifd.GPSTimeStamp:
-			ir.exif.GPS.time = ir.parseGPSTimeStamp(t)
+			ir.Exif.GPS.time = ir.parseGPSTimeStamp(t)
 		case gpsifd.GPSDateStamp:
-			ir.exif.GPS.date = ir.parseGPSDateStamp(t)
+			ir.Exif.GPS.date = ir.parseGPSDateStamp(t)
 		}
 	}
 }

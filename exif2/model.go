@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -32,6 +33,9 @@ type Exif struct {
 	modifyDate                time.Time            // IFD0 / 0x0132
 	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
 	createDate                time.Time            // ExifIFD / 0x9004
+	offsetTime                string               // ExifIFD / 0x9010 (time zone for ModifyDate)
+	offsetTimeOriginal        string               // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
+	offsetTimeDigitized       string               // ExifIFD / 0x9012 (time zone for CreateDate)
 	XResolution               uint32               // IFD0 / 0x011a rational64u
 	YResolution               uint32               // IFD0 / 0x011b
 	ExposureTime              meta.ExposureTime    // 0x829a
@@ -65,12 +69,11 @@ type Exif struct {
 	MeteringMode              meta.MeteringMode    // ExifIFD / 0x9207
 	Flash                     meta.Flash           // ExifIFD / 0x9209
 	ColorSpace                ColorSpace           // ExifIFD / 0xa001
+	ImageType                 imagetype.ImageType
 
 	// 0xa20e	FocalPlaneXResolution	rational64u	ExifIFD
 	// 0xa20f	FocalPlaneYResolution	rational64u	ExifIFD
-	// OffsetTime          string          // ExifIFD / 0x9010 (time zone for ModifyDate)
-	// OffsetTimeOriginal  string          // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
-	// OffsetTimeDigitized string          // ExifIFD / 0x9012 (time zone for CreateDate)
+
 }
 
 func (e Exif) ModifyDate() time.Time {
@@ -97,6 +100,7 @@ func (e Exif) CreateDate() time.Time {
 func (e Exif) String() string {
 	sb := strings.Builder{}
 	sb.WriteString("Exif\n")
+	sb.WriteString(fmt.Sprintf("ImageType: \t%s\n", e.ImageType))
 	sb.WriteString(fmt.Sprintf("Make: \t\t%s\n", e.Make))
 	sb.WriteString(fmt.Sprintf("Model: \t\t%s\n", e.Model))
 	sb.WriteString(fmt.Sprintf("LensMake: \t%s\n", e.LensMake))

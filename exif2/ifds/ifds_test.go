@@ -79,7 +79,7 @@ func TestValidIfd(t *testing.T) {
 
 func childIFDtest(t *testing.T, ifd Ifd, childIfd Ifd, testType IfdType, id tag.ID, a bool) {
 	if ifd.IsType(testType) {
-		if cIfd := ifd.ChildIfd(tag.Tag{ID: id}); cIfd != childIfd && a {
+		if cIfd := ChildIfd(tag.Tag{ID: id, Ifd: uint8(ifd.Type)}); cIfd != childIfd && a {
 			t.Errorf("Incorrect Ifd: \"%s\" ChildIFD: \"%s\", wanted \"%s\" got \"%s\"", ifd.Type, cIfd.Type, cIfd, childIfd)
 		}
 	}

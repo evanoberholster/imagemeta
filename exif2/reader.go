@@ -14,11 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	offsetTiffHeaderLength = 8
-)
-
-var logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.ErrorLevel)
+var logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
 
 func Decode(r io.ReadSeeker) (Exif, error) {
 	header, err := tiff.ScanTiffHeader(r, imagetype.ImageCR3)
@@ -31,22 +27,41 @@ func Decode(r io.ReadSeeker) (Exif, error) {
 
 	r.Seek(int64(header.TiffHeaderOffset)+int64(header.FirstIfdOffset), 0)
 	if err := ir.ReadIfd0(header); err != nil {
-		return ir.exif, err
+		return ir.Exif, err
 	}
 
-	return ir.exif, nil
+	return ir.Exif, nil
 }
 
-func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
-	ir.buffer.pos = 0
-	ir.buffer.len = 0
-	ir.reader = r
-	ir.discard(16)
-	if err := ir.ReadIfd0(h); err != nil {
+func (ir *ifdReader) DecodeTiff(r io.Reader, h meta.ExifHeader) error {
+	ir.buffer.clear()
+	// Log Header Info
+	if ir.logInfo() {
+		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
+	}
+	ir.Exif.ImageType = h.ImageType
+	ir.exifLength = 4 * 1024 * 1024 // Max size is 4 MB
+	if err := ir.discard(int(h.FirstIfdOffset)); err != nil {
 		return err
 	}
-	ir.discard(int(h.ExifLength) - int(ir.po))
-	return nil
+	return ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset)))
+}
+
+func (ir *ifdReader) DecodeCR3Ifd(r io.Reader, h meta.ExifHeader) error {
+	// Log Header Info
+	if ir.logInfo() {
+		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
+	}
+	ir.buffer.clear()
+	ir.reader = r
+	ir.exifLength = h.ExifLength
+	ir.discard(16)
+	ir.po = h.FirstIfdOffset
+	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset))); err != nil {
+		return err
+	}
+	err := ir.discard(int(ir.exifLength) - int(ir.po))
+	return err
 }
 
 func NewIfdReader(r io.Reader) ifdReader {
@@ -56,13 +71,8 @@ func NewIfdReader(r io.Reader) ifdReader {
 		buffer: bufferPool.Get().(*buffer),
 		logger: logger,
 	}
-	ir.buffer.pos = 0
-	ir.buffer.len = 0
+	ir.buffer.clear()
 	return ir
-}
-
-func (ir ifdReader) Exif() Exif {
-	return ir.exif
 }
 
 // Close closes an ifdReader. Should be called with defer following a newIfdReader
@@ -75,10 +85,11 @@ type ifdReader struct {
 	logger           zerolog.Logger
 	reader           io.Reader
 	buffer           *buffer
-	exif             Exif
+	Exif             Exif
 	po               uint32
 	tiffHeaderOffset uint32
 	firstIfdOffset   uint32
+	exifLength       uint32
 }
 
 func (ir *ifdReader) ReadIfd0(header meta.ExifHeader) error {
@@ -164,24 +175,33 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 	}
 
 	for t := ir.buffer.currentTag(); ir.buffer.validTag(); t = ir.buffer.advanceBuffer() {
-		//fmt.Println(ir.tagBuf, ir.tagBuf.pos, ir.tagBuf.len)
 		if t.IsType(tag.TypeIfd) {
-			if ifd.IsType(ifds.IFD0) {
-				// parse to location
-				discard := int(t.ValueOffset) - int(ir.po)
-				if err := ir.discard(discard); err != nil {
-					ir.logger.Error().Err(err).Stringer("ifd", t.Type()).Uint16("ifdIndex", uint16(t.IfdIndex)).Uint32("discard", uint32(discard)).Send()
-					return nil
-				}
-				// Reset tagbuffer position to 0
-				ir.buffer.resetPosition()
+			// parse to location
+			discard := int(t.ValueOffset) - int(ir.po)
+			if err := ir.discard(discard); err != nil {
+				ir.logger.Error().Err(err).Stringer("ifd", t.Type()).Uint16("ifdIndex", uint16(t.IfdIndex)).Uint32("discard", uint32(discard)).Send()
+				return nil
+			}
+			// Reset tagbuffer position to 0
+			ir.buffer.resetPosition()
+			switch ifds.IfdType(t.Ifd) {
+			case ifds.IFD0:
 				switch t.ID {
 				case ifds.SubIFDs:
 					//ir.parseIfdHeader(ifd.ChildIfd(t)) // ignore errors from SubIfds
 					//fmt.Println(ir.buffer.tag[ir.buffer.pos:ir.buffer.len])
 				case ifds.GPSTag, ifds.ExifTag:
-					ir.parseIfdHeader(ifd.ChildIfd(t)) // ignore errors from GPSIfd and ExifIfd
+					ir.parseIfdHeader(ifds.ChildIfd(t)) // ignore errors from GPSIfd and ExifIfd
 					//fmt.Println(ir.buffer.tag[ir.buffer.pos:ir.buffer.len])
+				default:
+					// Log Tag Info
+
+				}
+			case ifds.ExifIFD:
+				if t.ID == exififd.MakerNote {
+					if ir.Exif.Make == "Canon" {
+						ir.parseIfdHeader(ifds.ChildIfd(t))
+					}
 				}
 			}
 		} else {
@@ -191,8 +211,15 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 	return nil
 }
 
+func (ir *ifdReader) checkLength(n uint32) bool {
+	return ir.po+n >= ir.exifLength
+}
+
 // ReadUint16 reads a uint16 from an ifdReader.
 func (ir *ifdReader) readUint16(ifd ifds.Ifd) (uint16, error) {
+	if ir.checkLength(2) {
+		return 0, imagetype.ErrDataLength
+	}
 	n, err := ir.reader.Read(ir.buffer.buf[:2])
 	ir.po += uint32(n)
 	return ifd.ByteOrder.Uint16(ir.buffer.buf[:2]), err
@@ -200,14 +227,20 @@ func (ir *ifdReader) readUint16(ifd ifds.Ifd) (uint16, error) {
 
 // ReadUint32 reads a uint32 from an ifdReader.
 func (ir *ifdReader) readUint32(ifd ifds.Ifd) (uint32, error) {
+	if ir.checkLength(4) {
+		return 0, imagetype.ErrDataLength
+	}
 	n, err := ir.reader.Read(ir.buffer.buf[:4])
 	ir.po += uint32(n)
 	return ifd.ByteOrder.Uint32(ir.buffer.buf[:4]), err
 }
 
-// ReadTagHeader reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
+// readTagHeader reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
 // from an Ifd. Returns Tag and error. If the tagType is unsupported, returns tag.ErrTagTypeNotValid.
 func (ir *ifdReader) readTagHeader(ifd ifds.Ifd) (tag.Tag, error) {
+	if ir.checkLength(12) {
+		return tag.Tag{}, imagetype.ErrDataLength
+	}
 	if _, err := ir.reader.Read(ir.buffer.buf[:12]); err != nil {
 		return tag.Tag{}, err
 	}

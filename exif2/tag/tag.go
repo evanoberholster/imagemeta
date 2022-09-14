@@ -172,7 +172,7 @@ const (
 
 var (
 	//Tag sizes
-	_tagSize       = [...]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, 0, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
+	_tagSize       = [...]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, TypeByteSize, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
 	_tagSizeLength = len(_tagSize)
 	// TagType Stringer Index
 	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69, 74, 80}

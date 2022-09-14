@@ -1,6 +1,7 @@
 package exif2
 
 import (
+	"bufio"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,7 +12,7 @@ import (
 
 const (
 	tagMaxLength = 56
-	bufferLength = 2048
+	bufferLength = 512
 )
 
 // buffer for data and tags
@@ -56,6 +57,17 @@ func (ir *ifdReader) readTagValue() ([]byte, error) {
 	t := ir.buffer.currentTag()
 	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
 		return nil, err
+	}
+	//
+	br, ok := ir.reader.(*bufio.Reader)
+	if ok {
+		buf, err := br.Peek(int(t.Size()))
+		if err != nil {
+			panic(err)
+		}
+		n, err := br.Discard(len(buf))
+		ir.po += uint32(n)
+		return buf, err
 	}
 	n, err := ir.reader.Read(ir.buffer.buf[:t.Size()])
 	ir.po += uint32(n)
@@ -127,6 +139,12 @@ func (ir *ifdReader) discard(n int) error {
 		}
 	}
 	return err
+}
+
+// clear the buffer counters
+func (b *buffer) clear() {
+	b.len = 0
+	b.pos = 0
 }
 
 // discard, discards the given amount from ir.Reader
