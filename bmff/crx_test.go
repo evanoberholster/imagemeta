@@ -9,6 +9,7 @@ import (
 
 // BenchmarkCrx10-12    	  402459	      2908 ns/op	    4511 B/op	       2 allocs/op
 // BenchmarkCrx10-12    	  375272	      3269 ns/op	    4582 B/op	       3 allocs/op
+
 func BenchmarkCrx10(b *testing.B) {
 	f, err := os.Open("../../test/samples/CanonR6_1.CR3")
 	if err != nil {
