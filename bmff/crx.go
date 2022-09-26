@@ -165,11 +165,11 @@ func parseCrxTrak(outer *box) (t CR3Trak, err error) {
 	return
 }
 
-// XPacketData returns CTBO[0] which corresponds to XPacket data
+// XMP returns CTBO[0] which corresponds to XPacket data
 // First 24 bytes are a UUID box. uuid = be7acfcb-97a9-42e8-9c71-999491e3afac
-func (cr3 CR3MetaBox) XPacketData() (offset, length uint64, err error) {
+func (cr3 CR3MetaBox) XMP() (offset, length uint64) {
 	item := cr3.CTBO.items[0]
-	return item.offset, item.length, nil
+	return item.offset, item.length
 }
 
 // parseCR3MetaBox parses a uuid box with the uuid of 85c0b687 820f 11e0 8111 f4ce462b6a48

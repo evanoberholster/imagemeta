@@ -42,7 +42,7 @@ func TestParseItemInfoBox(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		iinf, err := inner.parseItemInfoBox()
+		iinf, err := parseItemInfoBox(&inner)
 		if assert.ErrorIs(t, err, v.err, v.name) {
 			assert.Equal(t, iinf, v.val, v.name)
 		}

@@ -72,7 +72,7 @@ func parseMetaBox(outer *box) (mb MetaBox, err error) {
 		case TypePitm:
 			mb.Primary, err = inner.parsePrimaryItemBox()
 		case TypeIinf:
-			mb.ItemInfo, err = inner.parseItemInfoBox()
+			mb.ItemInfo, err = parseItemInfoBox(&inner)
 		case TypeHdlr:
 			mb.Handler, err = inner.parseHandlerBox()
 		case TypeIprp:

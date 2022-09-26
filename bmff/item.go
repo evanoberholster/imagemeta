@@ -31,7 +31,7 @@ var (
 	ItemTypeHvc1    = itemType([]byte("hvc1"))
 	ItemTypeGrid    = itemType([]byte("grid"))
 	ItemTypeExif    = itemType([]byte("Exif"))
-	ItemTypeUnknown = itemType([]byte{0, 0, 0, 0})
+	ItemTypeUnknown = ItemType{}
 )
 
 func (it ItemType) String() string {
@@ -40,7 +40,7 @@ func (it ItemType) String() string {
 
 func itemType(buf []byte) ItemType {
 	if len(buf) != 4 {
-		return ItemType([4]byte{0, 0, 0, 0})
+		return ItemTypeUnknown
 	}
 	return ItemType{buf[0], buf[1], buf[2], buf[3]}
 }
@@ -84,11 +84,7 @@ func (iinf ItemInfoBox) ItemByID(itemID uint16) (ItemInfoEntry, error) {
 	return ItemInfoEntry{}, ErrItemNotFound
 }
 
-func parseIinf(outer *box) (Box, error) {
-	return outer.parseItemInfoBox()
-}
-
-func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
+func parseItemInfoBox(b *box) (iinf ItemInfoBox, err error) {
 	// Read IinfHeader [4]Flags, [2]ItemCount
 	buf, err := b.peek(6)
 	if err != nil {
@@ -96,9 +92,8 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 		return
 	}
 	_ = b.discard(6)
-	// Read Flags
+	// Read Flags and item count
 	flags := Flags(heicByteOrder.Uint32(buf[:4]))
-	// Read Item count
 	count := int(heicByteOrder.Uint16(buf[4:6]))
 	iinf.ItemInfos = make([]ItemInfoEntry, int(count))
 	if debugFlag {
@@ -114,7 +109,7 @@ func (b *box) parseItemInfoBox() (iinf ItemInfoBox, err error) {
 		}
 		switch inner.Type() {
 		case TypeInfe:
-			if infe, err = inner.parseItemInfoEntry(); err != nil {
+			if infe, err = parseItemInfoEntry(&inner); err != nil {
 				if debugFlag {
 					log.Debug("(infe) error parsing ItemInfoEntry: %s, %s", infe, err.Error())
 				}
@@ -157,19 +152,15 @@ type ItemInfoEntry struct {
 }
 
 // Type returns TypeInfe
-func (infe ItemInfoEntry) Type() BoxType {
-	return TypeInfe
-}
+//func (infe ItemInfoEntry) Type() BoxType {
+//	return TypeInfe
+//}
 
 func (infe ItemInfoEntry) String() string {
 	return fmt.Sprintf(" \tItemInfoEntry: ItemID:%d, ProtectionIndex:%d, ItemType:%s", infe.ItemID, infe.ProtectionIndex, infe.ItemType)
 }
 
-func parseInfe(outer *box) (Box, error) {
-	return outer.parseItemInfoEntry()
-}
-
-func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
+func parseItemInfoEntry(b *box) (ie ItemInfoEntry, err error) {
 	// Read ItemInfoEntry: [4]flags, [2]ItemID, [2]ProtectionIndex, [5]ItemType
 	infeHeaderSize := 13
 	buf, err := b.peek(infeHeaderSize)
@@ -213,7 +204,7 @@ func (b *box) parseItemInfoEntry() (ie ItemInfoEntry, err error) {
 	//ie.ItemURIType, _ = outer.r.readString()
 	//}
 	if debugFlag {
-		traceBoxWithFlags(ie, *b, flags)
+		//FIXME traceBoxWithFlags(ie, *b, flags)
 	}
 	return ie, b.discard(b.remain)
 }
@@ -389,7 +380,6 @@ func (iprp ItemPropertiesBox) ContainerByID(id uint16, boxType BoxType) (Box, er
 	}
 	return nil, ErrItemNotFound
 }
-
 func parseIprp(outer *box) (Box, error) {
 	return outer.parseItemPropertiesBox()
 }

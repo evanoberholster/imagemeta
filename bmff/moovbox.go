@@ -51,10 +51,8 @@ func (b *box) parseMoovBox() (moov MoovBox, err error) {
 }
 
 // UUIDBox is a special type of Box that contains a uuid
-type UUIDBox struct {
-	uuid meta.UUID
-}
+type UUIDBox meta.UUID
 
 func (uuidBox UUIDBox) String() string {
-	return fmt.Sprintf("uuid | %s\t", uuidBox.uuid.String())
+	return fmt.Sprintf("uuid | %s\t", meta.UUID(uuidBox).String())
 }
