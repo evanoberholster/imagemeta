@@ -35,10 +35,8 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - uses: dominikh/staticcheck-action@v1.2.0
-	      with:
-	        version: "2022.1.1"
-		      install-go: false
+      - name: StaticCheck
+        uses: dominikh/staticcheck-action@v1.2.0
 
       - name: Review security
         run: go get github.com/securego/gosec/cmd/gosec; gosec ./...
