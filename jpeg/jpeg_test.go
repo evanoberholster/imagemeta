@@ -91,23 +91,6 @@ func TestScanJPEG(t *testing.T) {
 			if jpg.exif && err != nil {
 				t.Fatal(err)
 			}
-			if !jpg.exif && err != ErrNoExif {
-				//	t.Fatal(err)
-			}
-
-			//// test Imagesize
-			//dim := m.Dimensions()
-			//width, height := dim.Size()
-			//if width != jpg.width || height != jpg.height {
-			//	t.Errorf("Incorrect Jpeg Image size wanted width: %d got width: %d ", jpg.width, width)
-			//	t.Errorf("Incorrect Jpeg Image size wanted height: %d got height: %d ", jpg.height, height)
-			//}
-			//d := m.Dimensions()
-			//a1 := d.AspectRatio()
-			//a2 := float32(width) / float32(height)
-			//if a1 != a2 {
-			//	t.Errorf("Incorrect Aspect ratio wanted ratio: %d got ratio: %d ", jpg.width, width)
-			//}
 		})
 	}
 

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	tagMaxLength = 56
+	tagMaxLength = 64
 	bufferLength = 512
 )
 

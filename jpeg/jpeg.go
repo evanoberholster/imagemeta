@@ -259,20 +259,20 @@ func (jr *jpegReader) readExif(buf []byte) (err error) {
 
 // readXMP reads the Exif header/component with the addtached metadata
 // XmpDecodeFn. If the function is nil it discards the exif length.
-func (m *jpegReader) readXMP(buf []byte) (err error) {
+func (jr *jpegReader) readXMP(buf []byte) (err error) {
 	// Read the length of the XMPHeader
 	remain := int(jpegByteOrder.Uint16(buf[2:4])) - 2 - xmpPrefixLength
 
 	// Discard App Marker bytes and header length bytes
-	if err = m.discard(4 + xmpPrefixLength); err != nil {
+	if err = jr.discard(4 + xmpPrefixLength); err != nil {
 		return err
 	}
 	//xmpHeader := meta.NewXMPHeader(m.discarded, uint32(remain))
 
 	// Read XMP Decode Function here
-	if m.XMPReader != nil {
-		r := io.LimitReader(m.br, int64(remain))
-		if err = m.XMPReader(r); err != nil {
+	if jr.XMPReader != nil {
+		r := io.LimitReader(jr.br, int64(remain))
+		if err = jr.XMPReader(r); err != nil {
 			return err
 		}
 		// Discard remaining bytes
@@ -280,31 +280,31 @@ func (m *jpegReader) readXMP(buf []byte) (err error) {
 	}
 
 	// Discard remaining bytes
-	return m.discard(remain)
+	return jr.discard(remain)
 }
 
 // readSOF reads a JPEG Start of file with the uint16
 // width, height, and components of the JPEG image.
-func (m *jpegReader) readSOF(buf []byte) error {
+func (jr *jpegReader) readSOF(buf []byte) error {
 	length := int(jpegByteOrder.Uint16(buf[2:4]))
 	height := jpegByteOrder.Uint16(buf[5:7])
 	width := jpegByteOrder.Uint16(buf[7:9])
 	comp := uint8(buf[9])
 	header := sofHeader{height, width, comp}
-	if m.pos == 1 {
-		m.sofHeader = header
+	if jr.pos == 1 {
+		jr.sofHeader = header
 	}
-	return m.discard(length + 2)
+	return jr.discard(length + 2)
 }
 
 // ignoreMarker reads the Marker Header length and then
 // discards the said marker and its header length
-func (m *jpegReader) ignoreMarker(buf []byte) error {
+func (jr *jpegReader) ignoreMarker(buf []byte) error {
 	// Read Marker Header Length
 	length := int(jpegByteOrder.Uint16(buf[2:4]))
 
 	// Discard Marker Header Length and Marker Length
-	return m.discard(length + 2)
+	return jr.discard(length + 2)
 }
 
 // Markers refers to the second byte of a JPEG Marker.

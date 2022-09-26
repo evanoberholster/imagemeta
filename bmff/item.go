@@ -203,9 +203,9 @@ func parseItemInfoEntry(b *box) (ie ItemInfoEntry, err error) {
 	//	_, _ = b.readString()
 	//ie.ItemURIType, _ = outer.r.readString()
 	//}
-	if debugFlag {
-		//FIXME traceBoxWithFlags(ie, *b, flags)
-	}
+	//	if debugFlag {
+	//FIXME traceBoxWithFlags(ie, *b, flags)
+	//	}
 	return ie, b.discard(b.remain)
 }
 
