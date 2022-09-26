@@ -1,6 +1,7 @@
 package exif
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -168,6 +169,21 @@ func (e *Data) Dimensions() (dimensions meta.Dimensions) {
 	return meta.NewDimensions(0, 0)
 }
 
+// Rating convenience func. "IFD/Rating" Rating
+func (e *Data) Rating() (string, error) {
+	t, err := e.GetTag(ifds.IFD0, 0, ifds.Rating)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(t.ID, t.Ifd, t.Type())
+	r, err := e.ParseUint16Value(t)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(r)
+	return "meta.ExposureProgram(ep)", err
+}
+
 // ExposureProgram convenience func. "IFD/Exif" ExposureProgram
 func (e *Data) ExposureProgram() (meta.ExposureProgram, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureProgram)
@@ -219,20 +235,21 @@ func (e *Data) MeteringMode() (meta.MeteringMode, error) {
 	if err != nil {
 		return 0, err
 	}
-	return meta.NewMeteringMode(uint8(mm)), err
+	return meta.NewMeteringMode(uint16(mm)), err
 }
 
 // ShutterSpeed convenience func. "IFD/Exif" ExposureTime
-func (e *Data) ShutterSpeed() (meta.ShutterSpeed, error) {
+func (e *Data) ShutterSpeed() (meta.ExposureTime, error) {
 	t, err := e.GetTag(ifds.ExifIFD, 0, exififd.ExposureTime)
 	if err != nil {
-		return meta.ShutterSpeed{}, err
+		return 0.0, err
 	}
 	num, denom, err := e.ParseRationalValue(t)
 	if err != nil {
-		return meta.ShutterSpeed{}, err
+		return 0.0, err
 	}
-	return meta.NewShutterSpeed(num, denom), err
+
+	return meta.ExposureTime(float32(num) / float32(denom)), err
 }
 
 // ExposureValue convenience func. "IFD/Exif" ShutterSpeedValue

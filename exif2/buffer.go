@@ -124,6 +124,9 @@ func (ir *ifdReader) discard(n int) error {
 	if n == 0 {
 		return nil
 	}
+	if int(ir.exifLength) < n+int(ir.po) {
+		n = int(ir.exifLength) - int(ir.po)
+	}
 	var discarded int
 	var err error
 	for n > 0 {

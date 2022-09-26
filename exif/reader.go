@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"encoding/binary"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/exif/ifds"
@@ -24,7 +23,7 @@ type reader struct {
 	u io.ReaderAt
 
 	// Exif byteOrder
-	byteOrder binary.ByteOrder
+	byteOrder meta.ByteOrder
 
 	// Offsets for multiple Ifds
 	ifdExifOffset [8]uint32
@@ -102,7 +101,7 @@ func (r *reader) parseIfd(e *Data, ifd ifds.Ifd, doDescend bool) (nextIfdOffset 
 	// Parse MakerNoteIfds
 	if ifd.IsType(ifds.MknoteIFD) {
 		ifd, byteOrder = r.parseMknoteIFD(e, ifd)
-		if byteOrder == nil {
+		if byteOrder == meta.UnknownEndian {
 			return 0, nil
 		}
 	}
@@ -199,7 +198,7 @@ const (
 
 // ReadTag reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
 // from an ifdTagEnumerator. Returns Tag and error. If the tagType is unsupported, returns tag.ErrTagTypeNotValid.
-func (r *reader) ReadTag(ifd ifds.Ifd, byteOrder binary.ByteOrder, offset uint32) (tag.Tag, uint32, error) {
+func (r *reader) ReadTag(ifd ifds.Ifd, byteOrder meta.ByteOrder, offset uint32) (tag.Tag, uint32, error) {
 	buf, err := r.ReadBufferAt(tagByteLength, int(offset))
 	if err != nil {
 		return tag.Tag{}, offset, err
@@ -216,13 +215,13 @@ func (r *reader) ReadTag(ifd ifds.Ifd, byteOrder binary.ByteOrder, offset uint32
 }
 
 // ReadUint16 reads a uint16 from an ifdTagEnumerator.
-func (r *reader) ReadUint16(byteOrder binary.ByteOrder, offset uint32) (val uint16, off uint32, err error) {
+func (r *reader) ReadUint16(byteOrder meta.ByteOrder, offset uint32) (val uint16, off uint32, err error) {
 	buf, err := r.ReadBufferAt(uint16ByteLength, int(offset))
 	return byteOrder.Uint16(buf), offset + uint16ByteLength, err
 }
 
 // ReadUint32 reads a uint32 from an ifdTagEnumerator.
-func (r *reader) ReadUint32(byteOrder binary.ByteOrder, offset uint32) (val uint32, off uint32, err error) {
+func (r *reader) ReadUint32(byteOrder meta.ByteOrder, offset uint32) (val uint32, off uint32, err error) {
 	buf, err := r.ReadBufferAt(uint32ByteLength, int(offset))
 	return byteOrder.Uint32(buf), offset + uint32ByteLength, err
 }

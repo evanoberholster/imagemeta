@@ -51,6 +51,9 @@ type Exif interface {
 	// Lens Focal Length Equivalent for 35mm sensor in mm
 	FocalLengthIn35mmFilm() (fl meta.FocalLength, err error)
 
+	// Rating convenience func. "IFD/Rating" Rating
+	Rating() (rating string, err error)
+
 	// ISOSpeed convenience func. "IFD/Exif" ISOSpeed
 	ISOSpeed() (iso uint32, err error)
 
@@ -70,7 +73,7 @@ type Exif interface {
 	Orientation() meta.Orientation
 
 	// ShutterSpeed convenience func. "IFD/Exif" ExposureTime
-	ShutterSpeed() (meta.ShutterSpeed, error)
+	ShutterSpeed() (meta.ExposureTime, error)
 
 	// GPSCoords convenience func. "IFD/GPS" Latitude and Longitude
 	GPSCoords() (lat float64, lng float64, err error)

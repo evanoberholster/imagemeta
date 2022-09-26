@@ -2,7 +2,6 @@ package exif
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
 	"testing"
 	"time"
@@ -17,7 +16,7 @@ import (
 
 func newMockReader(buf []byte) *reader {
 	header := meta.ExifHeader{
-		ByteOrder: binary.BigEndian,
+		ByteOrder: meta.BigEndian,
 	}
 	r := newReader(bytes.NewReader(buf), header)
 	r.ifdExifOffset[ifds.IFD0] = 0
@@ -104,7 +103,7 @@ func TestParseGPSCoord(t *testing.T) {
 	for i, v := range parseGPSCoordTests {
 
 		lat, _ := tag.NewTag(gpsifd.GPSLatitude, tag.TypeRational, 3, 0, 0)
-		latRef, _ := tag.NewTag(gpsifd.GPSLatitudeRef, tag.TypeASCII, 2, binary.BigEndian.Uint32([]byte{v.ref, 0, 0, 0}), 0)
+		latRef, _ := tag.NewTag(gpsifd.GPSLatitudeRef, tag.TypeASCII, 2, meta.BigEndian.Uint32([]byte{v.ref, 0, 0, 0}), 0)
 		d := newData(newMockReader(v.buf), imagetype.ImageUnknown)
 		if v.err == ErrParseGPS {
 			lat, _ = tag.NewTag(gpsifd.GPSLatitude, tag.TypeByte, 3, 0, 0)

@@ -2,18 +2,92 @@ package main
 
 import (
 	"fmt"
-	"image/jpeg"
-	"log"
+	"io/ioutil"
 	"os"
-	"time"
+	"path/filepath"
 
 	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/bmff"
+	"github.com/evanoberholster/imagemeta/exif2"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-func main() {
-	f, err := os.Open("../testImages/Heic.exif")
+func main2() {
+	dir := "../../test/img/"
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+	for _, f := range files {
+		//if f.Size() > 1*1024*1024 {
+		name := f.Name()
+		if filepath.Ext(name) != ".jpg" {
+			continue
+		}
+		//fmt.Println(filepath.Ext(name))
+		r, err := os.Open(dir + "/" + f.Name())
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			err = r.Close()
+			if err != nil {
+				panic(err)
+			}
+		}()
+		var exif exif2.Exif
+		//fmt.Println(f.Name())
+		exif, err = imagemeta.DecodeJPEG(r)
+		if err != nil {
+			if err != imagemeta.ErrNoExif {
+				panic(err)
+			}
+
+		}
+		_ = exif
+		fmt.Println(exif)
+		//fmt.Println(string(exif.ApplicationNotes))
+		//fmt.Println(len(exif.ApplicationNotes))
+
+	}
+}
+
+func mainOld() {
+	bmff.DebugLogger(bmff.STDLogger{})
+	//f, err := os.Open("test.CR2")
+	//f, err := os.Open("../../test/img/CanonR10_1.CR3")
+	f, err := os.Open("../../test/img/1.heic")
+	//f, err := os.Open("IMG_3001.jpeg")
+	//f, err := os.Open("../testImages/Heic.exif")
+	//f, err := os.Open("3.CR3")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	exif, err := imagemeta.DecodeHeif(f)
+	fmt.Println(exif)
+	f.Seek(0, 0)
+	exif, err = imagemeta.DecodeTiff(f)
+	fmt.Println(exif)
+
+	//f.Seek(0, 0)
+	//e, err := imagemeta.DecodeCR3(f)
+	//fmt.Println(e)
+}
+
+func main() {
+	exif2.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
+	dir := "../../test/img/"
+	//f, err := os.Open("../testImages/Heic.exif")
+	f, err := os.Open(dir + "/" + "CanonR6_1.HIF")
+	if err != nil {
+		panic(err)
 	}
 	defer func() {
 		err = f.Close()
@@ -22,98 +96,10 @@ func main() {
 		}
 	}()
 
-	m, err := imagemeta.Parse(f)
+	e, err := imagemeta.DecodeHeif(f)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(m.Exif())
-	fmt.Println(m.Xmp())
-	fmt.Println(m.ImageType())
-	fmt.Println(m.Dimensions())
-	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
-
-	e, _ := m.Exif()
-	if e != nil {
-		// ImageWidth and ImageHeight
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.Orientation())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ExposureBias())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		// Example Tags
-		fmt.Println(e.Dimensions())
-
-		// Makernote Tags
-		fmt.Println(e.CanonCameraSettings())
-		fmt.Println(e.CanonFileInfo())
-		fmt.Println(e.CanonShotInfo())
-		fmt.Println(e.CanonAFInfo())
-
-		// Time Tags
-		fmt.Println(e.DateTime(time.Local))
-		fmt.Println(e.ModifyDate(time.Local))
-		fmt.Println(e.GPSDate(time.UTC))
-
-		// GPS Tags
-		fmt.Println(e.GPSCoords())
-		fmt.Println(e.GPSAltitude())
-		fmt.Println(e.GPSCoords())
-		c, _ := e.GPSCellID()
-		fmt.Println(c.ToToken())
-
-		// Other Tags
-		fmt.Println(e.ExposureProgram())
-		fmt.Println(e.MeteringMode())
-		fmt.Println(e.ShutterSpeed())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.FocalLengthIn35mmFilm())
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.Flash())
-		fmt.Println(e.ExposureValue())
-		fmt.Println(e.ExposureBias())
-	}
-	//b, err := e.DebugJSON()
-	//fmt.Println(string(b), err)
+	_ = e
+	fmt.Println(e)
 }

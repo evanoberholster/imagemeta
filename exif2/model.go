@@ -70,10 +70,8 @@ type Exif struct {
 	Flash                     meta.Flash           // ExifIFD / 0x9209
 	ColorSpace                ColorSpace           // ExifIFD / 0xa001
 	ImageType                 imagetype.ImageType
-
 	// 0xa20e	FocalPlaneXResolution	rational64u	ExifIFD
 	// 0xa20f	FocalPlaneYResolution	rational64u	ExifIFD
-
 }
 
 func (e Exif) ModifyDate() time.Time {

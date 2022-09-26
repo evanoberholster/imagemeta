@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
+var Logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
 
 func Decode(r io.ReadSeeker) (Exif, error) {
 	header, err := tiff.ScanTiffHeader(r, imagetype.ImageCR3)
@@ -47,6 +47,22 @@ func (ir *ifdReader) DecodeTiff(r io.Reader, h meta.ExifHeader) error {
 	return ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset)))
 }
 
+func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) error {
+	// Log Header Info
+	if ir.logInfo() {
+		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
+	}
+	ir.buffer.clear()
+	ir.reader = r
+	ir.exifLength = h.ExifLength
+	ir.discard(int(h.FirstIfdOffset))
+	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset))); err != nil {
+		return err
+	}
+	err := ir.discard(int(ir.exifLength) - int(ir.po))
+	return err
+}
+
 func (ir *ifdReader) DecodeCR3Ifd(r io.Reader, h meta.ExifHeader) error {
 	// Log Header Info
 	if ir.logInfo() {
@@ -69,7 +85,7 @@ func NewIfdReader(r io.Reader) ifdReader {
 		reader: r,
 		po:     0,
 		buffer: bufferPool.Get().(*buffer),
-		logger: logger,
+		logger: Logger,
 	}
 	ir.buffer.clear()
 	return ir
