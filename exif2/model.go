@@ -11,31 +11,31 @@ import (
 
 // Exif data structure
 type Exif struct {
-	ApplicationNotes          []byte               // 0x02bc
-	GPS                       GPSInfo              // 0x8825
-	SubjectArea               SubjectArea          // ExifIFD / 0x9214
-	LensInfo                  LensInfo             // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
-	Makernote                 string               // ExifIFD / MakerNote
-	ProcessingSoftware        string               // IFD0 / 0x000b
-	DocumentName              string               // IFD0 / 0x010d
-	ImageDescription          string               // IFD0 / 0x010e
-	Software                  string               // IFD0 / 0x0131
-	Artist                    string               // IFD0 / 0x013b
-	Copyright                 string               // IFD0 / 0x8298
-	Make                      string               // IFD0 / 0x010f
-	Model                     string               // IFD0 / 0x0110
-	LensMake                  string               // ExifIFD / 0xa433
-	LensModel                 string               // ExifIFD / 0xa434
-	LensSerial                string               // ExifIFD / 0xa435
-	ImageUniqueID             string               // ExifIFD / 0xa420
-	OwnerName                 string               // ExifIFD / 0xa430	(called CameraOwnerName by the EXIF spec.)
-	CameraSerial              string               // ExifIFD / 0xa431	(called BodySerialNumber by the EXIF spec.)
-	modifyDate                time.Time            // IFD0 / 0x0132
-	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
-	createDate                time.Time            // ExifIFD / 0x9004
-	offsetTime                string               // ExifIFD / 0x9010 (time zone for ModifyDate)
-	offsetTimeOriginal        string               // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
-	offsetTimeDigitized       string               // ExifIFD / 0x9012 (time zone for CreateDate)
+	ApplicationNotes   []byte      // 0x02bc
+	GPS                GPSInfo     // 0x8825
+	SubjectArea        SubjectArea // ExifIFD / 0x9214
+	LensInfo           LensInfo    // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
+	Makernote          string      // ExifIFD / MakerNote
+	ProcessingSoftware string      // IFD0 / 0x000b
+	DocumentName       string      // IFD0 / 0x010d
+	ImageDescription   string      // IFD0 / 0x010e
+	Software           string      // IFD0 / 0x0131
+	Artist             string      // IFD0 / 0x013b
+	Copyright          string      // IFD0 / 0x8298
+	Make               string      // IFD0 / 0x010f
+	Model              string      // IFD0 / 0x0110
+	LensMake           string      // ExifIFD / 0xa433
+	LensModel          string      // ExifIFD / 0xa434
+	LensSerial         string      // ExifIFD / 0xa435
+	ImageUniqueID      string      // ExifIFD / 0xa420
+	OwnerName          string      // ExifIFD / 0xa430	(called CameraOwnerName by the EXIF spec.)
+	CameraSerial       string      // ExifIFD / 0xa431	(called BodySerialNumber by the EXIF spec.)
+	modifyDate         time.Time   // IFD0 / 0x0132
+	dateTimeOriginal   time.Time   // ExifIFD / 0x9003
+	createDate         time.Time   // ExifIFD / 0x9004
+	// offsetTime                string               // ExifIFD / 0x9010 (time zone for ModifyDate)
+	// offsetTimeOriginal        string               // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
+	// offsetTimeDigitized       string               // ExifIFD / 0x9012 (time zone for CreateDate)
 	XResolution               uint32               // IFD0 / 0x011a rational64u
 	YResolution               uint32               // IFD0 / 0x011b
 	ExposureTime              meta.ExposureTime    // 0x829a
@@ -74,6 +74,7 @@ type Exif struct {
 	// 0xa20f	FocalPlaneYResolution	rational64u	ExifIFD
 }
 
+// ModifyDate return the exif modified date with subsec offset if present
 func (e Exif) ModifyDate() time.Time {
 	if e.subSecTime == 0 {
 		return e.modifyDate
@@ -81,6 +82,7 @@ func (e Exif) ModifyDate() time.Time {
 	return e.modifyDate.Add(time.Duration(e.subSecTime) * time.Millisecond)
 }
 
+// DateTimeOriginal returns the exif Original DateTime with subsec offset if present
 func (e Exif) DateTimeOriginal() time.Time {
 	if e.subSecTimeOriginal == 0 {
 		return e.dateTimeOriginal
@@ -88,6 +90,7 @@ func (e Exif) DateTimeOriginal() time.Time {
 	return e.dateTimeOriginal.Add(time.Duration(e.subSecTimeOriginal) * time.Millisecond)
 }
 
+// CreateDate reurns the CreateDate with subsec offset if present
 func (e Exif) CreateDate() time.Time {
 	if e.subSecTimeDigitized == 0 {
 		return e.createDate
@@ -95,6 +98,7 @@ func (e Exif) CreateDate() time.Time {
 	return e.createDate.Add(time.Duration(e.subSecTimeDigitized) * time.Millisecond)
 }
 
+// Sring implements the Stringer interface for Exif
 func (e Exif) String() string {
 	sb := strings.Builder{}
 	sb.WriteString("Exif\n")
@@ -127,17 +131,19 @@ func (e Exif) String() string {
 	sb.WriteString(fmt.Sprintf("GPS Altitude: \t%0.2f\n", e.GPS.Altitude()))
 	sb.WriteString(fmt.Sprintf("GPS Latitude: \t%f\n", e.GPS.Latitude()))
 	sb.WriteString(fmt.Sprintf("GPS Longitude: \t%f\n", e.GPS.Longitude()))
-
 	return sb.String()
 }
 
+// LensInfo struct
 type LensInfo [8]uint32
 
+// ColorSpace data
 type ColorSpace uint16
 
+// SubjectArea coordinates
 type SubjectArea []uint16
 
-// GPS data sctructure
+// GPSInfo data sctructure
 type GPSInfo struct {
 	latitude     float64 // Combination of GPSLatitudeRef and GPSLatitude
 	longitude    float64 // Combination of GPSLongitudeRef and GPSLongitude
@@ -181,7 +187,9 @@ func (g GPSInfo) Altitude() float32 {
 	return g.altitude
 }
 
+// ApplicationNotes data
 type ApplicationNotes []byte
 
+// CanonMakerNotes data structure
 type CanonMaterNotes struct {
 }
