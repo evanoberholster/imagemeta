@@ -59,15 +59,6 @@ func TestIfdString(t *testing.T) {
 
 		ta := tag.Tag{}
 		ta.ID = v.rootTag
-
-		// Ifd ChildIfd test
-
-		//childIFDtest(t, ifd, NewIFD(ifd.ByteOrder, ExifIFD, 0, 0), IFD0, ExifTag, true)
-		//childIFDtest(t, ifd, NewIFD(ifd.ByteOrder, GPSIFD, 0, 0), IFD0, GPSTag, true)
-		//childIFDtest(t, ifd, NewIFD(ifd.ByteOrder, SubIFD, 0, 0), IFD0, SubIFDs, true)
-		//
-		//childIFDtest(t, ifd, NewIFD(ifd.ByteOrder, MknoteIFD, 0, 0), ExifIFD, exififd.MakerNote, true)
-		//childIFDtest(t, ifd, NewIFD(ifd.ByteOrder, v.exifIFD, 0, 0), NullIFD, ExifTag, false)
 	}
 }
 

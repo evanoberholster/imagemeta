@@ -19,8 +19,7 @@ func BenchmarkExif(b *testing.B) {
 		log.Fatal(err)
 	}
 	defer func() {
-		err = f.Close()
-		if err != nil {
+		if err = f.Close(); err != nil {
 			panic(err)
 		}
 	}()

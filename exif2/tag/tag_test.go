@@ -1,6 +1,7 @@
 package tag
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -110,5 +111,16 @@ func TestTag(t *testing.T) {
 	}
 	if tag.Size() != TypeIfdSize {
 		t.Errorf("Incorrect Tag Size wanted %d got %d", TypeIfdSize, tag.Size())
+	}
+	offsetStr := "0x0002"
+	if offsetStr != tag.ValueOffset.String() {
+		t.Errorf("Incorrect Tag Offset String wanted %s got %s", offsetStr, tag.ValueOffset.String())
+	}
+
+	bufVal := [4]byte{2, 0, 0, 0}
+	var buf [4]byte
+	tag.EmbeddedValue(buf[:])
+	if !bytes.Equal(buf[:], bufVal[:]) {
+		t.Errorf("Incorrect Embedded Value wanted %d got %d", bufVal, buf)
 	}
 }
