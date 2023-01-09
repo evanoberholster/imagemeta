@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 Evan Oberholster. All rights reserved.
+// Copyright (c) 2018-2023 Evan Oberholster. All rights reserved.
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
