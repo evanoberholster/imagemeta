@@ -64,7 +64,7 @@ func ScanJPEG(r io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) 
 
 	var buf []byte
 	for {
-		if buf, err = jr.br.Peek(16); err != nil {
+		if buf, err = jr.peek(16); err != nil {
 			err = ErrNoJPEGMarker
 			return
 		}
@@ -216,6 +216,11 @@ func (jr *jpegReader) scanMarkers(buf []byte) (err error) {
 	return jr.discard(1)
 }
 
+// peek returns the next n bytes without advancing the unerlying bufio.Reader
+func (jr *jpegReader) peek(n int) ([]byte, error) {
+	return jr.br.Peek(n)
+}
+
 // discard adds to m.discarded and discards from the underlying bufio.Reader
 func (jr *jpegReader) discard(i int) (err error) {
 	if i == 0 {
@@ -233,7 +238,7 @@ func (jr *jpegReader) readAPP1(buf []byte) (err error) {
 		return jr.readXMP(buf)
 	}
 	// APP1 Exif Marker
-	if isJpegExifPrefix(buf) {
+	if isExifPrefix(buf) {
 		return jr.readExif(buf)
 	}
 	return nil
@@ -251,7 +256,7 @@ func (jr *jpegReader) readExif(buf []byte) (err error) {
 	}
 
 	// Peek at TiffHeader information
-	if buf, err = jr.br.Peek(exifPrefixLength); err != nil {
+	if buf, err = jr.peek(exifPrefixLength); err != nil {
 		return err
 	}
 
@@ -455,17 +460,17 @@ func isPhotoshopPrefix(buf []byte) bool {
 // buf[4:14] equals []byte,
 // buf[0:2] is AppMarker, buf[2:4] is HeaderLength
 func isICCProfilePrefix(buf []byte) bool {
-	return buf[4] == 0x49 &&
-		buf[5] == 0x43 &&
-		buf[6] == 0x43 &&
-		buf[7] == 0x5f &&
-		buf[8] == 0x50 &&
-		buf[9] == 0x52 &&
-		buf[10] == 0x4f &&
-		buf[11] == 0x46 &&
-		buf[12] == 0x49 &&
-		buf[13] == 0x4c &&
-		buf[14] == 0x45
+	return buf[4] == 'I' &&
+		buf[5] == 'C' &&
+		buf[6] == 'C' &&
+		buf[7] == '_' &&
+		buf[8] == 'P' &&
+		buf[9] == 'R' &&
+		buf[10] == 'O' &&
+		buf[11] == 'F' &&
+		buf[12] == 'I' &&
+		buf[13] == 'L' &&
+		buf[14] == 'E'
 }
 
 // isXMPPrefix returns true if
@@ -486,34 +491,25 @@ func isXMPPrefix(buf []byte) bool {
 		buf[15] == 0x64
 }
 
-// isJpegExifPrefix returns true if
-// buf[4:9] equals "Exif" and '0', '0',
-// buf[0:2] is AppMarker, buf[2:4] is HeaderLength
-func isJpegExifPrefix(buf []byte) bool {
-	return buf[4] == 0x45 &&
-		buf[5] == 0x78 &&
-		buf[6] == 0x69 &&
-		buf[7] == 0x66 &&
-		buf[8] == 0x00 &&
-		buf[9] == 0x00
+const (
+	exifPrefix    = "Exif\000\000"
+	jfifPrefix    = "JFIF\000"
+	jfifPrefixExt = "JFXX\000"
+)
+
+// isJpegExifPrefix returns true if marker matches exifPrefix
+func isExifPrefix(buf []byte) bool {
+	return string(buf[4:10]) == exifPrefix
 }
 
-// isJFIFPrefix returns true if marker matches "JFIF"
+// isJFIFPrefix returns true if marker matches jfifPrefix
 func isJFIFPrefix(buf []byte) bool {
-	return buf[4] == 'J' &&
-		buf[5] == 'F' &&
-		buf[6] == 'I' &&
-		buf[7] == 'F' &&
-		buf[8] == 0
+	return string(buf[4:9]) == jfifPrefix
 }
 
 // isJFIFPrefixExt returns true of marker matches "JFXX"
 func isJFIFPrefixExt(buf []byte) bool {
-	return buf[4] == 'J' &&
-		buf[5] == 'F' &&
-		buf[6] == 'X' &&
-		buf[7] == 'X' &&
-		buf[8] == 0
+	return string(buf[4:9]) == jfifPrefixExt
 }
 
 // jfifHeader returns the lenth of JFIF header
