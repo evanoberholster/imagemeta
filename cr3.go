@@ -13,7 +13,7 @@ import (
 
 // readerPool for buffer
 var readerPool = sync.Pool{
-	New: func() interface{} { return bufio.NewReader(nil) },
+	New: func() interface{} { return bufio.NewReaderSize(nil, 4*1024) },
 }
 
 // DecodeCR3 decodes a CR3 file from an io.Reader returning Exif or an error.

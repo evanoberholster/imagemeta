@@ -11,19 +11,19 @@ import (
 )
 
 const (
-	tagMaxLength = 64
+	tagMaxCount  = 64
 	bufferLength = 512
 )
 
 // buffer for data and tags
 type buffer struct {
 	buf [bufferLength]byte
-	tag [tagMaxLength]tag.Tag
+	tag [tagMaxCount]tag.Tag
 	len uint32
 	pos uint32
 }
 
-// bufferPool for buffer
+// bufferPool for tag buffers
 var bufferPool = sync.Pool{
 	New: func() interface{} { return new(buffer) },
 }
@@ -87,11 +87,11 @@ func (b *buffer) resetPosition() {
 // addTagBuffer adds the given tag to the tagBuffer
 func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 	if uint32(t.ValueOffset) < ir.po {
-		ir.logTagWarn(t, "Uncompatible reverse exif tag")
+		ir.logTagWarn(t, "Incompatible reverse exif tag")
 		return
 	}
 	b := ir.buffer
-	if b.len < tagMaxLength {
+	if b.len < tagMaxCount {
 		for i := b.len; i > 0; i-- {
 			if t.ValueOffset > b.tag[i-1].ValueOffset {
 				if i != b.len {
@@ -115,7 +115,7 @@ func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 		}
 	}
 	if ir.logError() {
-		ir.logger.Error().Int32("tagBufferLength", tagMaxLength).Msg("error tagBufferMaxLength is too short")
+		ir.logger.Error().Int32("tagBufferLength", tagMaxCount).Msg("error tagBufferMaxLength is too short")
 	}
 }
 
