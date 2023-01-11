@@ -8,14 +8,32 @@ import (
 )
 
 var (
-	DefaulLogger zerolog.Logger  = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel).With().Str("package", "jpeg").Logger()
-	Logger       *zerolog.Logger = nil
+	// DefaultLoggger is the Default Logger, logs only Panic to the console
+	DefaulLogger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel).With().Str("package", "jpeg").Logger()
+	logLevel     zerolog.Level
+	logger       *zerolog.Logger = nil
 )
 
 func logInfo() bool {
-	return Logger != nil
+	return logLevel >= zerolog.InfoLevel
 }
 
-func logInfoMarker(markerStr string, length int, offset int) {
-	Logger.Info().Str("marker", markerStr).Int("length", length).Uint32("offset", uint32(offset)).Send()
+// SetLogger sets the package logger
+func SetLogger(l *zerolog.Logger) {
+	logLevel = l.GetLevel()
+	logger = l
+}
+
+// Logger returns the package logger
+func Logger() *zerolog.Logger {
+	return logger
+}
+
+func (jr *jpegReader) logMarker(str string) {
+	if logInfo() {
+		if len(str) == 0 {
+			str = jr.marker.String()
+		}
+		logger.Info().Str("marker", str).Int("length", int(jr.size)).Uint32("offset", uint32(jr.discarded)).Send()
+	}
 }

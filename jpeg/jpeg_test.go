@@ -7,7 +7,6 @@ package jpeg
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -35,16 +34,14 @@ func BenchmarkScanJPEG100(b *testing.B) {
 			b.Fatal(err)
 		}
 		defer f.Close()
-		buf, _ := ioutil.ReadAll(f)
+		buf, _ := io.ReadAll(f)
 		r := bytes.NewReader(buf)
 		b.ReportAllocs()
 		b.ResetTimer()
 
 		b.Run(bm.fileName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				b.StopTimer()
 				r.Seek(0, 0)
-				b.StartTimer()
 				if err := ScanJPEG(r, nil, nil); err != nil {
 					if !bm.noExifErr {
 						b.Fatal(err)
@@ -158,31 +155,3 @@ func metaExifHeaderEqual(t *testing.T, h1 meta.ExifHeader, h2 meta.ExifHeader) {
 //		t.Errorf("Incorrect JPEG error at discarded %d wanted %s got %s", m.discarded, ErrNoJPEGMarker, err.Error())
 //	}
 //}
-
-func BenchmarkEqual(b *testing.B) {
-
-	data := []byte(string("HelloWorld1234567"))
-	str := "World123"
-	for i := 0; i < b.N; i++ {
-		if string(data[6:14]) == str {
-
-		}
-	}
-}
-
-func BenchmarkEqual2(b *testing.B) {
-
-	data := []byte(string("HelloWorld1234567"))
-	for i := 0; i < b.N; i++ {
-		if data[6] == 'W' &&
-			data[7] == 'o' &&
-			data[8] == 'r' &&
-			data[9] == 'l' &&
-			data[10] == 'd' &&
-			data[11] == '1' &&
-			data[12] == '2' &&
-			data[13] == '3' {
-
-		}
-	}
-}
