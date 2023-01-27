@@ -33,7 +33,7 @@ func Decode(r io.ReadSeeker) (Exif, error) {
 	return ir.Exif, nil
 }
 
-func (ir *ifdReader) DecodeTiff(r io.Reader, h meta.ExifHeader) error {
+func (ir *ifdReader) DecodeTiff(_ io.Reader, h meta.ExifHeader) error {
 	ir.buffer.clear()
 	// Log Header Info
 	if ir.logInfo() {
