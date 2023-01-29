@@ -85,6 +85,9 @@ var TagIDMap = map[tag.ID]string{
 	LensMake:                  "LensMake",
 	LensModel:                 "LensModel",
 	LensSerialNumber:          "LensSerialNumber",
+	OffsetTime:                "OffsetTime",
+	OffsetTimeOriginal:        "OffsetTimeOriginal",
+	OffsetTimeDigitized:       "OffsetTimeDigitized",
 }
 
 // ExifIFD TagIDs
@@ -104,6 +107,9 @@ const (
 	ExifVersion               tag.ID = 0x9000
 	DateTimeOriginal          tag.ID = 0x9003
 	DateTimeDigitized         tag.ID = 0x9004
+	OffsetTime                tag.ID = 0x9010
+	OffsetTimeOriginal        tag.ID = 0x9011
+	OffsetTimeDigitized       tag.ID = 0x9012
 	ComponentsConfiguration   tag.ID = 0x9101
 	CompressedBitsPerPixel    tag.ID = 0x9102
 	ShutterSpeedValue         tag.ID = 0x9201

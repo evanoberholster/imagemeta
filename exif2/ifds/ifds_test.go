@@ -7,7 +7,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func TestIfdString(t *testing.T) {
 	}
 
 	for _, v := range testIfds {
-		ifd := NewIFD(meta.LittleEndian, v.ifdType, 0, 0)
+		ifd := NewIFD(utils.LittleEndian, v.ifdType, 0, 0)
 
 		// Ifd Valid
 		if ifd.IsValid() != v.valid {
@@ -100,10 +100,10 @@ func TestChildIfd(t *testing.T) {
 		i Ifd
 	}{
 		{t: tag.Tag{}, i: Ifd{}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: ExifTag, ByteOrder: meta.LittleEndian, ValueOffset: 12345}, i: Ifd{Offset: 12345, ByteOrder: meta.LittleEndian, Type: ExifIFD}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: GPSTag, ByteOrder: meta.LittleEndian, ValueOffset: 23456}, i: Ifd{Offset: 23456, ByteOrder: meta.LittleEndian, Type: GPSIFD}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: SubIFDs, ByteOrder: meta.LittleEndian, ValueOffset: 112233}, i: Ifd{Offset: 112233, ByteOrder: meta.LittleEndian, Type: SubIFD}},
-		{t: tag.Tag{Ifd: uint8(ExifIFD), ID: exififd.MakerNote, ByteOrder: meta.BigEndian, ValueOffset: 3456}, i: Ifd{Offset: 3456, ByteOrder: meta.BigEndian, Type: MknoteIFD}},
+		{t: tag.Tag{Ifd: uint8(IFD0), ID: ExifTag, ByteOrder: utils.LittleEndian, ValueOffset: 12345}, i: Ifd{Offset: 12345, ByteOrder: utils.LittleEndian, Type: ExifIFD}},
+		{t: tag.Tag{Ifd: uint8(IFD0), ID: GPSTag, ByteOrder: utils.LittleEndian, ValueOffset: 23456}, i: Ifd{Offset: 23456, ByteOrder: utils.LittleEndian, Type: GPSIFD}},
+		{t: tag.Tag{Ifd: uint8(IFD0), ID: SubIFDs, ByteOrder: utils.LittleEndian, ValueOffset: 112233}, i: Ifd{Offset: 112233, ByteOrder: utils.LittleEndian, Type: SubIFD}},
+		{t: tag.Tag{Ifd: uint8(ExifIFD), ID: exififd.MakerNote, ByteOrder: utils.BigEndian, ValueOffset: 3456}, i: Ifd{Offset: 3456, ByteOrder: utils.BigEndian, Type: MknoteIFD}},
 	}
 
 	for _, test := range tests {

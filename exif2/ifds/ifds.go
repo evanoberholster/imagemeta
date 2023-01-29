@@ -8,7 +8,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // IfdType is the Type of Information Directory
@@ -51,6 +51,7 @@ func (ifdType IfdType) IsValid() bool {
 	return ifdType != NullIFD && int(ifdType) < len(_IFDStringerIndex)-1
 }
 
+// String is a stringer interface for ifdType
 func (ifdType IfdType) String() string {
 	if int(ifdType) < len(_IFDStringerIndex)-1 {
 		return _IFDStringerString[_IFDStringerIndex[ifdType]:_IFDStringerIndex[ifdType+1]]
@@ -79,13 +80,13 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
 type Ifd struct {
 	Offset    tag.Offset
-	ByteOrder meta.ByteOrder
+	ByteOrder utils.ByteOrder
 	Type      IfdType
 	Index     int8
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.
-func NewIFD(byteOrder meta.ByteOrder, ifdType IfdType, index int8, offset tag.Offset) Ifd {
+func NewIFD(byteOrder utils.ByteOrder, ifdType IfdType, index int8, offset tag.Offset) Ifd {
 	return Ifd{
 		ByteOrder: byteOrder,
 		Type:      ifdType,
@@ -109,6 +110,7 @@ func (ifd Ifd) IsValid() bool {
 	return ifd.Type.IsValid()
 }
 
+// String is a stringer interface for ifd
 func (ifd Ifd) String() string {
 	return fmt.Sprintf("IFD [%s] (%d) at offset (0x%04x)", ifd.Type, ifd.Index, ifd.Offset)
 }
