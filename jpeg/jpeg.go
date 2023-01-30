@@ -15,6 +15,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Errors
@@ -279,7 +280,7 @@ func (jr *jpegReader) readExif() (err error) {
 	if jr.ExifReader != nil {
 		// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
 		// the tiff Header Offset, and the length of the exif information.
-		byteOrder := meta.BinaryOrder(buf)
+		byteOrder := utils.BinaryOrder(buf)
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		exifLength := uint32(remain)
 

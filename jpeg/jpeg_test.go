@@ -12,6 +12,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 var (
@@ -60,10 +61,10 @@ func TestScanJPEG(t *testing.T) {
 		width    uint32
 		height   uint32
 	}{
-		{"../assets/JPEG.jpg", true, meta.NewExifHeader(meta.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
-		{"../assets/NoExif.jpg", true, meta.NewExifHeader(meta.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
-		{"../assets/a2.jpg", false, meta.NewExifHeader(meta.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
-		{"../assets/a1.jpg", true, meta.NewExifHeader(meta.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
+		{"../assets/JPEG.jpg", true, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
+		{"../assets/NoExif.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
+		{"../assets/a2.jpg", false, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
+		{"../assets/a1.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
 	}
 
 	for _, jpg := range testJPEGs {
