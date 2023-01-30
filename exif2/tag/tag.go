@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Errors
@@ -33,18 +33,18 @@ func (o Offset) String() string {
 
 // Tag is an Exif Tag (16bytes)
 type Tag struct {
-	ValueOffset Offset         // 4 bytes
-	UnitCount   uint32         // 4 bytes
-	ID          ID             // 2 bytes
-	t           Type           // 1 byte
-	Ifd         uint8          // 1 byte
-	IfdIndex    int8           // 1 byte
-	ByteOrder   meta.ByteOrder // 1 byte
+	ValueOffset Offset          // 4 bytes
+	UnitCount   uint32          // 4 bytes
+	ID          ID              // 2 bytes
+	t           Type            // 1 byte
+	Ifd         uint8           // 1 byte
+	IfdIndex    int8            // 1 byte
+	ByteOrder   utils.ByteOrder // 1 byte
 }
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
 // If tagType is Invalid returns ErrTagTypeNotValid
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex int8, byteOrder meta.ByteOrder) (Tag, error) {
+func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex int8, byteOrder utils.ByteOrder) (Tag, error) {
 	t := Tag{
 		ID:          tagID,
 		t:           tagType,

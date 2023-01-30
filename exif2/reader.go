@@ -63,21 +63,20 @@ func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) error {
 	return err
 }
 
-func (ir *ifdReader) DecodeCR3Ifd(r io.Reader, h meta.ExifHeader) error {
+func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
 	// Log Header Info
 	if ir.logInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
 	ir.buffer.clear()
 	ir.reader = r
+	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
-	ir.discard(16)
 	ir.po = h.FirstIfdOffset
 	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset))); err != nil {
 		return err
 	}
-	err := ir.discard(int(ir.exifLength) - int(ir.po))
-	return err
+	return ir.discard(int(ir.exifLength) - int(ir.po))
 }
 
 func NewIfdReader(r io.Reader) ifdReader {
@@ -89,6 +88,10 @@ func NewIfdReader(r io.Reader) ifdReader {
 	}
 	ir.buffer.clear()
 	return ir
+}
+
+func (ir *ifdReader) ResetReader(r io.Reader) {
+	ir.reader = r
 }
 
 // Close closes an ifdReader. Should be called with defer following a newIfdReader

@@ -1,4 +1,4 @@
-package meta
+package utils
 
 import "encoding/binary"
 
@@ -64,4 +64,38 @@ func (bo ByteOrder) PutUint64(b []byte, v uint64) {
 		return
 	}
 	binary.LittleEndian.PutUint64(b, v)
+}
+
+// BinaryOrder returns the binary.ByteOrder for a Tiff Header based
+// on 4 bytes from the buf.
+//
+// Good reference:
+// CIPA DC-008-2016; JEITA CP-3451D
+// -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
+func BinaryOrder(buf []byte) ByteOrder {
+	if isTiffBigEndian(buf) {
+		return BigEndian
+	}
+	if isTiffLittleEndian(buf) {
+		return LittleEndian
+	}
+	return UnknownEndian
+}
+
+// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
+func isTiffLittleEndian(buf []byte) bool {
+	return string(buf[:4]) == "II*\000"
+	//return buf[0] == 0x49 &&
+	//	buf[1] == 0x49 &&
+	//	buf[2] == 0x2a &&
+	//	buf[3] == 0x00
+}
+
+// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
+func isTiffBigEndian(buf []byte) bool {
+	return string(buf[:4]) == "MM\000*"
+	//return buf[0] == 0x4d &&
+	//	buf[1] == 0x4d &&
+	//	buf[2] == 0x00 &&
+	//	buf[3] == 0x2a
 }
