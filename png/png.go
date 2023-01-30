@@ -7,6 +7,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 func ScanPngHeader(r io.ReadSeeker) (header meta.ExifHeader, err error) {
@@ -51,7 +52,7 @@ func ScanPngHeader(r io.ReadSeeker) (header meta.ExifHeader, err error) {
 		case "eXIf":
 			offset, _ := r.Seek(0, io.SeekCurrent)
 
-			return meta.NewExifHeader(meta.BigEndian, 8, uint32(offset), length, imagetype.ImagePNG), nil
+			return meta.NewExifHeader(utils.BigEndian, 8, uint32(offset), length, imagetype.ImagePNG), nil
 
 		default:
 			// Discard the chunk length + CRC.
