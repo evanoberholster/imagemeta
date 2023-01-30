@@ -8,21 +8,22 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Tests
 func TestTiff(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename         string
-		byteOrder        meta.ByteOrder
+		byteOrder        utils.ByteOrder
 		firstIfdOffset   uint32
 		tiffHeaderOffset uint32
 		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", meta.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
-		{"../testImages/NEF.exif", meta.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
-		{"../testImages/CR2.exif", meta.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
-		{"../testImages/Heic.exif", meta.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
+		{"../testImages/ARW.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/NEF.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/CR2.exif", utils.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
+		{"../testImages/Heic.exif", utils.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {

@@ -5,9 +5,10 @@ import (
 	"bufio"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 const (
@@ -37,8 +38,8 @@ func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader
 			it, _ = imagetype.Buf(buf)
 		}
 
-		byteOrder := meta.BinaryOrder(buf)
-		if byteOrder == meta.UnknownEndian {
+		byteOrder := utils.BinaryOrder(buf)
+		if byteOrder == utils.UnknownEndian {
 			// Exif not identified. Move forward by one byte.
 			if buf[1] == 0x49 || buf[1] == 0x4d {
 				_, _ = br.Discard(1)
