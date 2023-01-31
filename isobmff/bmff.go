@@ -7,3 +7,7 @@ import (
 )
 
 type ExifReader func(r io.Reader, h meta.ExifHeader) error
+
+const (
+	optionSpeed uint8 = 1
+)

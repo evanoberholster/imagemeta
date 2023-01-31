@@ -6,18 +6,19 @@ import "github.com/rs/zerolog"
 //
 // Primary Item Reference pitm allows setting one image as the primary item.
 // -1 represents not set.
-type pitmID int16
 
-func readPitm(b *box) (id pitmID, err error) {
-	if err = b.readFlags(); err != nil {
-		return -1, err
-	}
-	i, err := b.readUint16()
+func readPitm(b *box) (id itemID, err error) {
+	buf, err := b.Peek(b.remain)
 	if err != nil {
 		return -1, err
 	}
+	b.readFlagsFromBuf(buf)
+	id = itemID(bmffEndian.Uint16(buf[4:]))
 	if logLevelInfo() {
-		logInfoBoxExt(b, zerolog.InfoLevel).Uint16("ptim", i).Send()
+		logBoxExt(b, zerolog.InfoLevel).Uint16("ptim", uint16(id)).Send()
 	}
-	return pitmID(i), b.close()
+	return id, b.close()
 }
+
+// itemID
+type itemID int16

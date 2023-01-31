@@ -15,9 +15,11 @@ func init() {
 }
 
 func BenchmarkCR3(b *testing.B) {
-	//dir := "../../test/img/"
+	dir := "../../test/img/"
 	//f, err := os.Open(dir + "/" + "CanonR6_1.CR3")
-	f, err := os.Open("../cmd/3.CR3")
+	f, err := os.Open(dir + "/" + "CanonR6_1.HIF")
+	//f, err := os.Open(dir + "/" + "iPhone13.heic")
+	//f, err := os.Open("../cmd/3.CR3")
 	if err != nil {
 		panic(err)
 	}

@@ -37,7 +37,7 @@ func parseFileTypeBox(b *box) (ftyp FileTypeBox, err error) {
 		i += 4
 	}
 	if logLevelInfo() {
-		logInfoBoxExt(b, zerolog.InfoLevel).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
+		logBoxExt(b, zerolog.InfoLevel).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
 	}
 	return ftyp, b.Discard(b.remain)
 }

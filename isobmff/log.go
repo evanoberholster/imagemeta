@@ -47,9 +47,11 @@ func logInfoBox(b box) {
 	ev.Send()
 }
 
-func logInfoBoxExt(b *box, level zerolog.Level) *zerolog.Event {
+func logBoxExt(b *box, level zerolog.Level) *zerolog.Event {
 	ev := Logger.WithLevel(level)
-	b.log(ev)
+	if b != nil {
+		b.log(ev)
+	}
 	logTraceFunction(ev)
 	return ev
 }

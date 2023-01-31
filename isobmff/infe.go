@@ -17,20 +17,24 @@ func readInfe(b *box) (infe ItemInfoEntry, err error) {
 	// Only support Infe version 2
 	if b.flags.Version() != 2 {
 		if logLevelError() {
-			logInfoBoxExt(b, zerolog.ErrorLevel).Msg("Infe box version not supported")
+			logBoxExt(b, zerolog.ErrorLevel).Msg("Infe box version not supported")
 		}
 		err = errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", b.flags.Version())
 		return
 	}
-
-	infe.itemID = bmffEndian.Uint16(buf[4:6])
+	var debugItemType string
+	infe.itemID = itemID(bmffEndian.Uint16(buf[4:6]))
 	infe.protectionIndex = bmffEndian.Uint16(buf[6:8])
 	infe.itemType = itemTypeFromBuf(buf[8:12])
+
+	if logLevelDebug() {
+		debugItemType = string(buf[8:12])
+	}
 
 	// expect whitespace
 	if buf[12] != '\x00' {
 		if logLevelDebug() {
-			logInfoBoxExt(b, zerolog.DebugLevel).Str("itemType", string(buf[8:12])).Uint16("itemID", infe.itemID).Uint16("idx", infe.protectionIndex).Msg("does't end on whitespace")
+			logBoxExt(b, zerolog.DebugLevel).Str("itemType", debugItemType).Uint16("itemID", uint16(infe.itemID)).Uint16("idx", infe.protectionIndex).Msg("does't end on whitespace")
 		}
 		infeHeaderSize--
 	}
@@ -44,7 +48,7 @@ func readInfe(b *box) (infe ItemInfoEntry, err error) {
 	}
 	// TODO: implement URI type
 	if logLevelDebug() {
-		ev := logInfoBoxExt(b, zerolog.DebugLevel).Str("itemType", string(buf[8:12])).Uint16("itemID", infe.itemID).Uint16("idx", infe.protectionIndex)
+		ev := logBoxExt(b, zerolog.DebugLevel).Str("itemType", debugItemType).Uint16("itemID", uint16(infe.itemID)).Uint16("idx", infe.protectionIndex)
 		if infe.itemType == itemTypeMime {
 			ev.Str("contentType", infe.contentType.String())
 		}
@@ -57,7 +61,7 @@ func readInfe(b *box) (infe ItemInfoEntry, err error) {
 //
 // TODO: currently only parses Version 2 boxes.
 type ItemInfoEntry struct {
-	itemID          uint16
+	itemID          itemID
 	protectionIndex uint16
 	itemType        itemType
 	contentType     imagetype.ImageType

@@ -32,7 +32,7 @@ func (r *Reader) ReadUUIDBox() error {
 		return err
 	}
 	if logLevelInfo() {
-		logInfoBoxExt(&b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
+		logBoxExt(&b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
 	}
 	switch uuid {
 	case CR3XPacketUUID:
@@ -45,4 +45,67 @@ func (r *Reader) ReadUUIDBox() error {
 	}
 	b.close()
 	return err
+}
+
+func (r *Reader) readUUIDBox(b *box) error {
+	if !b.isType(typeUUID) {
+		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
+	}
+	uuid, err := b.readUUID()
+	if err != nil {
+		return err
+	}
+	if logLevelInfo() {
+		logBoxExt(b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
+	}
+	switch uuid {
+	case CR3XPacketUUID:
+		if r.XMPReader != nil {
+			if err = r.XMPReader(b); err != nil {
+				b.close()
+				return err
+			}
+		}
+	case CR3MetaBoxUUID:
+		if _, err = readCrxMoovBox(b, r.ExifReader); err != nil {
+			return err
+		}
+	default:
+		if logLevelDebug() {
+			logBoxExt(b, zerolog.DebugLevel).Send()
+		}
+	}
+	return b.close()
+}
+
+func readUuid(b *box) (err error) {
+	if !b.isType(typeUUID) {
+		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
+	}
+	uuid, err := b.readUUID()
+	if err != nil {
+		return err
+	}
+	if logLevelInfo() {
+		logBoxExt(b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
+	}
+	var inner box
+	var ok bool
+	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+		switch inner.boxType {
+		case typeCNCV:
+			_, err = readCNCVBox(&inner)
+		default:
+			if logLevelDebug() {
+				logBoxExt(b, zerolog.DebugLevel).Send()
+			}
+		}
+		if err != nil && logLevelError() {
+			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+		}
+		if err = inner.close(); err != nil {
+			break
+		}
+	}
+	return b.close()
 }

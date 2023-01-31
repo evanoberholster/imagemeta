@@ -48,6 +48,9 @@ func (b *box) Discard(n int) error {
 }
 
 func (b *box) adjust(n int) {
+	if n > b.remain {
+		n = b.remain
+	}
 	b.remain -= n
 	if b.outer != nil {
 		b.outer.adjust(n)
@@ -72,12 +75,12 @@ func (b *box) close() error {
 }
 
 func (b *box) readInnerBox() (inner box, next bool, err error) {
-	if b.remain < 16 {
+	if b.remain < 8 {
 		return inner, false, nil
 	}
 	// Read box size and box type
 	var buf []byte
-	if buf, err = b.Peek(8); err != nil {
+	if buf, err = b.Peek(16); err != nil {
 		return inner, false, errors.Wrap(ErrBufLength, "readBox")
 	}
 	inner.reader = b.reader
@@ -90,10 +93,7 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	switch inner.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
-		if buf, err = b.Peek(16); err != nil {
-			return inner, false, errors.Wrap(ErrBufLength, "readBox")
-		}
-		inner.size = int64(bmffEndian.Uint32(buf[8:16]))
+		inner.size = int64(bmffEndian.Uint64(buf[8:16]))
 		if inner.size < 0 {
 			// Go uses int64 for sizes typically, but BMFF uses uint64.
 			// We assume for now that nobody actually uses boxes larger
@@ -194,7 +194,6 @@ func (f flags) String() string {
 	return fmt.Sprintf("Flags:%d, Version:%d", f.Flags(), f.Version())
 }
 
-// func (f flags)
 // MarshalZerologObject is a zerolog interface for logging
 func (f flags) MarshalZerologObject(e *zerolog.Event) {
 	e.Uint8("version", f.Version()).Uint32("flags", f.Flags())
@@ -271,6 +270,7 @@ const (
 	typeTrak            // 'trak'
 	typeUUID            // 'uuid'
 	typeVmhd            // 'vmhd'
+	typeExif            // 'Exif
 )
 
 var mapStringBoxType = map[string]BoxType{
@@ -342,6 +342,7 @@ var mapStringBoxType = map[string]BoxType{
 	"trak": typeTrak,
 	"uuid": typeUUID,
 	"vmhd": typeVmhd,
+	"Exif": typeExif,
 }
 
 var mapBoxTypeString = map[BoxType]string{
@@ -413,4 +414,5 @@ var mapBoxTypeString = map[BoxType]string{
 	typeTrak: "trak",
 	typeUUID: "uuid",
 	typeVmhd: "vmhd",
+	typeExif: "Exif",
 }

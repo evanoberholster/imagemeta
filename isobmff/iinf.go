@@ -4,7 +4,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func readIinf(b *box) (iinf IinfBox, err error) {
+func (r *Reader) readIinf(b *box) (iinf IinfBox, err error) {
 	if err = b.readFlags(); err != nil {
 		return iinf, err
 	}
@@ -13,23 +13,38 @@ func readIinf(b *box) (iinf IinfBox, err error) {
 		return iinf, err
 	}
 	if logLevelInfo() {
-		logInfoBoxExt(b, zerolog.InfoLevel).Uint16("count", count).Send()
+		logBoxExt(b, zerolog.InfoLevel).Uint16("count", count).Send()
 	}
-	iinf = make(IinfBox, count)
+	if optionSpeed == 0 {
+		iinf = make(IinfBox, 0, count)
+	}
 	var inner box
 	var ok bool
 	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+		var infe ItemInfoEntry
 		switch inner.boxType {
 		case typeInfe:
-			_, err = readInfe(&inner)
+			infe, err = readInfe(&inner)
+			if optionSpeed == 0 {
+				iinf = append(iinf, infe)
+			}
+			if infe.itemType == itemTypeExif {
+				r.heic.exif.id = infe.itemID
+			}
+			if infe.itemType == itemTypeMime {
+				r.heic.xml.id = infe.itemID
+			}
 		default:
 			if logLevelDebug() {
-				logInfoBoxExt(&inner, zerolog.DebugLevel).Send()
+				logBoxExt(&inner, zerolog.DebugLevel).Send()
 			}
-			inner.close()
 		}
-		if err != nil {
-			return
+		if err != nil && logLevelError() {
+			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+		}
+		if err = inner.close(); err != nil {
+			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			break
 		}
 	}
 	return iinf, b.close()

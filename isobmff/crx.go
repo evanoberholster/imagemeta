@@ -1,14 +1,11 @@
 package isobmff
 
 import (
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -35,7 +32,6 @@ type CR3Trak struct {
 }
 
 func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
-	defer b.close()
 	var inner box
 	var ok bool
 	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
@@ -55,49 +51,35 @@ func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
 			crx.Meta.Exif[3], err = readCMTBox(&inner, exifReader, ifds.GPSIFD)
 		//case typeTHMB:
 		default:
-			if logLevelInfo() {
-				logInfoBox(inner)
+			if logLevelDebug() {
+				logBoxExt(&inner, zerolog.DebugLevel).Send()
 			}
-			inner.close()
+			err = inner.close()
 		}
-		if err != nil {
+		if err != nil && logLevelError() {
+			logBoxExt(&inner, zerolog.ErrorLevel).Send()
 			return
 		}
 	}
-	return
+	return crx, b.close()
 }
 
 // CMT Box
 
+// readCMTBox reads a ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3
 func readCMTBox(b *box, exifReader func(r io.Reader, h meta.ExifHeader) error, ifdType ifds.IfdType) (header meta.ExifHeader, err error) {
-	buf, err := b.Peek(16)
+	header, err = readExifHeader(b, ifdType, imagetype.ImageCR3)
 	if err != nil {
-		return header, err
-	}
-
-	endian := utils.BinaryOrder(buf[:4])
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.size), imagetype.ImageCR3)
-	header.FirstIfd = ifdType
-	if logLevelInfo() {
-		logCMTBox(b, header)
-	}
-	if err = b.Discard(8); err != nil {
 		return
 	}
+
+	// TODO: implement Limited Reader to reduce allocations
 	if exifReader != nil {
-		if err = exifReader(b, header); err != nil {
-			//fmt.Println(err)
+		if err = exifReader(b, header); err != nil && logLevelError() {
+			logBoxExt(b, zerolog.ErrorLevel).Object("exifReader", header).Err(err).Send()
 		}
 	}
 	return header, b.close()
-}
-
-func logCMTBox(b *box, h meta.ExifHeader) {
-	ev := Logger.Info()
-	b.log(ev)
-	ev.Uint32("FirstIfdOffset", h.FirstIfdOffset).Str("FirstIfd", h.FirstIfd.String()).Uint32("TiffHeaderOffset", h.TiffHeaderOffset).Uint32("ExifLength", h.ExifLength).Str("Endian", h.ByteOrder.String()).Str("ImageType", h.ImageType.String())
-	logTraceFunction(ev)
-	ev.Send()
 }
 
 // CNCV Box
@@ -120,33 +102,12 @@ func readCNCVBox(b *box) (cncv CNCVBox, err error) {
 	}
 	copy(cncv.version[:], buf[:30])
 	if logLevelInfo() {
-		cncv.log(b)
+		logBoxExt(b, zerolog.InfoLevel).Str("CNCV", string(cncv.version[:])).Send()
 	}
 	return cncv, b.close()
 }
 
-func (cncv CNCVBox) log(b *box) {
-	ev := Logger.Info()
-	b.log(ev)
-	ev.Str("CNCV", string(cncv.version[:]))
-	logTraceFunction(ev)
-	ev.Send()
-}
-
 // CTBO Box
-
-// CTBOBox is a Canon tracks base offsets Box?
-// items are [2]{offset,length}
-type CTBOBox struct {
-	items [5]ctboItem
-	count uint32
-}
-
-// ctboItem
-type ctboItem struct {
-	offset uint64
-	length uint64
-}
 
 func readCTBOBox(b *box) (ctbo CTBOBox, err error) {
 	if !b.isType(typeCTBO) {
@@ -168,27 +129,16 @@ func readCTBOBox(b *box) (ctbo CTBOBox, err error) {
 		}
 	}
 	if logLevelInfo() {
-		ctbo.log(b)
+		logBoxExt(b, zerolog.InfoLevel).Array("items", ctbo).Send()
 	}
 	return ctbo, b.close()
 }
 
-// String is the stringer interface
-func (ctbo CTBOBox) String() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("CTBO | ItemCount:%d \n", ctbo.count))
-	for idx, item := range ctbo.items {
-		sb.WriteString(fmt.Sprintf("\t | Index:%d, Offset:%d, Size:%d \n", idx, item.offset, item.length))
-	}
-	return sb.String()[:sb.Len()-1]
-}
-
-func (ctbo CTBOBox) log(b *box) {
-	ev := Logger.Info()
-	b.log(ev)
-	ev.Array("items", ctbo)
-	logTraceFunction(ev)
-	ev.Send()
+// CTBOBox is a Canon tracks base offsets Box?
+// items are [2]{offset,length}
+type CTBOBox struct {
+	items [5]offsetLength
+	count uint32
 }
 
 // MarshalZerologArray is a zerolog interface for logging
@@ -200,11 +150,6 @@ func (ctbo CTBOBox) MarshalZerologArray(a *zerolog.Array) {
 		}
 		a.Object(item)
 	}
-}
-
-// MarshalZerologObject is a zerolog interface for logging
-func (ctboi ctboItem) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint64("length", ctboi.length).Uint64("offset", ctboi.offset)
 }
 
 func readCrxMdia(b *box) (err error) {
@@ -220,8 +165,10 @@ func readCrxMdia(b *box) (err error) {
 	//	}
 	//	inner.close()
 	//}
-	b.close()
-	return
+	if logLevelInfo() {
+		logBoxExt(b, zerolog.InfoLevel).Send()
+	}
+	return b.close()
 }
 
 // Trak
@@ -246,62 +193,8 @@ func readCrxTrakBox(b *box) (t CR3Trak, err error) {
 	//	}
 	//	inner.close()
 	//}
-	err = b.close()
-
-	return
+	if logLevelInfo() {
+		logBoxExt(b, zerolog.InfoLevel).Send()
+	}
+	return t, b.close()
 }
-
-//func parseCrxTrak(outer *box) (t CR3Trak, err error) {
-//	buf, err := outer.read()
-//	if err != nil {
-//		return
-//	}
-//
-//	for remain := len(buf); remain > 0; {
-//		bt, size := crxBoxHeader(buf)
-//		remain -= size
-//		switch bt {
-//		case TypeMdia, TypeMinf, TypeStbl: // open box
-//			size = 8
-//		case TypeHdlr:
-//			if logLevelDebug() {
-//				logDebugBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "hdlr | type: "+string(buf[16:20]))
-//			}
-//			// skip any trak whose hdlr type is not "vide"
-//			if string(buf[16:20]) != "vide" {
-//				return
-//			}
-//		case TypeStsd:
-//			if boxType(buf[4+stsdHeaderSize:8+stsdHeaderSize]) == TypeCRAW {
-//				t.Width = crxBinaryOrder.Uint16(buf[32+stsdHeaderSize : 34+stsdHeaderSize])
-//				t.Height = crxBinaryOrder.Uint16(buf[34+stsdHeaderSize : 36+stsdHeaderSize])
-//				t.Depth = crxBinaryOrder.Uint16(buf[82+stsdHeaderSize : 84+stsdHeaderSize])
-//				t.ImageType = crxBinaryOrder.Uint16(buf[86+stsdHeaderSize : 88+stsdHeaderSize])
-//			}
-//			if logLevelDebug() {
-//				logDebugBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, fmt.Sprintf("stsd | width:%d, height:%d, depth:%d, imagetype:%d", t.Width, t.Height, t.Depth, t.ImageType))
-//			}
-//		case TypeStsz:
-//			if size == 20 {
-//				t.ImageSize = crxBinaryOrder.Uint32(buf[12+8+4 : 16+8+4])
-//			} else if size == 24 {
-//				t.ImageSize = crxBinaryOrder.Uint32(buf[12+8 : 16+8])
-//			}
-//			if logLevelDebug() {
-//				logDebugBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, fmt.Sprintf("stsz | imageSize:%d", t.ImageSize))
-//			}
-//		case TypeCo64:
-//			t.Offset = crxBinaryOrder.Uint32(buf[12+8 : 16+8])
-//			if logLevelDebug() {
-//				logDebugBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, fmt.Sprintf("co64 | imageOffset:%d", t.Offset))
-//			}
-//		default: // skip other types:
-//			if logLevelDebug() {
-//				logDebugBoxWithMsg(box{size: int64(size), boxType: bt, bufReader: bufReader{offset: outer.offset}}, "discard")
-//			}
-//		}
-//		buf = buf[size:]
-//	}
-//	return
-//}
-//

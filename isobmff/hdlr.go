@@ -19,7 +19,7 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 	}
 	ht = hdlrFromBuf(buf[4:8])
 	if logLevelInfo() {
-		logInfoBoxExt(b, zerolog.InfoLevel).Str("hdlr", ht.String()).Send()
+		logBoxExt(b, zerolog.InfoLevel).Str("hdlr", ht.String()).Send()
 	}
 	return ht, b.close()
 }

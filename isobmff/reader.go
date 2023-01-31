@@ -36,6 +36,7 @@ type Reader struct {
 	br *bufio.Reader
 
 	ftyp FileTypeBox
+	heic HeicMeta
 
 	ExifReader func(r io.Reader, h meta.ExifHeader) error
 	XMPReader  func(r io.Reader) error
@@ -80,8 +81,8 @@ func (r *Reader) Close() {
 // readBox reads an ISOBMFF box
 func (r *Reader) readBox() (b box, err error) {
 	// Read box size and box type
-	var buf []byte
-	if buf, err = r.peek(8); err != nil {
+	buf, err := r.peek(16)
+	if err != nil {
 		return b, errors.Wrap(ErrBufLength, "readBox")
 	}
 	b.reader = r
@@ -93,10 +94,7 @@ func (r *Reader) readBox() (b box, err error) {
 	switch b.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
-		if buf, err = r.peek(16); err != nil {
-			return b, errors.Wrap(ErrBufLength, "readBox")
-		}
-		b.size = int64(bmffEndian.Uint32(buf[8:16]))
+		b.size = int64(bmffEndian.Uint64(buf[8:16]))
 		if b.size < 0 {
 			// Go uses int64 for sizes typically, but BMFF uses uint64.
 			// We assume for now that nobody actually uses boxes larger
@@ -105,10 +103,44 @@ func (r *Reader) readBox() (b box, err error) {
 		}
 		b.remain = int(b.size)
 		return b, b.Discard(16)
-		//case 0:
-		// 0 means unknown & to read to end of file. No more boxes.
-		// r.noMoreBoxes = true
-		// TODO: error
 	}
 	return b, b.Discard(8)
+}
+
+type limitedReader struct {
+	br     *bufio.Reader
+	size   int
+	remain int
+}
+
+func newLimitedReader(b *box, h meta.ExifHeader) *limitedReader {
+	return &limitedReader{br: b.reader.br, size: int(h.ExifLength), remain: b.remain}
+}
+
+func (lr *limitedReader) Peek(n int) ([]byte, error) {
+	if lr.remain >= n {
+		return lr.Peek(n)
+	}
+	return nil, ErrRemainLengthInsufficient
+}
+
+func (lr *limitedReader) Discard(n int) error {
+	if lr.remain >= n {
+		lr.remain -= n
+		return lr.Discard(n)
+	}
+	return ErrRemainLengthInsufficient
+}
+
+func (lr *limitedReader) Close(b *box) {
+	b.adjust(b.remain - lr.remain)
+}
+
+func (lr *limitedReader) Read(p []byte) (n int, err error) {
+	if lr.remain >= len(p) {
+		n, err = lr.br.Read(p)
+		lr.remain -= n
+		return n, err
+	}
+	return 0, ErrRemainLengthInsufficient
 }
