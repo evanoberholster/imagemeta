@@ -38,7 +38,6 @@ func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
 		switch inner.boxType {
 		case typeCNCV:
 			crx.Meta.CNCV, err = readCNCVBox(&inner)
-		//case typeCCTP:
 		case typeCTBO:
 			crx.Meta.CTBO, err = readCTBOBox(&inner)
 		case typeCMT1:
@@ -50,14 +49,16 @@ func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
 		case typeCMT4:
 			crx.Meta.Exif[3], err = readCMTBox(&inner, exifReader, ifds.GPSIFD)
 		//case typeTHMB:
+		//case typeCCTP:
 		default:
 			if logLevelDebug() {
-				logBoxExt(&inner, zerolog.DebugLevel).Send()
+				logDebug().Object("box", inner).Send()
 			}
-			err = inner.close()
 		}
 		if err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Send()
+			logError().Object("box", inner).Err(err).Send()
+		}
+		if err = inner.close(); err != nil {
 			return
 		}
 	}
@@ -68,15 +69,12 @@ func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
 
 // readCMTBox reads a ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3
 func readCMTBox(b *box, exifReader func(r io.Reader, h meta.ExifHeader) error, ifdType ifds.IfdType) (header meta.ExifHeader, err error) {
-	header, err = readExifHeader(b, ifdType, imagetype.ImageCR3)
-	if err != nil {
+	if header, err = readExifHeader(b, ifdType, imagetype.ImageCR3); err != nil {
 		return
 	}
-
-	// TODO: implement Limited Reader to reduce allocations
 	if exifReader != nil {
 		if err = exifReader(b, header); err != nil && logLevelError() {
-			logBoxExt(b, zerolog.ErrorLevel).Object("exifReader", header).Err(err).Send()
+			logError().Object("box", b).Object("exifReader", header).Send()
 		}
 	}
 	return header, b.close()
@@ -102,7 +100,7 @@ func readCNCVBox(b *box) (cncv CNCVBox, err error) {
 	}
 	copy(cncv.version[:], buf[:30])
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Str("CNCV", string(cncv.version[:])).Send()
+		logInfo().Object("box", b).Str("CNCV", string(cncv.version[:])).Send()
 	}
 	return cncv, b.close()
 }
@@ -129,7 +127,7 @@ func readCTBOBox(b *box) (ctbo CTBOBox, err error) {
 		}
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Array("items", ctbo).Send()
+		logInfo().Object("box", b).Array("items", ctbo).Send()
 	}
 	return ctbo, b.close()
 }
@@ -150,25 +148,6 @@ func (ctbo CTBOBox) MarshalZerologArray(a *zerolog.Array) {
 		}
 		a.Object(item)
 	}
-}
-
-func readCrxMdia(b *box) (err error) {
-	//var inner box
-	//var ok bool
-	//for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
-	//	switch inner.boxType {
-	//	case typeMdia:
-	//
-	//	}
-	//	if logLevelInfo() {
-	//		logInfoBox(inner)
-	//	}
-	//	inner.close()
-	//}
-	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
-	}
-	return b.close()
 }
 
 // Trak
@@ -194,7 +173,7 @@ func readCrxTrakBox(b *box) (t CR3Trak, err error) {
 	//	inner.close()
 	//}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
+		logInfo().Object("box", b).Send()
 	}
 	return t, b.close()
 }

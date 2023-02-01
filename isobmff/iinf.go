@@ -3,81 +3,27 @@ package isobmff
 import (
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
-// readIinf reads an "iinf" box
-func (r *Reader) readIinf(b *box) (iinf IinfBox, err error) {
+func (r *Reader) readIinf(b *box) (err error) {
 	if err = b.readFlags(); err != nil {
-		return iinf, err
+		return
 	}
 	count, err := b.readUint16()
 	if err != nil {
-		return iinf, err
+		return
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Uint16("count", count).Send()
+		logInfo().Object("box", b).Uint16("count", count).Send()
 	}
-	if optionSpeed == 0 {
-		iinf = make(IinfBox, 0, count)
-	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
-		var infe ItemInfoEntry
-		switch inner.boxType {
-		case typeInfe:
-			infe, err = readInfe(&inner)
-			if optionSpeed == 0 {
-				iinf = append(iinf, infe)
-			}
-			if infe.itemType == itemTypeExif {
-				r.heic.exif.id = infe.itemID
-			}
-			if infe.itemType == itemTypeMime {
-				r.heic.xml.id = infe.itemID
-			}
-		default:
-			if logLevelDebug() {
-				logBoxExt(&inner, zerolog.DebugLevel).Send()
-			}
-		}
-		if err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
-		}
-		if err = inner.close(); err != nil {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
-			break
-		}
-	}
-	return iinf, b.close()
-}
-
-// IinfBox represents an "iinf" box.
-// size int64
-// Flags Flags
-// Count uint16
-type IinfBox []ItemInfoEntry
-
-func (r *Reader) readIinfFast(b *box) (iinf IinfBox, err error) {
-	if err = b.readFlags(); err != nil {
-		return iinf, err
-	}
-	count, err := b.readUint16()
-	if err != nil {
-		return iinf, err
-	}
-	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Uint16("count", count).Send()
-	}
-	if err = r.readInfeFast(b); err != nil && logLevelError() {
+	if err = r.readInfe(b); err != nil && logLevelError() {
 		logError().Object("box", b).Err(err).Send()
 	}
 
-	return iinf, b.close()
+	return b.close()
 }
 
-func (r *Reader) readInfeFast(b *box) (err error) {
+func (r *Reader) readInfe(b *box) (err error) {
 	buf, err := b.Peek(b.remain)
 	if err != nil {
 		return
@@ -110,7 +56,7 @@ func (r *Reader) readInfeFast(b *box) (err error) {
 		// expect whitespace
 		if buf[i+20] != '\x00' {
 			if logLevelDebug() {
-				logBoxExt(b, zerolog.DebugLevel).Str("itemType", string(buf[i+16:i+20])).Uint16("itemID", uint16(itemID)).Msg("does't end on whitespace")
+				logDebug().Object("box", b).Str("itemType", string(buf[i+16:i+20])).Uint16("itemID", uint16(itemID)).Msg("does't end on whitespace")
 			}
 			infeFastHeaderSize--
 		}

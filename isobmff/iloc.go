@@ -99,7 +99,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 			ilb.items = append(ilb.items, ent)
 		}
 		if logLevelDebug() {
-			logBoxExt(nil, zerolog.DebugLevel).Object("entry", ent).Send()
+			logDebug().Object("entry", ent).Send()
 		}
 
 		switch ent.id {
@@ -128,7 +128,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	}
 	ilb.count = bmffEndian.Uint16(buf[2:4])
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Object("ItemLocation", ilb).Send()
+		logInfoBox(b).Object("ItemLocation", ilb).Send()
 	}
 	return ilb, b.Discard(8)
 }

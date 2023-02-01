@@ -3,7 +3,6 @@ package isobmff
 import (
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 var (
@@ -28,7 +27,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 		return err
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
+		logInfoBox(b).Str("uuid", uuid.String()).Send()
 	}
 	switch uuid {
 	case CR3XPacketUUID:
@@ -44,7 +43,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 		}
 	default:
 		if logLevelDebug() {
-			logBoxExt(b, zerolog.DebugLevel).Send()
+			logDebug().Object("box", b).Send()
 		}
 	}
 	return b.close()
@@ -59,7 +58,7 @@ func readUuid(b *box) (err error) {
 		return err
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
+		logInfoBox(b).Str("uuid", uuid.String()).Send()
 	}
 	var inner box
 	var ok bool
@@ -69,11 +68,11 @@ func readUuid(b *box) (err error) {
 			_, err = readCNCVBox(&inner)
 		default:
 			if logLevelDebug() {
-				logBoxExt(b, zerolog.DebugLevel).Send()
+				logDebug().Object("box", b).Send()
 			}
 		}
 		if err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", b).Err(err).Send()
 		}
 		if err = inner.close(); err != nil {
 			break

@@ -2,7 +2,6 @@ package isobmff
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 // brandCount is the number of compatible brands supported.
@@ -37,7 +36,7 @@ func parseFileTypeBox(b *box) (ftyp FileTypeBox, err error) {
 		i += 4
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
+		logInfoBox(b).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
 	}
 	return ftyp, b.Discard(b.remain)
 }

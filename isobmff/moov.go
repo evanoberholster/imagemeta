@@ -8,7 +8,6 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 func (r *Reader) ReadMetadata() (err error) {
@@ -34,7 +33,7 @@ func (r *Reader) ReadMetadata() (err error) {
 		}
 	}
 	if err != nil && logLevelError() {
-		logBoxExt(&b, zerolog.ErrorLevel).Err(err).Send()
+		logError().Object("box", b).Err(err).Send()
 	}
 	return err
 }
@@ -49,7 +48,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 	inner, err := r.newExifBox(b)
 	if err != nil {
 		if logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", inner).Err(err).Send()
 		}
 		return
 	}
@@ -61,7 +60,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 	if r.ExifReader != nil {
 		if err = r.ExifReader(&inner, header); err != nil {
 			if logLevelError() {
-				logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+				logError().Object("box", inner).Err(err).Send()
 			}
 		}
 	}
@@ -112,7 +111,7 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.remain), imagetype.ImageCR3)
 	header.FirstIfd = firstIfd
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Object("header", header).Send()
+		logInfo().Object("box", b).Object("header", header).Send()
 	}
 
 	return header, b.Discard(8)
@@ -139,14 +138,13 @@ func (r *Reader) readMeta(b *box) (err error) {
 		case typePitm:
 			r.heic.pitm, err = readPitm(&inner)
 		case typeIinf:
-			_, err = r.readIinfFast(&inner)
-			//_, err = r.readIinf(&inner)
+			err = r.readIinf(&inner)
 		case typeIref:
 			err = readIref(&inner)
 		case typeIprp:
 			err = readIprp(&inner)
 		case typeIdat:
-			_, err = readIdat(&inner)
+			r.heic.idat, err = readIdat(&inner)
 		case typeIloc:
 			err = r.readIloc(&inner)
 		default:
@@ -154,11 +152,14 @@ func (r *Reader) readMeta(b *box) (err error) {
 				logInfo().Object("box", inner).Send()
 			}
 		}
-		if err != nil {
-			// log error
-			return err
+		if err != nil && logLevelError() {
+			logError().Object("box", inner).Err(err).Send()
 		}
-		inner.close()
+
+		if err = inner.close(); err != nil {
+			logError().Object("box", inner).Err(err).Send()
+			break
+		}
 	}
 	return b.close()
 }
@@ -169,7 +170,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
+		logInfo().Object("box", b).Send()
 	}
 	var inner box
 	var ok bool
@@ -186,10 +187,11 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 			}
 		}
 		if err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", inner).Err(err).Send()
 		}
 		if err = inner.close(); err != nil {
-			return
+			logError().Object("box", inner).Err(err).Send()
+			break
 		}
 	}
 	return b.close()

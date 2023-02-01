@@ -1,7 +1,5 @@
 package isobmff
 
-import "github.com/rs/zerolog"
-
 // pitmID is a "pitm" box.
 //
 // Primary Item Reference pitm allows setting one image as the primary item.
@@ -15,7 +13,7 @@ func readPitm(b *box) (id itemID, err error) {
 	b.readFlagsFromBuf(buf)
 	id = itemID(bmffEndian.Uint16(buf[4:]))
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Uint16("ptim", uint16(id)).Send()
+		logInfoBox(b).Uint16("ptim", uint16(id)).Send()
 	}
 	return id, b.close()
 }

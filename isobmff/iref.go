@@ -1,9 +1,5 @@
 package isobmff
 
-import (
-	"github.com/rs/zerolog"
-)
-
 // ItemTypeReferenceBox is an "iref" box.
 //
 // Item Reference box iref enables creating directional links from an item to one or several other items.
@@ -19,7 +15,7 @@ func readIref(b *box) (err error) {
 		return
 	}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
+		logInfoBox(b).Send()
 	}
 	var inner box
 	var ok bool
@@ -31,10 +27,10 @@ func readIref(b *box) (err error) {
 		//}
 		// TODO: implement reading iref boxes
 		if logLevelInfo() {
-			logBoxExt(&inner, zerolog.InfoLevel).Send()
+			logInfoBox(&inner).Send()
 		}
 		if err = inner.close(); err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", inner).Err(err).Send()
 			break
 		}
 	}

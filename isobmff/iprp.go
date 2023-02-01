@@ -1,12 +1,8 @@
 package isobmff
 
-import (
-	"github.com/rs/zerolog"
-)
-
 func readIprp(b *box) (err error) {
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
+		logInfoBox(b).Send()
 	}
 	var inner box
 	var ok bool
@@ -18,14 +14,14 @@ func readIprp(b *box) (err error) {
 			err = readIpco(&inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Object("box", inner).Send()
+				logInfoBox(&inner).Send()
 			}
 		}
 		if err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", inner).Err(err).Send()
 		}
 		if err = inner.close(); err != nil && logLevelError() {
-			logBoxExt(&inner, zerolog.ErrorLevel).Err(err).Send()
+			logError().Object("box", inner).Err(err).Send()
 		}
 	}
 	return b.close()
@@ -33,7 +29,7 @@ func readIprp(b *box) (err error) {
 
 func readIpco(b *box) (err error) {
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Send()
+		logInfoBox(b).Send()
 	}
 	//var inner box
 	//var ok bool
@@ -79,7 +75,7 @@ func readIpma(b *box) (ipma ItemPropertyAssociation, err error) {
 	b.readFlagsFromBuf(buf[:4])
 	count := int(bmffEndian.Uint32(buf[4:8]))
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Uint32("entries", uint32(count)).Send()
+		logInfoBox(b).Uint32("entries", uint32(count)).Send()
 	}
 	// Entries
 	// /ipma.Entries = make([]IpmaItem, count)

@@ -13,7 +13,7 @@ func readIdat(b *box) (i idat, err error) {
 		width:  bmffEndian.Uint16(buf[4:6]),
 		height: bmffEndian.Uint16(buf[6:8])}
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Object("idat", i).Send()
+		logInfoBox(b).Object("idat", i).Send()
 	}
 
 	return i, b.close()

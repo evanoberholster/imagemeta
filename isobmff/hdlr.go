@@ -2,7 +2,6 @@ package isobmff
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 // readHdlr reads an "hdlr" box
@@ -19,7 +18,7 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 	}
 	ht = hdlrFromBuf(buf[4:8])
 	if logLevelInfo() {
-		logBoxExt(b, zerolog.InfoLevel).Str("hdlr", ht.String()).Send()
+		logInfoBox(b).Str("hdlr", ht.String()).Send()
 	}
 	return ht, b.close()
 }
@@ -30,6 +29,7 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 // Handler; usually "pict" for HEIF images
 type hdlrType uint8
 
+// hdlr types
 const (
 	hdlrUnknown hdlrType = iota
 	hdlrPict
@@ -46,16 +46,16 @@ func (ht hdlrType) String() string {
 }
 
 func hdlrFromBuf(buf []byte) hdlrType {
-	if ht, ok := hdlrTypesMap[string(buf[:4])]; ok {
-		return ht
+	switch string(buf[:4]) {
+	case "pict":
+		return hdlrPict
+	case "vide":
+		return hdlrVide
+	case "meta":
+		return hdlrMeta
+	default:
+		return hdlrUnknown
 	}
-	return hdlrUnknown
-}
-
-var hdlrTypesMap = map[string]hdlrType{
-	"pict": hdlrPict,
-	"vide": hdlrVide,
-	"meta": hdlrMeta,
 }
 
 var hdlrStringMap = map[hdlrType]string{

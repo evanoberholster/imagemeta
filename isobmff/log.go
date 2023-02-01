@@ -57,15 +57,8 @@ func logError() *zerolog.Event {
 	logTraceFunction(ev)
 	return ev
 }
-
-func logExt(level zerolog.Level) *zerolog.Event {
-	ev := Logger.WithLevel(level)
-	logTraceFunction(ev)
-	return ev
-}
-
-func logBoxExt(b *box, level zerolog.Level) *zerolog.Event {
-	ev := Logger.WithLevel(level)
+func logInfoBox(b *box) *zerolog.Event {
+	ev := logInfo()
 	if b != nil {
 		b.log(ev)
 	}
