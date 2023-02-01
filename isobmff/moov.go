@@ -24,19 +24,27 @@ func (r *Reader) ReadMetadata() (err error) {
 		err = r.readMdat(&b)
 	case typeMeta:
 		err = r.readMeta(&b)
+		b.close()
 	case typeMoov:
 		err = r.readMoovBox(&b)
+		b.close()
 	default:
 		if logLevelInfo() {
-			logInfoBox(b)
+			logInfo().Object("box", b).Send()
 		}
 	}
-	return b.close()
+	if err != nil && logLevelError() {
+		logBoxExt(&b, zerolog.ErrorLevel).Err(err).Send()
+	}
+	return err
 }
 
 func (r *Reader) readMdat(b *box) (err error) {
 	if logLevelInfo() {
-		logInfoBox(*b)
+		logInfo().Object("box", b).Send()
+	}
+	if r.heic.exif.ol.offset == 0 {
+		return b.close()
 	}
 	inner, err := r.newExifBox(b)
 	if err != nil {
@@ -59,7 +67,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 	}
 
 	if logLevelInfo() {
-		logBoxExt(&inner, zerolog.InfoLevel).Int("remain", inner.remain).Send()
+		logInfo().Object("box", inner).Int("remain", inner.remain).Send()
 	}
 
 	return b.close()
@@ -101,7 +109,7 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 		return
 	}
 	endian := utils.BinaryOrder(buf[:4])
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.remain-8), imagetype.ImageCR3)
+	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.remain), imagetype.ImageCR3)
 	header.FirstIfd = firstIfd
 	if logLevelInfo() {
 		logBoxExt(b, zerolog.InfoLevel).Object("header", header).Send()
@@ -118,7 +126,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 		return err
 	}
 	if logLevelInfo() {
-		logInfoBox(*b)
+		logInfo().Object("box", b).Send()
 	}
 	var inner box
 	var ok bool
@@ -131,7 +139,8 @@ func (r *Reader) readMeta(b *box) (err error) {
 		case typePitm:
 			r.heic.pitm, err = readPitm(&inner)
 		case typeIinf:
-			_, err = r.readIinf(&inner)
+			_, err = r.readIinfFast(&inner)
+			//_, err = r.readIinf(&inner)
 		case typeIref:
 			err = readIref(&inner)
 		case typeIprp:
@@ -142,7 +151,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 			err = r.readIloc(&inner)
 		default:
 			if logLevelInfo() {
-				logInfoBox(inner)
+				logInfo().Object("box", inner).Send()
 			}
 		}
 		if err != nil {
@@ -173,7 +182,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 		//case typeMvhd:
 		default:
 			if logLevelInfo() {
-				logInfoBox(inner)
+				logInfo().Object("box", inner).Send()
 			}
 		}
 		if err != nil && logLevelError() {

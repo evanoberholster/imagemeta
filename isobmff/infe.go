@@ -15,11 +15,11 @@ func readInfe(b *box) (infe ItemInfoEntry, err error) {
 	b.readFlagsFromBuf(buf[:4])
 
 	// Only support Infe version 2
-	if b.flags.Version() != 2 {
+	if b.flags.version() != 2 {
 		if logLevelError() {
-			logBoxExt(b, zerolog.ErrorLevel).Msg("Infe box version not supported")
+			logError().Object("box", b).Err(errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", b.flags.version())).Send()
 		}
-		err = errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", b.flags.Version())
+		err = b.close()
 		return
 	}
 	var debugItemType string
@@ -43,8 +43,7 @@ func readInfe(b *box) (infe ItemInfoEntry, err error) {
 		if err != nil {
 			return
 		}
-		buf = buf[infeHeaderSize:]
-		infe.contentType = imagetype.FromString(string(buf[:len(buf)-2]))
+		infe.contentType = imagetype.FromString(string(buf[infeHeaderSize : len(buf)-2]))
 	}
 	// TODO: implement URI type
 	if logLevelDebug() {
@@ -103,4 +102,27 @@ var mapItemTypeString = map[itemType]string{
 	itemTypeHvc1: "hvc1",
 	itemTypeGrid: "grid",
 	itemTypeExif: "Exif",
+}
+
+func itemTypeFromBuf(buf []byte) itemType {
+	str := string(buf[:4])
+	if str == "hvc1" {
+		return itemTypeHvc1
+	}
+	switch str {
+	case "Exif":
+		return itemTypeExif
+	case "av01":
+		return itemTypeAv01
+	case "grid":
+		return itemTypeGrid
+	case "infe":
+		return itemTypeInfe
+	case "mime":
+		return itemTypeMime
+	case "uri ":
+		return itemTypeURI
+	default:
+		return itemTypeUnknown
+	}
 }

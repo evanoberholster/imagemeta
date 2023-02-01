@@ -1,8 +1,6 @@
 package isobmff
 
 import (
-	"fmt"
-
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -14,18 +12,16 @@ type box struct {
 	remain  int
 	offset  int
 	flags   flags
-	boxType BoxType
+	boxType boxType
 	outer   *box
 	reader  *Reader
 }
 
-func (b box) Size() int64            { return b.size }
-func (b box) Type() BoxType          { return b.boxType }
-func (b box) isType(bt BoxType) bool { return b.boxType == bt }
-func (b box) String() string {
-	return fmt.Sprintf("(Box) type:'%s', offset:%d, size:%d", b.boxType, b.offset, b.size)
-}
+// isType returns the boxType
+func (b box) isType(bt boxType) bool { return b.boxType == bt }
 
+// Peek returns []byte without advancing the reader. Is limited by the
+// constrains of the box.
 func (b *box) Peek(n int) ([]byte, error) {
 	if b.remain >= n {
 		if b.outer != nil {
@@ -36,6 +32,8 @@ func (b *box) Peek(n int) ([]byte, error) {
 	return nil, ErrRemainLengthInsufficient
 }
 
+// Discard advances the reader. Is limited by the
+// constrains of the box.
 func (b *box) Discard(n int) error {
 	if b.remain >= n {
 		b.remain -= n
@@ -47,16 +45,8 @@ func (b *box) Discard(n int) error {
 	return ErrRemainLengthInsufficient
 }
 
-func (b *box) adjust(n int) {
-	if n > b.remain {
-		n = b.remain
-	}
-	b.remain -= n
-	if b.outer != nil {
-		b.outer.adjust(n)
-	}
-}
-
+// Read the bytes from underlying reader. Is limited by the
+// constrains of the box
 func (b *box) Read(p []byte) (n int, err error) {
 	if b.remain >= len(p) {
 		//fmt.Println(b.remain)
@@ -65,6 +55,16 @@ func (b *box) Read(p []byte) (n int, err error) {
 		return n, err
 	}
 	return 0, ErrRemainLengthInsufficient
+}
+
+func (b *box) adjust(n int) {
+	if n > b.remain {
+		n = b.remain
+	}
+	b.remain -= n
+	if b.outer != nil {
+		b.outer.adjust(n)
+	}
 }
 
 func (b *box) close() error {
@@ -78,29 +78,30 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
 	}
-	// Read box size and box type
-	var buf []byte
-	if buf, err = b.Peek(16); err != nil {
+
+	buf, err := b.Peek(16)
+	if err != nil {
 		return inner, false, errors.Wrap(ErrBufLength, "readBox")
 	}
 	inner.reader = b.reader
 	inner.outer = b
+	inner.offset = int(b.size) - b.remain + b.offset
+	// Read box size and box type
 	inner.size = int64(bmffEndian.Uint32(buf[:4]))
 	inner.remain = int(inner.size)
 	inner.boxType = boxTypeFromBuf(buf[4:8])
-	inner.offset = int(b.size) - b.remain + b.offset
 
 	switch inner.size {
 	case 1:
 		// 1 means it's actually a 64-bit size, after the type.
 		inner.size = int64(bmffEndian.Uint64(buf[8:16]))
+		inner.remain = int(inner.size)
 		if inner.size < 0 {
 			// Go uses int64 for sizes typically, but BMFF uses uint64.
 			// We assume for now that nobody actually uses boxes larger
 			// than int64.
 			return inner, false, errors.Wrapf(errLargeBox, "readBox '%s'", inner.boxType)
 		}
-		inner.remain = int(inner.size)
 		return inner, true, inner.Discard(16)
 		//case 0:
 		// 0 means unknown & to read to end of file. No more boxes.
@@ -131,11 +132,19 @@ func (b *box) readUUID() (u meta.UUID, err error) {
 	return u, b.Discard(16)
 }
 
+// MarshalZerologObject is a zerolog interface for logging
+func (b box) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size)
+	if b.flags != 0 {
+		e.Object("flags", b.flags)
+	}
+}
+
 // BoxType is an ISOBMFF box
-type BoxType uint8
+type boxType uint8
 
 // String is Stringer interface for boxType
-func (t BoxType) String() string {
+func (t boxType) String() string {
 	str, ok := mapBoxTypeString[t]
 	if ok {
 		return str
@@ -143,11 +152,12 @@ func (t BoxType) String() string {
 	return "nnnn"
 }
 
-func boxTypeFromBuf(buf []byte) BoxType {
-	if string(buf[:4]) == "infe" { // inital check for performance reasons
+func boxTypeFromBuf(buf []byte) boxType {
+	str := string(buf[:4])
+	if str == "infe" { // inital check for performance reasons
 		return typeInfe
 	}
-	if b, ok := mapStringBoxType[string(buf)]; ok {
+	if b, ok := mapStringBoxType[str]; ok {
 		return b
 	}
 	if logLevelError() {
@@ -177,7 +187,7 @@ func (b *box) readFlagsFromBuf(buf []byte) {
 
 // Flags returns underlying Flags after removing version.
 // Flags are 24 bits.
-func (f flags) Flags() uint32 {
+func (f flags) flags() uint32 {
 	// Left Shift
 	f = f << 8
 	// Right Shift
@@ -185,23 +195,18 @@ func (f flags) Flags() uint32 {
 }
 
 // Version returns a uint8 version.
-func (f flags) Version() uint8 {
+func (f flags) version() uint8 {
 	return uint8(f >> 24)
-}
-
-// String is Stringer interface for Flags
-func (f flags) String() string {
-	return fmt.Sprintf("Flags:%d, Version:%d", f.Flags(), f.Version())
 }
 
 // MarshalZerologObject is a zerolog interface for logging
 func (f flags) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint8("version", f.Version()).Uint32("flags", f.Flags())
+	e.Uint8("version", f.version()).Uint32("flags", f.flags())
 }
 
 // Common box types.
 const (
-	typeUnknown BoxType = iota
+	typeUnknown boxType = iota
 	typeAuxC            // 'auxC'
 	typeAuxl            // 'auxl'
 	typeAv01            // 'av01'
@@ -273,7 +278,7 @@ const (
 	typeExif            // 'Exif
 )
 
-var mapStringBoxType = map[string]BoxType{
+var mapStringBoxType = map[string]boxType{
 	"auxC": typeAuxC,
 	"auxl": typeAuxl,
 	"av01": typeAv01,
@@ -345,7 +350,7 @@ var mapStringBoxType = map[string]BoxType{
 	"Exif": typeExif,
 }
 
-var mapBoxTypeString = map[BoxType]string{
+var mapBoxTypeString = map[boxType]string{
 	typeAuxC: "auxC",
 	typeAuxl: "auxl",
 	typeAv01: "av01",

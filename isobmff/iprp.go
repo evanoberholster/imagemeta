@@ -18,7 +18,7 @@ func readIprp(b *box) (err error) {
 			err = readIpco(&inner)
 		default:
 			if logLevelInfo() {
-				logInfoBox(inner)
+				logInfo().Object("box", inner).Send()
 			}
 		}
 		if err != nil && logLevelError() {

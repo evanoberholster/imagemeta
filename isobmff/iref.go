@@ -1,8 +1,6 @@
 package isobmff
 
 import (
-	"fmt"
-
 	"github.com/rs/zerolog"
 )
 
@@ -41,13 +39,4 @@ func readIref(b *box) (err error) {
 		}
 	}
 	return b.close()
-}
-
-func (b *box) peekRemainingBox() {
-	buf, err := b.Peek(b.remain)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(buf, len(buf))
-	fmt.Println(string(buf))
 }

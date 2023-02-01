@@ -60,14 +60,16 @@ func (r *Reader) readIloc(b *box) (err error) {
 		return
 	}
 
-	ilb.items = make([]ilocEntry, 0, ilb.count)
+	if optionSpeed == 0 {
+		ilb.items = make([]ilocEntry, 0, ilb.count)
+	}
 
 	for i := 0; i < len(buf); {
 		var ent ilocEntry
 		ent.id = itemID(bmffEndian.Uint16(buf[i : i+2]))
 		i += 2
 
-		if b.flags.Version() > 0 { // version 1
+		if b.flags.version() > 0 { // version 1
 			cmeth := bmffEndian.Uint16(buf[i : i+2])
 			ent.constructionMethod = byte(cmeth & 15)
 			i += 2
@@ -93,8 +95,10 @@ func (r *Reader) readIloc(b *box) (err error) {
 				ent.firstExtent = ol
 			}
 		}
+		if optionSpeed == 0 {
+			ilb.items = append(ilb.items, ent)
+		}
 		if logLevelDebug() {
-			//ilb.items = append(ilb.items, ent)
 			logBoxExt(nil, zerolog.DebugLevel).Object("entry", ent).Send()
 		}
 
@@ -119,7 +123,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if b.flags.Version() > 0 { // version 1
+	if b.flags.version() > 0 { // version 1
 		ilb.indexSize = buf[1] & 15
 	}
 	ilb.count = bmffEndian.Uint16(buf[2:4])

@@ -7,7 +7,7 @@ type block [64]uint32
 var data []uint32
 var offset uint32
 
-func build(o map[string]BoxType) {
+func build(o map[string]boxType) {
 	data = make([]uint32, 64)
 	for str, _ := range o {
 		v := hash(str[0])
@@ -37,4 +37,13 @@ var hashMap = [256]uint8{
 	26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 0, 0, 0, 0, 0,
 	0, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
 	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 0, 0, 0, 0, 0,
+}
+
+func (b *box) peekRemainingBox() {
+	buf, err := b.Peek(512)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(buf, len(buf))
+	fmt.Println(string(buf))
 }

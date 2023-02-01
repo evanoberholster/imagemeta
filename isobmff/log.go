@@ -40,11 +40,28 @@ func logErrorMsg(key string, format string, args ...interface{}) {
 	Logger.Error().AnErr(key, errors.Errorf(format, args...)).Send()
 }
 
-func logInfoBox(b box) {
-	ev := Logger.Info()
-	b.log(ev)
+func logInfo() *zerolog.Event {
+	ev := Logger.WithLevel(zerolog.InfoLevel)
 	logTraceFunction(ev)
-	ev.Send()
+	return ev
+}
+
+func logDebug() *zerolog.Event {
+	ev := Logger.WithLevel(zerolog.DebugLevel)
+	logTraceFunction(ev)
+	return ev
+}
+
+func logError() *zerolog.Event {
+	ev := Logger.WithLevel(zerolog.ErrorLevel)
+	logTraceFunction(ev)
+	return ev
+}
+
+func logExt(level zerolog.Level) *zerolog.Event {
+	ev := Logger.WithLevel(level)
+	logTraceFunction(ev)
+	return ev
 }
 
 func logBoxExt(b *box, level zerolog.Level) *zerolog.Event {

@@ -17,8 +17,8 @@ func init() {
 func BenchmarkCR3(b *testing.B) {
 	dir := "../../test/img/"
 	//f, err := os.Open(dir + "/" + "CanonR6_1.CR3")
-	f, err := os.Open(dir + "/" + "CanonR6_1.HIF")
-	//f, err := os.Open(dir + "/" + "iPhone13.heic")
+	//f, err := os.Open(dir + "/" + "CanonR6_1.HIF")
+	f, err := os.Open(dir + "/" + "iPhone13.heic")
 	//f, err := os.Open("../cmd/3.CR3")
 	if err != nil {
 		panic(err)
@@ -38,6 +38,9 @@ func BenchmarkCR3(b *testing.B) {
 		if err := r.ReadMetadata(); err != nil {
 			b.Fatal(err)
 		}
+		if err := r.ReadMetadata(); err != nil {
+			b.Fatal(err)
+		}
 
 	}
 
@@ -52,49 +55,3 @@ func BenchmarkCR3(b *testing.B) {
 // BenchmarkCR3-12    	 1029416	      1160 ns/op	     124 B/op	       0 allocs/op
 // BenchmarkCR3-12    	 1456377	       783.9 ns/op	      88 B/op	       0 allocs/op
 // BenchmarkFTYP-12    	 9032180	       135.2 ns/op	      14 B/op	       0 allocs/op
-
-func BenchmarkLookup(b *testing.B) {
-	//str := mapBoxTypeString[typeCCDT]
-	for i := 0; i < b.N; i++ {
-		for str, _ := range mapStringBoxType {
-			_ = mapStringBoxType[str]
-			//_ = cnv2(str)
-		}
-
-	}
-}
-
-func BenchmarkLookup2(b *testing.B) {
-	data := map[uint32]BoxType{}
-	for bt, str := range mapBoxTypeString {
-		data[cnv(str)] = bt
-	}
-	//str := mapBoxTypeString[typeCCDT]
-	for i := 0; i < b.N; i++ {
-		for str, _ := range mapStringBoxType {
-			_ = data[cnv(str)]
-		}
-	}
-}
-
-func cnv(str string) uint32 {
-	return uint32(str[3]) | uint32(str[2])<<8 | uint32(str[1])<<16 | uint32(str[0])<<24
-}
-
-func cnv2(str string) BoxType {
-	if str[:4] == "infe" { // inital check for performance reasons
-		return typeInfe
-	}
-	if b, ok := mapStringBoxType[str]; ok {
-		return b
-	}
-	if logLevelError() {
-		logErrorMsg("BoxType", "error BoxType '%s' unknown", []byte(str))
-	}
-	return typeUnknown
-}
-
-func TestBuild(t *testing.T) {
-	build(mapStringBoxType)
-	panic("test")
-}

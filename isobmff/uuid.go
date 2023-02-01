@@ -19,34 +19,6 @@ var uuidMap = map[meta.UUID]string{
 	CR3XPacketUUID: "CR3XPacketUUID",
 }
 
-func (r *Reader) ReadUUIDBox() error {
-	b, err := r.readBox()
-	if err != nil {
-		return errors.Wrapf(err, "ReadMOOVBox")
-	}
-	if !b.isType(typeUUID) {
-		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
-	}
-	uuid, err := b.readUUID()
-	if err != nil {
-		return err
-	}
-	if logLevelInfo() {
-		logBoxExt(&b, zerolog.InfoLevel).Str("uuid", uuid.String()).Send()
-	}
-	switch uuid {
-	case CR3XPacketUUID:
-		if r.XMPReader != nil {
-			if err = r.XMPReader(&b); err != nil {
-				b.close()
-				return err
-			}
-		}
-	}
-	b.close()
-	return err
-}
-
 func (r *Reader) readUUIDBox(b *box) error {
 	if !b.isType(typeUUID) {
 		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
