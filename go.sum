@@ -1,3 +1,7 @@
+github.com/766b/go-outliner v0.0.0-20180511142203-fc6edecdadd7 h1:cJXisB2yAM61AzMutv7X+KM8F3xVLxGH99S8VmaSlps=
+github.com/766b/go-outliner v0.0.0-20180511142203-fc6edecdadd7/go.mod h1:1SzhThoS5lcKfE4IFOLQJ04WCmFpaAiPe8H9yqXyYSU=
+github.com/cespare/mph v0.1.0 h1:KpCEuVK6/XgGx0/5V5yFG2kVjUli4pneJ9zRFH2800E=
+github.com/cespare/mph v0.1.0/go.mod h1:Qfn9fLJCFidq4ldleQbOX6xDJCK7f3qFVUUtJBYMju8=
 github.com/coreos/go-systemd/v22 v22.3.3-0.20220203105225-a9a7ef127534/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

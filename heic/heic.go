@@ -6,8 +6,9 @@ import (
 	"io"
 
 	"github.com/evanoberholster/imagemeta/bmff"
-	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/pkg/errors"
 )
 
@@ -87,7 +88,6 @@ func (hm *Metadata) itemByType(it bmff.ItemType) (item Item, err error) {
 
 // ReadXmpHeader reads Xmp Header from the Heic Metadata and returns an Xmp Header.
 // If an error occurs returns the error.
-//
 func (hm *Metadata) ReadXmpHeader(r meta.Reader) (header meta.XmpHeader, err error) {
 	item, err := hm.itemByType(bmff.ItemTypeMime)
 	if err != nil {
@@ -99,7 +99,6 @@ func (hm *Metadata) ReadXmpHeader(r meta.Reader) (header meta.XmpHeader, err err
 
 // ReadExifHeader reads Exif Header from the Heic Metadata and returns an Exif Header.
 // If an error occurs returns the error.
-//
 func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err error) {
 	item, err := hm.itemByType(bmff.ItemTypeExif)
 	if err != nil {
@@ -123,7 +122,7 @@ func (hm *Metadata) ReadExifHeader(r meta.Reader) (header meta.ExifHeader, err e
 	if _, err = r.Read(buf[:8]); err != nil {
 		return
 	}
-	byteOrder := meta.BinaryOrder(buf[10:14])
+	byteOrder := utils.BinaryOrder(buf[10:14])
 	firstIfdOffset := byteOrder.Uint32(buf[14:18])
 	tiffHeaderOffset := int64(offset) + 10
 	hm.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, uint32(tiffHeaderOffset), uint32(length), hm.It)

@@ -9,6 +9,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
 )
 
 // Common Errors
@@ -99,6 +100,11 @@ func NewExifHeader(byteOrder utils.ByteOrder, firstIfdOffset, tiffHeaderOffset u
 		ExifLength:       exifLength,
 		ImageType:        imageType,
 	}
+}
+
+// MarshalZerologObject is a zerolog interface for logging
+func (h ExifHeader) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("FirstIfd", h.FirstIfd.String()).Uint32("FirstIfdOffset", h.FirstIfdOffset).Uint32("TiffHeaderOffset", h.TiffHeaderOffset).Uint32("ExifLength", h.ExifLength).Str("Endian", h.ByteOrder.String()).Str("ImageType", h.ImageType.String())
 }
 
 // XmpHeader is an XMP header of an image file.

@@ -1,10 +1,16 @@
 package imagemeta
 
 import (
+	"bufio"
 	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/evanoberholster/imagemeta/exif2"
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/isobmff"
+	"github.com/evanoberholster/imagemeta/tiff"
 )
 
 var (
@@ -32,7 +38,7 @@ var (
 	}
 )
 
-func BenchmarkImageMetaCR3(b *testing.B) {
+func BenchmarkCR3(b *testing.B) {
 	for _, bm := range benchmarkCR3 {
 		b.Run(bm.name, func(b *testing.B) {
 			f, err := os.Open(dir + bm.fileName)
@@ -123,15 +129,6 @@ var (
 	}
 )
 
-// BenchmarkImageMeta/.CR2/GPS-12         	   78484	     17255 ns/op	   10218 B/op	      22 allocs/op
-// BenchmarkImageMeta/.CR2/7D-12          	   53593	     18817 ns/op	   10216 B/op	      21 allocs/op
-// BenchmarkImageMeta/.CR3-12             	   87937	     15560 ns/op	    9236 B/op	      21 allocs/op
-// BenchmarkImageMeta/.JPG/GPS-12         	  110964	     10347 ns/op	     280 B/op	       4 allocs/op
-// BenchmarkImageMeta/.JPG/GoPro6-12      	  164203	      7023 ns/op	     280 B/op	       4 allocs/op
-// BenchmarkImageMeta/.NEF/Nikon-12       	   58136	     23389 ns/op	   10241 B/op	      23 allocs/op
-// BenchmarkImageMeta/.NEF/Nikon#01-12    	   49773	     23771 ns/op	   10243 B/op	      23 allocs/op
-// BenchmarkImageMeta/.RW2/Panasonic-12   	   51008	     20251 ns/op	    4556 B/op	      15 allocs/op
-
 func BenchmarkTiff(b *testing.B) {
 	for _, bm := range benchmarksTiff {
 		b.Run(bm.name, func(b *testing.B) {
@@ -159,18 +156,6 @@ func BenchmarkTiff(b *testing.B) {
 		})
 	}
 }
-
-//BenchmarkScanTiff200/.CR2/GPS         	 1422090	       831 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.CR2/7D          	 1672982	       724 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.CR3             	  300817	      4007 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.JPG/GPS         	 1371778	       924 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.HEIC            	   19898	     67681 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.GoPro/6         	 1362571	       926 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.NEF/Nikon       	 1599162	       758 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.ARW/Sony        	 1687218	       693 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.WEBP/Webp       	     621	   1740838 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.DNG/Adobe       	 1743273	       689 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkScanTiff200/.JPG/NoExif      	     398	   3031075 ns/op	       0 B/op	       0 allocs/op
 
 func BenchmarkJPEG(b *testing.B) {
 	for _, bm := range benchmarksJPEG {
@@ -213,17 +198,50 @@ func BenchmarkHeif(b *testing.B) {
 				b.Fatal(err)
 			}
 			r := bytes.NewReader(buf)
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				r.Seek(0, 0)
-				_, err = DecodeHeif(r)
-				if err != nil {
-					if err != ErrNoExif {
-						b.Error(err)
+
+			b.Run("Tiff", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					r.Seek(0, 0)
+					rr := readerPool.Get().(*bufio.Reader)
+					rr.Reset(r)
+
+					ir := exif2.NewIfdReader(rr)
+
+					it, err := imagetype.ScanBuf(rr)
+					if err != nil {
+						b.Fatal(err)
 					}
+					header, err := tiff.ScanTiffHeader(rr, it)
+					if err != nil {
+						b.Fatal(err)
+					}
+					if err := ir.DecodeTiff(r, header); err != nil {
+						b.Fatal(err)
+					}
+					ir.Close()
+					readerPool.Put(rr)
 				}
-			}
+			})
+			b.Run("BMFF", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					r.Seek(0, 0)
+					ir := exif2.NewIfdReader(r)
+
+					br := isobmff.NewReader(r)
+					br.ExifReader = ir.DecodeIfd
+					if err := br.ReadFTYP(); err != nil {
+						panic(err)
+					}
+					if err := br.ReadMetadata(); err != nil {
+						panic(err)
+					}
+					if err := br.ReadMetadata(); err != nil {
+						panic(err)
+					}
+					ir.Close()
+					br.Close()
+				}
+			})
 		})
 	}
 }
