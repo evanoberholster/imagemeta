@@ -36,7 +36,7 @@ func Decode(r io.ReadSeeker) (Exif, error) {
 func (ir *ifdReader) DecodeTiff(_ io.Reader, h meta.ExifHeader) error {
 	ir.buffer.clear()
 	// Log Header Info
-	if ir.logInfo() {
+	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
 	ir.Exif.ImageType = h.ImageType
@@ -44,19 +44,19 @@ func (ir *ifdReader) DecodeTiff(_ io.Reader, h meta.ExifHeader) error {
 	if err := ir.discard(int(h.FirstIfdOffset)); err != nil {
 		return err
 	}
-	return ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset)))
+	return ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset))
 }
 
 func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) error {
 	// Log Header Info
-	if ir.logInfo() {
+	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
 	ir.buffer.clear()
 	ir.reader = r
 	ir.exifLength = h.ExifLength
-	ir.discard(int(h.FirstIfdOffset))
-	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset))); err != nil {
+	ir.discard(int(h.FirstIfdOffset)) // add error
+	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset)); err != nil {
 		return err
 	}
 	err := ir.discard(int(ir.exifLength) - int(ir.po))
@@ -65,7 +65,7 @@ func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) error {
 
 func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
 	// Log Header Info
-	if ir.logInfo() {
+	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
 	ir.buffer.clear()
@@ -73,7 +73,7 @@ func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
 	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
 	ir.po = h.FirstIfdOffset
-	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset))); err != nil {
+	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset)); err != nil {
 		return err
 	}
 	return ir.discard(int(ir.exifLength) - int(ir.po))
@@ -91,6 +91,7 @@ func NewIfdReader(r io.Reader) ifdReader {
 }
 
 func (ir *ifdReader) ResetReader(r io.Reader) {
+	ir.buffer.clear()
 	ir.reader = r
 }
 
@@ -113,15 +114,15 @@ type ifdReader struct {
 
 func (ir *ifdReader) ReadIfd0(header meta.ExifHeader) error {
 	// Log Header Info
-	if ir.logInfo() {
-		ir.logger.Info().Str("imageType", header.ImageType.String()).Uint32("tiffHeader", header.TiffHeaderOffset).Uint32("firstIfdOffset", header.FirstIfdOffset).Send()
+	if ir.logLevelInfo() {
+		ir.logInfo().Object("header", header).Send()
 	}
 
 	ir.firstIfdOffset = header.FirstIfdOffset
 	ir.tiffHeaderOffset = header.TiffHeaderOffset
 	ir.po = header.FirstIfdOffset
 
-	return ir.readIfd(ifds.NewIFD(header.ByteOrder, ifds.IfdType(header.FirstIfd), 0, tag.Offset(ir.tiffHeaderOffset)))
+	return ir.readIfd(ifds.NewIFD(header.ByteOrder, ifds.IfdType(header.FirstIfd), 0, ir.tiffHeaderOffset))
 }
 
 func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
@@ -131,42 +132,77 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
 	var tagCount uint16
 	if tagCount, err = ir.readUint16(ifd); err != nil || tagCount > 256 {
 		// Log Ifd Reading error
-		ir.logger.Error().Err(err).Str("Ifd", ifd.Type.String()).Uint32("offset", ir.po).Msgf("error tag count: %d for %s", tagCount, ifd.String())
+		ir.logError(err).Object("ifd", ifd).Uint32("readerOffset", ir.po).Msgf("error tag count: %d for %s", tagCount, ifd.String())
 		return err
 	}
 
 	// Log Ifd Info
-	if ir.logInfo() {
-		ir.logger.Info().Str("ifd", ifd.Type.String()).Int8("IfdIndex", ifd.Index).Stringer("offset", ifd.Offset).Uint16("tagCount", tagCount).Send()
+	if ir.logLevelInfo() {
+		ir.logInfo().Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
 	}
 
 	// read Tag Headers
 	var t tag.Tag
-	for i := 0; i < int(tagCount); i++ {
-		if t, err = ir.readTagHeader(ifd); err != nil {
-			// Log Ifd Reading error
-			if err == tag.ErrTagTypeNotValid {
-				if ir.logInfo() {
-					ir.logger.Debug().Err(err).Stringer("id", t.ID).Stringer("ifd", ifd.Type).Stringer("offset", t.ValueOffset).Uint16("type", uint16(t.Type())).Send()
-				}
-				continue
-			}
-			ir.logger.Error().Err(err).Stringer("id", t.ID).Stringer("ifd", ifd.Type).Stringer("offset", t.ValueOffset).Stringer("type", t.Type()).Send()
-			return err
-		}
-		if t.IsEmbedded() {
-			ir.processTag(t)
-		} else {
-			ir.addTagBuffer(t)
-		}
 
-		// Log Tag Info
-		ir.logTagInfo(t)
+	if br, ok := ir.reader.(BufferReader); ok {
+		headerLength := uint32(tagCount) * 12
+		buf, err := br.Peek(int(headerLength))
+		if err != nil {
+			if ir.logLevelError() {
+				logTag(ir.logError(err), t).Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
+			}
+		}
+		for i := 0; i < int(headerLength); i += 12 {
+			if t, err = tagFromBuffer(ifd, buf[i:i+12]); err != nil && ir.logLevelWarn() {
+				logTag(ir.logWarn().Err(err), t).Send()
+			}
+			if t.IsEmbedded() {
+				ir.processTag(t)
+			} else {
+				ir.addTagBuffer(t)
+			}
+
+			// Log Tag Info
+			ir.logTagInfo(t)
+		}
+		if _, err = br.Discard(len(buf)); err != nil && ir.logLevelInfo() {
+			ir.logError(err).Msg("Discard error")
+		}
+		ir.po += uint32(len(buf))
+	} else {
+		for i := 0; i < int(tagCount); i++ {
+			if t, err = ir.readTagHeader(ifd); err != nil {
+				// Log Ifd Reading error
+				if err == tag.ErrTagTypeNotValid {
+					if ir.logLevelWarn() {
+						ir.logWarn().Err(err).Object("tag", t).Send()
+					}
+					continue
+				}
+				if ir.logLevelError() {
+					ir.logError(err).Object("tag", t).Object("ifd", ifd).Send()
+				}
+				return err
+			}
+			if t.IsEmbedded() {
+				ir.processTag(t)
+			} else {
+				ir.addTagBuffer(t)
+			}
+
+			// Log Tag Info
+			ir.logTagInfo(t)
+		}
 	}
 
 	// read Next Ifd Tag
-	err = ir.readNextIfdTag(ifd)
-	return err
+	return ir.readNextIfdTag(ifd)
+}
+
+type BufferReader interface {
+	Peek(n int) ([]byte, error)
+	Discard(n int) (discarded int, err error)
+	Read(p []byte) (n int, err error)
 }
 
 func (ir *ifdReader) readNextIfdTag(ifd ifds.Ifd) error {
@@ -174,7 +210,9 @@ func (ir *ifdReader) readNextIfdTag(ifd ifds.Ifd) error {
 	if uint32(ir.buffer.nextTag().ValueOffset) <= ir.po+tag.TypeLongSize {
 		var nextIfd uint32
 		if nextIfd, err = ir.readUint32(ifd); err != nil {
-			ir.logger.Error().Err(err).Str("ifd", ifd.Type.String()).Uint32("offset", ir.po).Msgf("error reading nextIFD. Offset: %d Ifd: %s", ir.po, ifd.String())
+			if ir.logLevelError() {
+				ir.logError(err).Object("ifd", ifd).Uint32("offset", ir.po).Msgf("error reading nextIFD. Offset: %d Ifd: %s", ir.po, ifd.String())
+			}
 			return err
 		}
 		if ifd.IsType(ifds.IFD0) && nextIfd != 0 {
@@ -195,23 +233,15 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 
 	for t := ir.buffer.currentTag(); ir.buffer.validTag(); t = ir.buffer.advanceBuffer() {
 		if t.IsType(tag.TypeIfd) {
-			// parse to location
-			discard := int(t.ValueOffset) - int(ir.po)
-			if err := ir.discard(discard); err != nil {
-				ir.logger.Error().Err(err).Stringer("ifd", t.Type()).Uint16("ifdIndex", uint16(t.IfdIndex)).Uint32("discard", uint32(discard)).Send()
-				return nil
-			}
-			// Reset tagbuffer position to 0
-			ir.buffer.resetPosition()
+			ir.seekNextTag(t)         // seek to next tag value
+			ir.buffer.resetPosition() // Reset tagbuffer position to 0
 			switch ifds.IfdType(t.Ifd) {
 			case ifds.IFD0:
 				switch t.ID {
 				case ifds.SubIFDs:
 					//ir.parseIfdHeader(ifd.ChildIfd(t)) // ignore errors from SubIfds
-					//fmt.Println(ir.buffer.tag[ir.buffer.pos:ir.buffer.len])
 				case ifds.GPSTag, ifds.ExifTag:
 					ir.parseIfdHeader(ifds.ChildIfd(t)) // ignore errors from GPSIfd and ExifIfd
-					//fmt.Println(ir.buffer.tag[ir.buffer.pos:ir.buffer.len])
 				default:
 					// Log Tag Info
 
@@ -269,14 +299,31 @@ func (ir *ifdReader) readTagHeader(ifd ifds.Ifd) (tag.Tag, error) {
 	unitCount := ifd.ByteOrder.Uint32(ir.buffer.buf[4:8])         // UnitCount
 	valueOffset := ifd.ByteOrder.Uint32(ir.buffer.buf[8:12])      // ValueOffset
 
-	tagType = tagIsIfd(ifd, tagID, tagType)
-	return tag.NewTag(tagID, tagType, unitCount, valueOffset, uint8(ifd.Type), ifd.Index, ifd.ByteOrder) // NewTag
+	return tag.NewTag(tagID, tagIsIfd(ifd.Type, tagID, tagType), unitCount, valueOffset, uint8(ifd.Type), ifd.Index, ifd.ByteOrder) // NewTag
 }
 
-func tagIsIfd(ifd ifds.Ifd, tagID tag.ID, tagType tag.Type) tag.Type {
-	if tagType.Is(tag.TypeLong) {
-		// RootIfd Children
-		if ifd.IsType(ifds.IFD0) {
+func tagFromBuffer(ifd ifds.Ifd, buf []byte) (t tag.Tag, err error) {
+	tagID := tag.ID(ifd.ByteOrder.Uint16(buf[:2])) // TagID
+	tagType := tagIsIfd(ifd.Type, tagID, tag.Type(ifd.ByteOrder.Uint16(buf[2:4])))
+	t = tag.Tag{
+		ID:          tagID,
+		TagType:     tagType,                         // TagType
+		UnitCount:   ifd.ByteOrder.Uint32(buf[4:8]),  // UnitCount
+		ValueOffset: ifd.ByteOrder.Uint32(buf[8:12]), // ValueOffset
+		Ifd:         uint8(ifd.Type),
+		IfdIndex:    ifd.Index,
+		ByteOrder:   ifd.ByteOrder,
+	}
+	if !t.TagType.IsValid() {
+		err = tag.ErrTagTypeNotValid
+	}
+	return t, err
+}
+
+func tagIsIfd(ifdType ifds.IfdType, tagID tag.ID, tagType tag.Type) tag.Type {
+	if tagType.Is(tag.TypeLong) || tagType.Is(tag.TypeUndefined) {
+		switch ifdType {
+		case ifds.IFD0: // RootIfd Children
 			switch tagID {
 			case ifds.ExifTag:
 				return tag.TypeIfd
@@ -285,11 +332,7 @@ func tagIsIfd(ifd ifds.Ifd, tagID tag.ID, tagType tag.Type) tag.Type {
 			case ifds.SubIFDs:
 				return tag.TypeIfd
 			}
-		}
-	}
-	if tagType.Is(tag.TypeUndefined) {
-		// ExifIfd Children
-		if ifd.IsType(ifds.ExifIFD) {
+		case ifds.ExifIFD: // ExifIfd Children
 			switch tagID {
 			case exififd.MakerNote:
 				return tag.TypeIfd

@@ -1,7 +1,6 @@
 package exif2
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 	"sync"
@@ -59,8 +58,7 @@ func (ir *ifdReader) readTagValue() ([]byte, error) {
 		return nil, err
 	}
 	//
-	br, ok := ir.reader.(*bufio.Reader)
-	if ok {
+	if br, ok := ir.reader.(BufferReader); ok {
 		buf, err := br.Peek(int(t.Size()))
 		if err != nil {
 			panic(err)
@@ -74,20 +72,31 @@ func (ir *ifdReader) readTagValue() ([]byte, error) {
 	return ir.buffer.buf[:n], err
 }
 
+func (ir *ifdReader) seekNextTag(t tag.Tag) (err error) {
+	discard := int(t.ValueOffset) - int(ir.po)
+	if err = ir.discard(discard); err != nil {
+		if ir.logLevelError() {
+			ir.logError(err).Object("tag", t).Uint32("discard", uint32(discard)).Send()
+		}
+	}
+	return
+}
+
 // resetPosition resets the tag buffer to only include unread tags
 func (b *buffer) resetPosition() {
 	if b.pos > 0 {
 		copy(b.tag[:b.len-b.pos], b.tag[b.pos:b.len])
 		b.len -= b.pos
 		b.pos = 0
-		//fmt.Println("Position: ", ir.po, ir.tagBuf.pos, ir.tagBuf.len)
 	}
 }
 
 // addTagBuffer adds the given tag to the tagBuffer
 func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 	if uint32(t.ValueOffset) < ir.po {
-		ir.logTagWarn(t, "Incompatible reverse exif tag")
+		if ir.logLevelWarn() {
+			logTag(ir.logWarn(), t).Uint32("readerOffset", ir.po).Msg("Incompatible reverse exif tag")
+		}
 		return
 	}
 	b := ir.buffer
@@ -114,8 +123,8 @@ func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 			return
 		}
 	}
-	if ir.logError() {
-		ir.logger.Error().Int32("tagBufferLength", tagMaxCount).Msg("error tagBufferMaxLength is too short")
+	if ir.logLevelWarn() {
+		ir.logWarn().Int32("tagBufferLength", tagMaxCount).Msg("error tagBufferMaxLength is too short")
 	}
 }
 
@@ -126,6 +135,11 @@ func (ir *ifdReader) discard(n int) error {
 	}
 	if int(ir.exifLength) < n+int(ir.po) {
 		n = int(ir.exifLength) - int(ir.po)
+	}
+	if br, ok := ir.reader.(BufferReader); ok {
+		n, err := br.Discard(n)
+		ir.po += uint32(n)
+		return err
 	}
 	var discarded int
 	var err error
@@ -149,17 +163,6 @@ func (b *buffer) clear() {
 	b.len = 0
 	b.pos = 0
 }
-
-// discard, discards the given amount from ir.Reader
-//func (ir *ifdReader) discard2(n int) error {
-//	if n == 0 {
-//		return nil
-//	}
-//
-//	discarded, err := io.CopyN(io.Discard, ir.reader, int64(n))
-//	ir.po += uint32(discarded)
-//	return err
-//}
 
 // String is the stringer interface for buffer
 func (b *buffer) String() string {
