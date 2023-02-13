@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
 )
 
 // Errors
@@ -23,20 +24,12 @@ func (id ID) String() string {
 	return fmt.Sprintf("0x%04x", uint16(id))
 }
 
-// Offset is the uint32 representation of a tag's Offset
-type Offset uint32
-
-// String is the Stringer interface for ID
-func (o Offset) String() string {
-	return fmt.Sprintf("0x%04x", uint32(o))
-}
-
-// Tag is an Exif Tag (16bytes)
+// Tag is an Exif Tag (16 bytes)
 type Tag struct {
-	ValueOffset Offset          // 4 bytes
+	ValueOffset uint32          // 4 bytes
 	UnitCount   uint32          // 4 bytes
 	ID          ID              // 2 bytes
-	t           Type            // 1 byte
+	TagType     Type            // 1 byte
 	Ifd         uint8           // 1 byte
 	IfdIndex    int8            // 1 byte
 	ByteOrder   utils.ByteOrder // 1 byte
@@ -47,9 +40,9 @@ type Tag struct {
 func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex int8, byteOrder utils.ByteOrder) (Tag, error) {
 	t := Tag{
 		ID:          tagID,
-		t:           tagType,
+		TagType:     tagType,
 		UnitCount:   unitCount,
-		ValueOffset: Offset(valueOffset),
+		ValueOffset: valueOffset,
 		Ifd:         ifd,
 		IfdIndex:    ifdIndex,
 		ByteOrder:   byteOrder,
@@ -60,9 +53,14 @@ func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd ui
 	return t, nil
 }
 
+// MarshalZerologObject is a zerolog interface for logging
+func (t Tag) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("id", t.ID.String()).Str("type", t.TagType.String()).Uint32("count", t.UnitCount).Str("offset", fmt.Sprintf("0x%04x", t.ValueOffset))
+}
+
 // String is the Stringer interface for Tag
 func (t Tag) String() string {
-	return fmt.Sprintf("%s\t | %s | Size: %d", t.ID, t.t, t.UnitCount)
+	return fmt.Sprintf("%s\t | %s | Size: %d", t.ID, t.TagType, t.UnitCount)
 }
 
 // EmbeddedValue fills the buf with the tag's embedded value, always <= 4 bytes
@@ -72,27 +70,27 @@ func (t Tag) EmbeddedValue(buf []byte) {
 
 // IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset
 func (t Tag) IsEmbedded() bool {
-	return t.Size() <= 4 && t.t != TypeIfd
+	return t.Size() <= 4 && t.TagType != TypeIfd
 }
 
 // IsIfd checks if the Tag's value is an IFD
 func (t Tag) IsIfd() bool {
-	return t.t == TypeIfd
+	return t.TagType == TypeIfd
 }
 
 // Size returns the size of the Tag's value
 func (t Tag) Size() uint32 {
-	return uint32(t.t.Size()) * uint32(t.UnitCount)
+	return uint32(t.TagType.Size()) * uint32(t.UnitCount)
 }
 
 // Type returns the type of Tag
 func (t Tag) Type() Type {
-	return t.t
+	return t.TagType
 }
 
 // IsType returns true if tagType matches query Type
 func (t Tag) IsType(ty Type) bool {
-	return t.t == ty
+	return t.TagType == ty
 }
 
 // Is returns true if tagType matches query Type

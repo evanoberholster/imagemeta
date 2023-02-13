@@ -73,7 +73,7 @@ func TestTag(t *testing.T) {
 	if tag.ID != ID(0x0010) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.ID)
 	}
-	if tag.Type() != TypeASCII || !tag.IsType(TypeASCII) || !tag.t.Is(TypeASCII) {
+	if tag.Type() != TypeASCII || !tag.IsType(TypeASCII) || !tag.TagType.Is(TypeASCII) {
 		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.Type())
 	}
 	if tag.UnitCount != 16 {
@@ -101,22 +101,17 @@ func TestTag(t *testing.T) {
 	if err != ErrTagTypeNotValid {
 		t.Errorf("Incorrect error wanted %s, got %s", ErrTagTypeNotValid, err)
 	}
-	tag.t = TypeIfd
+	tag.TagType = TypeIfd
 	tag.UnitCount = 1
 	if !tag.IsIfd() {
-		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeIfd, tag.Type())
+		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeIfd, tag.TagType)
 	}
 	if tag.Type().String() != "IFD" {
-		t.Errorf("Incorrect Tag String wanted %s got %s", "IFD", tag.Type().String())
+		t.Errorf("Incorrect Tag String wanted %s got %s", "IFD", tag.TagType.String())
 	}
 	if tag.Size() != TypeIfdSize {
 		t.Errorf("Incorrect Tag Size wanted %d got %d", TypeIfdSize, tag.Size())
 	}
-	offsetStr := "0x0002"
-	if offsetStr != tag.ValueOffset.String() {
-		t.Errorf("Incorrect Tag Offset String wanted %s got %s", offsetStr, tag.ValueOffset.String())
-	}
-
 	bufVal := [4]byte{2, 0, 0, 0}
 	var buf [4]byte
 	tag.EmbeddedValue(buf[:])
