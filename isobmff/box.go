@@ -34,7 +34,7 @@ func (b *box) Peek(n int) ([]byte, error) {
 
 // Discard advances the reader. Is limited by the
 // constrains of the box.
-func (b *box) Discard(n int) error {
+func (b *box) Discard(n int) (int, error) {
 	if b.remain >= n {
 		b.remain -= n
 		if b.outer != nil {
@@ -42,7 +42,7 @@ func (b *box) Discard(n int) error {
 		}
 		return b.reader.discard(n)
 	}
-	return ErrRemainLengthInsufficient
+	return 0, ErrRemainLengthInsufficient
 }
 
 // Read the bytes from underlying reader. Is limited by the
@@ -71,7 +71,8 @@ func (b *box) close() error {
 	if b.remain == 0 {
 		return nil
 	}
-	return b.Discard(b.remain)
+	_, err := b.Discard(b.remain)
+	return err
 }
 
 func (b *box) readInnerBox() (inner box, next bool, err error) {
@@ -102,13 +103,15 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 			// than int64.
 			return inner, false, errors.Wrapf(errLargeBox, "readBox '%s'", inner.boxType)
 		}
-		return inner, true, inner.Discard(16)
+		_, err = inner.Discard(16)
+		return inner, true, err
 		//case 0:
 		// 0 means unknown & to read to end of file. No more boxes.
 		// r.noMoreBoxes = true
 		// TODO: error
 	}
-	return inner, true, inner.Discard(8)
+	_, err = inner.Discard(8)
+	return inner, true, err
 }
 
 // readUint16 from box
@@ -117,7 +120,8 @@ func (b *box) readUint16() (uint16, error) {
 	if err != nil {
 		return 0, errors.Wrap(ErrBufLength, "readUint16")
 	}
-	return bmffEndian.Uint16(buf[:2]), b.Discard(2)
+	_, err = b.Discard(2)
+	return bmffEndian.Uint16(buf[:2]), err
 }
 
 // readUUID reads a 16 byte UUID from the box.
@@ -129,7 +133,8 @@ func (b *box) readUUID() (u meta.UUID, err error) {
 	if err = u.UnmarshalBinary(buf); err != nil {
 		return u, err
 	}
-	return u, b.Discard(16)
+	_, err = b.Discard(16)
+	return u, err
 }
 
 // MarshalZerologObject is a zerolog interface for logging
@@ -178,7 +183,8 @@ func (b *box) readFlags() error {
 		return errors.Wrap(ErrBufLength, "readFlags")
 	}
 	b.readFlagsFromBuf(buf)
-	return b.Discard(4)
+	_, err = b.Discard(4)
+	return err
 }
 
 func (b *box) readFlagsFromBuf(buf []byte) {

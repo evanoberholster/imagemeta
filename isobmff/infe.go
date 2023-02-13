@@ -1,9 +1,9 @@
 package isobmff
 
-// ItemType
-
+// itemType
 type itemType uint8
 
+// itemTypes
 const (
 	itemTypeUnknown itemType = iota
 	itemTypeInfe
@@ -15,26 +15,7 @@ const (
 	itemTypeExif
 )
 
-var mapItemType = map[string]itemType{
-	"infe": itemTypeInfe,
-	"mime": itemTypeMime,
-	"uri ": itemTypeURI,
-	"av01": itemTypeAv01,
-	"hvc1": itemTypeHvc1,
-	"grid": itemTypeGrid,
-	"Exif": itemTypeExif,
-}
-
-var mapItemTypeString = map[itemType]string{
-	itemTypeInfe: "infe",
-	itemTypeMime: "mime",
-	itemTypeURI:  "uri ",
-	itemTypeAv01: "av01",
-	itemTypeHvc1: "hvc1",
-	itemTypeGrid: "grid",
-	itemTypeExif: "Exif",
-}
-
+// itemType from Buffer. always should be 4 bytes.
 func itemTypeFromBuf(buf []byte) itemType {
 	str := string(buf[:4])
 	if str == "hvc1" {

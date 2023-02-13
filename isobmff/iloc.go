@@ -130,7 +130,8 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Object("ItemLocation", ilb).Send()
 	}
-	return ilb, b.Discard(8)
+	_, err = b.Discard(8)
+	return ilb, err
 }
 
 func uintN(size uint8, buf []byte) uint64 {

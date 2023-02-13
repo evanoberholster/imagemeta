@@ -38,7 +38,7 @@ func parseFileTypeBox(b *box) (ftyp FileTypeBox, err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
 	}
-	return ftyp, b.Discard(b.remain)
+	return ftyp, b.close()
 }
 
 // FileTypeBox is a BMFF FileTypeBox

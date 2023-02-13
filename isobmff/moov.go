@@ -73,7 +73,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 }
 
 func (r *Reader) newExifBox(b *box) (inner box, err error) {
-	if err = b.Discard(int(r.heic.exif.ol.offset) - b.offset - 16); err != nil {
+	if _, err = b.Discard(int(r.heic.exif.ol.offset) - b.offset - 16); err != nil {
 		return
 	}
 	buf, err := b.Peek(16)
@@ -97,7 +97,7 @@ func (r *Reader) newExifBox(b *box) (inner box, err error) {
 		remain:  int(r.heic.exif.ol.length),
 	}
 
-	err = inner.Discard(size + 4)
+	_, err = inner.Discard(size + 4)
 	return inner, err
 }
 
@@ -113,8 +113,8 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 	if logLevelInfo() {
 		logInfo().Object("box", b).Object("header", header).Send()
 	}
-
-	return header, b.Discard(8)
+	_, err = b.Discard(8)
+	return header, err
 }
 
 func (r *Reader) readMeta(b *box) (err error) {

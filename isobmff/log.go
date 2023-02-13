@@ -32,8 +32,7 @@ func logLevelError() bool {
 
 // logLevelTrace
 func logLevelTrace() bool {
-	level := Logger.GetLevel()
-	return level == zerolog.TraceLevel
+	return Logger.GetLevel() == zerolog.TraceLevel
 }
 
 func logErrorMsg(key string, format string, args ...interface{}) {

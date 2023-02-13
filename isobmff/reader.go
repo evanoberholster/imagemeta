@@ -31,8 +31,6 @@ var readerPool = sync.Pool{
 
 // Reader is a ISO BMFF reader
 type Reader struct {
-	//br         bufReader
-	//brand      Brand
 	br *bufio.Reader
 
 	ftyp FileTypeBox
@@ -60,10 +58,10 @@ func (r *Reader) peek(n int) ([]byte, error) {
 	return r.br.Peek(n)
 }
 
-func (r *Reader) discard(n int) (err error) {
-	n, err = r.br.Discard(n)
+func (r *Reader) discard(n int) (int, error) {
+	n, err := r.br.Discard(n)
 	r.offset += n
-	return err
+	return n, err
 }
 
 func (r *Reader) reset(newReader io.Reader) {
@@ -102,45 +100,9 @@ func (r *Reader) readBox() (b box, err error) {
 			return b, errors.Wrapf(errLargeBox, "readBox '%s'", b.boxType)
 		}
 		b.remain = int(b.size)
-		return b, b.Discard(16)
+		_, err = b.Discard(16)
+		return b, err
 	}
-	return b, b.Discard(8)
-}
-
-type limitedReader struct {
-	br     *bufio.Reader
-	size   int
-	remain int
-}
-
-func newLimitedReader(b *box, h meta.ExifHeader) *limitedReader {
-	return &limitedReader{br: b.reader.br, size: int(h.ExifLength), remain: b.remain}
-}
-
-func (lr *limitedReader) Peek(n int) ([]byte, error) {
-	if lr.remain >= n {
-		return lr.Peek(n)
-	}
-	return nil, ErrRemainLengthInsufficient
-}
-
-func (lr *limitedReader) Discard(n int) error {
-	if lr.remain >= n {
-		lr.remain -= n
-		return lr.Discard(n)
-	}
-	return ErrRemainLengthInsufficient
-}
-
-func (lr *limitedReader) Close(b *box) {
-	b.adjust(b.remain - lr.remain)
-}
-
-func (lr *limitedReader) Read(p []byte) (n int, err error) {
-	if lr.remain >= len(p) {
-		n, err = lr.br.Read(p)
-		lr.remain -= n
-		return n, err
-	}
-	return 0, ErrRemainLengthInsufficient
+	_, err = b.Discard(8)
+	return b, err
 }
