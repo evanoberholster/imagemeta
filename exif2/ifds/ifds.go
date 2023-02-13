@@ -9,20 +9,11 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
 )
 
 // IfdType is the Type of Information Directory
 type IfdType uint8
-
-// Key is a TagMap Key
-type Key struct {
-	Type  IfdType
-	Index uint8
-	TagID tag.ID
-}
-
-// TagMap is a map of Tags
-type TagMap map[Key]tag.Tag
 
 // List of IFDs
 const (
@@ -79,14 +70,14 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
 type Ifd struct {
-	Offset    tag.Offset
+	Offset    uint32
 	ByteOrder utils.ByteOrder
 	Type      IfdType
 	Index     int8
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.
-func NewIFD(byteOrder utils.ByteOrder, ifdType IfdType, index int8, offset tag.Offset) Ifd {
+func NewIFD(byteOrder utils.ByteOrder, ifdType IfdType, index int8, offset uint32) Ifd {
 	return Ifd{
 		ByteOrder: byteOrder,
 		Type:      ifdType,
@@ -137,4 +128,9 @@ func ChildIfd(t tag.Tag) Ifd {
 	}
 
 	return NewIFD(t.ByteOrder, NullIFD, t.IfdIndex, t.ValueOffset)
+}
+
+// MarshalZerologObject is a zerolog interface for logging
+func (ifd Ifd) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("IfdType", ifd.Type.String()).Int8("idx", ifd.Index).Str("offset", fmt.Sprintf("0x%04x", ifd.Offset))
 }
