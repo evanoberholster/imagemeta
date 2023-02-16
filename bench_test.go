@@ -70,21 +70,13 @@ var (
 	}{
 		{".CR2/6D", "2.CR2"},
 		{".CR2/7DMkII", "7D2.CR2"},
-		//	{".HEIC/CanonR5", "CanonR5_1.HIF"},
-		//	{".HEIC/CanonR6", "CanonR6_1.HIF"},
 		{".JPG/GPS", "17.jpg"},
 		{".JPG/GoPro6", "hero6.jpg"},
-		//	{".HEIC", "1.heic"},
-		//	{".HEIC/iPhone11", "iPhone11.heic"},
-		//	{".HEIC/iPhone12", "iPhone12.heic"},
-		//	{".HEIC/iPhone13", "iPhone13.heic"},
-		//	//{".AVIF", "image1.avif"},
 		{".NEF/D300S", "1.NEF"},
 		{".NEF/D700", "2.NEF"},
 		{".NEF/D7100", "3.NEF"},
 		{".RW2/Panasonic", "4.RW2"},
 		{".ARW/Sony", "2.ARW"},
-		//{".WEBP/Webp", "4.webp"},
 		{".DNG/Adobe", "1.dng"},
 		{".JPG/NoExif", "20.jpg"},
 	}
@@ -109,7 +101,6 @@ var (
 		name     string
 		fileName string
 	}{
-
 		{".JPEG/1", "1.jpg"},
 		{".JPEG/2", "2.jpg"},
 		{".JPEG/3", "3.jpg"},
