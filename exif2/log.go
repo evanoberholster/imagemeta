@@ -45,17 +45,6 @@ func (ir *ifdReader) logTagInfo(t tag.Tag) {
 //	}
 //}
 
-func (ir *ifdReader) logParseWarn(t tag.Tag, fnName string, msg string, err error) {
-	if ir.logLevelWarn() {
-		e := ir.logger.Warn()
-		if err != nil {
-			e = e.Err(err)
-		}
-		e.Str("func", fnName)
-		logTag(e, t).Uint32("readerOffset", ir.po).Msg(msg)
-	}
-}
-
 func (ir *ifdReader) logInfo() *zerolog.Event {
 	e := ir.logger.Info()
 	ir.logTraceFunction(e)

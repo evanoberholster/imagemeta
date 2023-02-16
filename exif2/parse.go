@@ -33,7 +33,7 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 		case ifds.StripByteCounts:
 			ir.Exif.StripByteCounts = ir.parseUint32(t)
 		case ifds.Orientation:
-			ir.Exif.Orientation = ir.parseOrientation(t)
+			ir.Exif.Orientation = meta.Orientation(ir.parseUint16(t))
 		case ifds.Software:
 			ir.Exif.Software = ir.parseString(t)
 		case ifds.ImageDescription:
@@ -45,7 +45,7 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 				ir.Exif.CameraSerial = ir.parseString(t)
 			}
 		case ifds.ApplicationNotes:
-			//ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
+			ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
 			//default:
 			//	fmt.Println(tagString(t))
 		}
@@ -148,7 +148,7 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 func (ir *ifdReader) parseApplicationNotes(t tag.Tag) ApplicationNotes {
 	buf, err := ir.readTagValue()
 	if err != nil {
-		ir.logParseWarn(t, "parseApplicationNotes", "unrecognized tag type", err)
+		return nil
 	}
 
 	res1 := trimNULBuffer(buf)
@@ -162,7 +162,9 @@ func (ir *ifdReader) parseAperture(t tag.Tag) meta.Aperture {
 		r := ir.parseRationalU(t)
 		return meta.Aperture(float32(r[0]) / float32(r[1]))
 	}
-	ir.logParseWarn(t, "parseAperture", "unrecognized tag type", nil)
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+	}
 	return 0.0
 }
 func (ir *ifdReader) parseExposureTime(t tag.Tag) meta.ExposureTime {
@@ -170,18 +172,19 @@ func (ir *ifdReader) parseExposureTime(t tag.Tag) meta.ExposureTime {
 		r := ir.parseRationalU(t)
 		return meta.ExposureTime(float32(r[0]) / float32(r[1]))
 	}
-	ir.logParseWarn(t, "parseExposureTime", "unrecognized tag type", nil)
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+	}
 	return 0.0
-}
-
-func (ir *ifdReader) parseOrientation(t tag.Tag) meta.Orientation {
-	return meta.Orientation(ir.parseUint16(t))
 }
 
 func (ir *ifdReader) parseExposureBias(t tag.Tag) meta.ExposureBias {
 	if !t.IsEmbedded() {
 		r := ir.parseRationalU(t)
 		return meta.NewExposureBias(int16(r[0]), int16(r[1]))
+	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
 	}
 	return meta.NewExposureBias(0, 0)
 }
@@ -194,13 +197,14 @@ func (ir *ifdReader) parseFocalLength(t tag.Tag) meta.FocalLength {
 	if !t.IsEmbedded() && (t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseFocalLength", "", err)
 			return meta.FocalLength(0)
 		}
 
 		return meta.FocalLength(float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
 	}
-	ir.logParseWarn(t, "parseFocalLength", "unrecognized tag type", nil)
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+	}
 	return meta.FocalLength(0)
 }
 
@@ -216,7 +220,6 @@ func (ir *ifdReader) parseLensInfo(t tag.Tag) LensInfo {
 	if !t.IsEmbedded() {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseLensInfo", "", err)
 			return LensInfo{}
 		}
 
@@ -233,7 +236,6 @@ func (ir *ifdReader) parseRationalU(t tag.Tag) [2]uint32 {
 	if !t.IsEmbedded() {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseRationalU", "", err)
 			return [2]uint32{}
 		}
 		return [2]uint32{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
@@ -249,6 +251,9 @@ func (ir *ifdReader) parseUint32(t tag.Tag) uint32 {
 		t.EmbeddedValue(ir.buffer.buf[:4])
 		return uint32(t.ByteOrder.Uint16(ir.buffer.buf[:4]))
 	default:
+		if ir.logLevelWarn() {
+			logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+		}
 		return 0
 	}
 }
@@ -269,15 +274,18 @@ func (ir *ifdReader) parseString(t tag.Tag) string {
 	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseString", "", err)
+			return ""
 		}
 		// Trim function
 		return trimNULString(buf)
 	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+	}
 	return ""
 }
 
-func (ir *ifdReader) parseString2(t tag.Tag) []byte {
+func (ir *ifdReader) parseBuffer(t tag.Tag) []byte {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(ir.buffer.buf[:4])
 		return trimNULBuffer(ir.buffer.buf[:t.Size()])
@@ -285,10 +293,13 @@ func (ir *ifdReader) parseString2(t tag.Tag) []byte {
 	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseString", "", err)
+			return nil
 		}
 		// Trim function
 		return trimNULBuffer(buf)
+	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
 	}
 	return nil
 }
@@ -297,7 +308,6 @@ func (ir *ifdReader) parseDate(t tag.Tag) time.Time {
 	if t.IsType(tag.TypeASCII) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseDate", "", err)
 			return time.Time{}
 		}
 		// check recieved value
@@ -312,6 +322,9 @@ func (ir *ifdReader) parseDate(t tag.Tag) time.Time {
 			sec := parseStrUint(buf[17:19])
 			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), 0, time.UTC)
 		}
+	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
 	}
 	return time.Time{}
 }
@@ -342,6 +355,9 @@ func (ir *ifdReader) parseOffsetTime(t tag.Tag) int16 {
 			}
 		}
 	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("Unrecognized tag type")
+	}
 	return 0
 }
 
@@ -350,13 +366,15 @@ func (ir *ifdReader) parseGPSCoord(t tag.Tag) float64 {
 	// Some cameras write tag out of spec using signed rational. We accept that too.
 	if t.Type() != tag.TypeRational {
 		if t.Type() != tag.TypeSignedRational {
-			ir.logParseWarn(t, "parseGPSCoord", "error reading GPS Coord. Tag is not Rational or SRational.", nil)
+			if ir.logLevelWarn() {
+				logTag(ir.logWarn(), t).Msg("error reading GPS Coord. Tag is not Rational or SRational")
+			}
 			return 0.0
 		}
 	}
 	buf, err := ir.readTagValue()
 	if err != nil {
-		ir.logParseWarn(t, "parseGPSCoord", "", err)
+		return 0.0
 	}
 
 	coord := (float64(t.ByteOrder.Uint32(buf[:4])) / float64(t.ByteOrder.Uint32(buf[4:8])))
@@ -372,12 +390,13 @@ func (ir *ifdReader) parseGPSAltitude(t tag.Tag) float32 {
 	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseGPSAltitude", "", err)
+			return 0.0
 		}
-		alt := (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
-		return alt
+		return (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
 	}
-	ir.logParseWarn(t, "parseGPSAltitude", "error reading GPS Alt. Tag is not Rational or SRational", nil)
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("error reading GPS Alt. Tag is not Rational or SRational")
+	}
 	return 0.0
 }
 
@@ -387,7 +406,6 @@ func (ir *ifdReader) parseGPSTimeStamp(t tag.Tag) uint32 {
 		if !t.IsEmbedded() {
 			buf, err := ir.readTagValue()
 			if err != nil {
-				ir.logParseWarn(t, "parseGPSTimeStamp", "", err)
 				return 0
 			}
 			var result uint32
@@ -407,12 +425,12 @@ func (ir *ifdReader) parseGPSTimeStamp(t tag.Tag) uint32 {
 			if value[5] > 0 {
 				result += (value[4] / value[5])
 			}
-
 			return result
 		}
-
 	}
-	ir.logParseWarn(t, "parseGPSTimeStamp", "error reading GPS Time Stamp", nil)
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("error reading GPS Time Stamp")
+	}
 	return 0
 }
 
@@ -420,7 +438,6 @@ func (ir *ifdReader) parseGPSDateStamp(t tag.Tag) time.Time {
 	if t.IsType(tag.TypeASCII) {
 		buf, err := ir.readTagValue()
 		if err != nil {
-			ir.logParseWarn(t, "parseGPSDateStamp", "error reading GPS Time Stamp", err)
 			return time.Time{}
 		}
 		fmt.Println(string(buf))
@@ -439,6 +456,9 @@ func (ir *ifdReader) parseGPSDateStamp(t tag.Tag) time.Time {
 				int(parseStrUint(buf[14:16])),
 				int(parseStrUint(buf[17:19])), 0, time.UTC)
 		}
+	}
+	if ir.logLevelWarn() {
+		logTag(ir.logWarn(), t).Msg("error reading GPSDateStamp")
 	}
 	return time.Time{}
 }
