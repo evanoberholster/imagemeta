@@ -52,32 +52,21 @@ func (b *buffer) validTag() bool {
 }
 
 // readTagValue discards until tag.ValueOffset and reads length of tag
-func (ir *ifdReader) readTagValue() ([]byte, error) {
+func (ir *ifdReader) readTagValue() (buf []byte, err error) {
 	t := ir.buffer.currentTag()
 	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
 		return nil, err
 	}
-	//
-	if br, ok := ir.reader.(BufferReader); ok {
-		buf, err := br.Peek(int(t.Size()))
-		if err != nil {
-			panic(err)
-		}
-		n, err := br.Discard(len(buf))
-		ir.po += uint32(n)
-		return buf, err
-	}
-	n, err := ir.reader.Read(ir.buffer.buf[:t.Size()])
-	ir.po += uint32(n)
+	n := int(t.Size())
+	n, err = ir.Read(ir.buffer.buf[:n])
 	return ir.buffer.buf[:n], err
 }
 
+// Seeks underlying reader to next tag value
 func (ir *ifdReader) seekNextTag(t tag.Tag) (err error) {
 	discard := int(t.ValueOffset) - int(ir.po)
-	if err = ir.discard(discard); err != nil {
-		if ir.logLevelError() {
-			ir.logError(err).Object("tag", t).Uint32("discard", uint32(discard)).Send()
-		}
+	if err = ir.discard(discard); err != nil && ir.logLevelError() {
+		ir.logError(err).Object("tag", t).Uint32("ifdReaderPosition", ir.po).Uint32("discard", uint32(discard)).Send()
 	}
 	return
 }
@@ -93,7 +82,7 @@ func (b *buffer) resetPosition() {
 
 // addTagBuffer adds the given tag to the tagBuffer
 func (ir *ifdReader) addTagBuffer(t tag.Tag) {
-	if uint32(t.ValueOffset) < ir.po {
+	if t.ValueOffset < ir.po {
 		if ir.logLevelWarn() {
 			logTag(ir.logWarn(), t).Uint32("readerOffset", ir.po).Msg("Incompatible reverse exif tag")
 		}
@@ -124,26 +113,25 @@ func (ir *ifdReader) addTagBuffer(t tag.Tag) {
 		}
 	}
 	if ir.logLevelWarn() {
-		ir.logWarn().Int32("tagBufferLength", tagMaxCount).Msg("error tagBufferMaxLength is too short")
+		ir.logWarn().Int32("tagMaxCount", tagMaxCount).Msg("error tagMaxCount is too short")
 	}
 }
 
 // discard, discards n amount from ir.Reader
-func (ir *ifdReader) discard(n int) error {
+func (ir *ifdReader) discard(n int) (err error) {
 	if n == 0 {
 		return nil
 	}
 	if int(ir.exifLength) < n+int(ir.po) {
 		n = int(ir.exifLength) - int(ir.po)
 	}
-	if br, ok := ir.reader.(BufferReader); ok {
+	if br, ok := ir.reader.(BufferedReader); ok {
 		n, err := br.Discard(n)
 		ir.po += uint32(n)
 		return err
 	}
 	var discarded int
-	var err error
-	for n > 0 {
+	for n > 0 && err == nil {
 		if bufferLength > n {
 			discarded, err = ir.reader.Read(ir.buffer.buf[:n])
 		} else {
@@ -151,9 +139,6 @@ func (ir *ifdReader) discard(n int) error {
 		}
 		ir.po += uint32(discarded)
 		n -= discarded
-		if err != nil {
-			return err
-		}
 	}
 	return err
 }

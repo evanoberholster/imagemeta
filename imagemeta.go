@@ -8,7 +8,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/evanoberholster/imagemeta/bmff"
 	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/isobmff"
@@ -58,14 +57,14 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 			return ir.Exif, err
 		}
 	case imagetype.ImageCR3:
-		bmr := bmff.NewReader(rr)
+		bmr := isobmff.NewReader(rr)
+		defer bmr.Close()
 		bmr.ExifReader = ir.DecodeIfd
-		_, err := bmr.ReadFtypBox()
-		if err != nil {
+		if err := bmr.ReadFTYP(); err != nil {
 			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 		}
-		if _, err = bmr.ReadCrxMoovBox(); err != nil {
-			return ir.Exif, errors.Wrapf(err, "ReadCrxMoovBox")
+		if err := bmr.ReadMetadata(); err != nil {
+			panic(err)
 		}
 	case imagetype.ImageHEIF:
 		header, err := tiff.ScanTiffHeader(rr, it)

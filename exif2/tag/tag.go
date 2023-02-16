@@ -170,24 +170,42 @@ const (
 
 var (
 	//Tag sizes
-	_tagSize       = [...]uint8{0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, TypeByteSize, TypeShortSize, TypeSignedLongSize, TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize}
-	_tagSizeLength = len(_tagSize)
+	_tagSize = [256]uint8{
+		0, TypeByteSize, TypeASCIISize, TypeShortSize, TypeLongSize, TypeRationalSize, 0, TypeByteSize, TypeShortSize, TypeSignedLongSize,
+		TypeSignedRationalSize, TypeFloatSize, TypeDoubleSize, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TypeASCIINoNulSize,
+		TypeIfdSize, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+	}
+
 	// TagType Stringer Index
 	_TagTypeStringerIndex = [...]uint8{0, 7, 11, 16, 21, 25, 33, 40, 49, 55, 60, 69, 74, 80}
 )
 
 // Size returns the size of one atomic unit of the type.
 func (tt Type) Size() uint8 {
-	if int(tt) < _tagSizeLength {
-		return uint8(_tagSize[uint8(tt)])
-	}
-	if tt == TypeIfd {
-		return TypeIfdSize
-	}
-	if tt == TypeASCIINoNul {
-		return TypeASCIINoNulSize
-	}
-	return 0
+	return _tagSize[uint8(tt)]
 }
 
 // String is the stringer interface for TagType

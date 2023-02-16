@@ -21,6 +21,7 @@ func trimNULString(buf []byte) string {
 	return ""
 }
 
+// trimNULBuffer removes trailing bytes from Buffer
 func trimNULBuffer(buf []byte) []byte {
 	for i := len(buf) - 1; i > 0; i-- {
 		if buf[i] == 0 || buf[i] == ' ' || buf[i] == '\n' {

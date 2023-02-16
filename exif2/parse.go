@@ -1,6 +1,7 @@
 package exif2
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -44,7 +45,7 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 				ir.Exif.CameraSerial = ir.parseString(t)
 			}
 		case ifds.ApplicationNotes:
-			ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
+			//ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
 			//default:
 			//	fmt.Println(tagString(t))
 		}
@@ -56,6 +57,10 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 			ir.Exif.LensModel = ir.parseString(t)
 		case exififd.LensSerialNumber:
 			ir.Exif.LensSerial = ir.parseString(t)
+		case exififd.CameraOwnerName:
+			if ir.Exif.Artist == "" {
+				ir.Exif.Artist = ir.parseString(t)
+			}
 		case exififd.BodySerialNumber:
 			if ir.Exif.CameraSerial == "" {
 				ir.Exif.CameraSerial = ir.parseString(t)
@@ -106,6 +111,15 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 			ir.Exif.subSecTimeOriginal = ir.parseSubSecTime(t)
 		case exififd.SubSecTimeDigitized:
 			ir.Exif.subSecTimeDigitized = ir.parseSubSecTime(t)
+		case exififd.OffsetTime:
+			ir.Exif.offsetTime = ir.parseOffsetTime(t)
+		case exififd.OffsetTimeOriginal:
+			ir.Exif.offsetTimeOriginal = ir.parseOffsetTime(t)
+		case exififd.OffsetTimeDigitized:
+			ir.Exif.offsetTimeDigitized = ir.parseOffsetTime(t)
+			//default:
+			//	fmt.Println(tagString(t))
+			//	fmt.Println(string(ir.parseString(t)))
 		}
 	case ifds.GPSIFD:
 		switch t.ID {
@@ -125,21 +139,19 @@ func (ir *ifdReader) processTag(t tag.Tag) {
 			ir.Exif.GPS.time = ir.parseGPSTimeStamp(t)
 		case gpsifd.GPSDateStamp:
 			ir.Exif.GPS.date = ir.parseGPSDateStamp(t)
+			//default:
+			//	fmt.Println(tagString(t))
 		}
 	}
 }
 
 func (ir *ifdReader) parseApplicationNotes(t tag.Tag) ApplicationNotes {
-	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
-		return nil
-	}
-
-	n, err := ir.reader.Read(ir.buffer.buf[:bufferLength])
-	ir.po += uint32(n)
+	buf, err := ir.readTagValue()
 	if err != nil {
 		ir.logParseWarn(t, "parseApplicationNotes", "unrecognized tag type", err)
 	}
-	res1 := trimNULBuffer(ir.buffer.buf[:n])
+
+	res1 := trimNULBuffer(buf)
 	res2 := make([]byte, len(res1))
 	copy(res2, res1)
 	return res2
@@ -265,6 +277,22 @@ func (ir *ifdReader) parseString(t tag.Tag) string {
 	return ""
 }
 
+func (ir *ifdReader) parseString2(t tag.Tag) []byte {
+	if t.IsEmbedded() {
+		t.EmbeddedValue(ir.buffer.buf[:4])
+		return trimNULBuffer(ir.buffer.buf[:t.Size()])
+	}
+	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
+		buf, err := ir.readTagValue()
+		if err != nil {
+			ir.logParseWarn(t, "parseString", "", err)
+		}
+		// Trim function
+		return trimNULBuffer(buf)
+	}
+	return nil
+}
+
 func (ir *ifdReader) parseDate(t tag.Tag) time.Time {
 	if t.IsType(tag.TypeASCII) {
 		buf, err := ir.readTagValue()
@@ -282,11 +310,39 @@ func (ir *ifdReader) parseDate(t tag.Tag) time.Time {
 			hour := parseStrUint(buf[11:13])
 			min := parseStrUint(buf[14:16])
 			sec := parseStrUint(buf[17:19])
-
 			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), 0, time.UTC)
 		}
 	}
 	return time.Time{}
+}
+
+func (ir *ifdReader) parseOffsetTime(t tag.Tag) int16 {
+	if t.IsType(tag.TypeASCII) {
+		buf, err := ir.readTagValue()
+		if err != nil {
+			logTag(ir.logError(err), t).Send()
+			return 0
+		}
+		var i int
+		var res int16
+		if buf[3] == ':' {
+			hours := parseStrUint(buf[1:3])
+			min := parseStrUint(buf[i+3 : i+5])
+			res = int16(hours*60 + min)
+			switch buf[0] {
+			case '-':
+				return res * -1
+			case '+':
+				return res
+			default:
+				if ir.logLevelWarn() {
+					logTag(ir.logWarn(), t).Msgf("Uknown TimeOffset: %s", string(buf))
+				}
+				return 0
+			}
+		}
+	}
+	return 0
 }
 
 // parseGPSCoord parses the GPS Coordinate (Lat or Lng) from the corresponding Tag.
@@ -351,8 +407,10 @@ func (ir *ifdReader) parseGPSTimeStamp(t tag.Tag) uint32 {
 			if value[5] > 0 {
 				result += (value[4] / value[5])
 			}
+
 			return result
 		}
+
 	}
 	ir.logParseWarn(t, "parseGPSTimeStamp", "error reading GPS Time Stamp", nil)
 	return 0
@@ -365,6 +423,7 @@ func (ir *ifdReader) parseGPSDateStamp(t tag.Tag) time.Time {
 			ir.logParseWarn(t, "parseGPSDateStamp", "error reading GPS Time Stamp", err)
 			return time.Time{}
 		}
+		fmt.Println(string(buf))
 		// check recieved value
 		if buf[4] == ':' && buf[7] == ':' && len(buf) < 12 {
 			return time.Date(int(parseStrUint(buf[0:4])), time.Month(parseStrUint(buf[5:7])), int(parseStrUint(buf[8:10])), 0, 0, 0, 0, time.UTC)

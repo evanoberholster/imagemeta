@@ -2,12 +2,18 @@ package exif2
 
 import (
 	"fmt"
+
+	"os"
 	"runtime"
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
+
+// Logger default is Panic Level to Console Writer
+var Logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
 
 func (ir *ifdReader) logLevelTrace() bool {
 	return ir.logger.GetLevel() == zerolog.TraceLevel

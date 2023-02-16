@@ -2,7 +2,6 @@ package exif2
 
 import (
 	"io"
-	"os"
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
@@ -11,13 +10,10 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-var Logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
-
 func Decode(r io.ReadSeeker) (Exif, error) {
-	header, err := tiff.ScanTiffHeader(r, imagetype.ImageCR3)
+	header, err := tiff.ScanTiffHeader(r, imagetype.ImageUnknown)
 	if err != nil {
 		return Exif{}, err
 	}
@@ -125,11 +121,10 @@ func (ir *ifdReader) ReadIfd0(header meta.ExifHeader) error {
 	return ir.readIfd(ifds.NewIFD(header.ByteOrder, ifds.IfdType(header.FirstIfd), 0, ir.tiffHeaderOffset))
 }
 
-func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
-	var err error
+func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) (err error) {
+	loglevelInfo := ir.logLevelInfo()
+	var tagCount uint16 // read tagCount
 
-	// read tagCount
-	var tagCount uint16
 	if tagCount, err = ir.readUint16(ifd); err != nil || tagCount > 256 {
 		// Log Ifd Reading error
 		ir.logError(err).Object("ifd", ifd).Uint32("readerOffset", ir.po).Msgf("error tag count: %d for %s", tagCount, ifd.String())
@@ -137,22 +132,20 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
 	}
 
 	// Log Ifd Info
-	if ir.logLevelInfo() {
+	if loglevelInfo {
 		ir.logInfo().Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
 	}
 
 	// read Tag Headers
 	var t tag.Tag
 
-	if br, ok := ir.reader.(BufferReader); ok {
-		headerLength := uint32(tagCount) * 12
-		buf, err := br.Peek(int(headerLength))
-		if err != nil {
-			if ir.logLevelError() {
-				logTag(ir.logError(err), t).Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
-			}
+	if br, ok := ir.reader.(BufferedReader); ok {
+		headerLength := int(uint32(tagCount) * 12)
+		buf, err := br.Peek(headerLength)
+		if err != nil && ir.logLevelError() {
+			logTag(ir.logError(err), t).Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
 		}
-		for i := 0; i < int(headerLength); i += 12 {
+		for i := 0; i < headerLength; i += 12 {
 			if t, err = tagFromBuffer(ifd, buf[i:i+12]); err != nil && ir.logLevelWarn() {
 				logTag(ir.logWarn().Err(err), t).Send()
 			}
@@ -161,12 +154,13 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
 			} else {
 				ir.addTagBuffer(t)
 			}
-
-			// Log Tag Info
-			ir.logTagInfo(t)
+			if loglevelInfo { // Log Tag Info
+				ir.logTagInfo(t)
+			}
 		}
 		if _, err = br.Discard(len(buf)); err != nil && ir.logLevelInfo() {
 			ir.logError(err).Msg("Discard error")
+			return err
 		}
 		ir.po += uint32(len(buf))
 	} else {
@@ -189,9 +183,9 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
 			} else {
 				ir.addTagBuffer(t)
 			}
-
-			// Log Tag Info
-			ir.logTagInfo(t)
+			if loglevelInfo { // Log Tag Info
+				ir.logTagInfo(t)
+			}
 		}
 	}
 
@@ -199,7 +193,8 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) error {
 	return ir.readNextIfdTag(ifd)
 }
 
-type BufferReader interface {
+// BufferedReader interface represents bufio.Reader
+type BufferedReader interface {
 	Peek(n int) ([]byte, error)
 	Discard(n int) (discarded int, err error)
 	Read(p []byte) (n int, err error)
@@ -218,9 +213,7 @@ func (ir *ifdReader) readNextIfdTag(ifd ifds.Ifd) error {
 		if ifd.IsType(ifds.IFD0) && nextIfd != 0 {
 			t, _ := tag.NewTag(ifds.SubIFDs, tag.TypeIfd, 4, nextIfd, uint8(ifds.IFD0), ifd.Index+1, ifd.ByteOrder)
 			ir.addTagBuffer(t)
-
-			// Log Tag Info
-			ir.logTagInfo(t)
+			ir.logTagInfo(t) // Log Tag Info
 		}
 	}
 	return nil
@@ -260,40 +253,37 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 	return nil
 }
 
-func (ir *ifdReader) checkLength(n uint32) bool {
-	return ir.po+n >= ir.exifLength
+func (ir *ifdReader) Read(buf []byte) (n int, err error) {
+	if ir.exifLength != 0 && int(ir.po)+len(buf) > int(ir.exifLength) {
+		return 0, imagetype.ErrDataLength
+	}
+	n, err = ir.reader.Read(buf)
+	ir.po += uint32(n)
+	return n, err
 }
 
 // ReadUint16 reads a uint16 from an ifdReader.
 func (ir *ifdReader) readUint16(ifd ifds.Ifd) (uint16, error) {
-	if ir.checkLength(2) {
-		return 0, imagetype.ErrDataLength
+	if _, err := ir.Read(ir.buffer.buf[:2]); err != nil {
+		return 0, err
 	}
-	n, err := ir.reader.Read(ir.buffer.buf[:2])
-	ir.po += uint32(n)
-	return ifd.ByteOrder.Uint16(ir.buffer.buf[:2]), err
+	return ifd.ByteOrder.Uint16(ir.buffer.buf[:2]), nil
 }
 
 // ReadUint32 reads a uint32 from an ifdReader.
 func (ir *ifdReader) readUint32(ifd ifds.Ifd) (uint32, error) {
-	if ir.checkLength(4) {
-		return 0, imagetype.ErrDataLength
+	if _, err := ir.Read(ir.buffer.buf[:4]); err != nil {
+		return 0, err
 	}
-	n, err := ir.reader.Read(ir.buffer.buf[:4])
-	ir.po += uint32(n)
-	return ifd.ByteOrder.Uint32(ir.buffer.buf[:4]), err
+	return ifd.ByteOrder.Uint32(ir.buffer.buf[:4]), nil
 }
 
 // readTagHeader reads the tagID uint16, tagType uint16, unitCount uint32 and valueOffset uint32
 // from an Ifd. Returns Tag and error. If the tagType is unsupported, returns tag.ErrTagTypeNotValid.
 func (ir *ifdReader) readTagHeader(ifd ifds.Ifd) (tag.Tag, error) {
-	if ir.checkLength(12) {
-		return tag.Tag{}, imagetype.ErrDataLength
-	}
-	if _, err := ir.reader.Read(ir.buffer.buf[:12]); err != nil {
+	if _, err := ir.Read(ir.buffer.buf[:12]); err != nil {
 		return tag.Tag{}, err
 	}
-	ir.po += 12
 	tagID := tag.ID(ifd.ByteOrder.Uint16(ir.buffer.buf[:2]))      // TagID
 	tagType := tag.Type(ifd.ByteOrder.Uint16(ir.buffer.buf[2:4])) // TagType
 	unitCount := ifd.ByteOrder.Uint32(ir.buffer.buf[4:8])         // UnitCount
