@@ -31,3 +31,9 @@ func trimNULBuffer(buf []byte) []byte {
 	}
 	return nil
 }
+
+// static values
+const (
+	hoursToSeconds   = 60 * minutesToSeconds
+	minutesToSeconds = 60
+)

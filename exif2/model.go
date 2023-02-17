@@ -33,9 +33,9 @@ type Exif struct {
 	modifyDate                time.Time            // IFD0 / 0x0132
 	dateTimeOriginal          time.Time            // ExifIFD / 0x9003
 	createDate                time.Time            // ExifIFD / 0x9004
-	offsetTime                int16                // ExifIFD / 0x9010 (time zone for ModifyDate)
-	offsetTimeOriginal        int16                // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
-	offsetTimeDigitized       int16                // ExifIFD / 0x9012 (time zone for CreateDate)
+	offsetTime                *time.Location       // ExifIFD / 0x9010 (time zone for ModifyDate)
+	offsetTimeOriginal        *time.Location       // ExifIFD / 0x9011 (time zone for DateTimeOriginal)
+	offsetTimeDigitized       *time.Location       // ExifIFD / 0x9012 (time zone for CreateDate)
 	subSecTime                uint16               // ExifIFD / 0x9290 (fractional seconds for ModifyDate)
 	subSecTimeOriginal        uint16               // ExifIFD / 0x9291 (fractional seconds for DateTimeOriginal)
 	subSecTimeDigitized       uint16               // ExifIFD / 0x9292 (fractional seconds for CreateDate)
@@ -76,26 +76,44 @@ type Exif struct {
 
 // ModifyDate return the exif modified date with subsec offset if present
 func (e Exif) ModifyDate() time.Time {
-	if e.subSecTime == 0 {
-		return e.modifyDate
+	t := e.modifyDate
+	if e.subSecTime != 0 {
+		t = t.Add(time.Duration(e.subSecTime) * time.Millisecond)
 	}
-	return e.modifyDate.Add(time.Duration(e.subSecTime) * time.Millisecond).Add(time.Duration(e.offsetTime) * time.Minute)
+	if e.offsetTime != nil {
+		t = t.In(e.offsetTime)
+		_, offset := t.Zone()
+		t = t.Add(time.Duration(offset) * -1 * time.Second)
+	}
+	return t
 }
 
 // DateTimeOriginal returns the exif Original DateTime with subsec offset if present
 func (e Exif) DateTimeOriginal() time.Time {
-	if e.subSecTimeOriginal == 0 {
-		return e.dateTimeOriginal
+	t := e.dateTimeOriginal
+	if e.subSecTimeOriginal != 0 {
+		t = t.Add(time.Duration(e.subSecTimeOriginal) * time.Millisecond)
 	}
-	return e.dateTimeOriginal.Add(time.Duration(e.subSecTimeOriginal) * time.Millisecond).Add(time.Duration(e.offsetTimeOriginal) * time.Minute)
+	if e.offsetTimeOriginal != nil {
+		t = t.In(e.offsetTimeOriginal)
+		_, offset := t.Zone()
+		t = t.Add(time.Duration(offset) * -1 * time.Second)
+	}
+	return t
 }
 
 // CreateDate reurns the CreateDate with subsec offset if present
 func (e Exif) CreateDate() time.Time {
-	if e.subSecTimeDigitized == 0 {
-		return e.createDate
+	t := e.createDate
+	if e.subSecTimeDigitized != 0 {
+		t = t.Add(time.Duration(e.subSecTimeDigitized) * time.Millisecond)
 	}
-	return e.createDate.Add(time.Duration(e.subSecTimeDigitized) * time.Millisecond).Add(time.Duration(e.offsetTimeDigitized) * time.Minute)
+	if e.offsetTimeDigitized != nil {
+		t = t.In(e.offsetTimeDigitized)
+		_, offset := t.Zone()
+		t = t.Add(time.Duration(offset) * -1 * time.Second)
+	}
+	return t
 }
 
 // Sring implements the Stringer interface for Exif

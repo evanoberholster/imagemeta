@@ -43,19 +43,23 @@ func (ir *ifdReader) DecodeTiff(_ io.Reader, h meta.ExifHeader) error {
 	return ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset))
 }
 
-func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) error {
+func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) (err error) {
 	// Log Header Info
 	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
-	ir.buffer.clear()
-	ir.reader = r
+	ir.ResetReader(r)
+	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
-	ir.discard(int(h.FirstIfdOffset)) // add error
+	if err = ir.discard(int(h.FirstIfdOffset)); err != nil {
+		if ir.logLevelError() {
+			ir.logError(err).Send()
+		}
+	}
 	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset)); err != nil {
 		return err
 	}
-	err := ir.discard(int(ir.exifLength) - int(ir.po))
+	err = ir.discard(int(ir.exifLength) - int(ir.po))
 	return err
 }
 
@@ -64,8 +68,7 @@ func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
 	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
 	}
-	ir.buffer.clear()
-	ir.reader = r
+	ir.ResetReader(r)
 	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
 	ir.po = h.FirstIfdOffset
@@ -91,6 +94,10 @@ func (ir *ifdReader) ResetReader(r io.Reader) {
 	ir.reader = r
 }
 
+func (ir *ifdReader) SetCustomTagParser(fn TagParserFn) {
+	ir.customTagParser = fn
+}
+
 // Close closes an ifdReader. Should be called with defer following a newIfdReader
 func (ir *ifdReader) Close() {
 	bufferPool.Put(ir.buffer)
@@ -100,6 +107,7 @@ func (ir *ifdReader) Close() {
 type ifdReader struct {
 	logger           zerolog.Logger
 	reader           io.Reader
+	customTagParser  TagParserFn
 	buffer           *buffer
 	Exif             Exif
 	po               uint32
@@ -139,34 +147,29 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) (err error) {
 	// read Tag Headers
 	var t tag.Tag
 
-	if br, ok := ir.reader.(BufferedReader); ok {
-		headerLength := int(uint32(tagCount) * 12)
-		buf, err := br.Peek(headerLength)
-		if err != nil && ir.logLevelError() {
-			logTag(ir.logError(err), t).Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
+	br, ok := ir.reader.(BufferedReader)
+	var buf []byte
+	if ok {
+		if buf, err = br.Peek(int(tagCount) * 12); err != nil {
+			if ir.logLevelError() {
+				logTag(ir.logError(err), t).Object("ifd", ifd).Uint16("tagCount", tagCount).Send()
+			}
+			return
 		}
-		for i := 0; i < headerLength; i += 12 {
-			if t, err = tagFromBuffer(ifd, buf[i:i+12]); err != nil && ir.logLevelWarn() {
-				logTag(ir.logWarn().Err(err), t).Send()
-			}
-			if t.IsEmbedded() {
-				ir.processTag(t)
-			} else {
-				ir.addTagBuffer(t)
-			}
-			if loglevelInfo { // Log Tag Info
-				ir.logTagInfo(t)
-			}
-		}
-		if _, err = br.Discard(len(buf)); err != nil && ir.logLevelInfo() {
+		if _, err = br.Discard(len(buf)); err != nil && ir.logLevelError() {
 			ir.logError(err).Msg("Discard error")
 			return err
 		}
 		ir.po += uint32(len(buf))
-	} else {
-		for i := 0; i < int(tagCount); i++ {
+
+	}
+	for i := 0; i < int(tagCount); i++ {
+		if ok {
+			if t, err = tagFromBuffer(ifd, buf[i*12:]); err != nil && ir.logLevelWarn() {
+				logTag(ir.logWarn().Err(err), t).Send()
+			}
+		} else {
 			if t, err = ir.readTagHeader(ifd); err != nil {
-				// Log Ifd Reading error
 				if err == tag.ErrTagTypeNotValid {
 					if ir.logLevelWarn() {
 						ir.logWarn().Err(err).Object("tag", t).Send()
@@ -174,18 +177,18 @@ func (ir *ifdReader) parseIfdHeader(ifd ifds.Ifd) (err error) {
 					continue
 				}
 				if ir.logLevelError() {
-					ir.logError(err).Object("tag", t).Object("ifd", ifd).Send()
+					logTag(ir.logError(err), t).Object("ifd", ifd).Send()
 				}
 				return err
 			}
-			if t.IsEmbedded() {
-				ir.processTag(t)
-			} else {
-				ir.addTagBuffer(t)
-			}
-			if loglevelInfo { // Log Tag Info
-				ir.logTagInfo(t)
-			}
+		}
+		if t.IsEmbedded() {
+			ir.parseTag(t)
+		} else {
+			ir.addTagBuffer(t)
+		}
+		if loglevelInfo { // Log Tag Info
+			ir.logTagInfo(t)
 		}
 	}
 
@@ -247,7 +250,7 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 				}
 			}
 		} else {
-			ir.processTag(t)
+			ir.parseTag(t)
 		}
 	}
 	return nil
