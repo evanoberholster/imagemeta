@@ -4,9 +4,6 @@ package tag
 import (
 	"errors"
 	"fmt"
-
-	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 // Errors
@@ -22,75 +19,6 @@ type ID uint16
 // String is the Stringer interface for ID
 func (id ID) String() string {
 	return fmt.Sprintf("0x%04x", uint16(id))
-}
-
-// Tag is an Exif Tag (16 bytes)
-type Tag struct {
-	ValueOffset uint32          // 4 bytes
-	UnitCount   uint32          // 4 bytes
-	ID          ID              // 2 bytes
-	TagType     Type            // 1 byte
-	Ifd         uint8           // 1 byte
-	IfdIndex    int8            // 1 byte
-	ByteOrder   utils.ByteOrder // 1 byte
-}
-
-// NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
-// If tagType is Invalid returns ErrTagTypeNotValid
-func NewTag(tagID ID, tagType Type, unitCount uint32, valueOffset uint32, ifd uint8, ifdIndex int8, byteOrder utils.ByteOrder) (Tag, error) {
-	t := Tag{
-		ID:          tagID,
-		TagType:     tagType,
-		UnitCount:   unitCount,
-		ValueOffset: valueOffset,
-		Ifd:         ifd,
-		IfdIndex:    ifdIndex,
-		ByteOrder:   byteOrder,
-	}
-	if !tagType.IsValid() {
-		return t, ErrTagTypeNotValid
-	}
-	return t, nil
-}
-
-// MarshalZerologObject is a zerolog interface for logging
-func (t Tag) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("id", t.ID.String()).Str("type", t.TagType.String()).Uint32("count", t.UnitCount).Str("offset", fmt.Sprintf("0x%04x", t.ValueOffset))
-}
-
-// String is the Stringer interface for Tag
-func (t Tag) String() string {
-	return fmt.Sprintf("%s\t | %s | Size: %d", t.ID, t.TagType, t.UnitCount)
-}
-
-// EmbeddedValue fills the buf with the tag's embedded value, always <= 4 bytes
-func (t Tag) EmbeddedValue(buf []byte) {
-	t.ByteOrder.PutUint32(buf, uint32(t.ValueOffset))
-}
-
-// IsEmbedded checks if the Tag's value is embedded in the Tag.ValueOffset
-func (t Tag) IsEmbedded() bool {
-	return t.Size() <= 4 && t.TagType != TypeIfd
-}
-
-// IsIfd checks if the Tag's value is an IFD
-func (t Tag) IsIfd() bool {
-	return t.TagType == TypeIfd
-}
-
-// Size returns the size of the Tag's value
-func (t Tag) Size() uint32 {
-	return uint32(t.TagType.Size()) * uint32(t.UnitCount)
-}
-
-// Type returns the type of Tag
-func (t Tag) Type() Type {
-	return t.TagType
-}
-
-// IsType returns true if tagType matches query Type
-func (t Tag) IsType(ty Type) bool {
-	return t.TagType == ty
 }
 
 // Is returns true if tagType matches query Type

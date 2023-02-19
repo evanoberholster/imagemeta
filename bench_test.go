@@ -11,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/isobmff"
 	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -196,7 +197,7 @@ func BenchmarkHeif(b *testing.B) {
 					rr := readerPool.Get().(*bufio.Reader)
 					rr.Reset(r)
 
-					ir := exif2.NewIfdReader(rr)
+					ir := exif2.NewIfdReader(zerolog.Logger{})
 
 					it, err := imagetype.ScanBuf(rr)
 					if err != nil {
@@ -216,7 +217,7 @@ func BenchmarkHeif(b *testing.B) {
 			b.Run("BMFF", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					r.Seek(0, 0)
-					ir := exif2.NewIfdReader(r)
+					ir := exif2.NewIfdReader(zerolog.Logger{})
 
 					br := isobmff.NewReader(r)
 					br.ExifReader = ir.DecodeIfd

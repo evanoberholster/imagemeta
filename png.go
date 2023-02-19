@@ -14,10 +14,10 @@ func DecodePng(r io.ReadSeeker) (exif2.Exif, error) {
 		return exif2.Exif{}, err
 	}
 
-	ir := exif2.NewIfdReader(r)
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
-	if err := ir.DecodeTiff(nil, header); err != nil {
+	if err := ir.DecodeTiff(r, header); err != nil {
 		return ir.Exif, err
 	}
 

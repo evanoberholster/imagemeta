@@ -36,24 +36,25 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif2.NewIfdReader(rr)
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
 		return exif2.Exif{}, err
 	}
+	ir.Exif.ImageType = it
 	switch it {
 	case imagetype.ImageJPEG:
 		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
 			return exif2.Exif{}, err
 		}
-	case imagetype.ImageCR2, imagetype.ImageTiff:
+	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif2.Exif{}, err
 		}
-		if err := ir.DecodeTiff(r, header); err != nil {
+		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
 		}
 	case imagetype.ImageCR3:
@@ -64,20 +65,20 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 		}
 		if err := bmr.ReadMetadata(); err != nil {
-			panic(err)
+			return ir.Exif, err
 		}
 	case imagetype.ImageHEIF:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif2.Exif{}, err
 		}
-		if err := ir.DecodeTiff(r, header); err != nil {
+		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
 		}
 	default:
 		return exif2.Exif{}, ErrMetadataNotSupported
 	}
-	ir.Exif.ImageType = it
+
 	return ir.Exif, nil
 }
 
@@ -87,7 +88,7 @@ func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif2.NewIfdReader(nil)
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
 	bmr := isobmff.NewReader(rr)
@@ -97,10 +98,13 @@ func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
 	if err := bmr.ReadMetadata(); err != nil {
-		panic(err)
+		return ir.Exif, err
+	}
+	if err := bmr.ReadMetadata(); err != nil {
+		return ir.Exif, err
 	}
 	// Set ImageType to CR3
-	ir.Exif.ImageType = imagetype.ImageCR3
+	//ir.Exif.ImageType = imagetype.ImageCR3
 	return ir.Exif, nil
 	//return exif2.DecodeHeader(r, moov.Meta.Exif[0], moov.Meta.Exif[1], moov.Meta.Exif[3])
 }
@@ -119,10 +123,10 @@ func DecodeTiff(r io.ReadSeeker) (exif2.Exif, error) {
 	if err != nil {
 		return exif2.Exif{}, err
 	}
-	ir := exif2.NewIfdReader(rr)
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
-	if err := ir.DecodeTiff(r, header); err != nil {
+	if err := ir.DecodeTiff(rr, header); err != nil {
 		return ir.Exif, err
 	}
 	return ir.Exif, nil

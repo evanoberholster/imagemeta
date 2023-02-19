@@ -1,23 +1,20 @@
 package exif2
 
 import (
-	"fmt"
-	"strings"
 	"sync"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
-	"github.com/evanoberholster/imagemeta/exif2/tag"
+	"github.com/rs/zerolog"
 )
 
 const (
-	tagMaxCount  = 64
+	tagMaxCount  = 96
 	bufferLength = 512
 )
 
 // buffer for data and tags
 type buffer struct {
 	buf [bufferLength]byte
-	tag [tagMaxCount]tag.Tag
+	tag [tagMaxCount]Tag
 	len uint32
 	pos uint32
 }
@@ -28,22 +25,22 @@ var bufferPool = sync.Pool{
 }
 
 // currentTag returns the current tag in tagBuffer
-func (b *buffer) currentTag() tag.Tag {
+func (b *buffer) currentTag() Tag {
 	return b.tag[b.pos]
 }
 
 // nextTag returns the next tag in tagBuffer
-func (b *buffer) nextTag() tag.Tag {
+func (b *buffer) nextTag() Tag {
 	return b.tag[b.pos+1]
 }
 
 // nextTag increments the position by 1
-func (b *buffer) advanceBuffer() tag.Tag {
+func (b *buffer) advanceBuffer() Tag {
 	if b.pos < b.len {
 		b.pos++
 		return b.tag[b.pos]
 	}
-	return tag.Tag{}
+	return Tag{}
 }
 
 // validTag returns true if the tag is valid
@@ -58,15 +55,15 @@ func (ir *ifdReader) readTagValue() (buf []byte, err error) {
 		return nil, err
 	}
 	n := int(t.Size())
-	n, err = ir.Read(ir.buffer.buf[:n])
+	n, err = ir.read(ir.buffer.buf[:n])
 	return ir.buffer.buf[:n], err
 }
 
 // Seeks underlying reader to next tag value
-func (ir *ifdReader) seekNextTag(t tag.Tag) (err error) {
+func (ir *ifdReader) seekNextTag(t Tag) (err error) {
 	discard := int(t.ValueOffset) - int(ir.po)
 	if err = ir.discard(discard); err != nil && ir.logLevelError() {
-		ir.logError(err).Object("tag", t).Uint32("ifdReaderPosition", ir.po).Uint32("discard", uint32(discard)).Send()
+		t.logTag(ir.logError(err)).Uint32("ifdReaderPosition", ir.po).Uint32("discard", uint32(discard)).Send()
 	}
 	return
 }
@@ -81,10 +78,10 @@ func (b *buffer) resetPosition() {
 }
 
 // addTagBuffer adds the given tag to the tagBuffer
-func (ir *ifdReader) addTagBuffer(t tag.Tag) {
+func (ir *ifdReader) addTagBuffer(t Tag) {
 	if t.ValueOffset < ir.po {
 		if ir.logLevelWarn() {
-			logTag(ir.logWarn(), t).Uint32("readerOffset", ir.po).Msg("Incompatible reverse exif tag")
+			t.logTag(ir.logWarn()).Uint32("readerOffset", ir.po).Msg("Incompatible reverse exif tag")
 		}
 		return
 	}
@@ -149,15 +146,9 @@ func (b *buffer) clear() {
 	b.pos = 0
 }
 
-// String is the stringer interface for buffer
-func (b *buffer) String() string {
-	sb := strings.Builder{}
+// MarshalZerologArray is a zerolog interface for logging
+func (b *buffer) MarshalZerologArray(a *zerolog.Array) {
 	for i := b.pos; i < b.len; i++ {
-		sb.WriteString(tagString(b.tag[i]) + "\n")
+		a.Object(b.tag[i])
 	}
-	return sb.String()
-}
-
-func tagString(t tag.Tag) string {
-	return fmt.Sprintf("%s\t | %s \t\t| %s \t|%d", t.ID, ifds.IfdType(t.Ifd).TagName(t.ID), t.Type(), t.ValueOffset)
 }

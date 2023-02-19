@@ -29,7 +29,7 @@ func BenchmarkExif(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, 0)
-		if _, err = Decode(r); err != nil {
+		if _, err = Parse(r); err != nil {
 			b.Fatal(err)
 		}
 	}

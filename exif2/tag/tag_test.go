@@ -1,7 +1,6 @@
 package tag
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -64,58 +63,15 @@ func TestTagType(t *testing.T) {
 	}
 }
 
-func TestTag(t *testing.T) {
-	tag, err := NewTag(ID(0x0010), TypeASCII, 16, 0x0002, 0, 0, 0)
-	if err != nil {
-		t.Error(err)
+func TestTagID(t *testing.T) {
+	id := ID(0x0010)
+	if id.String() != "0x0010" {
+		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", id.String())
 	}
+}
 
-	if tag.ID != ID(0x0010) {
-		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", ID(0x0010), tag.ID)
-	}
-	if tag.Type() != TypeASCII || !tag.IsType(TypeASCII) || !tag.TagType.Is(TypeASCII) {
-		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeASCII, tag.Type())
-	}
-	if tag.UnitCount != 16 {
-		t.Errorf("Incorrect Tag UnitCount wanted %d got %d", 16, tag.UnitCount)
-	}
-	if tag.ValueOffset != 0x0002 {
-		t.Errorf("Incorrect Tag Offset wanted 0x%04x got 0x%04x", 0x0002, tag.ValueOffset)
-	}
-	if tag.IsEmbedded() {
-		t.Errorf("ValueIsEmbedded is true when equal or less than 4 bytes")
-	}
-	if tag.Size() != 16 {
-		t.Errorf("Incorrect Tag Size wanted %d got %d", 16, tag.Size())
-	}
-
-	tagString := "0x0010\t | ASCII | Size: 16"
-	if tag.String() != tagString {
-		t.Errorf("Incorrect Tag String wanted %v got %v", tagString, tag.String())
-	}
-	if tag.ID.String() != "0x0010" {
-		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", tag.ID.String())
-	}
-
-	tag, err = NewTag(ID(0x0010), 100, 16, 0x0002, 0, 0, 0)
-	if err != ErrTagTypeNotValid {
-		t.Errorf("Incorrect error wanted %s, got %s", ErrTagTypeNotValid, err)
-	}
-	tag.TagType = TypeIfd
-	tag.UnitCount = 1
-	if !tag.IsIfd() {
-		t.Errorf("Incorrect Tag Type wanted %s got %s", TypeIfd, tag.TagType)
-	}
-	if tag.Type().String() != "IFD" {
-		t.Errorf("Incorrect Tag String wanted %s got %s", "IFD", tag.TagType.String())
-	}
-	if tag.Size() != TypeIfdSize {
-		t.Errorf("Incorrect Tag Size wanted %d got %d", TypeIfdSize, tag.Size())
-	}
-	bufVal := [4]byte{2, 0, 0, 0}
-	var buf [4]byte
-	tag.EmbeddedValue(buf[:])
-	if !bytes.Equal(buf[:], bufVal[:]) {
-		t.Errorf("Incorrect Embedded Value wanted %d got %d", bufVal, buf)
+func TestType(t *testing.T) {
+	if !TypeASCII.Is(TypeASCII) {
+		t.Errorf("Incorrect Type should be equal")
 	}
 }

@@ -106,30 +106,6 @@ func (ifd Ifd) String() string {
 	return fmt.Sprintf("IFD [%s] (%d) at offset (0x%04x)", ifd.Type, ifd.Index, ifd.Offset)
 }
 
-// ChildIfd returns the Ifd if it is a Child of the current Tag
-// if it is not, it returns NullIFD
-func ChildIfd(t tag.Tag) Ifd {
-	// RootIfd Children
-	switch IfdType(t.Ifd) {
-	case IFD0: // IFD0 Children
-		switch t.ID {
-		case ExifTag:
-			return NewIFD(t.ByteOrder, ExifIFD, t.IfdIndex, t.ValueOffset)
-		case GPSTag:
-			return NewIFD(t.ByteOrder, GPSIFD, t.IfdIndex, t.ValueOffset)
-		case SubIFDs:
-			return NewIFD(t.ByteOrder, SubIFD, t.IfdIndex, t.ValueOffset)
-		}
-	case ExifIFD: // ExifIfd Children
-		switch t.ID {
-		case exififd.MakerNote:
-			return NewIFD(t.ByteOrder, MknoteIFD, t.IfdIndex, t.ValueOffset)
-		}
-	}
-
-	return NewIFD(t.ByteOrder, NullIFD, t.IfdIndex, t.ValueOffset)
-}
-
 // MarshalZerologObject is a zerolog interface for logging
 func (ifd Ifd) MarshalZerologObject(e *zerolog.Event) {
 	e.Str("IfdType", ifd.Type.String()).Int8("idx", ifd.Index).Str("offset", fmt.Sprintf("0x%04x", ifd.Offset))

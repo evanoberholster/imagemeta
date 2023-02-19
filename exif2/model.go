@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
@@ -22,8 +23,8 @@ type Exif struct {
 	Software                  string               // IFD0 / 0x0131
 	Artist                    string               // IFD0 / 0x013b
 	Copyright                 string               // IFD0 / 0x8298
-	Make                      string               // IFD0 / 0x010f
-	Model                     string               // IFD0 / 0x0110
+	make                      string               // IFD0 / 0x010f
+	model                     string               // IFD0 / 0x0110
 	LensMake                  string               // ExifIFD / 0xa433
 	LensModel                 string               // ExifIFD / 0xa434
 	LensSerial                string               // ExifIFD / 0xa435
@@ -70,8 +71,26 @@ type Exif struct {
 	Flash                     meta.Flash           // ExifIFD / 0x9209
 	ColorSpace                ColorSpace           // ExifIFD / 0xa001
 	ImageType                 imagetype.ImageType
+	CameraModel               ifds.CameraModel
+	CameraMake                ifds.CameraMake
 	// 0xa20e	FocalPlaneXResolution	rational64u	ExifIFD
 	// 0xa20f	FocalPlaneYResolution	rational64u	ExifIFD
+}
+
+// Make returns camera make
+func (e Exif) Make() string {
+	if e.CameraMake == ifds.CameraMakeUnknown {
+		return e.make
+	}
+	return e.CameraMake.String()
+}
+
+// Make returns camera make
+func (e Exif) Model() string {
+	if e.CameraModel == ifds.CameraModelUnknown {
+		return e.model
+	}
+	return e.CameraModel.String()
 }
 
 // ModifyDate return the exif modified date with subsec offset if present
@@ -121,8 +140,8 @@ func (e Exif) String() string {
 	sb := strings.Builder{}
 	sb.WriteString("Exif\n")
 	sb.WriteString(fmt.Sprintf("ImageType: \t%s\n", e.ImageType))
-	sb.WriteString(fmt.Sprintf("Make: \t\t%s\n", e.Make))
-	sb.WriteString(fmt.Sprintf("Model: \t\t%s\n", e.Model))
+	sb.WriteString(fmt.Sprintf("Make: \t\t%s\n", e.Make()))
+	sb.WriteString(fmt.Sprintf("Model: \t\t%s\n", e.Model()))
 	sb.WriteString(fmt.Sprintf("LensMake: \t%s\n", e.LensMake))
 	sb.WriteString(fmt.Sprintf("LensModel: \t%s\n", e.LensModel))
 	sb.WriteString(fmt.Sprintf("CameraSerial: \t%s\n", e.CameraSerial))

@@ -15,7 +15,7 @@ func DecodeJPEG(r io.ReadSeeker) (exif2.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif2.NewIfdReader(nil)
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)

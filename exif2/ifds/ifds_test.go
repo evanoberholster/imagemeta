@@ -8,7 +8,6 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestIfdString(t *testing.T) {
@@ -57,8 +56,8 @@ func TestIfdString(t *testing.T) {
 		tagTest(t, ifd, MknoteIFD, mknote.CanonAFInfo, "CanonAFInfo")
 		tagTest(t, ifd, 255, ExifTag, "0x8769")
 
-		ta := tag.Tag{}
-		ta.ID = v.rootTag
+		//ta := tag.Tag{}
+		//ta.ID = v.rootTag
 	}
 }
 
@@ -91,22 +90,5 @@ func TestTagString(t *testing.T) {
 		if TagString(v.id) != v.str {
 			t.Errorf("expected \"%s\" got \"%s\"", v.str, TagString(v.id))
 		}
-	}
-}
-
-func TestChildIfd(t *testing.T) {
-	tests := []struct {
-		t tag.Tag
-		i Ifd
-	}{
-		{t: tag.Tag{}, i: Ifd{}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: ExifTag, ByteOrder: utils.LittleEndian, ValueOffset: 12345}, i: Ifd{Offset: 12345, ByteOrder: utils.LittleEndian, Type: ExifIFD}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: GPSTag, ByteOrder: utils.LittleEndian, ValueOffset: 23456}, i: Ifd{Offset: 23456, ByteOrder: utils.LittleEndian, Type: GPSIFD}},
-		{t: tag.Tag{Ifd: uint8(IFD0), ID: SubIFDs, ByteOrder: utils.LittleEndian, ValueOffset: 112233}, i: Ifd{Offset: 112233, ByteOrder: utils.LittleEndian, Type: SubIFD}},
-		{t: tag.Tag{Ifd: uint8(ExifIFD), ID: exififd.MakerNote, ByteOrder: utils.BigEndian, ValueOffset: 3456}, i: Ifd{Offset: 3456, ByteOrder: utils.BigEndian, Type: MknoteIFD}},
-	}
-
-	for _, test := range tests {
-		assert.Equal(t, test.i, ChildIfd(test.t))
 	}
 }
