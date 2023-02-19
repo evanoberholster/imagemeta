@@ -5,27 +5,25 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/evanoberholster/imagemeta"
-	"github.com/evanoberholster/imagemeta/bmff"
 	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 func init() {
-	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.TraceLevel)
-	exif2.Logger = exif2.Logger.Level(zerolog.DebugLevel)
-	isobmff.Logger = isobmff.Logger.Level(zerolog.DebugLevel)
+	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.WarnLevel)
+	//exif2.Logger = exif2.Logger.Level(zerolog.DebugLevel)
+	//isobmff.Logger = isobmff.Logger.Level(zerolog.DebugLevel)
 }
 
-func main2() {
-	exif2.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
-	jpeg.Logger = exif2.Logger
-	bmff.Logger = exif2.Logger
-	dir := "../../test/img/"
+var (
+	dir = "../../test/img/"
+)
+
+func main() {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		panic(err)
@@ -33,7 +31,7 @@ func main2() {
 	for _, f := range files {
 		//if f.Size() > 1*1024*1024 {
 		name := f.Name()
-		if !(filepath.Ext(name) == ".CR3" || filepath.Ext(name) == ".CR2") {
+		if !(filepath.Ext(name) == ".CR3" || filepath.Ext(name) == ".CR2" || filepath.Ext(name) == ".ARW" || filepath.Ext(name) == ".NEF" || filepath.Ext(name) == ".HIF" || filepath.Ext(name) == ".GPR" || filepath.Ext(name) == ".RW2") {
 			continue
 		}
 		//fmt.Println(filepath.Ext(name))
@@ -48,7 +46,7 @@ func main2() {
 			}
 		}()
 		var exif exif2.Exif
-		fmt.Println(name)
+		fmt.Print(name + "\t\t")
 		//fmt.Println(f.Name())
 		exif, err = imagemeta.Decode(r)
 		if err != nil {
@@ -59,22 +57,20 @@ func main2() {
 
 		}
 		_ = exif
-
-		fmt.Println(exif.Model)
+		fmt.Printf("\t%s\t\t%s\n", exif.Make(), exif.Model())
 		//fmt.Println(string(exif.ApplicationNotes))
 		//fmt.Println(len(exif.ApplicationNotes))
 	}
 }
 
-func main() {
-	exif2.Logger = exif2.Logger.Level(zerolog.TraceLevel)
-	isobmff.Logger = isobmff.Logger.Level(zerolog.TraceLevel)
-	dir := "../../test/img/"
+func main3() {
 	//f, err := os.Open("../testImages/Heic.exif")
-	//f, err := os.Open("img1.jpg")
-	//f, err := os.Open(dir + "/" + "CanonR6_1.CR3")
-	f, err := os.Open(dir + "/" + "iPhone12.heic")
-	//f, err := os.Open(dir + "/" + "14.JPG")
+	//f, err := os.Open("test123.jpg")
+
+	//f, err := os.Open(dir + "/" + "iPhone13.heic")
+	f, err := os.Open(dir + "/" + "CanonR6_1.HIF")
+	//f, err := os.Open(dir + "/" + "2.CR2")
+	//f, err := os.Open("image.jpg")
 	if err != nil {
 		panic(err)
 	}
@@ -84,21 +80,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_ = e
 	fmt.Println(e)
 }
 
-func main3() {
-	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.TraceLevel)
-	exif2.Logger = exif2.Logger.Level(zerolog.ErrorLevel)
-	isobmff.Logger = isobmff.Logger.Level(zerolog.ErrorLevel)
-	dir := "../../test/img/"
+func main2() {
 	//f, err := os.Open("../testImages/Heic.exif")
 	//f, err := os.Open("img1.heif")
-	f, err := os.Open(dir + "/" + "CanonR5_1.CR3")
+	//f, err := os.Open(dir + "/" + "CanonSL3_1.CR3")
 	//f, err := os.Open(dir + "/" + "14.JPG")
 	//f, err := os.Open(dir + "/" + "CanonR5_1.HIF")
-	//f, err := os.Open(dir + "/" + "iPhone12.heic")
+	f, err := os.Open(dir + "/" + "iPhone11.heic")
 
 	//f, err := os.Open(dir + "/" + "5.heic")
 	if err != nil {
@@ -106,7 +97,8 @@ func main3() {
 	}
 	defer f.Close()
 
-	ir := exif2.NewIfdReader(f)
+	start := time.Now()
+	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
 	r := isobmff.NewReader(f)
@@ -118,6 +110,10 @@ func main3() {
 	if err := r.ReadMetadata(); err != nil {
 		panic(err)
 	}
+	if err := r.ReadMetadata(); err != nil {
+		panic(err)
+	}
+	fmt.Println(time.Since(start))
 	fmt.Println(r)
 	fmt.Println(ir.Exif)
 	//e, err := imagemeta.Decode(f)
