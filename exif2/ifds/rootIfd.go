@@ -235,6 +235,8 @@ var RootIfdTagIDMap = map[tag.ID]string{
 
 // RootIFD TagIDs
 const (
+	InteropIndex                  tag.ID = 0x0001
+	InteropVersion                tag.ID = 0x0002
 	ProcessingSoftware            tag.ID = 0x000b
 	NewSubfileType                tag.ID = 0x00fe
 	SubfileType                   tag.ID = 0x00ff

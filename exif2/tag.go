@@ -23,19 +23,16 @@ type Tag struct {
 
 // NewTag returns a new Tag from tagID, tagType, unitCount, valueOffset and rawValueOffset.
 // If tagType is Invalid returns ErrTagTypeNotValid
-func NewTag(tagID tag.ID, tagType tag.Type, unitCount uint32, valueOffset uint32, ifd ifds.IfdType, ifdIndex int8, byteOrder utils.ByteOrder) (Tag, error) {
-	t := Tag{
+func NewTag(tagID tag.ID, tagType tag.Type, unitCount uint32, valueOffset uint32, ifd ifds.IfdType, ifdIndex int8, byteOrder utils.ByteOrder) Tag {
+	return Tag{
 		ID:          tagID,
 		Type:        tagType,
 		UnitCount:   unitCount,
 		ValueOffset: valueOffset,
 		Ifd:         ifd,
+		IfdIndex:    ifdIndex,
 		ByteOrder:   byteOrder,
 	}
-	if !tagType.IsValid() {
-		return t, tag.ErrTagTypeNotValid
-	}
-	return t, nil
 }
 
 // MarshalZerologObject is a zerolog interface for logging
@@ -78,6 +75,11 @@ func (t Tag) IsType(tt tag.Type) bool {
 	return t.Type == tt
 }
 
+// IsValid returns true if tagType is valid
+func (t Tag) IsValid() bool {
+	return t.Type.IsValid()
+}
+
 // childIfd returns the Ifd if it is a Child of the current Tag
 // if it is not, it returns NullIFD
 func (t Tag) childIfd() ifds.Ifd {
@@ -85,18 +87,19 @@ func (t Tag) childIfd() ifds.Ifd {
 	case ifds.IFD0: // IFD0 Children
 		switch t.ID {
 		case ifds.ExifTag:
-			return ifds.NewIFD(t.ByteOrder, ifds.ExifIFD, t.IfdIndex, t.ValueOffset)
+			return ifds.NewIFD(t.ByteOrder, ifds.ExifIFD, t.IfdIndex, t.ValueOffset, 0)
 		case ifds.GPSTag:
-			return ifds.NewIFD(t.ByteOrder, ifds.GPSIFD, t.IfdIndex, t.ValueOffset)
-		case ifds.SubIFDs:
-			return ifds.NewIFD(t.ByteOrder, ifds.SubIFD, t.IfdIndex, t.ValueOffset)
+			return ifds.NewIFD(t.ByteOrder, ifds.GPSIFD, t.IfdIndex, t.ValueOffset, 0)
 		}
+
 	case ifds.ExifIFD: // ExifIfd Children
 		switch t.ID {
 		case exififd.MakerNote:
-			return ifds.NewIFD(t.ByteOrder, ifds.MknoteIFD, t.IfdIndex, t.ValueOffset)
+			return ifds.NewIFD(t.ByteOrder, ifds.MknoteIFD, t.IfdIndex, t.ValueOffset, 0)
 		}
+	case ifds.SubIfd0, ifds.SubIfd1, ifds.SubIfd2, ifds.SubIfd3, ifds.SubIfd4, ifds.SubIfd5:
+		return ifds.NewIFD(t.ByteOrder, t.Ifd, t.IfdIndex, t.ValueOffset, 0)
 	}
 
-	return ifds.NewIFD(t.ByteOrder, ifds.NullIFD, t.IfdIndex, t.ValueOffset)
+	return ifds.NewIFD(t.ByteOrder, ifds.NullIFD, t.IfdIndex, t.ValueOffset, 0)
 }

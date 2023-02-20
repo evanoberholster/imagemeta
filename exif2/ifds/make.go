@@ -74,11 +74,11 @@ func (cm CameraMake) String() string {
 }
 
 // CameraMakeFromString returns a camera make from the given string
-func CameraMakeFromString(str string) CameraMake {
+func CameraMakeFromString(str string) (CameraMake, bool) {
 	if cm, ok := mapStringCameraMake[str]; ok {
-		return cm
+		return cm, true
 	}
-	return CameraMakeUnknown
+	return CameraMakeUnknown, false
 }
 
 var mapStringCameraMake = map[string]CameraMake{

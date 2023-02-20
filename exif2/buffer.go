@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	tagMaxCount  = 96
-	bufferLength = 512
+	tagMaxCount  = 84
+	bufferLength = 1024
 )
 
 // buffer for data and tags
@@ -54,13 +54,11 @@ func (ir *ifdReader) readTagValue() (buf []byte, err error) {
 	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
 		return nil, err
 	}
-	n := int(t.Size())
-	n, err = ir.read(ir.buffer.buf[:n])
-	return ir.buffer.buf[:n], err
+	return ir.fastRead(int(t.Size()))
 }
 
-// Seeks underlying reader to next tag value
-func (ir *ifdReader) seekNextTag(t Tag) (err error) {
+// seekToTag seeks with the underlying reader to given tag value
+func (ir *ifdReader) seekToTag(t Tag) (err error) {
 	discard := int(t.ValueOffset) - int(ir.po)
 	if err = ir.discard(discard); err != nil && ir.logLevelError() {
 		t.logTag(ir.logError(err)).Uint32("ifdReaderPosition", ir.po).Uint32("discard", uint32(discard)).Send()
@@ -122,8 +120,8 @@ func (ir *ifdReader) discard(n int) (err error) {
 	if int(ir.exifLength) < n+int(ir.po) {
 		n = int(ir.exifLength) - int(ir.po)
 	}
-	if br, ok := ir.reader.(BufferedReader); ok {
-		n, err := br.Discard(n)
+	if ir.bufReader != nil {
+		n, err := ir.bufReader.Discard(n)
 		ir.po += uint32(n)
 		return err
 	}

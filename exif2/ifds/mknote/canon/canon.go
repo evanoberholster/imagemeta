@@ -29,7 +29,7 @@ var mapStringCameraModel = map[string]CameraModel{
 	"Canon EOS R8":            EOSR8,
 	"Canon EOS RP":            EOSRP,
 	"Canon EOS R":             EOSR,
-	"Canon SL3":               EOS250D,
+	"Canon EOS Rebel SL3":     EOS250D,
 	"Canon EOS 6D":            EOS6D,
 }
 
@@ -37,19 +37,19 @@ var mapCameraModelString = map[CameraModel]string{
 	EOS1DXMarkIII: "Canon EOS-1D X Mark III",
 	EOS90D:        "Canon EOS 90D",
 	EOSM200:       "Canon EOS M200",
-	EOSM50MarkII:  "Canon EOS M50m2",
+	EOSM50MarkII:  "Canon EOS M50 Mark II",
 	EOSM6MarkII:   "Canon EOS M6 Mark II",
 	EOSR10:        "Canon EOS R10",
 	EOSR3:         "Canon EOS R3",
 	EOSR50:        "Canon EOS R50",
 	EOSR5:         "Canon EOS R5",
-	EOSR6MarkII:   "Canon EOS R6m2",
+	EOSR6MarkII:   "Canon EOS R6 Mark II",
 	EOSR6:         "Canon EOS R6",
 	EOSR7:         "Canon EOS R7",
 	EOSR8:         "Canon EOS R8",
 	EOSRP:         "Canon EOS RP",
 	EOSR:          "Canon EOS R",
-	EOS250D:       "Canon SL3",
+	EOS250D:       "Canon EOS SL3",
 	EOS6D:         "Canon EOS 6D",
 }
 

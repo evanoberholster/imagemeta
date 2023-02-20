@@ -29,10 +29,7 @@ func TestChildIfd(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	t2, err := NewTag(tag.ID(0x0010), tag.TypeASCII, 16, 0x0002, 0, 0, 0)
-	if err != nil {
-		t.Error(err)
-	}
+	t2 := NewTag(tag.ID(0x0010), tag.TypeASCII, 16, 0x0002, 0, 0, 0)
 
 	if t2.ID != tag.ID(0x0010) {
 		t.Errorf("Incorrect Tag ID wanted 0x%04x got 0x%04x", tag.ID(0x0010), t2.ID)
@@ -57,9 +54,9 @@ func TestTag(t *testing.T) {
 		t.Errorf("Incorrect ID String wanted %v got %v", "0x0010", t2.ID.String())
 	}
 
-	t2, err = NewTag(tag.ID(0x0010), 100, 16, 0x0002, 0, 0, 0)
-	if err != tag.ErrTagTypeNotValid {
-		t.Errorf("Incorrect error wanted %s, got %s", tag.ErrTagTypeNotValid, err)
+	t2 = NewTag(tag.ID(0x0010), 100, 16, 0x0002, 0, 0, 0)
+	if t2.IsValid() {
+		t.Error("incorrect wanted invalid")
 	}
 	t2.Type = tag.TypeIfd
 	t2.UnitCount = 1

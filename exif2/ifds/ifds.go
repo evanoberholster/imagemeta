@@ -33,13 +33,23 @@ const (
 	MkNoteAppleIFD
 	MkNoteSonyIFD
 
+	// SubIfds
+	SubIfd0
+	SubIfd1
+	SubIfd2
+	SubIfd3
+	SubIfd4
+	SubIfd5
+	SubIfd6
+	SubIfd7
+
 	// IFD Stringer String
-	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/Makernote"
+	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/SubIfd0Ifd/SubIfd1Ifd/SubIfd2Ifd/SubIfd3Ifd/SubIfd4Ifd/SubIfd5Ifd/SubIfd6Ifd/SubIfd7"
 )
 
 var (
 	// IFD Stringer Index
-	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115, 133, 151}
+	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115, 133, 151, 162, 173, 184, 195, 206, 217, 228, 239}
 )
 
 // IsValid returns true if IFD is valid
@@ -73,9 +83,11 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 		return apple.TagAppleString(id)
 	case MkNoteSonyIFD:
 		return sony.TagSonyString(id)
+	case SubIfd0, SubIfd1, SubIfd2, SubIfd3, SubIfd4, SubIfd5, SubIfd6, SubIfd7:
+		return TagSubIfdString(id, ifdType)
+	default:
+		return id.String()
 	}
-
-	return id.String()
 }
 
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
@@ -88,12 +100,13 @@ type Ifd struct {
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.
-func NewIFD(byteOrder utils.ByteOrder, ifdType IfdType, index int8, offset uint32) Ifd {
+func NewIFD(byteOrder utils.ByteOrder, ifdType IfdType, index int8, ifdOffset uint32, baseOffset uint32) Ifd {
 	return Ifd{
-		ByteOrder: byteOrder,
-		Type:      ifdType,
-		Offset:    offset,
-		Index:     index,
+		ByteOrder:  byteOrder,
+		Type:       ifdType,
+		Offset:     ifdOffset,
+		BaseOffset: baseOffset,
+		Index:      index,
 	}
 }
 

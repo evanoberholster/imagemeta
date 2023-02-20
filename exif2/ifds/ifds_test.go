@@ -32,7 +32,7 @@ func TestIfdString(t *testing.T) {
 	}
 
 	for _, v := range testIfds {
-		ifd := NewIFD(utils.LittleEndian, v.ifdType, 0, 0)
+		ifd := NewIFD(utils.LittleEndian, v.ifdType, 0, 0, 0)
 
 		// Ifd Valid
 		if ifd.IsValid() != v.valid {

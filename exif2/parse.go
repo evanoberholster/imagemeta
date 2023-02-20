@@ -1,6 +1,7 @@
 package exif2
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/apple"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/canon"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -22,13 +24,9 @@ func (ir *ifdReader) parseTag(t Tag) {
 	case ifds.IFD0:
 		switch t.ID {
 		case ifds.Make:
-			str := ir.ParseBuffer(t)
-			ir.Exif.CameraMake = ifds.CameraMakeFromString(string(str))
-			if ir.Exif.CameraMake == ifds.CameraMakeUnknown {
-				ir.Exif.make = string(str)
-			}
+			ir.Exif.CameraMake, ir.Exif.Make = ir.ParseCameraMake(t)
 		case ifds.Model:
-			ir.parseCameraModel(t)
+			ir.Exif.CameraModel, ir.Exif.Model = ir.ParseCameraModel(t)
 		case ifds.Artist:
 			ir.Exif.Artist = ir.ParseString(t)
 		case ifds.Copyright:
@@ -48,13 +46,22 @@ func (ir *ifdReader) parseTag(t Tag) {
 		case ifds.ImageDescription:
 			ir.Exif.ImageDescription = ir.ParseString(t)
 		case ifds.DateTime:
-			ir.Exif.modifyDate = ir.ParseDate(t)
+			ir.Exif.Time.modifyDate = ir.ParseDate(t)
+		case ifds.SubIFDs:
+			fmt.Println("SubIfds here")
+		case ifds.DNGVersion:
+			// If DNG version > 0 imagetype is DNG
+			if ir.Exif.ImageType == imagetype.ImageTiff {
+				ir.Exif.ImageType = imagetype.ImageDNG
+			}
+
 		case ifds.CameraSerialNumber:
 			if ir.Exif.CameraSerial == "" {
 				ir.Exif.CameraSerial = ir.ParseString(t)
 			}
 		case ifds.ApplicationNotes:
-		//ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
+			//fmt.Println(ir.parseApplicationNotes(t))
+		//ir.Exif.ApplicationNotes =
 		default:
 			//t.logTag(ir.logWarn()).Send()
 		}
@@ -102,10 +109,7 @@ func (ir *ifdReader) parseTag(t Tag) {
 			ir.Exif.MeteringMode = meta.MeteringMode(ir.ParseUint16(t))
 		case exififd.ISOSpeedRatings:
 			ir.Exif.ISOSpeed = ir.ParseUint32(t)
-		case ifds.DateTimeOriginal:
-			ir.Exif.dateTimeOriginal = ir.ParseDate(t)
-		case ifds.DateTimeDigitized:
-			ir.Exif.createDate = ir.ParseDate(t)
+
 		case ifds.Flash:
 			ir.Exif.Flash = meta.Flash(ir.ParseUint16(t))
 		case ifds.FocalLength:
@@ -114,18 +118,22 @@ func (ir *ifdReader) parseTag(t Tag) {
 			ir.Exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
 		case exififd.LensSpecification:
 			ir.Exif.LensInfo = ir.parseLensInfo(t)
+		case ifds.DateTimeOriginal:
+			ir.Exif.Time.dateTimeOriginal = ir.ParseDate(t)
+		case ifds.DateTimeDigitized:
+			ir.Exif.Time.createDate = ir.ParseDate(t)
 		case exififd.SubSecTime:
-			ir.Exif.subSecTime = ir.ParseSubSecTime(t)
+			ir.Exif.Time.subSecTime = ir.ParseSubSecTime(t)
 		case exififd.SubSecTimeOriginal:
-			ir.Exif.subSecTimeOriginal = ir.ParseSubSecTime(t)
+			ir.Exif.Time.subSecTimeOriginal = ir.ParseSubSecTime(t)
 		case exififd.SubSecTimeDigitized:
-			ir.Exif.subSecTimeDigitized = ir.ParseSubSecTime(t)
+			ir.Exif.Time.subSecTimeDigitized = ir.ParseSubSecTime(t)
 		case exififd.OffsetTime:
-			ir.Exif.offsetTime = ir.ParseOffsetTime(t)
+			ir.Exif.Time.offsetTime = ir.ParseOffsetTime(t)
 		case exififd.OffsetTimeOriginal:
-			ir.Exif.offsetTimeOriginal = ir.ParseOffsetTime(t)
+			ir.Exif.Time.offsetTimeOriginal = ir.ParseOffsetTime(t)
 		case exififd.OffsetTimeDigitized:
-			ir.Exif.offsetTimeDigitized = ir.ParseOffsetTime(t)
+			ir.Exif.Time.offsetTimeDigitized = ir.ParseOffsetTime(t)
 		default:
 			//t.logTag(ir.logWarn()).Send()
 		}
@@ -147,39 +155,48 @@ func (ir *ifdReader) parseTag(t Tag) {
 			ir.Exif.GPS.time = ir.parseGPSTimeStamp(t)
 		case gpsifd.GPSDateStamp:
 			ir.Exif.GPS.date = ir.parseGPSDateStamp(t)
-
 		default:
 			//t.logTag(ir.logWarn()).Send()
-			//default:
-			//	fmt.Println(tagString(t))
-			//	fmt.Println(string(ir.ParseString(t)))
 		}
 	}
 }
 
-func (ir *ifdReader) parseCameraModel(t Tag) {
+func (ir *ifdReader) ParseCameraMake(t Tag) (ifds.CameraMake, string) {
+	str := ir.ParseBuffer(t)
+	if mk, ok := ifds.CameraMakeFromString(string(str)); ok {
+		return mk, mk.String()
+	}
+	return ifds.CameraMakeUnknown, string(str)
+}
+
+func (ir *ifdReader) ParseCameraModel(t Tag) (ifds.CameraModel, string) {
 	str := ir.ParseBuffer(t)
 	switch ir.Exif.CameraMake {
 	case ifds.Canon:
 		if model, ok := canon.CameraModelFromString(string(str)); ok {
-			ir.Exif.CameraModel = ifds.CameraModel(model)
-			return
+			return ifds.CameraModel(model), model.String()
 		}
 	case ifds.Apple:
 		if model, ok := apple.CameraModelFromString(string(str)); ok {
 			ir.Exif.CameraModel = ifds.CameraModel(model)
-			return
+			return ifds.CameraModel(model), model.String()
 		}
 	}
-	ir.Exif.model = string(str)
+	return ifds.CameraModelUnknown, string(str)
 }
 
 func (ir *ifdReader) parseApplicationNotes(t Tag) ApplicationNotes {
-	buf, err := ir.readTagValue()
+	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
+		return nil
+	}
+	n := t.Size()
+	if t.Size() > bufferLength {
+		n = bufferLength
+	}
+	buf, err := ir.fastRead(int(n))
 	if err != nil {
 		return nil
 	}
-
 	res1 := trimNULBuffer(buf)
 	res2 := make([]byte, len(res1))
 	copy(res2, res1)
@@ -220,16 +237,12 @@ func (ir *ifdReader) parseExposureBias(t Tag) meta.ExposureBias {
 
 // parseFocalLength supports tag type Rational, SRational, Short, and Long
 func (ir *ifdReader) parseFocalLength(t Tag) meta.FocalLength {
-	if t.IsType(tag.TypeShort) || t.IsType(tag.TypeLong) {
+	switch t.Type {
+	case tag.TypeShort, tag.TypeLong:
 		return meta.NewFocalLength(ir.ParseUint32(t), 1)
-	}
-	if !t.IsEmbedded() && (t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return meta.FocalLength(0)
-		}
-
-		return meta.FocalLength(float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
+	case tag.TypeRational, tag.TypeSignedRational:
+		val := ir.ParseRationalU(t)
+		return meta.FocalLength(float32(val[0]) / float32(val[1]))
 	}
 	if ir.logLevelWarn() {
 		t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
@@ -241,9 +254,13 @@ func (ir *ifdReader) parseFocalLength(t Tag) meta.FocalLength {
 // Embedded tag with value length 4 bytes.
 // Value is in milliseconds.
 func (ir *ifdReader) ParseSubSecTime(t Tag) uint16 {
-	if t.IsEmbedded() && (t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul)) {
-		t.EmbeddedValue(ir.buffer.buf[:4])
-		return uint16(parseStrUint(ir.buffer.buf[:4]))
+	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
+		if t.IsEmbedded() {
+			t.EmbeddedValue(ir.buffer.buf[:4])
+			return uint16(parseStrUint(ir.buffer.buf[:4]))
+		}
+		buf := ir.ParseBuffer(t)
+		return uint16(parseStrUint(buf) / 1000)
 	}
 	if ir.logLevelWarn() {
 		t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
@@ -269,18 +286,16 @@ func (ir *ifdReader) parseLensInfo(t Tag) LensInfo {
 // ParseRationalU parses an Unsigned Rational value.
 // Non-embedded tag with value length 8 bytes.
 func (ir *ifdReader) ParseRationalU(t Tag) [2]uint32 {
-	if !t.IsEmbedded() {
-		switch t.Type {
-		case tag.TypeSignedRational, tag.TypeRational:
-			buf, err := ir.readTagValue()
-			if err != nil {
-				return [2]uint32{}
-			}
-			return [2]uint32{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
-		default:
-			if ir.logLevelWarn() {
-				t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
-			}
+	switch t.Type {
+	case tag.TypeSignedRational, tag.TypeRational:
+		buf, err := ir.readTagValue()
+		if err != nil {
+			return [2]uint32{}
+		}
+		return [2]uint32{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
+	default:
+		if ir.logLevelWarn() {
+			t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
 		}
 	}
 	return [2]uint32{}
@@ -334,6 +349,9 @@ func (ir *ifdReader) ParseString(t Tag) string {
 	return ""
 }
 
+// ParseBuffer parses an ASCII value.
+// Non-embedded or embedded tag with variable byte length.
+// This function does not allocate.
 func (ir *ifdReader) ParseBuffer(t Tag) []byte {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(ir.buffer.buf[:4])
@@ -483,6 +501,7 @@ func (ir *ifdReader) parseGPSTimeStamp(t Tag) uint32 {
 	return 0
 }
 
+// parseGPSDateStamp parses a GPSDateStamp from the tag
 func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
 	if t.IsType(tag.TypeASCII) {
 		buf, err := ir.readTagValue()
@@ -531,7 +550,10 @@ func (ir *ifdReader) ParseGPSRef(t Tag) bool {
 	return false
 }
 
+// TagParser interface is used for Custom Tag Parsers.
 type TagParser interface {
+	ParseCameraMake(t Tag) (ifds.CameraMake, string)
+	ParseCameraModel(t Tag) (ifds.CameraModel, string)
 	ParseDate(t Tag) time.Time
 	ParseGPSAltitude(t Tag) float32
 	ParseGPSCoord(t Tag) float64
@@ -542,4 +564,5 @@ type TagParser interface {
 	ParseUint16(t Tag) uint16
 }
 
+// TagParserFn function is used for Custom Tag Parsers.
 type TagParserFn func(p TagParser, t Tag) error
