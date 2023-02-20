@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
-	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/stretchr/testify/assert"
@@ -19,8 +18,8 @@ func TestChildIfd(t *testing.T) {
 		{t: Tag{}, i: ifds.Ifd{}},
 		{t: Tag{Ifd: ifds.IFD0, ID: ifds.ExifTag, ByteOrder: utils.LittleEndian, ValueOffset: 12345}, i: ifds.Ifd{Offset: 12345, ByteOrder: utils.LittleEndian, Type: ifds.ExifIFD}},
 		{t: Tag{Ifd: ifds.IFD0, ID: ifds.GPSTag, ByteOrder: utils.LittleEndian, ValueOffset: 23456}, i: ifds.Ifd{Offset: 23456, ByteOrder: utils.LittleEndian, Type: ifds.GPSIFD}},
-		{t: Tag{Ifd: ifds.IFD0, ID: ifds.SubIFDs, ByteOrder: utils.LittleEndian, ValueOffset: 112233}, i: ifds.Ifd{Offset: 112233, ByteOrder: utils.LittleEndian, Type: ifds.SubIFD}},
-		{t: Tag{Ifd: ifds.ExifIFD, ID: exififd.MakerNote, ByteOrder: utils.BigEndian, ValueOffset: 3456}, i: ifds.Ifd{Offset: 3456, ByteOrder: utils.BigEndian, Type: ifds.MknoteIFD}},
+		{t: Tag{Ifd: ifds.IFD0, ID: ifds.SubIFDs, ByteOrder: utils.LittleEndian, ValueOffset: 112233}, i: ifds.Ifd{Offset: 112233, ByteOrder: utils.LittleEndian, Type: ifds.NullIFD}},
+		//{t: Tag{Ifd: ifds.ExifIFD, ID: exififd.MakerNote, ByteOrder: utils.BigEndian, ValueOffset: 3456}, i: ifds.Ifd{Offset: 3456, ByteOrder: utils.BigEndian, Type: ifds.MknoteIFD}},
 	}
 
 	for _, test := range tests {

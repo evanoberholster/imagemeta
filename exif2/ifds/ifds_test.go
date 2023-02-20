@@ -53,7 +53,7 @@ func TestIfdString(t *testing.T) {
 		tagTest(t, ifd, IFD0, ExifTag, "ExifTag")
 		tagTest(t, ifd, ExifIFD, exififd.ApertureValue, "ApertureValue")
 		tagTest(t, ifd, GPSIFD, gpsifd.GPSAltitude, "GPSAltitude")
-		tagTest(t, ifd, MknoteIFD, canon.CanonAFInfo, "CanonAFInfo")
+		tagTest(t, ifd, MkNoteCanonIFD, canon.CanonAFInfo, "CanonAFInfo")
 		tagTest(t, ifd, 255, ExifTag, "0x8769")
 
 		//ta := tag.Tag{}
