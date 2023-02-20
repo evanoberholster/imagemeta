@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -22,7 +21,7 @@ var (
 )
 
 func main() {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		panic(err)
 	}
@@ -59,17 +58,12 @@ func main() {
 		//fmt.Println(string(exif.ApplicationNotes))
 		//fmt.Println(len(exif.ApplicationNotes))
 	}
+	main2()
 }
 
-func main3() {
-	//f, err := os.Open("../testImages/Heic.exif")
-	//f, err := os.Open("iPad2022_1.jpeg")
-
+func main2() {
 	f, err := os.Open(dir + "/" + "DJI.dng")
 	//f, err := os.Open(dir + "/" + "iPhone11.heic")
-	//f, err := os.Open(dir + "/" + "8.heic")
-	//f, err := os.Open(dir + "/" + "2.CR2")
-	//f, err := os.Open("test123.jpg")
 	if err != nil {
 		panic(err)
 	}

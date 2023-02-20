@@ -47,7 +47,7 @@ func (ir *ifdReader) parseTag(t Tag) {
 		case ifds.DateTime:
 			ir.Exif.Time.modifyDate = ir.ParseDate(t)
 		case ifds.DNGVersion:
-			// If DNG version > 0 imagetype is DNG
+			// TODO: If DNG version > 0 imagetype is DNG
 			if ir.Exif.ImageType == imagetype.ImageTiff {
 				ir.Exif.ImageType = imagetype.ImageDNG
 			}
@@ -56,8 +56,8 @@ func (ir *ifdReader) parseTag(t Tag) {
 			if ir.Exif.CameraSerial == "" {
 				ir.Exif.CameraSerial = ir.ParseString(t)
 			}
-		case ifds.ApplicationNotes:
-			//fmt.Println(ir.parseApplicationNotes(t))
+		//case ifds.ApplicationNotes:
+		//fmt.Println(ir.parseApplicationNotes(t))
 		//ir.Exif.ApplicationNotes =
 		default:
 			//t.logTag(ir.logWarn()).Send()
@@ -182,23 +182,23 @@ func (ir *ifdReader) ParseCameraModel(t Tag) (ifds.CameraModel, string) {
 	return ifds.CameraModelUnknown, string(str)
 }
 
-func (ir *ifdReader) parseApplicationNotes(t Tag) ApplicationNotes {
-	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
-		return nil
-	}
-	n := t.Size()
-	if t.Size() > bufferLength {
-		n = bufferLength
-	}
-	buf, err := ir.fastRead(int(n))
-	if err != nil {
-		return nil
-	}
-	res1 := trimNULBuffer(buf)
-	res2 := make([]byte, len(res1))
-	copy(res2, res1)
-	return res2
-}
+//func (ir *ifdReader) parseApplicationNotes(t Tag) ApplicationNotes {
+//	if err := ir.discard(int(t.ValueOffset) - int(ir.po)); err != nil {
+//		return nil
+//	}
+//	n := t.Size()
+//	if t.Size() > bufferLength {
+//		n = bufferLength
+//	}
+//	buf, err := ir.fastRead(int(n))
+//	if err != nil {
+//		return nil
+//	}
+//	res1 := trimNULBuffer(buf)
+//	res2 := make([]byte, len(res1))
+//	copy(res2, res1)
+//	return res2
+//}
 
 func (ir *ifdReader) parseAperture(t Tag) meta.Aperture {
 	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {

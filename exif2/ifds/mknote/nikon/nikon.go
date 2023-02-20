@@ -2,7 +2,7 @@ package nikon
 
 // IsNikonMkNoteHeaderBytes represents "Nikon" the first 5 bytes of the
 func IsNikonMkNoteHeaderBytes(buf []byte) bool {
-	return "Nikon" == string(buf[:5])
+	return string(buf[:5]) == "Nikon"
 }
 
 // CameraModel is a Nikon Camera Model found in Exif

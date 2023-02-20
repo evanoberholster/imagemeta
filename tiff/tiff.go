@@ -22,7 +22,7 @@ const (
 // beginning of most Image files, so this likely doesn't have a high cost.
 func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader, err error) {
 	br, ok := r.(*bufio.Reader)
-	if !ok {
+	if !ok && br.Size() > bufReaderSize {
 		br = bufio.NewReader(r)
 	}
 	discarded := 0

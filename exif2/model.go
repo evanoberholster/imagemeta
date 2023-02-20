@@ -211,7 +211,7 @@ type TimeTags struct {
 	subSecTime          uint16         // ExifIFD / 0x9290 (fractional seconds for ModifyDate)
 	subSecTimeOriginal  uint16         // ExifIFD / 0x9291 (fractional seconds for DateTimeOriginal)
 	subSecTimeDigitized uint16         // ExifIFD / 0x9292 (fractional seconds for CreateDate)
-	timeZoneOffset      [2]int8        // ExifIFD / 0x882a // FixMe (1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate)
+	//timeZoneOffset      [2]int8        // ExifIFD / 0x882a // FixMe (1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate)
 }
 
 // ApplicationNotes data are stil work in process

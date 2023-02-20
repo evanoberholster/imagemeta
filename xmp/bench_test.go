@@ -3,7 +3,6 @@ package xmp
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -29,7 +28,7 @@ func BenchmarkXMPRead(b *testing.B) {
 	}
 	defer f.Close()
 
-	a, _ := ioutil.ReadAll(f)
+	a, _ := io.ReadAll(f)
 	r2 := bytes.NewReader(a)
 
 	b.ReportAllocs()

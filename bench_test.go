@@ -3,7 +3,7 @@ package imagemeta
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -46,7 +46,7 @@ func BenchmarkCR3(b *testing.B) {
 			if err != nil {
 				panic(err)
 			}
-			buf, err := ioutil.ReadAll(f)
+			buf, err := io.ReadAll(f)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -129,7 +129,7 @@ func BenchmarkTiff(b *testing.B) {
 				b.Fatal(err)
 			}
 			defer f.Close()
-			buf, err := ioutil.ReadAll(f)
+			buf, err := io.ReadAll(f)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -157,7 +157,7 @@ func BenchmarkJPEG(b *testing.B) {
 				b.Fatal(err)
 			}
 			defer f.Close()
-			buf, err := ioutil.ReadAll(f)
+			buf, err := io.ReadAll(f)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -185,7 +185,7 @@ func BenchmarkHeif(b *testing.B) {
 				b.Fatal(err)
 			}
 			defer f.Close()
-			buf, err := ioutil.ReadAll(f)
+			buf, err := io.ReadAll(f)
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -28,12 +28,12 @@ func trimNULBuffer(buf []byte) []byte {
 	return nil
 }
 
-func lowerCase(buf []byte) []byte {
-	for i := 0; i < len(buf); i++ {
-		a := buf[i]
-		if 'A' <= a && a <= 'Z' {
-			buf[i] += a
-		}
-	}
-	return buf
-}
+//func lowerCase(buf []byte) []byte {
+//	for i := 0; i < len(buf); i++ {
+//		a := buf[i]
+//		if 'A' <= a && a <= 'Z' {
+//			buf[i] += a
+//		}
+//	}
+//	return buf
+//}

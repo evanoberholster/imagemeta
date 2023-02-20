@@ -38,6 +38,7 @@ func (ir *ifdReader) DecodeTiff(r io.Reader, h meta.ExifHeader) error {
 	ir.ResetReader(r)
 
 	ir.Exif.ImageType = h.ImageType
+	ir.firstIfdOffset = h.FirstIfdOffset
 	ir.exifLength = 4 * 1024 * 1024 // Max size is 4 MB
 	if err := ir.discard(int(h.FirstIfdOffset)); err != nil {
 		return err
@@ -53,6 +54,7 @@ func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) (err error) {
 	}
 	ir.ResetReader(r)
 	ir.Exif.ImageType = h.ImageType
+	ir.firstIfdOffset = h.FirstIfdOffset
 	ir.exifLength = h.ExifLength
 	if err = ir.discard(int(h.FirstIfdOffset)); err != nil {
 		if ir.logLevelError() {
@@ -74,6 +76,7 @@ func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) (err error) {
 	ir.ResetReader(r)
 	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
+	ir.firstIfdOffset = h.FirstIfdOffset
 	ir.po = h.FirstIfdOffset
 	err = ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset, 0))
 	return err

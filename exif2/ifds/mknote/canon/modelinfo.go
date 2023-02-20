@@ -1,8 +1,8 @@
 package canon
 
 var (
-	// uint32 is model number from Canon Makernotes
-	mapCanonModelID = map[uint32]CameraModel{
+	// MapCanonModelID are uint32 is model number from Canon Makernotes
+	MapCanonModelID = map[uint32]CameraModel{
 		0x1010000: PowerShotA30,
 		0x1040000: PowerShotS300,
 		0x1060000: PowerShotA20,
