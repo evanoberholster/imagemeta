@@ -1,7 +1,0 @@
-### Makernotes 
-
-## Canon
-
-## Nikon
-
-## Sony

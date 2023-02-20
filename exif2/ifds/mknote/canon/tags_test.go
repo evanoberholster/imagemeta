@@ -1,15 +1,6 @@
-package mknote
+package canon
 
-import (
-	"testing"
-)
-
-func TestIsNikon(t *testing.T) {
-	v := []byte("Nikon")
-	if !IsNikonMkNoteHeaderBytes(v) {
-		t.Errorf("Error identifying NikonMkNoteHeaderBytes")
-	}
-}
+import "testing"
 
 func TestString(t *testing.T) {
 	if TagCanonString(CanonAFInfo) != "CanonAFInfo" {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
-	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/canon"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -53,7 +53,7 @@ func TestIfdString(t *testing.T) {
 		tagTest(t, ifd, IFD0, ExifTag, "ExifTag")
 		tagTest(t, ifd, ExifIFD, exififd.ApertureValue, "ApertureValue")
 		tagTest(t, ifd, GPSIFD, gpsifd.GPSAltitude, "GPSAltitude")
-		tagTest(t, ifd, MknoteIFD, mknote.CanonAFInfo, "CanonAFInfo")
+		tagTest(t, ifd, MknoteIFD, canon.CanonAFInfo, "CanonAFInfo")
 		tagTest(t, ifd, 255, ExifTag, "0x8769")
 
 		//ta := tag.Tag{}

@@ -1,5 +1,4 @@
-// Package mknote provides functions and types for decoding Exif Makernote values
-package mknote
+package canon
 
 import (
 	"github.com/evanoberholster/imagemeta/exif2/tag"
@@ -7,11 +6,10 @@ import (
 
 // TagCanonString returns the string representation of a tag.ID for Canon Makernotes
 func TagCanonString(id tag.ID) string {
-	name, ok := TagCanonIDMap[id]
-	if !ok {
-		return id.String()
+	if name, ok := TagCanonIDMap[id]; ok {
+		return name
 	}
-	return name
+	return id.String()
 }
 
 // TODO: TagTypeMap is a Map of tag.ID to default tag,Type

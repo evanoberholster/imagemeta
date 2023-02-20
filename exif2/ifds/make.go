@@ -1,5 +1,7 @@
 package ifds
 
+//go:generate stringer -type=CameraMake
+
 // CameraMake is Camera Make found in Exif
 type CameraMake uint16
 
@@ -54,15 +56,18 @@ const (
 	Vivitar
 	Xiamoi
 	ZTE
+
+	//Additions
+	Hisilicon
 )
 
 var (
-	_strCameraMake       = "AcerAgfaAiptekAppleAsusBenQCanonCasioDJIFujiFilmGeGeniusGoogleGoProHasselbladHPHitachiHTCHuaweiInsta360KodakKonicaKyoceraLeicaLGMamyiaMicrosoftMinoltaMotorolaNikonNokiaOlympusOnePlusPanasonicPentaxPhaseOnePolaroidRIMRicohSamsungSanyoSharpSigmaSonySonyEricssonToshibaVivitarXiamoiZTE"
-	_strCameraMakeOffset = []uint16{0, 0, 4, 8, 14, 19, 23, 27, 32, 37, 40, 48, 50, 56, 62, 67, 77, 79, 86, 89, 95, 103, 108, 114, 121, 126, 128, 134, 143, 150, 158, 163, 168, 175, 182, 191, 197, 205, 213, 216, 221, 228, 233, 238, 243, 247, 259, 266, 273, 279, 282}
+	_strCameraMake       = "AcerAgfaAiptekAppleAsusBenQCanonCasioDJIFujiFilmGeGeniusGoogleGoProHasselbladHPHitachiHTCHuaweiInsta360KodakKonicaKyoceraLeicaLGMamyiaMicrosoftMinoltaMotorolaNikonNokiaOlympusOnePlusPanasonicPentaxPhaseOnePolaroidRIMRicohSamsungSanyoSharpSigmaSonySonyEricssonToshibaVivitarXiamoiZTEHisilicon"
+	_strCameraMakeOffset = []uint16{0, 0, 4, 8, 14, 19, 23, 27, 32, 37, 40, 48, 50, 56, 62, 67, 77, 79, 86, 89, 95, 103, 108, 114, 121, 126, 128, 134, 143, 150, 158, 163, 168, 175, 182, 191, 197, 205, 213, 216, 221, 228, 233, 238, 243, 247, 259, 266, 273, 279, 282, 291}
 )
 
 func (cm CameraMake) String() string {
-	if cm <= ZTE {
+	if cm <= Hisilicon {
 		return _strCameraMake[_strCameraMakeOffset[cm]:_strCameraMakeOffset[cm+1]]
 	}
 	return ""
@@ -96,7 +101,7 @@ var mapStringCameraMake = map[string]CameraMake{
 	"HP":                HP,
 	"Hitachi":           Hitachi,
 	"HTC":               HTC,
-	"Huawei":            Huawei,
+	"HUAWEI":            Huawei,
 	"Insta360":          Insta360,
 	"Kodak":             Kodak,
 	"Konica":            Konica,
@@ -129,4 +134,5 @@ var mapStringCameraMake = map[string]CameraMake{
 	"Vivitar":           Vivitar,
 	"Xiamoi":            Xiamoi,
 	"ZTE":               ZTE,
+	"Hisilicon":         Hisilicon,
 }

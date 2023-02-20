@@ -7,6 +7,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/apple"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/canon"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -55,7 +56,7 @@ func (ir *ifdReader) parseTag(t Tag) {
 		case ifds.ApplicationNotes:
 		//ir.Exif.ApplicationNotes = ir.parseApplicationNotes(t)
 		default:
-			t.logTag(ir.logWarn()).Send()
+			//t.logTag(ir.logWarn()).Send()
 		}
 	case ifds.ExifIFD:
 		switch t.ID {
@@ -131,17 +132,17 @@ func (ir *ifdReader) parseTag(t Tag) {
 	case ifds.GPSIFD:
 		switch t.ID {
 		case gpsifd.GPSAltitudeRef:
-			ir.Exif.GPS.altitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.altitudeRef = ir.ParseGPSRef(t)
 		case gpsifd.GPSLatitudeRef:
-			ir.Exif.GPS.latitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.latitudeRef = ir.ParseGPSRef(t)
 		case gpsifd.GPSLongitudeRef:
-			ir.Exif.GPS.longitudeRef = ir.parseGPSRef(t)
+			ir.Exif.GPS.longitudeRef = ir.ParseGPSRef(t)
 		case gpsifd.GPSAltitude:
-			ir.Exif.GPS.altitude = ir.parseGPSAltitude(t)
+			ir.Exif.GPS.altitude = ir.ParseGPSAltitude(t)
 		case gpsifd.GPSLatitude:
-			ir.Exif.GPS.latitude = ir.parseGPSCoord(t)
+			ir.Exif.GPS.latitude = ir.ParseGPSCoord(t)
 		case gpsifd.GPSLongitude:
-			ir.Exif.GPS.longitude = ir.parseGPSCoord(t)
+			ir.Exif.GPS.longitude = ir.ParseGPSCoord(t)
 		case gpsifd.GPSTimeStamp:
 			ir.Exif.GPS.time = ir.parseGPSTimeStamp(t)
 		case gpsifd.GPSDateStamp:
@@ -161,6 +162,11 @@ func (ir *ifdReader) parseCameraModel(t Tag) {
 	switch ir.Exif.CameraMake {
 	case ifds.Canon:
 		if model, ok := canon.CameraModelFromString(string(str)); ok {
+			ir.Exif.CameraModel = ifds.CameraModel(model)
+			return
+		}
+	case ifds.Apple:
+		if model, ok := apple.CameraModelFromString(string(str)); ok {
 			ir.Exif.CameraModel = ifds.CameraModel(model)
 			return
 		}
@@ -266,7 +272,10 @@ func (ir *ifdReader) ParseRationalU(t Tag) [2]uint32 {
 	if !t.IsEmbedded() {
 		switch t.Type {
 		case tag.TypeSignedRational, tag.TypeRational:
-			buf, _ := ir.readTagValue()
+			buf, err := ir.readTagValue()
+			if err != nil {
+				return [2]uint32{}
+			}
 			return [2]uint32{t.ByteOrder.Uint32(buf[:4]), t.ByteOrder.Uint32(buf[4:8])}
 		default:
 			if ir.logLevelWarn() {
@@ -403,11 +412,11 @@ func (ir *ifdReader) ParseOffsetTime(t Tag) *time.Location {
 	return time.UTC
 }
 
-// parseGPSCoord parses the GPS Coordinate (Lat or Lng) from the corresponding Tag.
-func (ir *ifdReader) parseGPSCoord(t Tag) float64 {
+// ParseGPSCoord parses the GPS Coordinate (Lat or Lng) from the corresponding Tag.
+func (ir *ifdReader) ParseGPSCoord(t Tag) float64 {
 	if t.UnitCount == 3 {
 		switch t.Type {
-		case tag.TypeRational, tag.TypeSignedRational:
+		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
 			buf, err := ir.readTagValue()
 			if err != nil {
 				return 0.0
@@ -418,22 +427,23 @@ func (ir *ifdReader) parseGPSCoord(t Tag) float64 {
 			return coord
 		}
 	}
-	// Some cameras write tag out of spec using signed rational. We accept that too.
 	if ir.logLevelWarn() {
 		t.logTag(ir.logWarn()).Msg("error reading GPS Coord. Tag is not Rational or SRational")
 	}
 	return 0.0
 }
 
-// parseGPSAltitude parses the GPS Altitude from the corresponding Tag.
-func (ir *ifdReader) parseGPSAltitude(t Tag) float32 {
-	// Some cameras write tag out of spec using signed rational. We accept that too.
-	if t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational) {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return 0.0
+// ParseGPSAltitude parses the GPS Altitude from the corresponding Tag.
+func (ir *ifdReader) ParseGPSAltitude(t Tag) float32 {
+	if t.UnitCount == 1 {
+		switch t.Type {
+		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
+			buf, err := ir.readTagValue()
+			if err != nil {
+				return 0.0
+			}
+			return (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
 		}
-		return (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
 	}
 	if ir.logLevelWarn() {
 		t.logTag(ir.logWarn()).Msg("error reading GPS Alt. Tag is not Rational or SRational")
@@ -501,7 +511,9 @@ func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
 	return time.Time{}
 }
 
-func (ir *ifdReader) parseGPSRef(t Tag) bool {
+// ParseGPSRef parsese the GPS Reference for GPSAltitudeRef, GPSLatitudeRef, and GPSLongitudeRef.
+// Returns bool, true is reprsentative of a negative value (-1 Altitude, S Latitude, or W Longitude)
+func (ir *ifdReader) ParseGPSRef(t Tag) bool {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(ir.buffer.buf[:4])
 		switch t.ID {
@@ -513,11 +525,16 @@ func (ir *ifdReader) parseGPSRef(t Tag) bool {
 			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'W')
 		}
 	}
+	if ir.logLevelWarn() {
+		t.logTag(ir.logWarn()).Msg("error reading GPS Reference")
+	}
 	return false
 }
 
 type TagParser interface {
 	ParseDate(t Tag) time.Time
+	ParseGPSAltitude(t Tag) float32
+	ParseGPSCoord(t Tag) float64
 	ParseRationalU(t Tag) [2]uint32
 	ParseString(t Tag) string
 	ParseSubSecTime(t Tag) uint16

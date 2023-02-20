@@ -6,7 +6,10 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
-	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/apple"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/canon"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/nikon"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/sony"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
@@ -27,14 +30,16 @@ const (
 	DNGAdobeDataIFD
 	MkNoteCanonIFD
 	MkNoteNikonIFD
+	MkNoteAppleIFD
+	MkNoteSonyIFD
 
 	// IFD Stringer String
-	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/Makernote"
+	_IFDStringerString = "UnknownIfdIfdIfd/SubIfdIfd/ExifIfd/GPSIfd/IopIfd/Exif/MakernoteIfd/DNGAdobeDataIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/MakernoteIfd/Exif/Makernote"
 )
 
 var (
 	// IFD Stringer Index
-	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115}
+	_IFDStringerIndex = [...]uint8{0, 10, 13, 23, 31, 38, 45, 63, 79, 97, 115, 133, 151}
 )
 
 // IsValid returns true if IFD is valid
@@ -60,9 +65,14 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 		return exififd.TagString(id)
 	case GPSIFD:
 		return gpsifd.TagString(id)
-	case MknoteIFD:
-		//case MkNoteCanonIFD:
-		return mknote.TagCanonString(id)
+	case MkNoteCanonIFD:
+		return canon.TagCanonString(id)
+	case MkNoteNikonIFD:
+		return nikon.TagNikonString(id)
+	case MkNoteAppleIFD:
+		return apple.TagAppleString(id)
+	case MkNoteSonyIFD:
+		return sony.TagSonyString(id)
 	}
 
 	return id.String()
@@ -70,10 +80,11 @@ func (ifdType IfdType) TagName(id tag.ID) string {
 
 // Ifd is a Tiff Information directory. Contains Offset, Type, and Index.
 type Ifd struct {
-	Offset    uint32
-	ByteOrder utils.ByteOrder
-	Type      IfdType
-	Index     int8
+	Offset     uint32
+	BaseOffset uint32
+	ByteOrder  utils.ByteOrder
+	Type       IfdType
+	Index      int8
 }
 
 // NewIFD returns a new IFD from IfdType, index, and offset.

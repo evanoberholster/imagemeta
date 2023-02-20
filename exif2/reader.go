@@ -5,9 +5,11 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/nikon"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/rs/zerolog"
 )
@@ -150,7 +152,7 @@ func (ir *ifdReader) readIfdHeader(ifd ifds.Ifd) (err error) {
 			ir.logError(err).Msg("Discard error")
 			return err
 		}
-		//ir.po += uint32(len(buf))
+		ir.po += uint32(len(buf))
 	}
 	for i := 0; i < int(tagCount); i++ {
 		if ok {
@@ -189,12 +191,12 @@ func (ir *ifdReader) readIfdHeader(ifd ifds.Ifd) (err error) {
 type BufferedReader interface {
 	Peek(n int) ([]byte, error)
 	Discard(n int) (discarded int, err error)
-	Reads(p []byte) (n int, err error)
+	Read(p []byte) (n int, err error)
 }
 
 func (ir *ifdReader) readNextIfdTag(ifd ifds.Ifd) error {
 	var err error
-	if uint32(ir.buffer.nextTag().ValueOffset) <= ir.po+tag.TypeLongSize {
+	if uint32(ir.buffer.nextTag().ValueOffset) <= ir.po {
 		var nextIfd uint32
 		if nextIfd, err = ir.readUint32(ifd); err != nil {
 			if ir.logLevelError() {
@@ -219,6 +221,7 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 	}
 
 	for t := ir.buffer.currentTag(); ir.buffer.validTag(); t = ir.buffer.advanceBuffer() {
+
 		if t.IsType(tag.TypeIfd) {
 			ir.seekNextTag(t)         // seek to next tag value
 			ir.buffer.resetPosition() // Reset tagbuffer position to 0
@@ -236,9 +239,7 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 				}
 			case ifds.ExifIFD:
 				if t.ID == exififd.MakerNote {
-					if ir.Exif.CameraMake == ifds.Canon {
-						ir.readIfdHeader(t.childIfd())
-					}
+					ir.readMakerNotes(t)
 				}
 			}
 		} else {
@@ -246,6 +247,29 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 		}
 	}
 	return nil
+}
+
+func (ir *ifdReader) readMakerNotes(t Tag) {
+	switch ir.Exif.CameraMake {
+	case ifds.Canon:
+		ir.readIfdHeader(t.childIfd())
+	case ifds.Nikon:
+		// read Nikon Makernotes header 18 bytes
+		if t.Size() > 18 {
+			_, err := ir.read(ir.buffer.buf[:18])
+			if err != nil {
+				t.logTag(ir.logError(err)).Send()
+			}
+			if nikon.IsNikonMkNoteHeaderBytes(ir.buffer.buf[:5]) {
+				ir.Exif.ImageType = imagetype.ImageNEF
+				if byteOrder := utils.BinaryOrder(ir.buffer.buf[10:14]); byteOrder != utils.UnknownEndian {
+					ifd := ifds.NewIFD(byteOrder, ifds.MknoteIFD, t.IfdIndex, t.ValueOffset)
+					ifd.BaseOffset += ifd.Offset + byteOrder.Uint32(ir.buffer.buf[14:18])
+					ir.readIfdHeader(ifd)
+				}
+			}
+		}
+	}
 }
 
 func (ir *ifdReader) read(buf []byte) (n int, err error) {
@@ -279,19 +303,19 @@ func (ir *ifdReader) readTagHeader(ifd ifds.Ifd) (Tag, error) {
 	if _, err := ir.read(ir.buffer.buf[:12]); err != nil {
 		return Tag{}, err
 	}
-	tagID := tag.ID(ifd.ByteOrder.Uint16(ir.buffer.buf[:2]))      // TagID
-	tagType := tag.Type(ifd.ByteOrder.Uint16(ir.buffer.buf[2:4])) // TagType
-	unitCount := ifd.ByteOrder.Uint32(ir.buffer.buf[4:8])         // UnitCount
-	valueOffset := ifd.ByteOrder.Uint32(ir.buffer.buf[8:12])      // ValueOffset
+	tagID := tag.ID(ifd.ByteOrder.Uint16(ir.buffer.buf[:2]))                  // TagID
+	tagType := tag.Type(ifd.ByteOrder.Uint16(ir.buffer.buf[2:4]))             // TagType
+	unitCount := ifd.ByteOrder.Uint32(ir.buffer.buf[4:8])                     // UnitCount
+	valueOffset := ifd.ByteOrder.Uint32(ir.buffer.buf[8:12]) + ifd.BaseOffset // ValueOffset
 
 	return NewTag(tagID, tagIsIfd(ifd.Type, tagID, tagType), unitCount, valueOffset, ifd.Type, ifd.Index, ifd.ByteOrder) // NewTag
 }
 
 func tagFromBuffer(ifd ifds.Ifd, buf []byte) (t Tag, err error) {
-	tagID := tag.ID(ifd.ByteOrder.Uint16(buf[:2]))      // TagID
-	tagType := tag.Type(ifd.ByteOrder.Uint16(buf[2:4])) // TagType
-	unitCount := ifd.ByteOrder.Uint32(buf[4:8])         // UnitCount
-	valueOffset := ifd.ByteOrder.Uint32(buf[8:12])      // ValueOffset
+	tagID := tag.ID(ifd.ByteOrder.Uint16(buf[:2]))                  // TagID
+	tagType := tag.Type(ifd.ByteOrder.Uint16(buf[2:4]))             // TagType
+	unitCount := ifd.ByteOrder.Uint32(buf[4:8])                     // UnitCount
+	valueOffset := ifd.ByteOrder.Uint32(buf[8:12]) + ifd.BaseOffset // ValueOffset
 
 	return NewTag(tagID, tagIsIfd(ifd.Type, tagID, tagType), unitCount, valueOffset, ifd.Type, ifd.Index, ifd.ByteOrder) // NewTag
 }

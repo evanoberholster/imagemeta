@@ -158,6 +158,7 @@ func (tt Type) IsValid() bool {
 		tt == TypeByte ||
 		tt == TypeASCII ||
 		tt == TypeASCIINoNul ||
+		tt == TypeSignedShort ||
 		tt == TypeSignedLong ||
 		tt == TypeSignedRational ||
 		tt == TypeFloat ||

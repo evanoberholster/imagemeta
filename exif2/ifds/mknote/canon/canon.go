@@ -30,6 +30,7 @@ var mapStringCameraModel = map[string]CameraModel{
 	"Canon EOS RP":            EOSRP,
 	"Canon EOS R":             EOSR,
 	"Canon SL3":               EOS250D,
+	"Canon EOS 6D":            EOS6D,
 }
 
 var mapCameraModelString = map[CameraModel]string{
@@ -49,6 +50,7 @@ var mapCameraModelString = map[CameraModel]string{
 	EOSRP:         "Canon EOS RP",
 	EOSR:          "Canon EOS R",
 	EOS250D:       "Canon SL3",
+	EOS6D:         "Canon EOS 6D",
 }
 
 func (cm CameraModel) String() string {
