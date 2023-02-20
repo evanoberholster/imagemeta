@@ -120,8 +120,8 @@ func (ir *ifdReader) discard(n int) (err error) {
 	if int(ir.exifLength) < n+int(ir.po) {
 		n = int(ir.exifLength) - int(ir.po)
 	}
-	if ir.bufReader != nil {
-		n, err := ir.bufReader.Discard(n)
+	if br, ok := ir.reader.(BufferedReader); ok {
+		n, err = br.Discard(n)
 		ir.po += uint32(n)
 		return err
 	}

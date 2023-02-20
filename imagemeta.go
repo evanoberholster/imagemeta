@@ -49,7 +49,7 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
 			return exif2.Exif{}, err
 		}
-	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW:
+	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif2.Exif{}, err

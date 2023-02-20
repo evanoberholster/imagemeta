@@ -66,7 +66,7 @@ func (ir *ifdReader) DecodeJPEGIfd(r io.Reader, h meta.ExifHeader) (err error) {
 	return err
 }
 
-func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
+func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) (err error) {
 	// Log Header Info
 	if ir.logLevelInfo() {
 		ir.logger.Info().Str("imageType", h.ImageType.String()).Uint32("tiffHeader", h.TiffHeaderOffset).Uint32("firstIfdOffset", h.FirstIfdOffset).Uint32("exifLength", h.ExifLength).Send()
@@ -75,12 +75,8 @@ func (ir *ifdReader) DecodeIfd(r io.Reader, h meta.ExifHeader) error {
 	ir.Exif.ImageType = h.ImageType
 	ir.exifLength = h.ExifLength
 	ir.po = h.FirstIfdOffset
-	if err := ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset, 0)); err != nil {
-		return err
-	}
-
-	//err := ir.discard(int(ir.exifLength) - int(ir.po) - 8)
-	return nil
+	err = ir.readIfd(ifds.NewIFD(h.ByteOrder, ifds.IfdType(h.FirstIfd), 0, ir.tiffHeaderOffset, 0))
+	return err
 }
 
 // NewIfdReader creates a new IfdReader with the given io.Reader
@@ -94,14 +90,13 @@ func NewIfdReader(l zerolog.Logger) ifdReader {
 	return ir
 }
 
+// ResetReader resets the reader and clears the buffer
 func (ir *ifdReader) ResetReader(r io.Reader) {
 	ir.buffer.clear()
-	if br, ok := r.(BufferedReader); ok {
-		ir.bufReader = br
-	}
 	ir.reader = r
 }
 
+// SetCustomTagParser sets a custom tag parser
 func (ir *ifdReader) SetCustomTagParser(fn TagParserFn) {
 	ir.customTagParser = fn
 }
@@ -113,9 +108,9 @@ func (ir *ifdReader) Close() {
 
 // ifdReader reads, decodes, and parses tags from an io.Reader
 type ifdReader struct {
-	logger           zerolog.Logger
-	reader           io.Reader
-	bufReader        BufferedReader
+	logger zerolog.Logger
+	reader io.Reader
+	//bufReader        BufferedReader
 	customTagParser  TagParserFn
 	buffer           *buffer
 	Exif             Exif
@@ -273,14 +268,14 @@ func (ir *ifdReader) fastRead(n int) (buf []byte, err error) {
 	if ir.exifLength != 0 && int(ir.po)+n > int(ir.exifLength) {
 		return nil, imagetype.ErrDataLength
 	}
-	if ir.bufReader != nil {
-		if buf, err = ir.bufReader.Peek(n); err != nil {
+	if br, ok := ir.reader.(BufferedReader); ok {
+		if buf, err = br.Peek(n); err != nil {
 			if ir.logLevelError() {
 				ir.logError(err).Msg("Peek error")
 			}
 			return
 		}
-		if n, err = ir.bufReader.Discard(len(buf)); err != nil {
+		if n, err = br.Discard(len(buf)); err != nil {
 			if ir.logLevelError() {
 				ir.logError(err).Msg("Discard error")
 			}

@@ -1,7 +1,6 @@
 package exif2
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -47,8 +46,6 @@ func (ir *ifdReader) parseTag(t Tag) {
 			ir.Exif.ImageDescription = ir.ParseString(t)
 		case ifds.DateTime:
 			ir.Exif.Time.modifyDate = ir.ParseDate(t)
-		case ifds.SubIFDs:
-			fmt.Println("SubIfds here")
 		case ifds.DNGVersion:
 			// If DNG version > 0 imagetype is DNG
 			if ir.Exif.ImageType == imagetype.ImageTiff {
