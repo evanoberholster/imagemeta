@@ -18,11 +18,12 @@ const (
 	name      = "CanonEOS7DII.xmp"
 	name1     = "jpeg.xmp"
 	name2     = "9.jpg"
+	mholtTest = "../../cmd/img1.jpg"
 )
 
 func main() {
 	xmp.DebugMode = true
-	f, err := os.Open(filename5)
+	f, err := os.Open(filename2)
 	if err != nil {
 		panic(err)
 	}

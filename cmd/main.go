@@ -2,118 +2,76 @@ package main
 
 import (
 	"fmt"
-	"image/jpeg"
-	"log"
 	"os"
-	"time"
+	"path/filepath"
 
 	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/exif2"
+	"github.com/rs/zerolog"
+)
+
+func init() {
+	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.WarnLevel)
+	//exif2.Logger = exif2.Logger.Level(zerolog.DebugLevel)
+	//isobmff.Logger = isobmff.Logger.Level(zerolog.DebugLevel)
+}
+
+var (
+	dir = "../../test/img/"
 )
 
 func main() {
-	f, err := os.Open("../testImages/Heic.exif")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		err = f.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	m, err := imagemeta.Parse(f)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(m.Exif())
-	fmt.Println(m.Xmp())
-	fmt.Println(m.ImageType())
-	fmt.Println(m.Dimensions())
-	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+	for _, f := range files {
+		//if f.Size() > 1*1024*1024 {
+		name := f.Name()
+		if filepath.Ext(name) == ".html" || filepath.Ext(name) == ".CRW" || filepath.Ext(name) == ".jp2" {
+			continue
+		}
+		//fmt.Println(filepath.Ext(name))
+		r, err := os.Open(dir + "/" + f.Name())
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			err = r.Close()
+			if err != nil {
+				panic(err)
+			}
+		}()
+		var exif exif2.Exif
+		fmt.Print(name + "\t\t")
+		//fmt.Println(f.Name())
+		exif, err = imagemeta.Decode(r)
+		if err != nil {
+			if err != imagemeta.ErrNoExif {
+				//fmt.Println(err)
+				fmt.Println(err)
+			}
 
-	e, _ := m.Exif()
-	if e != nil {
-		// ImageWidth and ImageHeight
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.Orientation())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ExposureBias())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		// Example Tags
-		fmt.Println(e.Dimensions())
-
-		// Makernote Tags
-		fmt.Println(e.CanonCameraSettings())
-		fmt.Println(e.CanonFileInfo())
-		fmt.Println(e.CanonShotInfo())
-		fmt.Println(e.CanonAFInfo())
-
-		// Time Tags
-		fmt.Println(e.DateTime(time.Local))
-		fmt.Println(e.ModifyDate(time.Local))
-		fmt.Println(e.GPSDate(time.UTC))
-
-		// GPS Tags
-		fmt.Println(e.GPSCoords())
-		fmt.Println(e.GPSAltitude())
-		fmt.Println(e.GPSCoords())
-		c, _ := e.GPSCellID()
-		fmt.Println(c.ToToken())
-
-		// Other Tags
-		fmt.Println(e.ExposureProgram())
-		fmt.Println(e.MeteringMode())
-		fmt.Println(e.ShutterSpeed())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.FocalLengthIn35mmFilm())
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.Flash())
-		fmt.Println(e.ExposureValue())
-		fmt.Println(e.ExposureBias())
+		}
+		_ = exif
+		fmt.Printf("\t%s\t\t%s\n", exif.Make, exif.Model)
+		//fmt.Println(string(exif.ApplicationNotes))
+		//fmt.Println(len(exif.ApplicationNotes))
 	}
-	//b, err := e.DebugJSON()
-	//fmt.Println(string(b), err)
+	main2()
+}
+
+func main2() {
+	f, err := os.Open(dir + "/" + "DJI.dng")
+	//f, err := os.Open(dir + "/" + "iPhone11.heic")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	e, err := imagemeta.Decode(f)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(e)
 }

@@ -1,31 +1,31 @@
 package meta
 
 import (
-	"encoding/binary"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBinaryOrder(t *testing.T) {
 	buf := []byte{0, 0, 0, 0}
-	bo := BinaryOrder(buf)
-	if bo != nil {
+	bo := utils.BinaryOrder(buf)
+	if bo != utils.UnknownEndian {
 		t.Error("Binary Order for an empty buffer should be nil.")
 	}
 
 	buf = []byte{0x49, 0x49, 0x2a, 0}
-	bo = BinaryOrder(buf)
-	if bo != binary.LittleEndian {
-		t.Errorf("Binary Order expected %T got %T", binary.LittleEndian, bo)
+	bo = utils.BinaryOrder(buf)
+	if bo != utils.LittleEndian {
+		t.Errorf("Binary Order expected %T got %T", utils.LittleEndian, bo)
 	}
 
 	buf = []byte{0x4d, 0x4d, 0, 0x2a}
-	bo = BinaryOrder(buf)
-	if bo != binary.BigEndian {
-		t.Errorf("Binary Order expected %T got %T", binary.BigEndian, bo)
+	bo = utils.BinaryOrder(buf)
+	if bo != utils.BigEndian {
+		t.Errorf("Binary Order expected %T got %T", utils.BigEndian, bo)
 	}
 }
 
@@ -36,8 +36,8 @@ func TestXmpHeader(t *testing.T) {
 }
 
 func TestExifHeader(t *testing.T) {
-	h1 := ExifHeader{ByteOrder: binary.BigEndian, FirstIfd: ifds.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
-	h2 := NewExifHeader(binary.BigEndian, 1234, 16, 1024, imagetype.ImagePNG)
+	h1 := ExifHeader{ByteOrder: utils.BigEndian, FirstIfd: ifds.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
+	h2 := NewExifHeader(utils.BigEndian, 1234, 16, 1024, imagetype.ImagePNG)
 	h2.FirstIfd = ifds.IFD0
 
 	assert.Equal(t, h1, h2, "")

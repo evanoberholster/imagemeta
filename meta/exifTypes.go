@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"math"
 	"strconv"
 )
 
@@ -103,87 +104,28 @@ func (aa *Aperture) UnmarshalText(text []byte) (err error) {
 	return err
 }
 
-// ShutterSpeed contains the shutter speed in seconds.
-// Limit to 1/2 and 1/3 stops
-// [0] Numerator [1] Denominator
-type ShutterSpeed [2]uint32
-
-// NewShutterSpeed creates a new ShutterSpeed with "n" as numerator and
-// "d" as denominator
-func NewShutterSpeed(n uint32, d uint32) ShutterSpeed {
-	return ShutterSpeed{n, d}
-}
-
-// parseShutterSpeed parses a ShutterSpeed time value from []byte.
-// Example: For less than 1 second: (1/250)
-// Example: For more than 1 second: (1.3)
-func parseShutterSpeed(buf []byte) (ss ShutterSpeed) {
-	for i := 0; i < len(buf); i++ {
-		if buf[i] == '/' {
-			if i < len(buf)+1 {
-				return ShutterSpeed{uint32(parseUint(buf[:i])), uint32(parseUint(buf[i+1:]))}
-			}
-		}
-		if buf[i] == '.' {
-			if i < len(buf)+1 {
-				ua := parseUint(buf[:i])
-				b := buf[i+1:]
-				if len(b) > 1 {
-					b = b[:1]
-				}
-				ub := parseUint(b)
-				if ub == 0 {
-					return ShutterSpeed{uint32(ua), 1}
-				}
-				ua *= 10
-				ua += ub
-				return ShutterSpeed{uint32(ua), 10}
-			}
-		}
-	}
-	return
-}
+type ExposureTime float32
 
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
-func (ss ShutterSpeed) MarshalText() (text []byte, err error) {
-	if ss[1] != 0 {
-		if ss[0] == 1 {
-			if ss[1] == 1 {
-				return []byte{'1', '.', '0'}, nil
-			}
-			n := 8
-			if ss[1] < 100 {
-				n = 4
-			} else if ss[1] < 1000 {
-				n = 5
-			}
-			text = make([]byte, 2, n)
-			text[0] = '1'
-			text[1] = '/'
-			return strconv.AppendUint(text, uint64(ss[1]), 10), nil
-		}
-		if ss[0] > 1 {
-			v := ss[0] / ss[1]
-			r := ss[0] % ss[1]
-			text = strconv.AppendUint(text, uint64(v), 10)
-			text = append(text, '.')
-			return strconv.AppendUint(text, uint64(r), 10), nil
-		}
+func (et ExposureTime) MarshalText() (text []byte, err error) {
+	a := float64(et)
+	if et == 0.0 || math.IsNaN(a) {
+		return nil, nil
 	}
-	return []byte{'0'}, nil
+	if a < 1.0 {
+		a = float64(1.0 / a)
+		buf := make([]byte, 2, 6)
+		buf[0] = '1'
+		buf[1] = '/'
+		buf = strconv.AppendUint(buf, uint64(math.Round(a*1000)/1000), 10)
+		return buf, nil
+	}
+	return strconv.AppendFloat(nil, a, 'f', 2, 32), nil
 }
 
-// UnmarshalText implements the TextUnmarshaler interface that is
-// used by encoding/json
-func (ss *ShutterSpeed) UnmarshalText(text []byte) (err error) {
-	*ss = parseShutterSpeed(text)
-	return nil
-}
-
-// String returns a ShutterSpeed as a string
-func (ss ShutterSpeed) String() string {
-	buf, _ := ss.MarshalText()
+func (et ExposureTime) String() string {
+	buf, _ := et.MarshalText()
 	return string(buf)
 }
 
@@ -260,7 +202,7 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 }
 
 // MeteringMode is the mode in which the image was metered.
-type MeteringMode uint8
+type MeteringMode uint16
 
 // Metering Modes
 const (
@@ -293,8 +235,8 @@ var (
 	}
 )
 
-// NewMeteringMode returns a MeteringMode from the given uint8
-func NewMeteringMode(meteringMode uint8) MeteringMode {
+// NewMeteringMode returns a MeteringMode from the given uint16
+func NewMeteringMode(meteringMode uint16) MeteringMode {
 	if meteringMode < 7 || meteringMode == 255 {
 		return MeteringMode(meteringMode)
 	}
@@ -342,8 +284,8 @@ func (mm *MeteringMode) UnmarshalText(text []byte) (err error) {
 
 // ExposureMode is the mode in which the Exposure was taken.
 //
-//  Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
-type ExposureMode uint8
+//	Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (07/02/2021)
+type ExposureMode uint16
 
 // Exposure Modes
 const (
@@ -396,17 +338,18 @@ func (em *ExposureMode) UnmarshalText(text []byte) (err error) {
 // ExposureProgram is the program in which the image was taken.
 //
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html (23/09/2019)
-// 	0: "Not Defined",
-// 	1: "Manual",
-// 	2: "Program AE",
-// 	3: "Aperture-priority AE",
-// 	4: "Shutter speed priority AE",
-// 	5: "Creative (Slow speed)",
-// 	6: "Action (High speed)",
-// 	7: "Portrait",
-// 	8: "Landscape",
-// 	9: "Bulb",
-type ExposureProgram uint8
+//
+//	0: "Not Defined",
+//	1: "Manual",
+//	2: "Program AE",
+//	3: "Aperture-priority AE",
+//	4: "Shutter speed priority AE",
+//	5: "Creative (Slow speed)",
+//	6: "Action (High speed)",
+//	7: "Portrait",
+//	8: "Landscape",
+//	9: "Bulb",
+type ExposureProgram uint16
 
 // Exposure Programs
 const (
@@ -473,7 +416,7 @@ func (ep *ExposureProgram) UnmarshalText(text []byte) (err error) {
 // Flash is in bit format and represents the mode in which flash was used.
 //
 // Derived from https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html#Flash (23/09/2019)
-type Flash uint8
+type Flash uint16
 
 // Flashtypes
 const (
@@ -531,8 +474,9 @@ func (f Flash) Fired() bool {
 }
 
 // ReturnStatus is bits 1 and 2, returns 4 if "No Return" present and 6 if "Return" present.
-// 	FlashNoReturn: 4
-// 	FlashReturn:  6
+//
+//	FlashNoReturn: 4
+//	FlashReturn:  6
 func (f Flash) ReturnStatus() FlashMode {
 	return FlashMode(0b00000110 & f)
 }
@@ -543,10 +487,11 @@ func (f Flash) FlashFunction() bool {
 }
 
 // Mode is bits 3 and 4, returns 0 if "NoFlash", 8 if "On", 16 if "Off", and 24 if "Auto".
-//  FlashModeNone: 0
-// 	FlashModeOn: 8
-// 	FlashModeOff: 16
-// 	FlashModeAuto: 24
+//
+//	 FlashModeNone: 0
+//		FlashModeOn: 8
+//		FlashModeOff: 16
+//		FlashModeAuto: 24
 func (f Flash) Mode() FlashMode {
 	return FlashMode(0b00011000 & f)
 }
@@ -557,7 +502,7 @@ func (f Flash) Redeye() bool {
 }
 
 // Orientation of an image
-type Orientation uint8
+type Orientation uint16
 
 // Orientation values
 const (
@@ -584,4 +529,113 @@ func (o Orientation) String() string {
 		return _OrientationStringerStrings[_OrientationStringerIndex[o]:_OrientationStringerIndex[o+1]]
 	}
 	return Orientation(0).String()
+}
+
+// Compression is Exif Compression.
+type Compression uint16
+
+// String is for Compression stringer interface
+func (c Compression) String() string {
+	switch c {
+	case 1:
+		return "Uncompressed"
+	case 2:
+		return "CCITT 1D"
+	case 3:
+		return "T4/Group 3 Fax"
+	case 4:
+		return "T6/Group 4 Fax"
+	case 5:
+		return "LZW"
+	case 6:
+		return "JPEG (old-style)"
+	case 7:
+		return "JPEG"
+	case 8:
+		return "Adobe Deflate"
+	case 9:
+		return "JBIG B&W"
+	case 10:
+		return "JBIG Color"
+	case 99:
+		return "JPEG"
+	case 262:
+		return "Kodak 262"
+	case 32766:
+		return "Next"
+	case 32767:
+		return "Sony ARW Compressed"
+	case 32769:
+		return "Packed RAW"
+	case 32770:
+		return "Samsung SRW Compressed"
+	case 32771:
+		return "CCIRLEW"
+	case 32772:
+		return "Samsung SRW Compressed 2"
+	case 32773:
+		return "PackBits"
+	case 32809:
+		return "Thunderscan"
+	case 32867:
+		return "Kodak KDC Compressed"
+	case 32895:
+		return "IT8CTPAD"
+	case 32896:
+		return "IT8LW"
+	case 32897:
+		return "IT8MP"
+	case 32898:
+		return "IT8BL"
+	case 32908:
+		return "PixarFilm"
+	case 32909:
+		return "PixarLog"
+	case 32946:
+		return "Deflate"
+	case 32947:
+		return "DCS"
+	case 33003:
+		return "Aperio JPEG 2000 YCbCr"
+	case 33005:
+		return "Aperio JPEG 2000 RGB"
+	case 34661:
+		return "JBIG"
+	case 34676:
+		return "SGILog"
+	case 34677:
+		return "SGILog24"
+	case 34712:
+		return "JPEG 2000"
+	case 34713:
+		return "Nikon NEF Compressed"
+	case 34715:
+		return "JBIG2 TIFF FX"
+	case 34718:
+		return "Microsoft Document Imaging (MDI) Binary Level Codec"
+	case 34719:
+		return "Microsoft Document Imaging (MDI) Progressive Transform Codec"
+	case 34720:
+		return "Microsoft Document Imaging (MDI) Vector"
+	case 34887:
+		return "ESRI Lerc"
+	case 34892:
+		return "Lossy JPEG"
+	case 34925:
+		return "LZMA2"
+	case 34926:
+		return "Zstd"
+	case 34927:
+		return "WebP"
+	case 34933:
+		return "PNG"
+	case 34934:
+		return "JPEG XR"
+	case 65000:
+		return "Kodak DCR Compressed"
+	case 65535:
+		return "Pentax PEF Compressecase: "
+	default:
+		return "Unkown"
+	}
 }

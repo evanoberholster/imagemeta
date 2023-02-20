@@ -4,17 +4,17 @@ package imagemeta
 
 import (
 	"bufio"
-	"errors"
-	"io"
 
-	"github.com/evanoberholster/imagemeta/cr3"
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/heic"
+	"io"
+	"sync"
+
+	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/isobmff"
 	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/tiff"
-	"github.com/evanoberholster/imagemeta/xmp"
+	"github.com/pkg/errors"
 )
 
 // Errors
@@ -26,128 +26,114 @@ var (
 	ErrMetadataNotSupported = errors.New("error metadata reading not supported for this imagetype")
 )
 
-// ImageMeta interface for Image Metadata
-type ImageMeta interface {
-	Dimensions() meta.Dimensions
-	ImageType() imagetype.ImageType
-	PreviewImage() io.Reader
-	Exif() (exif.Exif, error)
-	Xmp() (xmp.XMP, error)
+// readerPool for buffer
+var readerPool = sync.Pool{
+	New: func() interface{} { return bufio.NewReaderSize(nil, 4*1024) },
 }
 
-// Parse meta.Reader for Image Metadata returns ImageMeta corresponding
-// to identified image type.
-func Parse(r meta.Reader) (ImageMeta, error) {
-	t, err := imagetype.ReadAt(r)
-	if err != nil {
-		return nil, err
-	}
-	switch t {
+func Decode(r io.ReadSeeker) (exif2.Exif, error) {
+	rr := readerPool.Get().(*bufio.Reader)
+	rr.Reset(r)
+	defer readerPool.Put(rr)
 
+	ir := exif2.NewIfdReader(exif2.Logger)
+	defer ir.Close()
+
+	it, err := imagetype.ScanBuf(rr)
+	if err != nil {
+		return exif2.Exif{}, err
+	}
+	ir.Exif.ImageType = it
+	switch it {
 	case imagetype.ImageJPEG:
-		return jpeg.ScanJPEG(r, nil, nil)
+		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
+			return exif2.Exif{}, err
+		}
+	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG:
+		header, err := tiff.ScanTiffHeader(rr, it)
+		if err != nil {
+			return exif2.Exif{}, err
+		}
+		if err := ir.DecodeTiff(rr, header); err != nil {
+			return ir.Exif, err
+		}
 	case imagetype.ImageCR3:
-		return cr3.Parse(r)
-	case imagetype.ImageTiff, imagetype.ImageCR2, imagetype.ImageARW, imagetype.ImageHEIF, imagetype.ImageNEF, imagetype.ImagePanaRAW:
-		return tiff.Parse(r, t)
-	}
-	return nil, nil
-}
-
-// Metadata from an Image. The ExifDecodeFn and XmpDecodeFn
-// are responsible for decoding their respective data.
-type Metadata struct {
-	r meta.Reader
-	*meta.Metadata
-	images uint16
-	//Thumbnail Offsets
-}
-
-// NewMetadata creates a new Metadata
-func NewMetadata(r meta.Reader, xmpFn meta.DecodeFn, exifFn meta.DecodeFn) (m *Metadata, err error) {
-	m = &Metadata{r: r}
-	m.Metadata = &meta.Metadata{
-		XmpFn:  xmpFn,
-		ExifFn: exifFn,
-	}
-	// Create New bufio.Reader w/ 6KB because of XMP processing
-	br := bufio.NewReaderSize(r, 6*1024)
-	// Pool
-	// Identify image Type
-	if m.It, err = imagetype.ScanBuf(br); err != nil {
-		return
-	}
-	// Parse ImageMetadata
-	err = m.parse(br)
-	return
-}
-
-func (m *Metadata) parse(br *bufio.Reader) (err error) {
-	switch m.It {
-	case imagetype.ImageWebP:
-		err = ErrMetadataNotSupported
-		return
-	case imagetype.ImageNEF:
-		return m.parseTiff(br)
-	case imagetype.ImageCR2:
-		return m.parseTiff(br)
+		bmr := isobmff.NewReader(rr)
+		defer bmr.Close()
+		bmr.ExifReader = ir.DecodeIfd
+		if err := bmr.ReadFTYP(); err != nil {
+			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
+		}
+		if err := bmr.ReadMetadata(); err != nil {
+			return ir.Exif, err
+		}
 	case imagetype.ImageHEIF:
-		return m.parseHeic(br)
-	case imagetype.ImageAVIF:
-		return m.parseHeic(br)
-	case imagetype.ImagePNG, imagetype.ImageBMP, imagetype.ImageGIF:
-		err = ErrMetadataNotSupported
-		return
-	case imagetype.ImageCRW:
-		err = ErrMetadataNotSupported
-		return
-	case imagetype.ImageUnknown:
-		err = ErrMetadataNotSupported
-		return
+		header, err := tiff.ScanTiffHeader(rr, it)
+		if err != nil {
+			return exif2.Exif{}, err
+		}
+		if err := ir.DecodeTiff(rr, header); err != nil {
+			return ir.Exif, err
+		}
 	default:
-		// process as Tiff
-		// Bruteforce search for Exif header
-		return m.parseTiff(br)
+		return exif2.Exif{}, ErrMetadataNotSupported
 	}
+
+	return ir.Exif, nil
 }
 
-// parseHeic uses the 'heic' package to identify the metadata and the
-// 'exif' and 'xmp' packages parse the metadata.
-//
-// Will use the custom decode functions: XmpDecodeFn and
-// ExifDecodeFn if they are not nil.
-func (m *Metadata) parseHeic(br *bufio.Reader) (err error) {
-	//if _, err = m.r.Seek(0, 0); err != nil {
-	//	return
-	//}
-	hm, err := heic.NewMetadata(br, m.Metadata)
-	if err != nil {
-		return err
+// DecodeCR3 decodes a CR3 file from an io.Reader returning Exif or an error.
+func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
+	rr := readerPool.Get().(*bufio.Reader)
+	rr.Reset(r)
+	defer readerPool.Put(rr)
+
+	ir := exif2.NewIfdReader(exif2.Logger)
+	defer ir.Close()
+
+	bmr := isobmff.NewReader(rr)
+	defer bmr.Close()
+	bmr.ExifReader = ir.DecodeIfd
+	if err := bmr.ReadFTYP(); err != nil {
+		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
-	m.images = hm.Images()
-	if err = hm.ReadExif(m.r); err != nil {
-		return
+	if err := bmr.ReadMetadata(); err != nil {
+		return ir.Exif, err
 	}
-	if err = hm.ReadXmp(m.r); err != nil {
-		return
+	if err := bmr.ReadMetadata(); err != nil {
+		return ir.Exif, err
 	}
-	return err
+	// Set ImageType to CR3
+	//ir.Exif.ImageType = imagetype.ImageCR3
+	return ir.Exif, nil
+	//return exif2.DecodeHeader(r, moov.Meta.Exif[0], moov.Meta.Exif[1], moov.Meta.Exif[3])
 }
 
-// parseTiff uses the 'tiff' package to identify the metadata and
-// the 'exif' and 'xmp' packages to parse the metadata.
-//
-// Will use the custom decode functions: XmpDecodeFn and
-// ExifDecodeFn if they are not nil.
-func (m *Metadata) parseTiff(br *bufio.Reader) (err error) {
-	// package tiff -> exif
-	m.ExifHeader, err = tiff.ScanTiffHeader(br, imagetype.ImageTiff)
+// DecodeTiff decodes a Tiff/DNG file from an io.Reader returning Exif or an error.
+func DecodeTiff(r io.ReadSeeker) (exif2.Exif, error) {
+	rr := readerPool.Get().(*bufio.Reader)
+	rr.Reset(r)
+	defer readerPool.Put(rr)
+
+	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
-		return
+		return exif2.Exif{}, err
 	}
-	m.ExifHeader.ImageType = m.It
-	if m.ExifFn != nil {
-		return m.ExifFn(m.r, m.Metadata)
+	header, err := tiff.ScanTiffHeader(rr, it)
+	if err != nil {
+		return exif2.Exif{}, err
 	}
-	return err
+	ir := exif2.NewIfdReader(exif2.Logger)
+	defer ir.Close()
+
+	if err := ir.DecodeTiff(rr, header); err != nil {
+		return ir.Exif, err
+	}
+	return ir.Exif, nil
+	//return exif2.DecodeHeader(r, moov.Meta.Exif[0], moov.Meta.Exif[1], moov.Meta.Exif[3])
+}
+
+// DecodeCR2 decodes a CR2 file from an io.Reader returning Exif or an error.
+func DecodeCR2(r io.ReadSeeker) (exif2.Exif, error) {
+	return DecodeTiff(r)
 }

@@ -2,13 +2,14 @@
 package meta
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
 )
 
 // Common Errors
@@ -71,10 +72,10 @@ func (m Metadata) ImageType() imagetype.ImageType {
 // Image type for the parsing of the Exif information from
 // a Tiff Directory.
 type ExifHeader struct {
-	ByteOrder        binary.ByteOrder
 	FirstIfdOffset   uint32
 	TiffHeaderOffset uint32
 	ExifLength       uint32
+	ByteOrder        utils.ByteOrder
 	FirstIfd         ifds.IfdType
 	ImageType        imagetype.ImageType
 }
@@ -82,7 +83,7 @@ type ExifHeader struct {
 // IsValid returns true if the ExifHeader ByteOrder is not nil and
 // the FirstIfdOffset is greater than 0
 func (h ExifHeader) IsValid() bool {
-	return h.ByteOrder != nil && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
+	return h.ByteOrder != utils.UnknownEndian && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
 }
 
 func (h ExifHeader) String() string {
@@ -90,7 +91,7 @@ func (h ExifHeader) String() string {
 }
 
 // NewExifHeader returns a new ExifHeader.
-func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
+func NewExifHeader(byteOrder utils.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
 		FirstIfd:         ifds.IFD0,
@@ -99,6 +100,11 @@ func NewExifHeader(byteOrder binary.ByteOrder, firstIfdOffset, tiffHeaderOffset 
 		ExifLength:       exifLength,
 		ImageType:        imageType,
 	}
+}
+
+// MarshalZerologObject is a zerolog interface for logging
+func (h ExifHeader) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("FirstIfd", h.FirstIfd.String()).Uint32("FirstIfdOffset", h.FirstIfdOffset).Uint32("TiffHeaderOffset", h.TiffHeaderOffset).Uint32("ExifLength", h.ExifLength).Str("Endian", h.ByteOrder.String()).Str("ImageType", h.ImageType.String())
 }
 
 // XmpHeader is an XMP header of an image file.
@@ -111,36 +117,4 @@ type XmpHeader struct {
 // and length of where to read XMP metadata.
 func NewXMPHeader(offset, length uint32) XmpHeader {
 	return XmpHeader{offset, length}
-}
-
-// BinaryOrder returns the binary.ByteOrder for a Tiff Header based
-// on 4 bytes from the buf.
-//
-// Good reference:
-// CIPA DC-008-2016; JEITA CP-3451D
-// -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
-func BinaryOrder(buf []byte) binary.ByteOrder {
-	if isTiffBigEndian(buf[:4]) {
-		return binary.BigEndian
-	}
-	if isTiffLittleEndian(buf[:4]) {
-		return binary.LittleEndian
-	}
-	return nil
-}
-
-// IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func isTiffLittleEndian(buf []byte) bool {
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x2a &&
-		buf[3] == 0x00
-}
-
-// IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func isTiffBigEndian(buf []byte) bool {
-	return buf[0] == 0x4d &&
-		buf[1] == 0x4d &&
-		buf[2] == 0x00 &&
-		buf[3] == 0x2a
 }

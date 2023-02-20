@@ -17,235 +17,55 @@ See [Documentation](https://godoc.org/github.com/evanoberholster/imagemeta) for 
 Example usage:
 
 ```go
-package main
+    package main
 
-import (
-	"flag"
-	"fmt"
-	"io"
-	"os"
+    import (
+    	"fmt"
+    	"os"
 
-	"github.com/evanoberholster/imagemeta"
-	"github.com/evanoberholster/imagemeta/exif"
-	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp"
-)
+    	"github.com/evanoberholster/imagemeta"
+    )
 
-func main() {
-	flag.Parse()
-	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "usage: main <file>\n")
-		os.Exit(1)
-	}
-	f, err := os.Open(flag.Arg(0))
-	if err != nil {
-		fmt.Fatal(err)
-	}
-	defer func() {
-		err = f.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	m, err := imagemeta.Parse(f)
+	f, err := os.Open("image.jpg")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(m.Exif())
-	fmt.Println(m.Xmp())
-	fmt.Println(m.ImageType())
-	fmt.Println(m.Dimensions())
-	fmt.Println(jpeg.DecodeConfig(m.PreviewImage()))
+	defer f.Close()
 
-	e, _ := m.Exif()
-	if e != nil {
-		// ImageWidth and ImageHeight
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.Orientation())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Dimensions().Size())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ShutterSpeed())
-
-		fmt.Println(e.Aperture())
-		fmt.Println(e.ExposureBias())
-
-		fmt.Println(e.Artist())
-		fmt.Println(e.Copyright())
-
-		fmt.Println(e.CameraMake())
-		fmt.Println(e.CameraModel())
-		fmt.Println(e.CameraSerial())
-
-		fmt.Println(e.LensMake())
-		fmt.Println(e.LensModel())
-		fmt.Println(e.LensSerial())
-
-		// Example Tags
-		fmt.Println(e.Dimensions())
-
-		// Makernote Tags
-		fmt.Println(e.CanonCameraSettings())
-		fmt.Println(e.CanonFileInfo())
-		fmt.Println(e.CanonShotInfo())
-		fmt.Println(e.CanonAFInfo())
-
-		// Time Tags
-		fmt.Println(e.DateTime(time.Local))
-		fmt.Println(e.ModifyDate(time.Local))
-		fmt.Println(e.GPSDate(time.UTC))
-
-		// GPS Tags
-		fmt.Println(e.GPSCoords())
-		fmt.Println(e.GPSAltitude())
-		fmt.Println(e.GPSCoords())
-		c, _ := e.GPSCellID()
-		fmt.Println(c.ToToken())
-
-		// Other Tags
-		fmt.Println(e.ExposureProgram())
-		fmt.Println(e.MeteringMode())
-		fmt.Println(e.ShutterSpeed())
-		fmt.Println(e.Aperture())
-		fmt.Println(e.FocalLength())
-		fmt.Println(e.FocalLengthIn35mmFilm())
-		fmt.Println(e.ISOSpeed())
-		fmt.Println(e.Flash())
-		fmt.Println(e.ExposureValue())
-		fmt.Println(e.ExposureBias())
+	e, err := imagemeta.Decode(f)
+	if err != nil {
+		panic(err)
 	}
-}
+	fmt.Println(e)
 ```
 
 ## Imagehash
-Zero allocation Perceptual Hash algorithm for 64bit and 256bit hash. Optimized for performance. Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html. Images will need to be resized prior to imagehashing, either 64x64 or 256x256 respectively.
-```go
-name                       time/op
-PHash64/Fast-12           40.8µs ± 1%
-PHash64/Fast-Parallel-12  6.55µs ± 1%
-PHash256/Fast-12            761µs ± 1%
-PHash256/Fast-Parallel-12   122µs ± 1%
-
-name                       alloc/op
-PHash64/Fast-12           0.75B ±167%
-PHash64/Fast-Parallel-12   0.00B     
-PHash256/Fast-12            225B ±100%
-PHash256/Fast-Parallel-12  0.69B ±336%
-
-name                       allocs/op
-PHash64/Fast-12             0.00     
-PHash64/Fast-Parallel-12    0.00  
-PHash256/Fast-12             0.00     
-PHash256/Fast-Parallel-12    0.00     
-```
+ Zero allocation PerceptualHash algorithm (64Bit and 256Bit) [github.com/evanoberholster/imagemeta/imagehash](github.com/evanoberholster/imagemeta/imagehash). Adapted from [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
 
 ## Contributing
 
-Suggestions and pull requests are welcome.
+Issues, Suggestions and Pull Requests are welcome.
 
 ## Benchmarks
 
-This was benchmarked without the retrival of values.
+See BENCHMARK.md
 To run your own benchmarks see bench_test.go
-
-```go
-BenchmarkImageMeta/.CR2/6D-12         			   80455	     20820 ns/op	   10218 B/op	      22 allocs/op
-BenchmarkImageMeta/.CR2/7DMkII-12     	 		   75770	     17921 ns/op	   10219 B/op	      21 allocs/op
-BenchmarkImageMeta/.CR2/CanonM6MkII-12         	   63640	     18128 ns/op	    9261 B/op	      21 allocs/op
-BenchmarkImageMeta/.CR3/CanonR-12              	   72705	     16597 ns/op	    9236 B/op	      21 allocs/op
-BenchmarkImageMeta/.CR3/CanonRP-12             	   59492	     17623 ns/op	    9216 B/op	      20 allocs/op
-BenchmarkImageMeta/.CR3/CanonR3-12             	   57465	     20322 ns/op	   14632 B/op	      22 allocs/op
-BenchmarkImageMeta/.CR3/CanonR5-12             	   55514	     19874 ns/op	   14632 B/op	      22 allocs/op
-BenchmarkImageMeta/.CR3/CanonR6-12             	   76044	     16234 ns/op	    9234 B/op	      21 allocs/op
-BenchmarkImageMeta/.HEIC/CanonR5-12            	   32150	     43434 ns/op	   10198 B/op	      21 allocs/op
-BenchmarkImageMeta/.HEIC/CanonR6-12            	   34396	     37288 ns/op	   10196 B/op	      21 allocs/op
-BenchmarkImageMeta/.JPG/GPS-12                 	  117636	      9807 ns/op	     280 B/op	       4 allocs/op
-BenchmarkImageMeta/.JPG/GoPro6-12              	  154758	      6528 ns/op	     280 B/op	       4 allocs/op
-BenchmarkImageMeta/.HEIC-12                    	    8442	    194884 ns/op	    4540 B/op	      15 allocs/op
-BenchmarkImageMeta/.HEIC/iPhone11-12           	    6170	    185167 ns/op	    4569 B/op	      15 allocs/op
-BenchmarkImageMeta/.HEIC/iPhone12-12           	   26725	     48433 ns/op	    1716 B/op	      11 allocs/op
-BenchmarkImageMeta/.HEIC/iPhone13-12           	    6726	    152748 ns/op	    4561 B/op	      15 allocs/op
-BenchmarkImageMeta/.NEF/Nikon-12               	   54534	     22582 ns/op	   10242 B/op	      23 allocs/op
-BenchmarkImageMeta/.NEF/Nikon#01-12            	   53985	     23082 ns/op	   10244 B/op	      23 allocs/op
-BenchmarkImageMeta/.RW2/Panasonic-12           	   52309	     20677 ns/op	    4555 B/op	      15 allocs/op
-BenchmarkImageMeta/.ARW/Sony-12                	   99100	     11576 ns/op	    4769 B/op	      22 allocs/op
-BenchmarkImageMeta/.WEBP/Webp-12               	 4978038	     285.9 ns/op	      24 B/op	       1 allocs/op
-BenchmarkImageMeta/.DNG/Adobe-12               	   34141	     35345 ns/op	   20866 B/op	      30 allocs/op
-BenchmarkImageMeta/.JPG/NoExif-12              	 1290793	     942.1 ns/op	     280 B/op	       4 allocs/op
-
-```
 
 ## Imagetype Identification
 
 Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" package.
 
-Benchmarks can be found with the imagemeta/imagetype package
-
-Example:
-
-```go
-package main
-
-import (
-   "fmt"
-   "os"
-
-   "github.com/evanoberholster/imagemeta/imagetype"
-)
-
-const imageFilename = "../../test/img/1.CR2"
-
-func main() {
-   var err error
-
-   f, err := os.Open(imageFilename)
-   if err != nil {
-      panic(err)
-   }
-   defer f.Close()
-   t, err := imagetype.Scan(f)
-   if err != nil {
-      panic(err)
-   }
-   fmt.Println(t)
-}
-```
-
 ## TODO
 
 - [x] Stabilize ImageTypes API
 - [x] Add Exif parsing for individual image types (jpg, heic, cr2, tiff, dng)
-- [x] Add XMP parsing as "xmp" package
-- [x] Add Avif, Heic and CR3 image metadata support (riff format images)
+- [x] Add CR3 and Heic image metadata support.
+- [x] Add Avif image metadata support
+- [ ] Add Preview Image extraction
+- [ ] Add Camera Make and Model Lookup tables
+- [ ] Refactor XMP parsing as "xmp" package
 - [ ] Stabalize Imagemeta API
 - [ ] Improve test coverage
-- [ ] Create Thumbnail API
 - [ ] Add Webp image metadata support
 - [ ] Add Canon Exif Makernote support
 - [ ] Add Nikon Exif Makernote support
@@ -254,11 +74,7 @@ func main() {
 
 ## Based on and Inspired by
 
-Based on work by Dustin Oprea [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif)
-
-Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org)
-
-Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
+Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org), go-exif [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif), and RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
 
 ## Special Thanks to:
 - The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
@@ -272,9 +88,7 @@ Some inspiration from RW Carlsen [https://github.com/rwcarlsen/goexif](https://g
 
 ## LICENSE
 
-Copyright (c) 2020-2021, Evan Oberholster & Contributors
-
-Copyright (c) 2019, Dustin Oprea
+Copyright (c) 2020-2023, Evan Oberholster & Contributors
 
 [License-Url]: https://opensource.org/licenses/MIT
 [License-Image]: https://img.shields.io/badge/License-MIT-blue.svg?maxAge=2592000
