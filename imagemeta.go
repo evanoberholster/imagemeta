@@ -58,7 +58,7 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
 		}
-	case imagetype.ImageCR3:
+	case imagetype.ImageCR3, imagetype.ImageAVIF:
 		bmr := isobmff.NewReader(rr)
 		defer bmr.Close()
 		bmr.ExifReader = ir.DecodeIfd
@@ -68,6 +68,7 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 		if err := bmr.ReadMetadata(); err != nil {
 			return ir.Exif, err
 		}
+
 	case imagetype.ImageHEIF:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
