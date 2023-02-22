@@ -68,7 +68,7 @@ func ScanJPEG(r io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) 
 
 	var localBuffer bool
 	br, ok := r.(*bufio.Reader)
-	if !ok || br.Size() <= bufferSize {
+	if !ok || br.Size() < bufferSize {
 		localBuffer = true
 		br = bufferPool.Get().(*bufio.Reader)
 		br.Reset(r)

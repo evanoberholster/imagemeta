@@ -67,7 +67,11 @@ func main2() {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err = f.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	e, err := imagemeta.Decode(f)
 	if err != nil {
