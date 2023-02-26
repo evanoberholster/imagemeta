@@ -6,7 +6,7 @@
 [![Coverage Status][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-Image Metadata (Exif and XMP) extraction for JPEG, HEIC, WebP, AVIF, TIFF, and Camera Raw in golang. Imagetype identifcation. Zero allocation Perceptual Image Hash. Goal is features that are performance oriented for working with images.
+Image Metadata (Exif and XMP) extraction for JPEG, HEIC, AVIF, TIFF, and Camera Raw in golang. Imagetype identifcation. Zero allocation Perceptual Image Hash. Goal is features that are precise and performance oriented for working with images.
 
 ## Documentation
 
@@ -61,14 +61,14 @@ Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" 
 - [x] Add Exif parsing for individual image types (jpg, heic, cr2, tiff, dng)
 - [x] Add CR3 and Heic image metadata support.
 - [x] Add Avif image metadata support
-- [ ] Add Preview Image extraction
+- [ ] Add Canon Exif Makernote support
+- [ ] Add Nikon Exif Makernote support 
 - [ ] Add Camera Make and Model Lookup tables
+- [ ] Add Preview Image extraction
 - [ ] Refactor XMP parsing as "xmp" package
 - [ ] Stabalize Imagemeta API
 - [ ] Improve test coverage
 - [ ] Add Webp image metadata support
-- [ ] Add Canon Exif Makernote support
-- [ ] Add Nikon Exif Makernote support
 - [ ] Add CRW image metadata support (ciff format images)
 - [ ] Documentation
 
