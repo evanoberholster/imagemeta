@@ -52,6 +52,8 @@ func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
 		count = 4 // 4
 	case 65:
 		count = 5 // 5
+	case 1053:
+		count = 66
 	default:
 		panic(fmt.Errorf("error parsing AFPoints from Canon Makernote. Expected 7, 9, 11, 19, 31, 45 or 61 got %d", validPoints))
 	}

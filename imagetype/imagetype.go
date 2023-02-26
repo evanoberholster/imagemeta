@@ -28,27 +28,28 @@ const (
 //go:generate msgp
 
 // ImageType is type of Image or Metadata file
-//		ImageUnknown: "application/octet-stream"
-//		ImageJPEG:    "image/jpeg"
-//		ImagePNG:     "image/png"
-//		ImageGIF:     "image/gif"
-//		ImageBMP:     "image/bmp"
-//		ImageWebP:    "image/webp"
-//		ImageHEIF:    "image/heif"
-//		ImageRAW:     "image/raw"
-//		ImageTiff:    "image/tiff"
-//		ImageDNG:     "image/x-adobe-dng"
-//		ImageNEF:     "image/x-nikon-nef"
-//		ImagePanaRAW: "image/x-panasonic-raw"
-//		ImageARW:     "image/x-sony-arw"
-//		ImageCRW:     "image/x-canon-crw"
-//		ImageGPR:     "image/x-gopro-gpr"
-//		ImageCR3:     "image/x-canon-cr3"
-//		ImageCR2:     "image/x-canon-cr2"
-//		ImagePSD:     "image/vnd.adobe.photoshop"
-//		ImageXMP:     "application/rdf+xml"
-//		ImageAVIF:    "image/avif"
-//		ImagePPM:     "image/x-portable-pixmap"
+//
+//	ImageUnknown: "application/octet-stream"
+//	ImageJPEG:    "image/jpeg"
+//	ImagePNG:     "image/png"
+//	ImageGIF:     "image/gif"
+//	ImageBMP:     "image/bmp"
+//	ImageWebP:    "image/webp"
+//	ImageHEIF:    "image/heif"
+//	ImageRAW:     "image/raw"
+//	ImageTiff:    "image/tiff"
+//	ImageDNG:     "image/x-adobe-dng"
+//	ImageNEF:     "image/x-nikon-nef"
+//	ImagePanaRAW: "image/x-panasonic-raw"
+//	ImageARW:     "image/x-sony-arw"
+//	ImageCRW:     "image/x-canon-crw"
+//	ImageGPR:     "image/x-gopro-gpr"
+//	ImageCR3:     "image/x-canon-cr3"
+//	ImageCR2:     "image/x-canon-cr2"
+//	ImagePSD:     "image/vnd.adobe.photoshop"
+//	ImageXMP:     "application/rdf+xml"
+//	ImageAVIF:    "image/avif"
+//	ImagePPM:     "image/x-portable-pixmap"
 type ImageType uint8
 
 // IsUnknown returns true if the Image Type is unknown
@@ -182,7 +183,6 @@ var imageTypeExtensions = map[string]ImageType{
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
-//
 func isTiff(buf []byte) bool {
 	return len(buf) > 4 &&
 		// BigEndian Tiff Image Header
@@ -262,14 +262,15 @@ func isHeif(buf []byte) bool {
 // isFTYPBrand returns true if the Brand in []byte matches the brand in str.
 // the Limit is 4 bytes
 func isFTYPBrand(buf []byte, str string) bool {
-	return buf[0] == str[0] && buf[1] == str[1] && buf[2] == str[2] && buf[3] == str[3]
+	return string(buf[:4]) == str[:4]
+	//return buf[0] == str[0] && buf[1] == str[1] && buf[2] == str[2] && buf[3] == str[3]
 }
 
 // isFTYPBox returns true if the header matches an ftyp box.
 // This indicates an ISO Base Media File Format.
 func isFTYPBox(buf []byte) bool {
-	return buf[0] == 0x0 &&
-		buf[1] == 0x0 &&
+	return buf[0] == 0x00 &&
+		buf[1] == 0x00 &&
 		// buf[0:4] is 'ftyp' box size
 		buf[4] == 0x66 &&
 		buf[5] == 0x74 &&
@@ -279,7 +280,6 @@ func isFTYPBox(buf []byte) bool {
 
 // isAVIF returns true if the header matches an ftyp box and
 // an avif box.
-//
 func isAVIF(buf []byte) bool {
 	return isFTYPBox(buf) &&
 		(isFTYPBrand(buf[8:12], "avif") ||
@@ -295,7 +295,6 @@ func isBMP(buf []byte) bool {
 
 // isRW2 returns true if the first 4 bytes match the Panasonic Tiff alternate
 // header and bytes 8 through 12 match the RW2 header
-//
 func isRW2(buf []byte) bool {
 	return buf[0] == 0x49 &&
 		buf[1] == 0x49 &&
@@ -316,7 +315,6 @@ func isJPEG(buf []byte) bool {
 }
 
 // isPNG returns true if the first 4 bytes match a PNG file header.
-//
 func isPNG(buf []byte) bool {
 	return buf[0] == 0x89 &&
 		buf[1] == 0x50 &&
@@ -338,7 +336,6 @@ func isWebP(buf []byte) bool {
 }
 
 // isJPEG2000 returns true if the first 12 bytes match a JPEG2000 file header
-//
 func isJPEG2000(buf []byte) bool {
 	return buf[0] == 0x0 &&
 		buf[1] == 0x0 &&

@@ -36,8 +36,10 @@ type Flash struct {
 //}
 
 // Exif attributes of an XMP Packet.
-//	 Exif 2.21 or later: xmlns:exifEX="http://cipa.jp/exif/1.0/"
-//	 Exif 2.2 or earlier: xmlns:exif="http://ns.adobe.com/exif/1.0/"
+//
+//	Exif 2.21 or later: xmlns:exifEX="http://cipa.jp/exif/1.0/"
+//	Exif 2.2 or earlier: xmlns:exif="http://ns.adobe.com/exif/1.0/"
+//
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#exif
 type Exif struct {
 	ExifVersion      string
@@ -45,7 +47,7 @@ type Exif struct {
 	PixelYDimension  uint32
 	DateTimeOriginal time.Time
 	CreateDate       time.Time // Exif:DateTimeDigitized
-	ExposureTime     meta.ShutterSpeed
+	ExposureTime     meta.ExposureTime
 	ExposureProgram  meta.ExposureProgram
 	ExposureMode     meta.ExposureMode
 	ExposureBias     meta.ExposureBias
@@ -71,7 +73,7 @@ func (exif *Exif) parse(p property) (err error) {
 		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case xmpns.ExposureTime:
 		n, d := parseRational(p.Value())
-		exif.ExposureTime = meta.NewShutterSpeed(n, d)
+		exif.ExposureTime = meta.ExposureTime(float32(n) / float32(d))
 	case xmpns.ExposureProgram:
 		exif.ExposureProgram = meta.ExposureProgram(parseUint8(p.Value()))
 	case xmpns.ExposureMode:
@@ -87,7 +89,7 @@ func (exif *Exif) parse(p property) (err error) {
 		n, d := parseRational(p.Value())
 		exif.SubjectDistance = float32(float32(n) / float32(d))
 	case xmpns.MeteringMode:
-		exif.MeteringMode = meta.NewMeteringMode(parseUint8(p.Value()))
+		exif.MeteringMode = meta.NewMeteringMode(uint16(parseUint8(p.Value())))
 	case xmpns.FNumber:
 		// TODO: needs verification
 		n, d := parseRational(p.Value())

@@ -28,3 +28,5 @@ test/*
 meta/cmd/*
 xmp/test/samples/*
 
+*.CR3
+*.CR2

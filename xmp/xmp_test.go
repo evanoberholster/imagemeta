@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package xmp
@@ -31,7 +32,7 @@ func Gen(t *testing.T) {
 				}
 			}
 
-			j, err := json.Marshal(x)
+			j, _ := json.Marshal(x)
 
 			dat, err := os.Create("test" + string(os.PathSeparator) + v.filename + ".json")
 			if err != nil {

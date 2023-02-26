@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 Evan Oberholster. All rights reserved.
+// Copyright (c) 2018-2023 Evan Oberholster. All rights reserved.
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
@@ -9,12 +9,13 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
+	"sync"
 
-	"github.com/evanoberholster/imagemeta/exif"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Errors
@@ -24,314 +25,313 @@ var (
 	ErrEndOfImage   = errors.New("end of Image")
 )
 
-// Metadata from a JPEG file
-type Metadata struct {
-	mr         meta.Reader
-	ExifHeader meta.ExifHeader
-	XmpHeader  meta.XmpHeader
+const (
+	bufferSize int = 4 * 1024 // 4Kb
+)
 
-	// Decode Functions for EXIF and XMP metadata
-	exifFn func(r io.Reader, header meta.ExifHeader) error
-	xmpFn  func(r io.Reader, header meta.XmpHeader) error
-
-	// SOF Header and Tiff Header
-	sofHeader
+type jpegReader struct {
+	ExifReader func(r io.Reader, h meta.ExifHeader) error
+	XMPReader  func(r io.Reader) error
 
 	// Reader
-	br        *bufio.Reader
-	discarded uint32
+	br  *bufio.Reader
+	err error
+
+	// SOF Header
+	sofHeader
+
+	// Marker
+	buf    []byte
+	offset uint32
+	size   uint16
+	marker markerType
+
+	// Reader
 	pos       uint8
+	discarded uint32
 }
 
-// Dimensions returns the dimensions (width and height) of the image
-func (m Metadata) Dimensions() meta.Dimensions {
-	return meta.NewDimensions(uint32(m.width), uint32(m.height))
+var bufferPool = sync.Pool{
+	New: func() interface{} { return bufio.NewReaderSize(nil, bufferSize) },
 }
 
-// ImageType returns imagetype.ImageJPEG for JPEG image
-func (m Metadata) ImageType() imagetype.ImageType {
-	return imagetype.ImageJPEG
-}
-
-// PreviewImage returns a JPEG preview image
-func (m Metadata) PreviewImage() io.Reader {
-	_, _ = m.mr.Seek(0, 0)
-	return m.mr
-}
-
-// Exif returns parsed Exif data from JPEG
-func (m Metadata) Exif() (exif.Exif, error) {
-	return exif.ParseExif(m.mr, m.ExifHeader)
-}
-
-// Xmp returns parsed Xmp data from JPEG
-func (m Metadata) Xmp() (xmp.XMP, error) {
-	sr := io.NewSectionReader(m.mr, int64(m.XmpHeader.Offset), int64(m.XmpHeader.Length))
-	return xmp.ParseXmp(sr)
-}
-
-func newMetdata(mr meta.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) Metadata {
-	br := bufio.NewReaderSize(mr, 64)
-
-	return Metadata{mr: mr, br: br, exifFn: exifFn, xmpFn: xmpFn}
-}
-
-// ScanJPEG scans a reader for JPEG Image markers. xmpDecodeFn and exifDecodeFn are run at their respective
-// positions during the scan. Returns Metadata.
+// ScanJPEG scans a reader for JPEG Image markers. exifReader and xmpReader are run at their respective
+// positions during the scan. Returns en error.
 //
 // Returns the error ErrNoJPEGMarker if a JPEG SOF was not found.
-func ScanJPEG(mr meta.Reader, exifFn func(r io.Reader, header meta.ExifHeader) error, xmpFn func(r io.Reader, header meta.XmpHeader) error) (m Metadata, err error) {
+func ScanJPEG(r io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			err = state.(error)
 		}
 	}()
-	m = newMetdata(mr, exifFn, xmpFn)
 
-	var buf []byte
-	for {
-		if buf, err = m.br.Peek(16); err != nil {
-			err = ErrNoJPEGMarker
-			return
-		}
+	var localBuffer bool
+	br, ok := r.(*bufio.Reader)
+	if !ok || br.Size() < bufferSize {
+		localBuffer = true
+		br = bufferPool.Get().(*bufio.Reader)
+		br.Reset(r)
+	}
 
-		if !isMarkerFirstByte(buf) {
-			_ = m.discard(1)
-			continue
+	jr := &jpegReader{br: br, ExifReader: exifReader, XMPReader: xmpReader}
+
+	defer func() {
+		if localBuffer {
+			bufferPool.Put(jr.br)
 		}
-		if isSOIMarker(buf) {
-			m.pos++
-			_ = m.discard(2)
-			continue
-		}
-		if m.pos > 0 {
-			if err := m.scanMarkers(buf); err == nil {
-				continue
+	}()
+
+	for jr.nextMarker() {
+		switch jr.marker {
+		case markerSOF0, markerSOF1,
+			markerSOF2, markerSOF3,
+			markerSOF5, markerSOF6,
+			markerSOF7, markerSOF9,
+			markerSOF10:
+			if logInfo() {
+				jr.logMarker("")
 			}
+			jr.err = jr.readSOF(jr.buf)
+		case markerDHT:
+			if logInfo() {
+				jr.logMarker("")
+			}
+			// Artificial End Of Image for DHT Marker.
+			// This is done to improve performance.
+			if jr.pos == 1 {
+				return nil
+			}
+			// Ignore DHT Markers
+			jr.ignoreMarker()
+		case markerSOI:
+			if logInfo() {
+				jr.logMarker("")
+			}
+			jr.pos++
+			jr.err = jr.discard(2)
+		case markerEOI:
+			if logInfo() {
+				jr.logMarker("")
+			}
+			jr.pos--
+			// Return EndOfImage
+			if jr.pos == 1 {
+				return ErrEndOfImage
+			}
+			jr.err = jr.discard(2)
+		case markerDQT:
+			// Ignore DQT Markers and close parsing
+			// Stop parsing at DQT Markers
+			//return nil
+			if logInfo() {
+				jr.logMarker("")
+			}
+			jr.ignoreMarker()
+			return nil
+		case markerDRI:
+			return jr.discard(6)
+		case markerAPP0:
+			jr.readAPP0()
+		case markerAPP1:
+			jr.readAPP1()
+		case markerAPP2:
+			jr.readAPP2()
+		case markerAPP13:
+			jr.readAPP13()
+		default:
+			if logInfo() {
+				jr.logMarker("")
+			}
+			jr.ignoreMarker()
 		}
-
-		break
 	}
-	if !m.ExifHeader.IsValid() {
-		err = ErrNoExif
-		return
-	}
-	return
+	return jr.err
 }
 
-func (m *Metadata) scanMarkers(buf []byte) (err error) {
-	switch buf[1] {
-	case markerSOF0, markerSOF1,
-		markerSOF2, markerSOF3,
-		markerSOF5, markerSOF6,
-		markerSOF7, markerSOF9,
-		markerSOF10:
-		return m.readSOF(buf)
-	case markerDHT:
-		// Artificial End Of Image for DHT Marker.
-		// This is done to improve performance.
-		if m.pos == 1 {
-			return ErrEndOfImage
+func (jr *jpegReader) nextMarker() bool {
+	for jr.err == nil {
+		if jr.buf, jr.err = jr.peek(64); jr.err != nil {
+			jr.err = ErrNoJPEGMarker
+			return false
 		}
-		// Ignore DHT Markers
-		return m.ignoreMarker(buf)
-	case markerSOI:
-		m.pos++
-		return m.discard(2)
-	case markerEOI:
-		m.pos--
-		// Return EndOfImage
-		if m.pos == 1 {
-			return ErrEndOfImage
+		if !isMarkerFirstByte(jr.buf) {
+			var i int
+			for i = 0; i < 64; i++ {
+				if isMarkerFirstByte(jr.buf[i:]) {
+					break
+				}
+			}
+			jr.err = jr.discard(i)
+			continue
 		}
-		return m.discard(2)
-	case markerDQT:
-		// Ignore DQT Markers
-		return m.ignoreMarker(buf)
-	case markerDRI:
-		return m.discard(6)
-	case markerAPP0:
-		return m.ignoreMarker(buf)
-	case markerAPP2:
-		if isICCProfilePrefix(buf) {
-			// Ignore ICC Profile Marker
-			return m.ignoreMarker(buf)
+
+		if isSOIMarker(jr.buf) {
+			jr.pos++
+			jr.err = jr.discard(2)
+			continue
 		}
-		return m.ignoreMarker(buf)
-	case markerAPP7, markerAPP8,
-		markerAPP9, markerAPP10:
-		return m.ignoreMarker(buf)
-	case markerAPP13:
-		if isPhotoshopPrefix(buf) {
-			// Ignore Photoshop Profile Marker
-			return m.ignoreMarker(buf)
+		if jr.pos > 0 {
+			jr.offset = jr.discarded
+			jr.size = jpegEndian.Uint16(jr.buf[2:4])
+			jr.marker = markerType(jr.buf[1])
+			return true
 		}
-		return m.ignoreMarker(buf)
-	case markerAPP14:
-		return m.ignoreMarker(buf)
-	case markerAPP1:
-		return m.readAPP1(buf)
 	}
-	return m.discard(1)
+	return false
+}
+
+// peek returns the next n bytes without advancing the unerlying bufio.Reader
+func (jr *jpegReader) peek(n int) ([]byte, error) {
+	return jr.br.Peek(n)
 }
 
 // discard adds to m.discarded and discards from the underlying bufio.Reader
-func (m *Metadata) discard(i int) (err error) {
+func (jr *jpegReader) discard(i int) (err error) {
 	if i == 0 {
 		return
 	}
-	i, err = m.br.Discard(i)
-	m.discarded += uint32(i)
+	i, err = jr.br.Discard(i)
+	jr.discarded += uint32(i)
 	return
 }
 
+// readAPP0
+func (jr *jpegReader) readAPP0() {
+	// Is JFIF Marker
+	if isJFIFPrefix(jr.buf) || isJFIFPrefixExt(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP0 JFIF")
+		}
+	}
+	jr.ignoreMarker()
+}
+
 // readAPP1
-func (m *Metadata) readAPP1(buf []byte) (err error) {
-	// APP1 XML Marker
-	if isXMPPrefix(buf) {
-		return m.readXMP(buf)
-	}
+func (jr *jpegReader) readAPP1() {
 	// APP1 Exif Marker
-	if isJpegExifPrefix(buf) {
-		return m.readExif(buf)
+	if isExifPrefix(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP1 Exif")
+		}
+		jr.err = jr.readExif()
+		return
 	}
-	return nil
+
+	// APP1 XMP Marker
+	if isXMPPrefix(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP1 XMP")
+		}
+		jr.err = jr.readXMP()
+		return
+	}
+
+	// APP1 XMP Extension marker (NOT SUPPORTED)
+	if isXMPPrefixExt(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP1 XMP Extension")
+		}
+		// Ignore XMP Extension
+	}
+	jr.ignoreMarker()
+}
+
+// readAPP2
+func (jr *jpegReader) readAPP2() {
+	if isICCProfilePrefix(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP2 ICC Profile")
+		}
+		// Ignore ICC Profile Marker
+	}
+	jr.ignoreMarker()
+}
+
+// readAPP13
+func (jr *jpegReader) readAPP13() {
+	if isPhotoshopPrefix(jr.buf) {
+		if logInfo() {
+			jr.logMarker("APP13 Photoshop")
+		}
+		// Ignore Photoshop Profile Marker
+	}
+	jr.ignoreMarker()
 }
 
 // readExif reads the Exif header/component with the addtached metadata
 // ExifDecodeFn. If the function is nil it discards the exif length.
-func (m *Metadata) readExif(buf []byte) (err error) {
+func (jr *jpegReader) readExif() (err error) {
+	var buf []byte
 	// Read the length of the Exif Information
-	remain := int(jpegByteOrder.Uint16(buf[2:4]) - exifPrefixLength)
+	remain := int(jr.size) - exifPrefixLength
 
 	// Discard App Marker bytes and Exif header bytes
-	if err = m.discard(2 + exifPrefixLength); err != nil {
+	if err = jr.discard(2 + exifPrefixLength); err != nil {
 		return err
 	}
 
 	// Peek at TiffHeader information
-	if buf, err = m.br.Peek(exifPrefixLength); err != nil {
+	if buf, err = jr.peek(exifPrefixLength); err != nil {
 		return err
 	}
 
-	// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
-	// the tiff Header Offset, and the length of the exif information.
-	byteOrder := meta.BinaryOrder(buf)
-	firstIfdOffset := byteOrder.Uint32(buf[4:8])
-	exifLength := uint32(remain)
-
-	// Set Tiff Header
-	m.ExifHeader = meta.NewExifHeader(byteOrder, firstIfdOffset, m.discarded, exifLength, imagetype.ImageJPEG)
-
 	// Read Exif
-	if m.exifFn != nil {
-		r := io.LimitReader(m.br, int64(exifLength))
-		if err = m.exifFn(r, m.ExifHeader); err != nil {
+	if jr.ExifReader != nil {
+		// Create a TiffHeader from the Tiff directory ByteOrder, root IFD Offset,
+		// the tiff Header Offset, and the length of the exif information.
+		byteOrder := utils.BinaryOrder(buf)
+		firstIfdOffset := byteOrder.Uint32(buf[4:8])
+		exifLength := uint32(remain)
+
+		// Set Tiff Header
+		exifHeader := meta.NewExifHeader(byteOrder, firstIfdOffset, jr.discarded, exifLength, imagetype.ImageJPEG)
+
+		if err = jr.ExifReader(jr.br, exifHeader); err != nil {
 			return err
 		}
 		// Discard remaining bytes
-		remain = int(r.(*io.LimitedReader).N)
+		remain = 0
 	}
 
 	// Discard remaining bytes
-	return m.discard(remain)
+	return jr.discard(remain)
 }
 
 // readXMP reads the Exif header/component with the addtached metadata
 // XmpDecodeFn. If the function is nil it discards the exif length.
-func (m *Metadata) readXMP(buf []byte) (err error) {
+func (jr *jpegReader) readXMP() (err error) {
 	// Read the length of the XMPHeader
-	remain := int(jpegByteOrder.Uint16(buf[2:4])) - 2 - xmpPrefixLength
+	remain := int(jr.size) - 2 - xmpPrefixLength
 
 	// Discard App Marker bytes and header length bytes
-	if err = m.discard(4 + xmpPrefixLength); err != nil {
+	if err = jr.discard(4 + xmpPrefixLength); err != nil {
 		return err
 	}
-	m.XmpHeader = meta.NewXMPHeader(m.discarded, uint32(remain))
-
 	// Read XMP Decode Function here
-	if m.xmpFn != nil {
-		r := io.LimitReader(m.br, int64(remain))
-		if err = m.xmpFn(r, m.XmpHeader); err != nil {
+	if jr.XMPReader != nil {
+		r := io.LimitReader(jr.br, int64(remain))
+		if err = jr.XMPReader(r); err != nil {
 			return err
 		}
 		// Discard remaining bytes
 		remain = int(r.(*io.LimitedReader).N)
 	}
-
 	// Discard remaining bytes
-	return m.discard(remain)
+	return jr.discard(remain)
 }
 
 // readSOF reads a JPEG Start of file with the uint16
 // width, height, and components of the JPEG image.
-func (m *Metadata) readSOF(buf []byte) error {
-	length := int(jpegByteOrder.Uint16(buf[2:4]))
-	height := jpegByteOrder.Uint16(buf[5:7])
-	width := jpegByteOrder.Uint16(buf[7:9])
+func (jr *jpegReader) readSOF(buf []byte) error {
+	height := jpegEndian.Uint16(buf[5:7])
+	width := jpegEndian.Uint16(buf[7:9])
 	comp := uint8(buf[9])
-	header := sofHeader{height, width, comp}
-	if m.pos == 1 {
-		m.sofHeader = header
+	if jr.pos == 1 {
+		jr.sofHeader = sofHeader{height, width, comp}
 	}
-	return m.discard(length + 2)
+	return jr.discard(int(jr.size) + 2)
 }
-
-// ignoreMarker reads the Marker Header length and then
-// discards the said marker and its header length
-func (m *Metadata) ignoreMarker(buf []byte) error {
-	// Read Marker Header Length
-	length := int(jpegByteOrder.Uint16(buf[2:4]))
-
-	// Discard Marker Header Length and Marker Length
-	return m.discard(length + 2)
-}
-
-// Markers refers to the second byte of a JPEG Marker.
-// The first is always 0xFF
-const (
-	markerFirstByte = 0xFF
-
-	// SOF Markers
-	markerSOF0  = 0xC0
-	markerSOF1  = 0xC1
-	markerSOF2  = 0xC2
-	markerSOF3  = 0xC3
-	markerSOF5  = 0xC5
-	markerSOF6  = 0xC6
-	markerSOF7  = 0xC7
-	markerSOF9  = 0xC9
-	markerSOF10 = 0xCA
-	markerSOF11 = 0xCB
-
-	// Other Markers
-	markerDHT = 0xC4
-	markerSOI = 0xD8
-	markerEOI = 0xD9
-	markerDQT = 0xDB
-	markerDRI = 0xDD
-
-	// APP Markers
-	markerAPP0  = 0xE0
-	markerAPP1  = 0xE1
-	markerAPP2  = 0xE2
-	markerAPP7  = 0xE7
-	markerAPP8  = 0xE8
-	markerAPP9  = 0xE9
-	markerAPP10 = 0xEA
-	markerAPP13 = 0xED
-	markerAPP14 = 0xEE
-)
-
-// Prefix lengths
-const (
-	xmpPrefixLength  = 29
-	exifPrefixLength = 8
-)
-
-// jpegByteOrder JPEG always uses a BigEndian byteorder inside the JPEG image.
-// Can use either byteorder for Exif Information inside the JPEG image.
-var jpegByteOrder = binary.BigEndian
 
 // sofHeader contains height, width and number of components.
 type sofHeader struct {
@@ -340,76 +340,146 @@ type sofHeader struct {
 	components uint8
 }
 
+// ignoreMarker discards the marker size
+func (jr *jpegReader) ignoreMarker() {
+	jr.err = jr.discard(int(jr.size) + 2)
+}
+
+// markerType refers to the second byte of a JPEG Marker.
+// The first is always 0xFF
+type markerType uint8
+
+const (
+	markerFirstByte markerType = 0xFF
+
+	// SOF Markers
+	markerSOF0  markerType = 0xC0
+	markerSOF1  markerType = 0xC1
+	markerSOF2  markerType = 0xC2
+	markerSOF3  markerType = 0xC3
+	markerSOF5  markerType = 0xC5
+	markerSOF6  markerType = 0xC6
+	markerSOF7  markerType = 0xC7
+	markerSOF9  markerType = 0xC9
+	markerSOF10 markerType = 0xCA
+	markerSOF11 markerType = 0xCB
+
+	// Other Markers
+	markerDHT       markerType = 0xC4
+	markerSOI       markerType = 0xD8
+	markerEOI       markerType = 0xD9
+	markerImageData markerType = 0xD9
+	markerDQT       markerType = 0xDB
+	markerDRI       markerType = 0xDD
+
+	// APP Markers
+	markerAPP0  markerType = 0xE0
+	markerAPP1  markerType = 0xE1
+	markerAPP2  markerType = 0xE2
+	markerAPP7  markerType = 0xE7
+	markerAPP8  markerType = 0xE8
+	markerAPP9  markerType = 0xE9
+	markerAPP10 markerType = 0xEA
+	markerAPP13 markerType = 0xED
+	markerAPP14 markerType = 0xEE
+
+	// Prefixes for JPEG markers
+	exifPrefix       = "Exif\000\000"
+	jfifPrefix       = "JFIF\000"
+	jfifPrefixExt    = "JFXX\000"
+	iccPrefix        = "ICC_PROFILE"
+	xmpPrefix        = "http://ns.adobe.com/xap/1.0/\000"
+	xmpPrefixExt     = "http://ns.adobe.com/xmp/extension/"
+	photoshopPrefix  = "Photoshop "
+	exifPrefixLength = 8
+	xmpPrefixLength  = 29
+)
+
+var (
+	// jpegEndian JPEG and JFIF always use BigEndian byteorder.
+	// Can use either byteorder for Exif Information inside the JPEG image.
+	jpegEndian = binary.BigEndian
+
+	mapMarkerTypeString = map[markerType]string{
+		markerSOF0:  "SOF0",
+		markerSOF1:  "SOF1",
+		markerSOF2:  "SOF2",
+		markerSOF3:  "SOF3",
+		markerSOF5:  "SOF5",
+		markerSOF6:  "SOF6",
+		markerSOF7:  "SOF7",
+		markerSOF9:  "SOF9",
+		markerSOF10: "SOF10",
+		markerSOF11: "SOF11",
+		markerDHT:   "DHT",
+		markerSOI:   "SOI",
+		markerEOI:   "EOI",
+		markerDQT:   "DQT",
+		markerDRI:   "DRI",
+		markerAPP0:  "APP0",
+		markerAPP1:  "APP1",
+		markerAPP2:  "APP2",
+		markerAPP7:  "APP7",
+		markerAPP8:  "APP8",
+		markerAPP9:  "APP9",
+		markerAPP10: "APP10",
+		markerAPP13: "APP13",
+		markerAPP14: "APP14",
+	}
+)
+
+// String is a Stringer interface for markerType
+// returns the string name of the second byte of a JPEG marker
+func (mt markerType) String() string {
+	str, ok := mapMarkerTypeString[mt]
+	if ok {
+		return str
+	}
+	return fmt.Sprintf("Unknown marker %x", uint8(mt))
+}
+
 // isSOIMarker returns true if the first 2 bytes match an SOI marker
 func isSOIMarker(buf []byte) bool {
-	return buf[0] == markerFirstByte &&
-		buf[1] == markerSOI
+	return isMarkerFirstByte(buf) &&
+		buf[1] == byte(markerSOI)
 }
 
+// isMarkerFirstByte returns true if the first byte matches a marker
 func isMarkerFirstByte(buf []byte) bool {
-	return buf[0] == markerFirstByte
+	return buf[0] == byte(markerFirstByte)
 }
 
-// PhotoshopPrefix returns true if
-// buf[4:14] equals "Photoshop 3.0\000",
-// buf[0:2] is AppMarker, buf[2:4] is HeaderLength
+// PhotoshopPrefix returns true if marker matches photoshopPrefix
 func isPhotoshopPrefix(buf []byte) bool {
-	return buf[4] == 0x50 &&
-		buf[5] == 0x68 &&
-		buf[6] == 0x6f &&
-		buf[7] == 0x74 &&
-		buf[8] == 0x6f &&
-		buf[9] == 0x70 &&
-		buf[10] == 0x20 &&
-		buf[11] == 0x33 &&
-		buf[12] == 0x2e &&
-		buf[13] == 0x30 &&
-		buf[14] == 0x00
+	return string(buf[4:14]) == photoshopPrefix
 }
 
-// isICCProfilePrefix returns true if
-// buf[4:14] equals []byte,
-// buf[0:2] is AppMarker, buf[2:4] is HeaderLength
+// isICCProfilePrefix returns true if marker matches iccPrefix
 func isICCProfilePrefix(buf []byte) bool {
-	return buf[4] == 0x49 &&
-		buf[5] == 0x43 &&
-		buf[6] == 0x43 &&
-		buf[7] == 0x5f &&
-		buf[8] == 0x50 &&
-		buf[9] == 0x52 &&
-		buf[10] == 0x4f &&
-		buf[11] == 0x46 &&
-		buf[12] == 0x49 &&
-		buf[13] == 0x4c &&
-		buf[14] == 0x45
+	return string(buf[4:15]) == iccPrefix
 }
 
-// isXMPPrefix returns true if
-// buf[4:15] equals "http://ns.adobe.com/xap/1.0/\000",
-// buf[0:2] is AppMarker, buf[2:4] is HeaderLength
+// isXMPPrefix returns true if marker matches xmpPrefix
 func isXMPPrefix(buf []byte) bool {
-	return buf[4] == 0x68 &&
-		buf[5] == 0x74 &&
-		buf[6] == 0x74 &&
-		buf[7] == 0x70 &&
-		buf[8] == 0x3a &&
-		buf[9] == 0x2f &&
-		buf[10] == 0x2f &&
-		buf[11] == 0x6e &&
-		buf[12] == 0x73 &&
-		buf[13] == 0x2e &&
-		buf[14] == 0x61 &&
-		buf[15] == 0x64
+	return string(buf[4:33]) == xmpPrefix
 }
 
-// isJpegExifPrefix returns true if
-// buf[4:9] equals "Exif" and '0', '0',
-// buf[0:2] is AppMarker, buf[2:4] is HeaderLength
-func isJpegExifPrefix(buf []byte) bool {
-	return buf[4] == 0x45 &&
-		buf[5] == 0x78 &&
-		buf[6] == 0x69 &&
-		buf[7] == 0x66 &&
-		buf[8] == 0x00 &&
-		buf[9] == 0x00
+// isXMPPrefixExt returns true if marker matches xmpPrefixExt
+func isXMPPrefixExt(buf []byte) bool {
+	return string(buf[4:38]) == xmpPrefixExt
+}
+
+// isJpegExifPrefix returns true if marker matches exifPrefix
+func isExifPrefix(buf []byte) bool {
+	return string(buf[4:10]) == exifPrefix
+}
+
+// isJFIFPrefix returns true if marker matches jfifPrefix
+func isJFIFPrefix(buf []byte) bool {
+	return string(buf[4:9]) == jfifPrefix
+}
+
+// isJFIFPrefixExt returns true of marker matches "JFXX"
+func isJFIFPrefixExt(buf []byte) bool {
+	return string(buf[4:9]) == jfifPrefixExt
 }
