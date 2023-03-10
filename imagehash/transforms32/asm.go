@@ -62,228 +62,251 @@ func asmDCT8(r1, r2 reg.VecVirtual) {
 	Comment("end DCT8")
 }
 
+// asmDCT16 r1-r4, and 5 temporary registers
 func asmDCT16(r1, r2, r3, r4 reg.Virtual) {
+	tmp := make([]reg.VecVirtual, 4)
+	for i := 0; i < len(tmp); i++ {
+		tmp[i] = XMM()
+	}
+
+	x := XMM()
+
 	Comment("DCT16")
-	PSHUFD(U8(27), r3, y2)
-	PSHUFD(U8(27), r4, y1)
+	PSHUFD(U8(27), r3, x)
+	VADDPS(x, r2, tmp[1])
+	VSUBPS(x, r2, tmp[3])
+	DIVPS(dct16values.Offset(4*4), tmp[3])
 
-	VADDPS(y1, r1, a1)
-	VADDPS(y2, r2, a2)
-	VSUBPS(y1, r1, b1)
-	VSUBPS(y2, r2, b2)
-	DIVPS(dct16values.Offset(0), b1)
-	DIVPS(dct16values.Offset(4*4), b2)
+	PSHUFD(U8(27), r4, x)
+	VADDPS(x, r1, tmp[0])
+	VSUBPS(x, r1, tmp[2])
+	DIVPS(dct16values.Offset(0), tmp[2])
 
-	asmDCT8(a1, a2)
-	asmDCT8(b1, b2)
+	asmDCT8(tmp[0], tmp[1])
+	asmDCT8(tmp[2], tmp[3])
 
-	VPSRLDQ(U8(4), b1, r1)
-	VPSLLDQ(U8(12), b2, r2)
+	VPSRLDQ(U8(4), tmp[2], r1)
+	VPSLLDQ(U8(12), tmp[3], r2)
 	VADDPS(r1, r2, r1)
-	VADDPS(r1, b1, b1)
+	VADDPS(r1, tmp[2], tmp[2])
 
-	VPSRLDQ(U8(4), b2, r2)
-	VADDPS(r2, b2, b2)
+	VPSRLDQ(U8(4), tmp[3], r2)
+	VADDPS(r2, tmp[3], tmp[3])
 
-	VUNPCKLPS(b1, a1, r1)
-	VUNPCKHPS(b1, a1, r2)
-	VUNPCKLPS(b2, a2, r3)
-	VUNPCKHPS(b2, a2, r4)
+	VUNPCKLPS(tmp[2], tmp[0], r1)
+	VUNPCKHPS(tmp[2], tmp[0], r2)
+	VUNPCKLPS(tmp[3], tmp[1], r3)
+	VUNPCKHPS(tmp[3], tmp[1], r4)
 	Comment("end DCT16")
 }
 
-// asmDCT32o o1, o2, o3, o4, o5, o6, o7, o8
-func asmDCT32(o1, o2, o3, o4, o5, o6, o7, o8 Mem) {
-	r := make([]reg.VecVirtual, 8)
-	for i := 0; i < len(r); i++ {
-		r[i] = XMM()
+// asmDCT32Unaligned
+func asmDCT32Unaligned(mOffset []Mem) {
+	Comment("DCT32 Unaligned")
+
+	x := XMM()
+	y := XMM()
+	xmm := make([]reg.VecVirtual, 8)
+	for i := 0; i < 4; i++ {
+		xmm[i] = XMM()
+		xmm[i+4] = XMM()
+		MOVUPS(mOffset[i], x)
+		MOVUPS(mOffset[7-i], y)
+		PSHUFD(U8(27), y, y)
+		VADDPS(y, x, xmm[i])
+		VSUBPS(y, x, xmm[i+4])
+		DIVPS(dct32values.Offset(i*4*4), xmm[i+4])
 	}
 
-	Comment("DCT32")
-	MOVAPS(o1, x1)
-	MOVAPS(o2, x2)
-	MOVAPS(o3, x3)
-	MOVAPS(o4, x4)
-	PSHUFD(U8(27), o5, y1)
-	PSHUFD(U8(27), o6, y2)
-	PSHUFD(U8(27), o7, y3)
-	PSHUFD(U8(27), o8, y4)
-
-	VADDPS(y4, x1, r[0])
-	VADDPS(y3, x2, r[1])
-	VADDPS(y2, x3, r[2])
-	VADDPS(y1, x4, r[3])
-	VSUBPS(y4, x1, r[4])
-	VSUBPS(y3, x2, r[5])
-	VSUBPS(y2, x3, r[6])
-	VSUBPS(y1, x4, r[7])
-	DIVPS(dct32values.Offset(0), r[4])
-	DIVPS(dct32values.Offset(4*4), r[5])
-	DIVPS(dct32values.Offset(4*8), r[6])
-	DIVPS(dct32values.Offset(4*12), r[7])
-
 	// DCT16
-	asmDCT16(r[0], r[1], r[2], r[3])
-	asmDCT16(r[4], r[5], r[6], r[7])
+	asmDCT16(xmm[0], xmm[1], xmm[2], xmm[3])
+	asmDCT16(xmm[4], xmm[5], xmm[6], xmm[7])
 	//
 
-	VPSRLDQ(U8(4), r[4], x1)
-	VPSLLDQ(U8(12), r[5], x2)
+	x1 := XMM()
+	x2 := XMM()
+
+	VPSRLDQ(U8(4), xmm[4], x1)
+	VPSLLDQ(U8(12), xmm[5], x2)
 	VADDPS(x1, x2, x1)
-	VADDPS(x1, r[4], r[4])
+	VADDPS(x1, xmm[4], xmm[4])
 
-	VPSRLDQ(U8(4), r[5], x1)
-	VPSLLDQ(U8(12), r[6], x2)
+	VUNPCKLPS(xmm[4], xmm[0], x1)
+	MOVUPS(x1, mOffset[0])
+	VUNPCKHPS(xmm[4], xmm[0], x2)
+	MOVUPS(x2, mOffset[1])
+
+	VPSRLDQ(U8(4), xmm[5], x1)
+	VPSLLDQ(U8(12), xmm[6], x2)
 	VADDPS(x1, x2, x1)
-	VADDPS(x1, r[5], r[5])
+	VADDPS(x1, xmm[5], xmm[5])
 
-	VPSRLDQ(U8(4), r[6], x1)
-	VPSLLDQ(U8(12), r[7], x2)
+	VUNPCKLPS(xmm[5], xmm[1], x1)
+	MOVUPS(x1, mOffset[2])
+	VUNPCKHPS(xmm[5], xmm[1], x2)
+	MOVUPS(x2, mOffset[3])
+
+	VPSRLDQ(U8(4), xmm[6], x1)
+	VPSLLDQ(U8(12), xmm[7], x2)
 	VADDPS(x1, x2, x1)
-	VADDPS(x1, r[6], r[6])
+	VADDPS(x1, xmm[6], xmm[6])
 
-	VPSRLDQ(U8(4), r[7], x2)
-	VADDPS(x2, r[7], r[7])
+	VUNPCKLPS(xmm[6], xmm[2], x1)
+	MOVUPS(x1, mOffset[4])
+	VUNPCKHPS(xmm[6], xmm[2], x2)
+	MOVUPS(x2, mOffset[5])
 
-	VUNPCKLPS(r[4], r[0], x1)
-	VUNPCKHPS(r[4], r[0], x2)
-	VUNPCKLPS(r[5], r[1], x3)
-	VUNPCKHPS(r[5], r[1], x4)
-	VUNPCKLPS(r[6], r[2], x5)
-	VUNPCKHPS(r[6], r[2], x6)
-	VUNPCKLPS(r[7], r[3], x7)
-	VUNPCKHPS(r[7], r[3], x8)
+	VPSRLDQ(U8(4), xmm[7], x2)
+	VADDPS(x2, xmm[7], xmm[7])
 
-	MOVAPS(x1, o1)
-	MOVAPS(x2, o2)
-	MOVAPS(x3, o3)
-	MOVAPS(x4, o4)
-	MOVAPS(x5, o5)
-	MOVAPS(x6, o6)
-	MOVAPS(x7, o7)
-	MOVAPS(x8, o8)
+	VUNPCKLPS(xmm[7], xmm[3], x1)
+	MOVUPS(x1, mOffset[6])
+	VUNPCKHPS(xmm[7], xmm[3], x2)
+	MOVUPS(x2, mOffset[7])
+
+	Comment("end DCT32 Unaligned")
+}
+
+// asmDCT32
+func asmDCT32(mOffset []Mem) {
+
+	Comment("DCT32")
+
+	x := XMM()
+	y := XMM()
+	xmm := make([]reg.VecVirtual, 8)
+	for i := 0; i < 4; i++ {
+		xmm[i] = XMM()
+		xmm[i+4] = XMM()
+		MOVAPS(mOffset[i], x)
+		PSHUFD(U8(27), mOffset[7-i], y)
+		VADDPS(y, x, xmm[i])
+		VSUBPS(y, x, xmm[i+4])
+		DIVPS(dct32values.Offset(i*4*4), xmm[i+4])
+	}
+
+	// DCT16
+	asmDCT16(xmm[0], xmm[1], xmm[2], xmm[3])
+	asmDCT16(xmm[4], xmm[5], xmm[6], xmm[7])
+	//
+
+	x1 := XMM()
+	x2 := XMM()
+
+	VPSRLDQ(U8(4), xmm[4], x1)
+	VPSLLDQ(U8(12), xmm[5], x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, xmm[4], xmm[4])
+
+	VUNPCKLPS(xmm[4], xmm[0], x1)
+	MOVAPS(x1, mOffset[0])
+	VUNPCKHPS(xmm[4], xmm[0], x2)
+	MOVAPS(x2, mOffset[1])
+
+	VPSRLDQ(U8(4), xmm[5], x1)
+	VPSLLDQ(U8(12), xmm[6], x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, xmm[5], xmm[5])
+
+	VUNPCKLPS(xmm[5], xmm[1], x1)
+	MOVAPS(x1, mOffset[2])
+	VUNPCKHPS(xmm[5], xmm[1], x2)
+	MOVAPS(x2, mOffset[3])
+
+	VPSRLDQ(U8(4), xmm[6], x1)
+	VPSLLDQ(U8(12), xmm[7], x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, xmm[6], xmm[6])
+
+	VUNPCKLPS(xmm[6], xmm[2], x1)
+	MOVAPS(x1, mOffset[4])
+	VUNPCKHPS(xmm[6], xmm[2], x2)
+	MOVAPS(x2, mOffset[5])
+
+	VPSRLDQ(U8(4), xmm[7], x2)
+	VADDPS(x2, xmm[7], xmm[7])
+
+	VUNPCKLPS(xmm[7], xmm[3], x1)
+	MOVAPS(x1, mOffset[6])
+	VUNPCKHPS(xmm[7], xmm[3], x2)
+	MOVAPS(x2, mOffset[7])
+
 	Comment("end DCT32")
 }
 
-var (
-	dct64values = dct64()
-	dct32values = dct32()
-	dct16values = dct16()
-	dct8values  = dct8()
-	dct4values  = dct4()
-	dct2values  = dct2()
-
-	x1 = XMM()
-	x2 = XMM()
-	x3 = XMM()
-	x4 = XMM()
-	x5 = XMM()
-	x6 = XMM()
-	x7 = XMM()
-	x8 = XMM()
-	y1 = XMM()
-	y2 = XMM()
-	y3 = XMM()
-	y4 = XMM()
-	y5 = XMM()
-	y6 = XMM()
-	y7 = XMM()
-	y8 = XMM()
-	a1 = XMM()
-	a2 = XMM()
-	a3 = XMM()
-	a4 = XMM()
-	a5 = XMM()
-	a6 = XMM()
-	a7 = XMM()
-	a8 = XMM()
-	b1 = XMM()
-	b2 = XMM()
-	b3 = XMM()
-	b4 = XMM()
-	b5 = XMM()
-	b6 = XMM()
-	b7 = XMM()
-	b8 = XMM()
-)
-
-func main() {
-
-	TEXT("asmForwardDCT64", NOSPLIT, "func(input []float32)")
-	//Pragma("noescape")
-	Doc("asmForwardDCT64 is a forward DCT transform for [64]float32")
-	m := Mem{Base: Load(Param("input").Base(), GP64())}
+func asmDCT64(mOffset []Mem) {
 
 	VZEROUPPER()
 
-	// mOffset is input/output memory
-	mOffset := make([]Mem, 16)
-	for i := 0; i < len(mOffset); i++ {
-		mOffset[i] = m.Offset(i * 4 * 4)
+	ymm := make([]reg.VecVirtual, 8)
+	for i := 0; i < len(ymm); i++ {
+		ymm[i] = YMM()
 	}
 
-	MOVAPS(mOffset[0], x1)
-	MOVAPS(mOffset[1], x2)
-	MOVAPS(mOffset[2], x3)
-	MOVAPS(mOffset[3], x4)
-	PSHUFD(U8(27), mOffset[15], y1)
-	PSHUFD(U8(27), mOffset[14], y2)
-	PSHUFD(U8(27), mOffset[13], y3)
-	PSHUFD(U8(27), mOffset[12], y4)
-	VADDPS(x1, y1, a1)
-	VADDPS(x2, y2, a2)
-	VADDPS(x3, y3, a3)
-	VADDPS(x4, y4, a4)
-	MOVAPS(a1, mOffset[0])
-	MOVAPS(a2, mOffset[1])
-	MOVAPS(a3, mOffset[2])
-	MOVAPS(a4, mOffset[3])
-	VSUBPS(y1, x1, b1)
-	VSUBPS(y2, x2, b2)
-	VSUBPS(y3, x3, b3)
-	VSUBPS(y4, x4, b4)
-	DIVPS(dct64values.Offset(0), b1)
-	DIVPS(dct64values.Offset(4*4), b2)
-	DIVPS(dct64values.Offset(4*8), b3)
-	DIVPS(dct64values.Offset(4*12), b4)
+	ymmA := YMM()
+	ymmB := YMM()
+	ymmC := YMM()
+	ymmD := YMM()
+	perm := YMM()
+	VPMOVZXBD(permValues.Offset(0), perm)
 
-	MOVAPS(mOffset[4], x5)
-	MOVAPS(mOffset[5], x6)
-	MOVAPS(mOffset[6], x7)
-	MOVAPS(mOffset[7], x8)
-	PSHUFD(U8(27), mOffset[11], y5)
-	PSHUFD(U8(27), mOffset[10], y6)
-	PSHUFD(U8(27), mOffset[9], y7)
-	PSHUFD(U8(27), mOffset[8], y8)
-	VADDPS(x5, y5, a5)
-	VADDPS(x6, y6, a6)
-	VADDPS(x7, y7, a7)
-	VADDPS(x8, y8, a8)
-	MOVAPS(a5, mOffset[4])
-	MOVAPS(a6, mOffset[5])
-	MOVAPS(a7, mOffset[6])
-	MOVAPS(a8, mOffset[7])
-	MOVAPS(b1, mOffset[8])
-	MOVAPS(b2, mOffset[9])
-	MOVAPS(b3, mOffset[10])
-	MOVAPS(b4, mOffset[11])
-	VSUBPS(y5, x5, b5)
-	VSUBPS(y6, x6, b6)
-	VSUBPS(y7, x7, b7)
-	VSUBPS(y8, x8, b8)
-	DIVPS(dct64values.Offset(4*16), b5)
-	DIVPS(dct64values.Offset(4*20), b6)
-	DIVPS(dct64values.Offset(4*24), b7)
-	DIVPS(dct64values.Offset(4*28), b8)
-	MOVAPS(b5, mOffset[12])
-	MOVAPS(b6, mOffset[13])
-	MOVAPS(b7, mOffset[14])
-	MOVAPS(b8, mOffset[15])
+	VMOVAPS(mOffset[0], ymm[0])
+	VMOVAPS(mOffset[2], ymm[1])
+	VMOVAPS(mOffset[4], ymm[2])
+	VMOVAPS(mOffset[6], ymm[3])
+	VPERMD(mOffset[8], perm, ymm[4])
+	VPERMD(mOffset[10], perm, ymm[5])
+	VPERMD(mOffset[12], perm, ymm[6])
+	VPERMD(mOffset[14], perm, ymm[7])
+	VADDPS(ymm[7], ymm[0], ymmA)
+	VADDPS(ymm[6], ymm[1], ymmB)
+	VADDPS(ymm[5], ymm[2], ymmC)
+	VADDPS(ymm[4], ymm[3], ymmD)
+	VMOVAPS(ymmA, mOffset[0])
+	VMOVAPS(ymmB, mOffset[2])
+	VMOVAPS(ymmC, mOffset[4])
+	VMOVAPS(ymmD, mOffset[6])
+
+	VSUBPS(ymm[7], ymm[0], ymmA)
+	VDIVPS(dct64values.Offset(0), ymmA, ymmA)
+	VMOVAPS(ymmA, mOffset[8])
+	VSUBPS(ymm[6], ymm[1], ymmB)
+	VDIVPS(dct64values.Offset(4*8), ymmB, ymmB)
+	VMOVAPS(ymmB, mOffset[10])
+	VSUBPS(ymm[5], ymm[2], ymmC)
+	VDIVPS(dct64values.Offset(4*16), ymmC, ymmC)
+	VMOVAPS(ymmC, mOffset[12])
+	VSUBPS(ymm[4], ymm[3], ymmD)
+	VDIVPS(dct64values.Offset(4*24), ymmD, ymmD)
+	VMOVAPS(ymmD, mOffset[14])
+
+	VZEROUPPER()
 
 	// DCT32
-	asmDCT32(mOffset[0], mOffset[1], mOffset[2], mOffset[3], mOffset[4], mOffset[5], mOffset[6], mOffset[7])
-	asmDCT32(mOffset[8], mOffset[9], mOffset[10], mOffset[11], mOffset[12], mOffset[13], mOffset[14], mOffset[15])
+	asmDCT32([]Mem{mOffset[0], mOffset[1], mOffset[2], mOffset[3], mOffset[4], mOffset[5], mOffset[6], mOffset[7]})
+	asmDCT32([]Mem{mOffset[8], mOffset[9], mOffset[10], mOffset[11], mOffset[12], mOffset[13], mOffset[14], mOffset[15]})
 	//
+
+	x1 := XMM()
+	x2 := XMM()
+	x3 := XMM()
+	x4 := XMM()
+	a1 := XMM()
+	a2 := XMM()
+	a3 := XMM()
+	a4 := XMM()
+	a5 := XMM()
+	a6 := XMM()
+	a7 := XMM()
+	a8 := XMM()
+	b1 := XMM()
+	b2 := XMM()
+	b3 := XMM()
+	b4 := XMM()
+	b5 := XMM()
+	b6 := XMM()
+	b7 := XMM()
+	b8 := XMM()
 
 	// 1-2
 	MOVAPS(mOffset[0], a1)
@@ -292,25 +315,25 @@ func main() {
 	MOVAPS(mOffset[3], a4)
 
 	MOVAPS(mOffset[8], b1)
-	MOVAPS(mOffset[9], b2)
-	MOVAPS(mOffset[10], b3)
 	VPSRLDQ(U8(4), b1, x1)
+	MOVAPS(mOffset[9], b2)
 	VPSLLDQ(U8(12), b2, x2)
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b1, b1)
 
 	VPSRLDQ(U8(4), b2, x1)
+	MOVAPS(mOffset[10], b3)
 	VPSLLDQ(U8(12), b3, x2)
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b2, b2)
 
 	VUNPCKLPS(b1, a1, x1)
-	VUNPCKHPS(b1, a1, x2)
-	VUNPCKLPS(b2, a2, x3)
-	VUNPCKHPS(b2, a2, x4)
 	MOVAPS(x1, mOffset[0])
+	VUNPCKHPS(b1, a1, x2)
 	MOVAPS(x2, mOffset[1])
+	VUNPCKLPS(b2, a2, x3)
 	MOVAPS(x3, mOffset[2])
+	VUNPCKHPS(b2, a2, x4)
 	MOVAPS(x4, mOffset[3])
 
 	// 3-4
@@ -326,18 +349,19 @@ func main() {
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b4, b4)
 
-	VUNPCKLPS(b3, a3, x5)
-	VUNPCKHPS(b3, a3, x6)
-	VUNPCKLPS(b4, a4, x7)
-	VUNPCKHPS(b4, a4, x8)
 	MOVAPS(mOffset[4], a5)
 	MOVAPS(mOffset[5], a6)
 	MOVAPS(mOffset[6], a7)
 	MOVAPS(mOffset[7], a8)
-	MOVAPS(x5, mOffset[4])
-	MOVAPS(x6, mOffset[5])
-	MOVAPS(x7, mOffset[6])
-	MOVAPS(x8, mOffset[7])
+
+	VUNPCKLPS(b3, a3, x1)
+	MOVAPS(x1, mOffset[4])
+	VUNPCKHPS(b3, a3, x2)
+	MOVAPS(x2, mOffset[5])
+	VUNPCKLPS(b4, a4, x3)
+	MOVAPS(x3, mOffset[6])
+	VUNPCKHPS(b4, a4, x4)
+	MOVAPS(x4, mOffset[7])
 
 	// 5-6
 	MOVAPS(mOffset[13], b6)
@@ -347,19 +371,20 @@ func main() {
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b5, b5)
 
+	VUNPCKLPS(b5, a5, x1)
+	MOVAPS(x1, mOffset[8])
+	VUNPCKHPS(b5, a5, x2)
+	MOVAPS(x2, mOffset[9])
+
 	VPSRLDQ(U8(4), b6, x1)
 	VPSLLDQ(U8(12), b7, x2)
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b6, b6)
 
-	VUNPCKLPS(b5, a5, y1)
-	VUNPCKHPS(b5, a5, y2)
-	VUNPCKLPS(b6, a6, y3)
-	VUNPCKHPS(b6, a6, y4)
-	MOVAPS(y1, mOffset[8])
-	MOVAPS(y2, mOffset[9])
-	MOVAPS(y3, mOffset[10])
-	MOVAPS(y4, mOffset[11])
+	VUNPCKLPS(b6, a6, x3)
+	MOVAPS(x3, mOffset[10])
+	VUNPCKHPS(b6, a6, x4)
+	MOVAPS(x4, mOffset[11])
 
 	// 7-8
 
@@ -369,51 +394,436 @@ func main() {
 	VADDPS(x1, x2, x1)
 	VADDPS(x1, b7, b7)
 
+	VUNPCKLPS(b7, a7, x1)
+	MOVAPS(x1, mOffset[12])
+	VUNPCKHPS(b7, a7, x2)
+	MOVAPS(x2, mOffset[13])
+
 	VPSRLDQ(U8(4), b8, x2)
 	VADDPS(x2, b8, b8)
 
-	VUNPCKLPS(b7, a7, y5)
-	VUNPCKHPS(b7, a7, y6)
-	VUNPCKLPS(b8, a8, y7)
-	VUNPCKHPS(b8, a8, y8)
-	MOVAPS(y5, mOffset[12])
-	MOVAPS(y6, mOffset[13])
-	MOVAPS(y7, mOffset[14])
-	MOVAPS(y8, mOffset[15])
+	VUNPCKLPS(b8, a8, x3)
+	MOVAPS(x3, mOffset[14])
+	VUNPCKHPS(b8, a8, x4)
+	MOVAPS(x4, mOffset[15])
+}
+
+var (
+	dct64values  = dct64()
+	dct32values  = dct32()
+	dct16values  = dct16()
+	dct8values   = dct8()
+	dct4values   = dct4()
+	dct2values   = dct2()
+	gatherValues = gather()
+	permValues   = perm()
+	xmm          = []reg.VecVirtual{}
+)
+
+func perm() Mem {
+	val := GLOBL("perm", RODATA|NOPTR)
+	DATA(0, U8(7))
+	DATA(1, U8(6))
+	DATA(2, U8(5))
+	DATA(3, U8(4))
+	DATA(4, U8(3))
+	DATA(5, U8(2))
+	DATA(6, U8(1))
+	DATA(7, U8(0))
+	return val
+}
+
+func gather() Mem {
+	val := GLOBL("gather", RODATA|NOPTR)
+	DATA(0, U32(64*0))
+	DATA(4, U32(64*1))
+	DATA(8, U32(64*2))
+	DATA(12, U32(64*3))
+	DATA(16, U32(64*4))
+	DATA(20, U32(64*5))
+	DATA(24, U32(64*6))
+	DATA(28, U32(64*7))
+	DATA(32, U32(1))
+	return val
+}
+
+func asmDCT2D() {
+
+	TEXT("asmDCT2D", NOSPLIT, "func(input []float32, tmp []float32) [64]float32")
+	Pragma("noescape")
+	Doc("asmDCT2D function returns a result of DCT2D by using the seperable property.\n  // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.\n // Custom built by Evan Oberholster for Hash64. Returns flattened pixels\n")
+
+	input := Mem{Base: Load(Param("input").Base(), GP64())}
+	ret0 := Mem{Base: Load(Param("tmp").Base(), GP64())}
+	local := AllocLocal(64 * 4)
+	ptr := AllocLocal(16)
+
+	//ret0 := NewParamAddr("ret_0", 24) // UNSAFE method for returns
+
+	// tmpOffset is input/output memory
+	lOffset := make([]Mem, 16)
+	for i := 0; i < len(lOffset); i++ {
+		lOffset[i] = local.Offset(i * 4 * 4)
+	}
+
+	j := GP32()
+	jdx := GP32()
+
+	XORL(j, j) // set j to zero
+
+	Label("j")
+	CMPL(j, Imm(2))
+	JE(LabelRef("continue"))
+	Comment("Start innerloop instructions")
+	// mOffset is input/output memory
+	XORL(jdx, jdx) // set j to zero
+	MOVL(U32(64), jdx)
+	MULL(j)
+
+	mOffset := make([]Mem, 16)
+	for i := 0; i < len(mOffset); i++ {
+		mOffset[i] = input.Offset(i*4*4).Idx(jdx, 4)
+	}
+	asmDCT64(mOffset)
+	Comment("End innerloop instructions")
+
+	INCL(j)
+	JMP(LabelRef("j"))
+
+	Label("continue")
+
+	p := YMM()
+	g := YMM()
+	idx := YMM()
+	mask := YMM()
+	ymmA := YMM()
+	ymmB := YMM()
+	ymmC := YMM()
+	ymmD := YMM()
+
+	i := GP32()
+	XORL(i, i) // set j to zero
+
+	Label("i")
+	CMPL(i, Imm(8))
+	JE(LabelRef("done"))
+
+	Comment("Start innerloop instructions")
+	// Do something here
+	Comment("--Loop load DCT64 values")
+	VZEROUPPER()
+
+	VPMOVZXBD(permValues.Offset(0), p)
+	VMOVDQA(gatherValues.Offset(0), g)
+	MOVL(i, ptr.Offset(0))
+	VPBROADCASTD(ptr.Offset(0), idx)
+	VPADDD(idx, g, g)
+
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(0).Idx(g, 4), ymmA)
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*7).Idx(g, 4), ymmB)
+	VPERMD(ymmB, p, ymmB)
+	VADDPS(ymmB, ymmA, ymmC)
+	VMOVUPS(ymmC, lOffset[0])
+	VSUBPS(ymmB, ymmA, ymmD)
+	VDIVPS(dct64values.Offset(0), ymmD, ymmD)
+	VMOVUPS(ymmD, lOffset[8])
+	//
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*1).Idx(g, 4), ymmA)
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*6).Idx(g, 4), ymmB)
+	VPERMD(ymmB, p, ymmB)
+	VADDPS(ymmB, ymmA, ymmC)
+	VMOVUPS(ymmC, lOffset[2])
+	VSUBPS(ymmB, ymmA, ymmD)
+	VDIVPS(dct64values.Offset(4*8), ymmD, ymmD)
+	VMOVUPS(ymmD, lOffset[10])
+	//
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*2).Idx(g, 4), ymmA)
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*5).Idx(g, 4), ymmB)
+	VPERMD(ymmB, p, ymmB)
+	VADDPS(ymmA, ymmB, ymmC)
+	VMOVUPS(ymmC, lOffset[4])
+	VSUBPS(ymmB, ymmA, ymmD)
+	VDIVPS(dct64values.Offset(4*16), ymmD, ymmD)
+	VMOVUPS(ymmD, lOffset[12])
+	//
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*3).Idx(g, 4), ymmA)
+	VPCMPEQD(mask, mask, mask)
+	VPGATHERDD(mask, input.Offset(64*8*4*4).Idx(g, 4), ymmB)
+	VPERMD(ymmB, p, ymmB)
+	VADDPS(ymmB, ymmA, ymmC)
+	VMOVUPS(ymmC, lOffset[6])
+	VSUBPS(ymmB, ymmA, ymmD)
+	VDIVPS(dct64values.Offset(4*24), ymmD, ymmD)
+	VMOVUPS(ymmD, lOffset[14])
+	Comment("--Loop load DCT64 values")
+
+	VZEROUPPER()
+
+	asmDCT32Unaligned([]Mem{lOffset[0], lOffset[1], lOffset[2], lOffset[3], lOffset[4], lOffset[5], lOffset[6], lOffset[7]})
+	asmDCT32Unaligned([]Mem{lOffset[8], lOffset[9], lOffset[10], lOffset[11], lOffset[12], lOffset[13], lOffset[14], lOffset[15]})
+
+	B := XMM()
+	C := XMM()
+	// Forward DCT64 here
+
+	MOVUPS(local.Offset(0), B)
+	PEXTRD(Imm(0), B, ret0.Offset(0*8*4).Idx(i, 4))
+	PEXTRD(Imm(1), B, ret0.Offset(2*8*4).Idx(i, 4))
+	PEXTRD(Imm(2), B, ret0.Offset(4*8*4).Idx(i, 4))
+	PEXTRD(Imm(3), B, ret0.Offset(6*8*4).Idx(i, 4))
+
+	MOVUPS(local.Offset(32*4), B)
+	MOVUPS(local.Offset(32*4+4), C)
+	ADDPS(C, B)
+
+	PEXTRD(Imm(0), B, ret0.Offset(1*8*4).Idx(i, 4))
+	PEXTRD(Imm(1), B, ret0.Offset(3*8*4).Idx(i, 4))
+	PEXTRD(Imm(2), B, ret0.Offset(5*8*4).Idx(i, 4))
+	PEXTRD(Imm(3), B, ret0.Offset(7*8*4).Idx(i, 4))
+	//
+	Comment("End innerloop instructions")
+
+	//ADDQ(Imm(4), j)
+	INCL(i)
+	JMP(LabelRef("i"))
+	//
+
+	Label("done")
 
 	RET()
 
+}
+
+func asmForwardDCT64() {
+	TEXT("asmForwardDCT64", NOSPLIT, "func(input []float32)")
+	Doc("asmForwardDCT64 is a forward DCT transform for [64]float32")
+	input := Mem{Base: Load(Param("input").Base(), GP64())}
+
+	// mOffset is input/output memory
+	mOffset := make([]Mem, 16)
+	for i := 0; i < len(mOffset); i++ {
+		mOffset[i] = input.Offset(i * 4 * 4)
+	}
+
+	asmDCT64(mOffset)
+
+	RET()
+}
+
+func asmForwardDCT64Y() {
+	TEXT("asmForwardDCT64", NOSPLIT, "func(input []float32)")
+	//Pragma("noescape")
+	Doc("asmForwardDCT64 is a forward DCT transform for [64]float32")
+	input := Mem{Base: Load(Param("input").Base(), GP64())}
+
+	VZEROUPPER()
+
+	// mOffset is input/output memory
+	mOffset := make([]Mem, 16)
+	for i := 0; i < len(mOffset); i++ {
+		mOffset[i] = input.Offset(i * 4 * 4)
+	}
+
+	x := XMM()
+	y := XMM()
+	b := XMM()
+
+	for i := 0; i < 4; i++ {
+		MOVAPS(mOffset[i], x)
+		PSHUFD(U8(27), mOffset[15-i], y)
+		VADDPS(x, y, b)
+		MOVAPS(b, mOffset[i])
+		VSUBPS(y, x, b)
+		DIVPS(dct64values.Offset(i*4*4), b)
+		PSHUFD(U8(27), mOffset[i+8], y)
+		MOVAPS(b, mOffset[i+8])
+		MOVAPS(mOffset[7-i], x)
+		VADDPS(x, y, b)
+		MOVAPS(b, mOffset[7-i])
+		VSUBPS(y, x, b)
+		DIVPS(dct64values.Offset((7-i)*4*4), b)
+		MOVAPS(b, mOffset[15-i])
+	}
+
+	// DCT32
+	asmDCT32([]Mem{mOffset[0], mOffset[1], mOffset[2], mOffset[3], mOffset[4], mOffset[5], mOffset[6], mOffset[7]})
+	asmDCT32([]Mem{mOffset[8], mOffset[9], mOffset[10], mOffset[11], mOffset[12], mOffset[13], mOffset[14], mOffset[15]})
+	//
+
+	x1 := XMM()
+	x2 := XMM()
+	x3 := XMM()
+	x4 := XMM()
+	a1 := XMM()
+	a2 := XMM()
+	a3 := XMM()
+	a4 := XMM()
+	a5 := XMM()
+	a6 := XMM()
+	a7 := XMM()
+	a8 := XMM()
+	b1 := XMM()
+	b2 := XMM()
+	b3 := XMM()
+	b4 := XMM()
+	b5 := XMM()
+	b6 := XMM()
+	b7 := XMM()
+	b8 := XMM()
+
+	// 1-2
+	MOVAPS(mOffset[0], a1)
+	MOVAPS(mOffset[1], a2)
+	MOVAPS(mOffset[2], a3)
+	MOVAPS(mOffset[3], a4)
+
+	MOVAPS(mOffset[8], b1)
+	VPSRLDQ(U8(4), b1, x1)
+	MOVAPS(mOffset[9], b2)
+	VPSLLDQ(U8(12), b2, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b1, b1)
+
+	VPSRLDQ(U8(4), b2, x1)
+	MOVAPS(mOffset[10], b3)
+	VPSLLDQ(U8(12), b3, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b2, b2)
+
+	VUNPCKLPS(b1, a1, x1)
+	MOVAPS(x1, mOffset[0])
+	VUNPCKHPS(b1, a1, x2)
+	MOVAPS(x2, mOffset[1])
+	VUNPCKLPS(b2, a2, x3)
+	MOVAPS(x3, mOffset[2])
+	VUNPCKHPS(b2, a2, x4)
+	MOVAPS(x4, mOffset[3])
+
+	// 3-4
+	MOVAPS(mOffset[11], b4)
+	MOVAPS(mOffset[12], b5)
+	VPSRLDQ(U8(4), b3, x1)
+	VPSLLDQ(U8(12), b4, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b3, b3)
+
+	VPSRLDQ(U8(4), b4, x1)
+	VPSLLDQ(U8(12), b5, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b4, b4)
+
+	MOVAPS(mOffset[4], a5)
+	MOVAPS(mOffset[5], a6)
+	MOVAPS(mOffset[6], a7)
+	MOVAPS(mOffset[7], a8)
+
+	VUNPCKLPS(b3, a3, x1)
+	MOVAPS(x1, mOffset[4])
+	VUNPCKHPS(b3, a3, x2)
+	MOVAPS(x2, mOffset[5])
+	VUNPCKLPS(b4, a4, x3)
+	MOVAPS(x3, mOffset[6])
+	VUNPCKHPS(b4, a4, x4)
+	MOVAPS(x4, mOffset[7])
+
+	// 5-6
+	MOVAPS(mOffset[13], b6)
+	MOVAPS(mOffset[14], b7)
+	VPSRLDQ(U8(4), b5, x1)
+	VPSLLDQ(U8(12), b6, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b5, b5)
+
+	VUNPCKLPS(b5, a5, x1)
+	MOVAPS(x1, mOffset[8])
+	VUNPCKHPS(b5, a5, x2)
+	MOVAPS(x2, mOffset[9])
+
+	VPSRLDQ(U8(4), b6, x1)
+	VPSLLDQ(U8(12), b7, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b6, b6)
+
+	VUNPCKLPS(b6, a6, x3)
+	MOVAPS(x3, mOffset[10])
+	VUNPCKHPS(b6, a6, x4)
+	MOVAPS(x4, mOffset[11])
+
+	// 7-8
+
+	MOVAPS(mOffset[15], b8)
+	VPSRLDQ(U8(4), b7, x1)
+	VPSLLDQ(U8(12), b8, x2)
+	VADDPS(x1, x2, x1)
+	VADDPS(x1, b7, b7)
+
+	VUNPCKLPS(b7, a7, x1)
+	MOVAPS(x1, mOffset[12])
+	VUNPCKHPS(b7, a7, x2)
+	MOVAPS(x2, mOffset[13])
+
+	VPSRLDQ(U8(4), b8, x2)
+	VADDPS(x2, b8, b8)
+
+	VUNPCKLPS(b8, a8, x3)
+	MOVAPS(x3, mOffset[14])
+	VUNPCKHPS(b8, a8, x4)
+	MOVAPS(x4, mOffset[15])
+
+	RET()
+}
+
+func asmForwardDCT32() {
 	TEXT("asmForwardDCT32", NOSPLIT, "func(input []float32)")
 	Doc("asmForwardDCT32 is a forward DCT transform for [32]float32")
-	m = Mem{Base: Load(Param("input").Base(), GP64())}
+	input := Mem{Base: Load(Param("input").Base(), GP64())}
 
-	mOffset = make([]Mem, 8)
+	mOffset := make([]Mem, 8)
 	for i := 0; i < len(mOffset); i++ {
-		mOffset[i] = m.Offset(i * 4 * 4)
+		mOffset[i] = input.Offset(i * 4 * 4)
 	}
-	asmDCT32(mOffset[0], mOffset[1], mOffset[2], mOffset[3], mOffset[4], mOffset[5], mOffset[6], mOffset[7])
+
+	asmDCT32(mOffset)
 
 	RET()
 
 	TEXT("asmForwardDCT16", NOSPLIT, "func(input []float32)")
 	Doc("asmForwardDCT16 is a forward DCT transform for [16]float32")
-	m = Mem{Base: Load(Param("input").Base(), GP64())}
+	input = Mem{Base: Load(Param("input").Base(), GP64())}
 
-	MOVAPS(m.Offset(0), x1)
-	MOVAPS(m.Offset(4*4), x2)
-	MOVAPS(m.Offset(4*8), x3)
-	MOVAPS(m.Offset(4*12), x4)
+	x1 := XMM()
+	x2 := XMM()
+	x3 := XMM()
+	x4 := XMM()
 
-	asmDCT16(x1, x2, x3, x4)
+	MOVAPS(input.Offset(0), x1)
+	MOVAPS(input.Offset(4*4), x2)
+	MOVAPS(input.Offset(4*8), x3)
+	MOVAPS(input.Offset(4*12), x4)
 
-	MOVAPS(x1, m.Offset(0))
-	MOVAPS(x2, m.Offset(4*4))
-	MOVAPS(x3, m.Offset(4*8))
-	MOVAPS(x4, m.Offset(4*12))
+	//asmDCT16(x1, x2, x3, x4)
+
+	MOVAPS(x1, input.Offset(0))
+	MOVAPS(x2, input.Offset(4*4))
+	MOVAPS(x3, input.Offset(4*8))
+	MOVAPS(x4, input.Offset(4*12))
 
 	RET()
+}
 
-	genPixelsToGray()
+func main() {
+	asmDCT2D()
+	//asmForwardDCT32()
+	asmForwardDCT64()
+
+	//genPixelsToGray()
 	genPixelsToGray8()
 
 	Generate()
