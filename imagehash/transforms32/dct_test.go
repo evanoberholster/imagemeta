@@ -35,7 +35,54 @@ func TestDCT2DHash64(t *testing.T) {
 			break
 		}
 	}
+}
 
+func TestDCTHash256(t *testing.T) {
+	source := make([]float32, 256)
+	input := make([]float32, len(source))
+	input2 := make([]float32, len(source))
+	for i := 0; i < len(source); i++ {
+		source[i] = float32(i)
+		//source[i] = rand.Float32()
+	}
+
+	copy(input, source)
+	asmForwardDCT256(input)
+
+	copy(input2, source)
+	forwardDCT256(input2)
+
+	for i := 0; i < len(source); i++ {
+		if input[i] != input2[i] {
+			t.Error("error", i)
+			t.Error(input[i:])
+			t.Error(input2[i:])
+			break
+		}
+	}
+}
+func TestDCTHash64(t *testing.T) {
+	source := make([]float32, 64)
+	input := make([]float32, len(source))
+	input2 := make([]float32, len(source))
+	for i := 0; i < len(source); i++ {
+		source[i] = rand.Float32()
+	}
+
+	copy(input, source)
+	asmForwardDCT64(input)
+
+	copy(input2, source)
+	forwardDCT64(input2)
+
+	for i := 0; i < len(source); i++ {
+		if input[i] != input2[i] {
+			t.Error("error", i)
+			t.Error(input[i:64])
+			t.Error(input2[i:64])
+			break
+		}
+	}
 }
 
 func BenchmarkDCT2DHash64(b *testing.B) {

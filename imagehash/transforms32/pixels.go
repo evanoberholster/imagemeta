@@ -12,10 +12,19 @@ import (
 	cpu "github.com/klauspost/cpuid/v2"
 )
 
-var FlagUseASM = false
+var (
+	// FlagUseASM determines if ASM can be used on the current CPU
+	FlagUseASM    = false
+	ForwardDCT64  = forwardDCT64
+	ForwardDCT256 = forwardDCT256
+)
 
 func init() {
 	FlagUseASM = cpu.CPU.Supports(cpu.AVX, cpu.AVX2, cpu.SSE, cpu.SSE2, cpu.SSE4)
+	if FlagUseASM {
+		ForwardDCT256 = asmForwardDCT256
+		ForwardDCT64 = asmForwardDCT64
+	}
 }
 
 // pixel2Gray converts a pixel to grayscale value base on luminosity
@@ -44,11 +53,6 @@ func Rgb2GrayFast32(colorImg image.Image, pixels *[]float32) {
 	default:
 		rgb2GrayDefault32(c, *pixels, w)
 	}
-}
-
-// pixel2Gray converts a pixel to grayscale value base on luminosity
-func pixel2Gray32(r, g, b, a uint32) float64 {
-	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
 }
 
 // rgb2GrayDefault uses the image.Image interface

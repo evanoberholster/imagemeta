@@ -12,5 +12,8 @@ func asmDCT2DHash64(input []float32) [64]float32
 // asmForwardDCT64 is a forward DCT transform for [64]float32
 func asmForwardDCT64(input []float32)
 
+// asmForwardDCT256 is a forward DCT transform for [256]float32
+func asmForwardDCT256(input []float32)
+
 // AsmYCbCrToGray8 is a forward DCT transform for []float32
 func AsmYCbCrToGray8(pixels []float32, minX int, minY int, maxX int, maxY int, sY []uint8, sCb []uint8, sCr []uint8, yStride int, cStride int) uint64

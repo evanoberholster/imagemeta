@@ -61,10 +61,20 @@ func MedianOfPixels6432(pixels []float32) float32 {
 	copy(tmp[:], pixels)
 	l := len(tmp)
 	pos := l / 2
-	return quickSelectMedian32(tmp[:], 0, l-1, pos)
+	return quickSelectMedian(tmp[:], 0, l-1, pos)
 }
 
-func quickSelectMedian32(sequence []float32, low int, hi int, k int) float32 {
+// MedianOfPixels256 function returns a median value of pixels.
+// It uses quick selection algorithm.
+func MedianOfPixels256(pixels []float32) float32 {
+	tmp := [256]float32{}
+	copy(tmp[:], pixels)
+	l := len(tmp)
+	pos := l / 2
+	return quickSelectMedian(tmp[:], 0, l-1, pos)
+}
+
+func quickSelectMedian(sequence []float32, low int, hi int, k int) float32 {
 	if low == hi {
 		return sequence[k]
 	}
@@ -94,15 +104,17 @@ func quickSelectMedian32(sequence []float32, low int, hi int, k int) float32 {
 	return sequence[k]
 }
 
-func ForwardDCT256(input []float32) {
+func forwardDCT256(input []float32) {
 	var temp [256]float32
 	for i := 0; i < 128; i++ {
 		x, y := input[i], input[256-1-i]
 		temp[i] = x + y
 		temp[i+128] = (x - y) / float32(dct256[i])
 	}
+
 	forwardDCT128(temp[:128])
 	forwardDCT128(temp[128:])
+
 	for i := 0; i < 128-1; i++ {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+128] + temp[i+128+1]
@@ -117,8 +129,10 @@ func forwardDCT128(input []float32) {
 		temp[i] = x + y
 		temp[i+64] = (x - y) / float32(dct128[i])
 	}
-	asmForwardDCT64(temp[:64])
-	asmForwardDCT64(temp[64:])
+
+	forwardDCT64(temp[:64])
+	forwardDCT64(temp[64:])
+
 	for i := 0; i < 64-1; i++ {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+64] + temp[i+64+1]
@@ -126,7 +140,7 @@ func forwardDCT128(input []float32) {
 	input[128-2], input[128-1] = temp[64-1], temp[128-1]
 }
 
-func ForwardDCT64(input []float32) {
+func forwardDCT64(input []float32) {
 	var temp [64]float32
 	for i := 0; i < 32; i++ {
 		x, y := input[i], input[64-1-i]

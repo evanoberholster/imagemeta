@@ -186,15 +186,13 @@ func TestBlurHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//t.Error(bh)
-	_ = bh
-
-	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWA
-	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWAFAIL
+	if bh != "UM6KU]e9MyY5ysiwR*b^Qmi_j=i_IAV@nOsp" {
+		t.Error(bh)
+	}
 }
 
 func TestImageHash(t *testing.T) {
-	f, err := os.Open("../assets/JPEG.jpg")
+	f, err := os.Open("../assets/a1.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,10 +209,21 @@ func TestImageHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Error(p32)
-	t.Error(p64)
-	// _ = bh
 
-	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWA
-	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWAFAIL
+	p256Alt, err := NewPHash256Alt(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p256, err := NewPHash256(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p256.Distance(p256Alt) != 0 {
+		t.Error(p32)
+		t.Error(p64)
+	}
+	if p32.Distance(p64) != 0 {
+		t.Error(p32)
+		t.Error(p64)
+	}
 }
