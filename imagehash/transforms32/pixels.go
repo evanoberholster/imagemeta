@@ -8,7 +8,15 @@ package transforms32
 import (
 	"image"
 	"math"
+
+	cpu "github.com/klauspost/cpuid/v2"
 )
+
+var FlagUseASM = false
+
+func init() {
+	FlagUseASM = cpu.CPU.Supports(cpu.AVX, cpu.AVX2, cpu.SSE, cpu.SSE2, cpu.SSE4)
+}
 
 // pixel2Gray converts a pixel to grayscale value base on luminosity
 func pixel2Gray(r, g, b, a uint32) float64 {
@@ -24,7 +32,13 @@ func Rgb2GrayFast32(colorImg image.Image, pixels *[]float32) {
 	}
 	switch c := colorImg.(type) {
 	case *image.YCbCr:
-		PixelYCnCRGray32(c, *pixels)
+		if FlagUseASM {
+			AsmYCbCrToGray8(*pixels,
+				c.Rect.Min.X, c.Rect.Min.Y, c.Rect.Max.X, c.Rect.Max.Y,
+				c.Y, c.Cb, c.Cr, c.YStride, c.CStride)
+		} else {
+			PixelYCnCRGray32(c, *pixels)
+		}
 	case *image.RGBA:
 		rgb2GrayRGBA32(c, *pixels, w)
 	default:
@@ -59,61 +73,14 @@ func YCbCR2Gray32(colorImg *image.YCbCr, pixels []float64) {
 	}
 }
 
+//func PixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
+//	AsmYCbCrToGray8(pixels,
+//		img.Rect.Min.X, img.Rect.Min.Y, img.Rect.Max.X, img.Rect.Max.Y,
+//		img.Y, img.Cb, img.Cr, img.YStride, img.CStride)
+//	//pixelYCnCRGray32(img, pixels)
+//}
+
 func PixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
-	AsmYCbCrToGray8(pixels,
-		img.Rect.Min.X, img.Rect.Min.Y, img.Rect.Max.X, img.Rect.Max.Y,
-		img.Y, img.Cb, img.Cr, img.YStride, img.CStride)
-	//pixelYCnCRGray32(img, pixels)
-}
-
-func PixelYCnCRGray32asm(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int) {
-	s := maxY - minY
-	for y := minY; y < maxY; y++ {
-		for x := minX; x < maxX; x++ {
-			// YOffset
-			yi := (y-minY)*yStride + (x - minX)
-			// COffset
-			// Default to 4:4:4 subsampling.
-			ci := (y-minY)*cStride + (x - minX)
-
-			//yi := img.YOffset(x, y)
-			//ci := img.COffset(x, y)
-
-			yy := sY[yi]
-			cb := sCb[ci]
-			cr := sCr[ci]
-
-			yy1 := int32(yy) * 0x10101
-			cb1 := int32(cb) - 128
-			cr1 := int32(cr) - 128
-
-			r := yy1 + 91881*cr1
-			//if uint32(r)&0xff000000 == 0 {
-			//	r >>= 16
-			//} else {
-			//	r = ^(r >> 31)
-			//}
-
-			g := yy1 - 22554*cb1 - 46802*cr1
-			//if uint32(g)&0xff000000 == 0 {
-			//	g >>= 16
-			//} else {
-			//	g = ^(g >> 31)
-			//}
-
-			b := yy1 + 116130*cb1
-			//if uint32(b)&0xff000000 == 0 {
-			//	b >>= 16
-			//} else {
-			//	b = ^(b >> 31)
-			//}
-
-			pixels[(y*s)+x] = float32(0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b>>8))
-		}
-	}
-}
-
-func pixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
 	s := img.Rect.Max.X - img.Rect.Min.X
 	for y := 0; y < s; y++ {
 		for x := 0; x < s; x++ {

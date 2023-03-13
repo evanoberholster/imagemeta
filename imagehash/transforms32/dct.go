@@ -3,23 +3,25 @@ package transforms32
 // DCT2DHash64 function returns a result of DCT2D by using the seperable property.
 // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
 // Cusstom built for Hash64. Returns flattened pixels
-func DCT2DHash64(input *[]float32) [64]float32 {
-	var flattens [64]float32
-	if len(*input) != 64*64 {
+func DCT2DHash64(input []float32) [64]float32 {
+	if len(input) != 64*64 {
 		panic("Incorrect forward transform size")
 	}
+	if FlagUseASM {
+		return asmDCT2DHash64(input)
+	}
+
+	var flattens [64]float32
 	for i := 0; i < 64; i++ { // height
-		asmForwardDCT64((*input)[i*64 : 64*i+64])
-		//ForwardDCT64((*input)[i*64 : 64*i+64])
+		ForwardDCT64((input)[i*64 : 64*i+64])
 	}
 
 	var row [64]float32
 	for i := 0; i < 8; i++ { // width
 		for j := 0; j < 64; j++ {
-			row[j] = (*input)[64*j+i]
+			row[j] = (input)[64*j+i]
 		}
-		asmForwardDCT64(row[:])
-		//ForwardDCT64(row[:])
+		ForwardDCT64(row[:])
 		for j := 0; j < 8; j++ {
 			flattens[8*j+i] = row[j]
 		}
@@ -109,7 +111,6 @@ func ForwardDCT256(input []float32) {
 }
 
 func forwardDCT128(input []float32) {
-	//var tmp [64]float32
 	var temp [128]float32
 	for i := 0; i < 64; i++ {
 		x, y := input[i], input[128-1-i]
@@ -134,6 +135,7 @@ func ForwardDCT64(input []float32) {
 	}
 	forwardDCT32(temp[:32])
 	forwardDCT32(temp[32:])
+
 	for i := 0; i < 32-1; i++ {
 		input[i*2+0] = temp[i]
 		input[i*2+1] = temp[i+32] + temp[i+32+1]
@@ -142,7 +144,7 @@ func ForwardDCT64(input []float32) {
 }
 
 func ASMForwardDCT64(input []float32) {
-	asmForwardDCT64(input)
+	//asmForwardDCT64(input)
 }
 
 func forwardDCT32(input []float32) {
