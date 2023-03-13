@@ -44,6 +44,16 @@ func BenchmarkPHash64(b *testing.B) {
 		}
 	})
 
+	b.Run("Fast32", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			//resized, _ = jpeg.Decode(bytes.NewReader(buf))
+			_, err = NewPHash64Alt(resized)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
 	//b.Run("Parallel", func(b *testing.B) {
 	//	b.RunParallel(func(p *testing.PB) {
 	//		for p.Next() {
@@ -60,7 +70,7 @@ func BenchmarkPHash64(b *testing.B) {
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
 				//resized, _ = jpeg.Decode(bytes.NewReader(buf))
-				_, err = NewPHash64(resized)
+				_, err = NewPHash64Alt(resized)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -178,6 +188,32 @@ func TestBlurHash(t *testing.T) {
 	}
 	//t.Error(bh)
 	_ = bh
+
+	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWA
+	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWAFAIL
+}
+
+func TestImageHash(t *testing.T) {
+	f, err := os.Open("../assets/JPEG.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, err := jpeg.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resized := resize.Resize(64, 64, img, resize.Bilinear)
+	p32, err := NewPHash64Alt(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p64, err := NewPHash64(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Error(p32)
+	t.Error(p64)
+	// _ = bh
 
 	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWA
 	//  UcE:P7s;$-xt~qkCt9WV%3t7ayRjogs;RjWAFAIL

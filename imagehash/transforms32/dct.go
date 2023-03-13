@@ -143,10 +143,6 @@ func ForwardDCT64(input []float32) {
 	input[62], input[63] = temp[31], temp[63]
 }
 
-func ASMForwardDCT64(input []float32) {
-	//asmForwardDCT64(input)
-}
-
 func forwardDCT32(input []float32) {
 	var temp [32]float32
 	for i := 0; i < 16; i++ {
