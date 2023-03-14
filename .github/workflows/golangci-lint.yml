@@ -6,10 +6,6 @@ on:
     branches:
       - master
   pull_request:
-permissions:
-  contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
 jobs:
   golangci:
     name: lint
@@ -18,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 'stable'
+          - '1.x'
           - '1.18'
     steps:
       - uses: actions/setup-go@v3
