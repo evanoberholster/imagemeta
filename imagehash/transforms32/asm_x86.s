@@ -1364,16 +1364,16 @@ i:
 	// end DCT32 Unaligned
 	MOVUPS (SP), X0
 	PEXTRD $0x00, X0, ret_0+24(FP)(CX*4)
-	PEXTRD $0x01, X0, ret_0+88(FP)(CX*4)
-	PEXTRD $0x02, X0, ret_0+152(FP)(CX*4)
-	PEXTRD $0x03, X0, ret_0+216(FP)(CX*4)
+	PEXTRD $0x01, X0, ret_16+88(FP)(CX*4)
+	PEXTRD $0x02, X0, ret_32+152(FP)(CX*4)
+	PEXTRD $0x03, X0, ret_48+216(FP)(CX*4)
 	MOVUPS 128(SP), X0
 	MOVUPS 132(SP), X1
 	ADDPS  X0, X1
-	PEXTRD $0x00, X1, ret_0+56(FP)(CX*4)
-	PEXTRD $0x01, X1, ret_0+120(FP)(CX*4)
-	PEXTRD $0x02, X1, ret_0+184(FP)(CX*4)
-	PEXTRD $0x03, X1, ret_0+248(FP)(CX*4)
+	PEXTRD $0x00, X1, ret_8+56(FP)(CX*4)
+	PEXTRD $0x01, X1, ret_24+120(FP)(CX*4)
+	PEXTRD $0x02, X1, ret_40+184(FP)(CX*4)
+	PEXTRD $0x03, X1, ret_56+248(FP)(CX*4)
 
 	// End innerloop instructions
 	INCL CX

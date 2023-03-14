@@ -261,7 +261,6 @@ func asmDCT32Unaligned(mOffset []Mem) {
 
 // asmDCT32
 func asmDCT32(mOffset []Mem) {
-
 	Comment("DCT32")
 
 	x := XMM()
@@ -520,8 +519,17 @@ func asmDCT2D() {
 	local := AllocLocal(64 * 4)
 	ptr := AllocLocal(16)
 
+	// UNSAFE method for returns
 	// ret0 is the first Returned parameter [64]float32.
-	ret0 := NewParamAddr("ret_0", 24) // UNSAFE method for returns
+	retBase := 24
+	ret0 := NewParamAddr("ret_0", retBase)
+	ret8 := NewParamAddr("ret_8", retBase+8*4*1)
+	ret16 := NewParamAddr("ret_16", retBase+8*4*2)
+	ret24 := NewParamAddr("ret_24", retBase+8*4*3)
+	ret32 := NewParamAddr("ret_32", retBase+8*4*4)
+	ret40 := NewParamAddr("ret_40", retBase+8*4*5)
+	ret48 := NewParamAddr("ret_48", retBase+8*4*6)
+	ret56 := NewParamAddr("ret_56", retBase+8*4*7)
 
 	// lOffset is local stack allocated memory for efficient copying of tempory values
 	lOffset := make([]Mem, 16)
@@ -597,20 +605,20 @@ func asmDCT2D() {
 	asmDCT32Unaligned(lOffset[:8])
 	asmDCT32Unaligned(lOffset[8:])
 
-	MOVUPS(lOffset[0], A)                           // Move from local to XMM
-	PEXTRD(Imm(0), A, ret0.Offset(0*8*4).Idx(i, 4)) // Uses SSE 4.1 to extract each item from XMM
-	PEXTRD(Imm(1), A, ret0.Offset(2*8*4).Idx(i, 4))
-	PEXTRD(Imm(2), A, ret0.Offset(4*8*4).Idx(i, 4))
-	PEXTRD(Imm(3), A, ret0.Offset(6*8*4).Idx(i, 4))
+	MOVUPS(lOffset[0], A)             // Move from local to XMM
+	PEXTRD(Imm(0), A, ret0.Idx(i, 4)) // Uses SSE 4.1 to extract each item from XMM
+	PEXTRD(Imm(1), A, ret16.Idx(i, 4))
+	PEXTRD(Imm(2), A, ret32.Idx(i, 4))
+	PEXTRD(Imm(3), A, ret48.Idx(i, 4))
 
 	MOVUPS(lOffset[8], A)           // Move from local to XMM
 	MOVUPS(lOffset[8].Offset(4), B) // Move from local to XMM
 	ADDPS(A, B)
 
-	PEXTRD(Imm(0), B, ret0.Offset(1*8*4).Idx(i, 4))
-	PEXTRD(Imm(1), B, ret0.Offset(3*8*4).Idx(i, 4))
-	PEXTRD(Imm(2), B, ret0.Offset(5*8*4).Idx(i, 4))
-	PEXTRD(Imm(3), B, ret0.Offset(7*8*4).Idx(i, 4))
+	PEXTRD(Imm(0), B, ret8.Idx(i, 4))
+	PEXTRD(Imm(1), B, ret24.Idx(i, 4))
+	PEXTRD(Imm(2), B, ret40.Idx(i, 4))
+	PEXTRD(Imm(3), B, ret56.Idx(i, 4))
 
 	Comment("End innerloop instructions")
 
