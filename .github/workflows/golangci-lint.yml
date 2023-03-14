@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 'latest'
+          - 'stable'
           - '1.18'
     steps:
       - uses: actions/setup-go@v3
