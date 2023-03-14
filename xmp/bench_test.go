@@ -24,7 +24,7 @@ var (
 func BenchmarkXMPRead(b *testing.B) {
 	f, err := os.Open(dir) //+ "6D.xmp")
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	defer f.Close()
 
@@ -35,7 +35,9 @@ func BenchmarkXMPRead(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r2.Seek(0, 0)
+		if _, err = r2.Seek(0, 0); err != nil {
+			b.Fatal(err)
+		}
 		b.StartTimer()
 
 		if _, err := ParseXmp(r2); err != nil {

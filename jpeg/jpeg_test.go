@@ -42,7 +42,9 @@ func BenchmarkScanJPEG100(b *testing.B) {
 
 		b.Run(bm.fileName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				r.Seek(0, 0)
+				if _, err = r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
 				if err := ScanJPEG(r, nil, nil); err != nil {
 					if !bm.noExifErr {
 						b.Fatal(err)

@@ -55,6 +55,7 @@ func TestUUID(t *testing.T) {
 }
 
 func TestUUIDUnmarshalText(t *testing.T) {
+	var err error
 	//   "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 	//   "{6ba7b810-9dad-11d1-80b4-00c04fd430c8}",
 	//   "urn:uuid:6ba7b810-9dad-11d1-80b4-00c04fd430c8"
@@ -93,8 +94,12 @@ func TestUUIDUnmarshalText(t *testing.T) {
 			t.Errorf("Incorrect UUID wanted: %s got: %s", v.uuid, u)
 		}
 
-		u.UnmarshalText([]byte(v.uuid.String()))
-		u2.UnmarshalText([]byte(v.str))
+		if err = u.UnmarshalText([]byte(v.uuid.String())); err != nil {
+			t.Error(err)
+		}
+		if err = u2.UnmarshalText([]byte(v.str)); err != nil {
+			t.Error(err)
+		}
 
 		if u.String() != u2.String() {
 			t.Errorf("Incorrect UUID wanted: %s got: %s", u2.String(), u.String())

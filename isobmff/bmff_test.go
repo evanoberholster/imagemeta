@@ -21,7 +21,7 @@ func BenchmarkCR3(b *testing.B) {
 	//f, err := os.Open(dir + "/" + "iPhone13.heic")
 	//f, err := os.Open("../cmd/3.CR3")
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	defer f.Close()
 	buf, _ := io.ReadAll(f)
@@ -30,7 +30,9 @@ func BenchmarkCR3(b *testing.B) {
 	r := NewReader(reader)
 	defer r.Close()
 	for i := 0; i < b.N; i++ {
-		reader.Seek(0, 0)
+		if _, err = reader.Seek(0, 0); err != nil {
+			b.Fatal(err)
+		}
 		r.reset(reader)
 		if err := r.ReadFTYP(); err != nil {
 			b.Fatal(err)

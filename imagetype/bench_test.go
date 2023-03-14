@@ -41,7 +41,9 @@ func BenchmarkScan100(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
-				f.Seek(0, 0)
+				if _, err := f.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
 				b.StartTimer()
 				if _, err := Scan(f); err != nil {
 					b.Fatal(err)
