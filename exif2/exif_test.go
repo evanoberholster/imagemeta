@@ -20,7 +20,7 @@ func BenchmarkExif(b *testing.B) {
 	}
 	defer func() {
 		if err = f.Close(); err != nil {
-			panic(err)
+			b.Fatal(err)
 		}
 	}()
 
@@ -28,7 +28,9 @@ func BenchmarkExif(b *testing.B) {
 	r := bytes.NewReader(buf)
 
 	for i := 0; i < b.N; i++ {
-		r.Seek(0, 0)
+		if _, err = r.Seek(0, 0); err != nil {
+			b.Fatal(err)
+		}
 		if _, err = Parse(r); err != nil {
 			b.Fatal(err)
 		}

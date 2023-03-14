@@ -23,7 +23,9 @@ func Parse(r io.ReadSeeker) (Exif, error) {
 	ir := NewIfdReader(Logger)
 	defer ir.Close()
 
-	r.Seek(int64(h.TiffHeaderOffset), 0)
+	if _, err = r.Seek(int64(h.TiffHeaderOffset), 0); err != nil {
+		return ir.Exif, err
+	}
 	if err := ir.DecodeTiff(r, h); err != nil {
 		return ir.Exif, err
 	}
@@ -202,16 +204,22 @@ func (ir *ifdReader) readIfd(ifd ifds.Ifd) (err error) {
 	for t := ir.buffer.currentTag(); ir.buffer.validTag(); t = ir.buffer.advanceBuffer() {
 
 		if t.IsType(tag.TypeIfd) {
-			ir.seekToTag(t)           // seek to next tag value
+			if err = ir.seekToTag(t); err != nil { // seek to next tag value
+				ir.logError(err).Send()
+			}
 			ir.buffer.resetPosition() // Reset tagbuffer position to 0
 			switch t.Ifd {
 			case ifds.IFD0:
 				switch t.ID {
 				case ifds.GPSTag, ifds.ExifTag:
-					ir.readIfdHeader(t.childIfd()) // ignore errors from GPSIfd and ExifIfd
+					if err = ir.readIfdHeader(t.childIfd()); err != nil { // ignore errors from GPSIfd and ExifIfd
+						ir.logError(err).Send()
+					}
 				}
 			case ifds.SubIfd0, ifds.SubIfd1, ifds.SubIfd2, ifds.SubIfd3, ifds.SubIfd4, ifds.SubIfd5:
-				ir.readIfdHeader(t.childIfd()) // ignore errors from SubIfd0
+				if err = ir.readIfdHeader(t.childIfd()); err != nil { // ignore errors from SubIfd0
+					ir.logError(err).Send()
+				}
 			case ifds.ExifIFD:
 				if t.ID == exififd.MakerNote {
 					ir.readMakerNotes(t)
@@ -250,7 +258,9 @@ func (ir *ifdReader) readSubIfds(t Tag) {
 func (ir *ifdReader) readMakerNotes(t Tag) {
 	switch ir.Exif.CameraMake {
 	case ifds.Canon:
-		ir.readIfdHeader(t.childIfd())
+		if err := ir.readIfdHeader(t.childIfd()); err != nil {
+			ir.logError(err).Send()
+		}
 	case ifds.Nikon:
 		if t.Size() > 18 { // read Nikon Makernotes header 18 bytes
 			buf, err := ir.fastRead(18)
@@ -260,7 +270,10 @@ func (ir *ifdReader) readMakerNotes(t Tag) {
 			if nikon.IsNikonMkNoteHeaderBytes(buf[:5]) {
 				ir.Exif.ImageType = imagetype.ImageNEF
 				if byteOrder := utils.BinaryOrder(buf[10:14]); byteOrder != utils.UnknownEndian {
-					ir.readIfdHeader(ifds.NewIFD(byteOrder, ifds.MknoteIFD, t.IfdIndex, t.ValueOffset, t.ValueOffset+byteOrder.Uint32(buf[14:18])))
+					err = ir.readIfdHeader(ifds.NewIFD(byteOrder, ifds.MknoteIFD, t.IfdIndex, t.ValueOffset, t.ValueOffset+byteOrder.Uint32(buf[14:18])))
+					if err != nil {
+						ir.logError(err).Send()
+					}
 				}
 			}
 		}
