@@ -51,17 +51,17 @@ func pixelToGray(r, g, b, a uint32) float32 {
 }
 
 // yCbCrToGray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
-func yCbCrToGray(colorImg *image.YCbCr, pixels []float32) {
-	s := colorImg.Rect.Dx()
-	for i := 0; i < s; i++ {
-		for j := 0; j < s; j += 4 {
-			pixels[(i*s)+j+0] = pixelToGray(colorImg.YCbCrAt(j+0, i).RGBA())
-			pixels[(i*s)+j+1] = pixelToGray(colorImg.YCbCrAt(j+1, i).RGBA())
-			pixels[(i*s)+j+2] = pixelToGray(colorImg.YCbCrAt(j+2, i).RGBA())
-			pixels[(i*s)+j+3] = pixelToGray(colorImg.YCbCrAt(j+3, i).RGBA())
-		}
-	}
-}
+//func yCbCrToGray(colorImg *image.YCbCr, pixels []float32) {
+//	s := colorImg.Rect.Dx()
+//	for i := 0; i < s; i++ {
+//		for j := 0; j < s; j += 4 {
+//			pixels[(i*s)+j+0] = pixelToGray(colorImg.YCbCrAt(j+0, i).RGBA())
+//			pixels[(i*s)+j+1] = pixelToGray(colorImg.YCbCrAt(j+1, i).RGBA())
+//			pixels[(i*s)+j+2] = pixelToGray(colorImg.YCbCrAt(j+2, i).RGBA())
+//			pixels[(i*s)+j+3] = pixelToGray(colorImg.YCbCrAt(j+3, i).RGBA())
+//		}
+//	}
+//}
 
 // yCbCrToGrayAlt convers an *image.YCbCr to array of pixels.
 func yCbCrToGrayAlt(img *image.YCbCr, pixels []float32) {
