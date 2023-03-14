@@ -24,9 +24,9 @@ func NewPHash64Alt(img image.Image) (phash PHash64, err error) {
 	pixels := pixelsPool32.Get().(*[]float32)
 	defer pixelsPool32.Put(pixels)
 
-	transforms32.Rgb2GrayFast32(img, pixels)
+	transforms32.ImageToGray(img, pixels)
 	flattens := transforms32.DCT2DHash64(*pixels)
-	median := transforms32.MedianOfPixels6432(flattens[:])
+	median := transforms32.MedianOfPixels64(flattens[:])
 
 	for idx, p := range flattens {
 		if p > median {
@@ -50,11 +50,10 @@ func NewPHash256Alt(img image.Image) (phash PHash256, err error) {
 	}
 
 	pixels := pixelsPool256Alt.Get().(*[]float32)
+	defer pixelsPool256Alt.Put(pixels)
 
-	transforms32.Rgb2GrayFast32(img, pixels)
+	transforms32.ImageToGray(img, pixels)
 	flattens := transforms32.DCT2DHash256(pixels)
-	//flattens := transforms.FlattenPixelsHash256(pixels)
-	pixelsPool256Alt.Put(pixels)
 
 	median := transforms32.MedianOfPixels256(flattens[:])
 

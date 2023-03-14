@@ -56,7 +56,7 @@ func DCT2DHash256(input *[]float32) [256]float32 {
 
 // MedianOfPixels64 function returns a median value of pixels.
 // It uses quick selection algorithm.
-func MedianOfPixels6432(pixels []float32) float32 {
+func MedianOfPixels64(pixels []float32) float32 {
 	tmp := [64]float32{}
 	copy(tmp[:], pixels)
 	l := len(tmp)

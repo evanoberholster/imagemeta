@@ -14,6 +14,128 @@ import (
 //go:generate go run asm.go -out asm_x86.s -stubs stub.go
 
 // Built with assistance from https://www.officedaytime.com/
+func main() {
+	asmDCT2D()
+	asmForwardDCT64()
+	asmForwardDCT256()
+
+	yCbCrToGray()
+
+	Generate()
+}
+func dct256() Mem {
+	val := GLOBL("dct256", RODATA|NOPTR)
+	for i := 0; i < 128; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(256)) * 2)))
+	}
+	return val
+}
+
+func dct128() Mem {
+	val := GLOBL("dct128", RODATA|NOPTR)
+	for i := 0; i < 64; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(128)) * 2)))
+	}
+	return val
+}
+
+func dct64() Mem {
+	val := GLOBL("dct64", RODATA|NOPTR)
+	for i := 0; i < 32; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(64)) * 2)))
+	}
+	return val
+}
+
+func dct32() Mem {
+	val := GLOBL("dct32", RODATA|NOPTR)
+	for i := 0; i < 16; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(32)) * 2)))
+	}
+	return val
+}
+
+func dct16() Mem {
+	val := GLOBL("dct16", RODATA|NOPTR)
+	for i := 0; i < 8; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(16)) * 2)))
+	}
+	return val
+}
+
+func dct8() Mem {
+	val := GLOBL("dct8", RODATA|NOPTR)
+	for i := 0; i < 4; i++ {
+		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(8)) * 2)))
+	}
+	return val
+}
+
+func dct4() Mem {
+	val := GLOBL("dct4", RODATA|NOPTR)
+	DATA(0, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(4)) * 2)))
+	DATA(4, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(4)) * 2)))
+	DATA(8, F32((math.Cos((float64(1)+0.5)*math.Pi/float64(4)) * 2)))
+	DATA(12, F32((math.Cos((float64(1)+0.5)*math.Pi/float64(4)) * 2)))
+	return val
+}
+
+func dct2() Mem {
+	val := GLOBL("dct2", RODATA|NOPTR)
+	for i := 0; i < 4; i++ {
+		DATA(i*4, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(2)) * 2)))
+	}
+	return val
+}
+
+func perm() Mem {
+	val := GLOBL("perm", RODATA|NOPTR)
+	DATA(0, U8(7))
+	DATA(1, U8(6))
+	DATA(2, U8(5))
+	DATA(3, U8(4))
+	DATA(4, U8(3))
+	DATA(5, U8(2))
+	DATA(6, U8(1))
+	DATA(7, U8(0))
+	DATA(8, U8(1))
+	DATA(9, U8(2))
+	DATA(10, U8(3))
+	DATA(11, U8(4))
+	DATA(12, U8(5))
+	DATA(13, U8(6))
+	DATA(14, U8(7))
+	DATA(15, U8(0))
+	return val
+}
+
+func gather() Mem {
+	val := GLOBL("gather", RODATA|NOPTR)
+	DATA(0, U32(64*0))
+	DATA(4, U32(64*1))
+	DATA(8, U32(64*2))
+	DATA(12, U32(64*3))
+	DATA(16, U32(64*4))
+	DATA(20, U32(64*5))
+	DATA(24, U32(64*6))
+	DATA(28, U32(64*7))
+	DATA(32, U32(1))
+	return val
+}
+
+func constPixelsToGrey8() Mem {
+	val := GLOBL("constyCbCrGray", RODATA|NOPTR)
+	DATA(0*4, I32(128))
+	DATA(1*4, I32(0x10101))
+	DATA(2*4, I32(91881))
+	DATA(3*4, I32(46802))
+	DATA(4*4, I32(22554))
+	DATA(5*4, I32(116130))
+	DATA(6*4, F32(float32(0.299*256/257))) // red
+	DATA(7*4, F32(float32(0.587*256/257))) // green
+	DATA(8*4, F32(float32(0.114)))         // blue
+	return val
+}
 
 func asmDCT8(r1, r2 reg.VecVirtual) {
 	Comment("DCT8")
@@ -240,8 +362,8 @@ func asmDCT64(mOffset []Mem) {
 	VZEROALL()
 
 	// DCT32
-	asmDCT32(mOffset[:8]) //[]Mem{mOffset[0], mOffset[1], mOffset[2], mOffset[3], mOffset[4], mOffset[5], mOffset[6], mOffset[7]})
-	asmDCT32(mOffset[8:]) //[]Mem{mOffset[8], mOffset[9], mOffset[10], mOffset[11], mOffset[12], mOffset[13], mOffset[14], mOffset[15]})
+	asmDCT32(mOffset[:8])
+	asmDCT32(mOffset[8:])
 	//
 
 	VZEROUPPER()
@@ -255,8 +377,13 @@ func asmDCT64(mOffset []Mem) {
 
 	for i := 0; i < 4; i++ {
 		VMOVUPS(mOffset[8+i*2], ymmA)
-		//VMOVUPS(, ymmB)
-		VADDPS(mOffset[8+i*2].Offset(4), ymmA, ymmB)
+		if i == 3 {
+			VPMOVZXBD(permValues.Offset(8), perm)
+			VPERMPS(mOffset[8+i*2], perm, ymmB)
+			VADDPS(ymmB, ymmA, ymmB)
+		} else {
+			VADDPS(mOffset[8+i*2].Offset(4), ymmA, ymmB)
+		}
 		VUNPCKLPS(ymmB, ymm[i], ymmA)
 		VUNPCKHPS(ymmB, ymm[i], ymmB)
 		VPERM2F128(U8(2), ymmA, ymmB, ymmC)
@@ -273,11 +400,9 @@ func asmDCT64(mOffset []Mem) {
 func asmDCT128(mOffset []Mem, lOffset []Mem) {
 	Comment("DCT128")
 	VZEROUPPER()
-	ymm := make([]reg.VecVirtual, 8)
-	for i := 0; i < len(ymm); i++ {
-		ymm[i] = YMM()
-	}
 
+	ymm0 := YMM()
+	ymm1 := YMM()
 	ymmA := YMM()
 	ymmB := YMM()
 	ymmC := YMM()
@@ -286,20 +411,20 @@ func asmDCT128(mOffset []Mem, lOffset []Mem) {
 	VPMOVZXBD(permValues.Offset(0), perm)
 
 	for i := 0; i < 8; i++ {
-		VMOVUPS(mOffset[i*2], ymm[0])
-		VPERMD(mOffset[30-i*2], perm, ymm[7])
-		VADDPS(ymm[7], ymm[0], ymmA)
+		VMOVUPS(mOffset[i*2], ymm0)
+		VPERMD(mOffset[30-i*2], perm, ymm1)
+		VADDPS(ymm1, ymm0, ymmA)
 		VMOVUPS(ymmA, lOffset[i*2])
-		VSUBPS(ymm[7], ymm[0], ymmA)
+		VSUBPS(ymm1, ymm0, ymmA)
 		VDIVPS(dct128values.Offset(4*8*i), ymmA, ymmA)
 		VMOVUPS(ymmA, lOffset[16+i*2])
 	}
 
 	VZEROALL()
 
-	// DCT32
-	asmDCT64(lOffset[:16]) // Mem{lOffset[0], lOffset[1], lOffset[2], lOffset[3], lOffset[4], lOffset[5], lOffset[6], lOffset[7], lOffset[8], lOffset[9], lOffset[10], lOffset[11], lOffset[12], lOffset[13], lOffset[14], lOffset[15]})
-	asmDCT64(lOffset[16:]) //Mem{lOffset[16], lOffset[17], lOffset[18], lOffset[19], lOffset[20], lOffset[21], lOffset[22], lOffset[23], lOffset[24], lOffset[25], lOffset[26], lOffset[27], lOffset[28], lOffset[29], lOffset[30], lOffset[31]})
+	// Perfom DCT64 twice on each half
+	asmDCT64(lOffset[:16])
+	asmDCT64(lOffset[16:])
 	//
 
 	VZEROUPPER()
@@ -307,11 +432,17 @@ func asmDCT128(mOffset []Mem, lOffset []Mem) {
 	MOVL(lOffset[31].Offset(3*4), F) // Copy last value to final memory
 
 	for i := 0; i < 8; i++ {
-		VMOVUPS(lOffset[i*2], ymm[0])
+		VMOVUPS(lOffset[i*2], ymm0)
 		VMOVUPS(lOffset[16+i*2], ymmA)
-		VADDPS(lOffset[16+i*2].Offset(4), ymmA, ymmB)
-		VUNPCKLPS(ymmB, ymm[0], ymmA)
-		VUNPCKHPS(ymmB, ymm[0], ymmB)
+		if i == 7 { // if statement to avoid memory overrun
+			VPMOVZXBD(permValues.Offset(8), perm)
+			VPERMPS(lOffset[16+i*2], perm, ymmB)
+			VADDPS(ymmB, ymmA, ymmB)
+		} else {
+			VADDPS(lOffset[16+i*2].Offset(4), ymmA, ymmB)
+		}
+		VUNPCKLPS(ymmB, ymm0, ymmA)
+		VUNPCKHPS(ymmB, ymm0, ymmB)
 		VPERM2F128(U8(2), ymmA, ymmB, ymmC)
 		VMOVUPS(ymmC, mOffset[i*4])
 		VPERM2F128(U8(19), ymmA, ymmB, ymmC)
@@ -326,11 +457,9 @@ func asmDCT128(mOffset []Mem, lOffset []Mem) {
 func asmDCT256(mOffset []Mem, lOffset []Mem) {
 	Comment("DCT256")
 	VZEROUPPER()
-	ymm := make([]reg.VecVirtual, 8)
-	for i := 0; i < len(ymm); i++ {
-		ymm[i] = YMM()
-	}
 
+	ymm0 := YMM()
+	ymm1 := YMM()
 	ymmA := YMM()
 	ymmB := YMM()
 	ymmC := YMM()
@@ -339,11 +468,11 @@ func asmDCT256(mOffset []Mem, lOffset []Mem) {
 	VPMOVZXBD(permValues.Offset(0), perm)
 
 	for i := 0; i < 16; i++ {
-		VMOVUPS(mOffset[i*2], ymm[0])
-		VPERMD(mOffset[62-i*2], perm, ymm[7])
-		VADDPS(ymm[7], ymm[0], ymmA)
+		VMOVUPS(mOffset[i*2], ymm0)
+		VPERMD(mOffset[62-i*2], perm, ymm1)
+		VADDPS(ymm1, ymm0, ymmA)
 		VMOVUPS(ymmA, lOffset[i*2])
-		VSUBPS(ymm[7], ymm[0], ymmA)
+		VSUBPS(ymm1, ymm0, ymmA)
 		VDIVPS(dct256values.Offset(4*8*i), ymmA, ymmA)
 		VMOVUPS(ymmA, lOffset[32+i*2])
 	}
@@ -360,11 +489,17 @@ func asmDCT256(mOffset []Mem, lOffset []Mem) {
 	MOVL(lOffset[63].Offset(3*4), F) // Copy last value to final memory
 
 	for i := 0; i < 16; i++ {
-		VMOVUPS(lOffset[i*2], ymm[0])
+		VMOVUPS(lOffset[i*2], ymm0)
 		VMOVUPS(lOffset[32+i*2], ymmA)
-		VADDPS(lOffset[32+i*2].Offset(4), ymmA, ymmB)
-		VUNPCKLPS(ymmB, ymm[0], ymmA)
-		VUNPCKHPS(ymmB, ymm[0], ymmB)
+		if i == 15 { // if statement to avoid memory overrun
+			VPMOVZXBD(permValues.Offset(8), perm)
+			VPERMPS(lOffset[32+i*2], perm, ymmB)
+			VADDPS(ymmB, ymmA, ymmB)
+		} else {
+			VADDPS(lOffset[32+i*2].Offset(4), ymmA, ymmB)
+		}
+		VUNPCKLPS(ymmB, ymm0, ymmA)
+		VUNPCKHPS(ymmB, ymm0, ymmB)
 		VPERM2F128(U8(2), ymmA, ymmB, ymmC)
 		VMOVUPS(ymmC, mOffset[i*4])
 		VPERM2F128(U8(19), ymmA, ymmB, ymmC)
@@ -375,25 +510,6 @@ func asmDCT256(mOffset []Mem, lOffset []Mem) {
 	VZEROUPPER()
 	Comment("end DCT256")
 }
-
-var (
-	dct256values = dct256()
-	dct128values = dct128()
-	dct64values  = dct64()
-	dct32values  = dct32()
-	dct16values  = dct16()
-	dct8values   = dct8()
-	dct4values   = dct4()
-	dct2values   = dct2()
-	gatherValues = gather()
-	permValues   = perm()
-
-	// Pixels to Gray (XMM)
-	pixelsToGray4Values = constPixelsToGrey4()
-
-	// Pixels to Gray (YMM)
-	pixelsToGray8Values = constPixelsToGrey8()
-)
 
 func asmDCT2D() {
 	TEXT("asmDCT2DHash64", NOSPLIT|NOPTR, "func(input []float32) [64]float32")
@@ -478,8 +594,8 @@ func asmDCT2D() {
 	VZEROUPPER() // ZERO upper bits of YMM
 
 	// Perfom DCT32 with Unaligned memory due to Local Stack Allocated memory
-	asmDCT32([]Mem{lOffset[0], lOffset[1], lOffset[2], lOffset[3], lOffset[4], lOffset[5], lOffset[6], lOffset[7]})
-	asmDCT32([]Mem{lOffset[8], lOffset[9], lOffset[10], lOffset[11], lOffset[12], lOffset[13], lOffset[14], lOffset[15]})
+	asmDCT32Unaligned(lOffset[:8])
+	asmDCT32Unaligned(lOffset[8:])
 
 	MOVUPS(lOffset[0], A)                           // Move from local to XMM
 	PEXTRD(Imm(0), A, ret0.Offset(0*8*4).Idx(i, 4)) // Uses SSE 4.1 to extract each item from XMM
@@ -511,7 +627,7 @@ func asmForwardDCT256() {
 	TEXT("asmForwardDCT256", NOPTR, "func(input []float32)")
 	Doc("asmForwardDCT256 is a forward DCT transform for [256]float32")
 	input := Mem{Base: Load(Param("input").Base(), GP64())}
-	local := AllocLocal(4*256 + 16)
+	local := AllocLocal(4 * 256)
 	// mOffset is input/output memory
 	mOffset := make([]Mem, 64)
 	for i := 0; i < len(mOffset); i++ {
@@ -542,148 +658,25 @@ func asmForwardDCT64() {
 	RET()
 }
 
-func main() {
-	asmDCT2D()
-	asmForwardDCT64()
-	asmForwardDCT256()
+var (
+	dct256values = dct256()
+	dct128values = dct128()
+	dct64values  = dct64()
+	dct32values  = dct32()
+	dct16values  = dct16()
+	dct8values   = dct8()
+	dct4values   = dct4()
+	dct2values   = dct2()
+	gatherValues = gather()
+	permValues   = perm()
 
-	//genPixelsToGray()
-	genPixelsToGray8()
+	// Pixels to Gray (YMM)
+	pixelsToGray8Values = constPixelsToGrey8()
+)
 
-	Generate()
-}
-func dct256() Mem {
-	val := GLOBL("dct256", RODATA|NOPTR)
-	for i := 0; i < 128; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(256)) * 2)))
-	}
-	return val
-}
-
-func dct128() Mem {
-	val := GLOBL("dct128", RODATA|NOPTR)
-	for i := 0; i < 64; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(128)) * 2)))
-	}
-	return val
-}
-
-func dct64() Mem {
-	val := GLOBL("dct64", RODATA|NOPTR)
-	for i := 0; i < 32; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(64)) * 2)))
-	}
-	return val
-}
-
-func dct32() Mem {
-	val := GLOBL("dct32", RODATA|NOPTR)
-	for i := 0; i < 16; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(32)) * 2)))
-	}
-	return val
-}
-
-func dct16() Mem {
-	val := GLOBL("dct16", RODATA|NOPTR)
-	for i := 0; i < 8; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(16)) * 2)))
-	}
-	return val
-}
-
-func dct8() Mem {
-	val := GLOBL("dct8", RODATA|NOPTR)
-	for i := 0; i < 4; i++ {
-		DATA(i*4, F32((math.Cos((float64(i)+0.5)*math.Pi/float64(8)) * 2)))
-	}
-	return val
-}
-
-func dct4() Mem {
-	val := GLOBL("dct4", RODATA|NOPTR)
-	DATA(0, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(4)) * 2)))
-	DATA(4, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(4)) * 2)))
-	DATA(8, F32((math.Cos((float64(1)+0.5)*math.Pi/float64(4)) * 2)))
-	DATA(12, F32((math.Cos((float64(1)+0.5)*math.Pi/float64(4)) * 2)))
-	return val
-}
-
-func dct2() Mem {
-	val := GLOBL("dct2", RODATA|NOPTR)
-	for i := 0; i < 4; i++ {
-		DATA(i*4, F32((math.Cos((float64(0)+0.5)*math.Pi/float64(2)) * 2)))
-	}
-	return val
-}
-
-func perm() Mem {
-	val := GLOBL("perm", RODATA|NOPTR)
-	DATA(0, U8(7))
-	DATA(1, U8(6))
-	DATA(2, U8(5))
-	DATA(3, U8(4))
-	DATA(4, U8(3))
-	DATA(5, U8(2))
-	DATA(6, U8(1))
-	DATA(7, U8(0))
-	return val
-}
-
-func gather() Mem {
-	val := GLOBL("gather", RODATA|NOPTR)
-	DATA(0, U32(64*0))
-	DATA(4, U32(64*1))
-	DATA(8, U32(64*2))
-	DATA(12, U32(64*3))
-	DATA(16, U32(64*4))
-	DATA(20, U32(64*5))
-	DATA(24, U32(64*6))
-	DATA(28, U32(64*7))
-	DATA(32, U32(1))
-	return val
-}
-
-func constPixelsToGrey4() Mem {
-	val := GLOBL("pg4", RODATA|NOPTR)
-	DATA(0, I32(128))
-	DATA(4, I32(0x10101))
-	DATA(8, I32(91881))
-	DATA(12, I32(46802))
-	DATA(16, I32(22554))
-	DATA(20, I32(116130))
-	DATA(24, F32(257.0))
-	DATA(28, F32(float32(0.299*256/257))) // red
-	DATA(32, F32(float32(0.587*256/257))) // green
-	DATA(36, F32(float32(0.114)))         // blue
-	return val
-}
-
-func constPixelsToGrey8() Mem {
-	val := GLOBL("pg8", RODATA|NOPTR)
-	DATA(0, I32(128))
-	DATA(4, I32(0x10101))
-	DATA(8, I32(91881))
-	DATA(12, I32(46802))
-	DATA(16, I32(22554))
-	DATA(20, I32(116130))
-	DATA(24, F32(257.0))
-	DATA(28, F32(float32(0.299*256/257))) // red
-	DATA(32, F32(float32(0.587*256/257))) // green
-	DATA(36, F32(float32(0.114)))         // blue
-	return val
-}
-
-func genPixelsToGray() {
-	TEXT("AsmYCbCrToGray", NOSPLIT, "func(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int)  uint64")
-	Doc("AsmYCbCrToGray is a forward DCT transform for []float32")
-
-	// Load 128 x4
-	static := make([]reg.VecVirtual, 10)
-	for i := 0; i < len(static); i++ {
-		static[i] = XMM()
-		VPBROADCASTD(pixelsToGray4Values.Offset(i*4), static[i])
-	}
+func yCbCrToGray() {
+	TEXT("AsmYCbCrToGray", NOSPLIT|NOPTR, "func(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int)")
+	Doc("AsmYCbCrToGra converts a YCbCr image to grayscale pixels. \n // Converts using 8x SIMD instructions and requires AVX and AVX2 ")
 
 	yStride := Load(Param("yStride"), GP64())
 	idxyStrideBase := GP64()
@@ -701,138 +694,21 @@ func genPixelsToGray() {
 	sCr := Mem{Base: Load(Param("sCr").Base(), GP64())}
 	pixels := Load(Param("pixels").Base(), GP64())
 
-	yyXMM := XMM()
-	cbXMM := XMM()
-	crXMM := XMM()
-
-	rXMM := XMM()
-	gXMM := XMM()
-	bXMM := XMM()
-
-	y := GP64()
-	x := GP64()
-	idx := GP64()
-	XORQ(y, y)     // set y to zero
-	XORQ(x, x)     // set x to zero
-	XORQ(idx, idx) // set idx to zero
-
-	Label("y")
-	CMPQ(y, maxY)
-	JE(LabelRef("done"))
-
-	// yStide Base
-	MOVQ(yStride, idxyStrideBase)
-	IMULQ(y, idxyStrideBase)
-
-	// cStride Base
-	MOVQ(cStride, idxcStrideBase)
-	IMULQ(y, idxcStrideBase)
-
-	Label("x")
-	CMPQ(x, maxX)
-	JE(LabelRef("xDone"))
-
-	Comment("Start innerloop instructions")
-	// Do something here
-
-	// yStride
-	MOVQ(idxyStrideBase, idxyStride)
-	ADDQ(x, idxyStride)
-
-	// cStride
-	MOVQ(idxcStrideBase, idxcStride)
-	ADDQ(x, idxcStride)
-
-	VPMOVZXBD(sY.Idx(idxyStride, 1), yyXMM)
-	VPMOVZXBD(sCb.Idx(idxcStride, 1), cbXMM)
-	VPMOVZXBD(sCr.Idx(idxcStride, 1), crXMM)
-
-	VPMULLD(static[1], yyXMM, yyXMM)
-	VPSUBD(static[0], cbXMM, cbXMM)
-	VPSUBD(static[0], crXMM, crXMM)
-
-	// Red
-	VPMULLD(static[2], crXMM, rXMM)
-	VPADDD(yyXMM, rXMM, rXMM)
-	VPSRAD(Imm(8), rXMM, rXMM)
-	VCVTDQ2PS(rXMM, rXMM)
-	//VDIVPS(static[6], gXMM, gXMM)
-	VMULPS(static[7], rXMM, rXMM)
-
-	// Green
-	VPMULLD(static[3], crXMM, crXMM)
-	VPMULLD(static[4], cbXMM, gXMM)
-	VPSUBQ(gXMM, yyXMM, gXMM)
-	VPSUBQ(crXMM, gXMM, gXMM)
-	VPSRAD(Imm(8), gXMM, gXMM)
-	VCVTDQ2PS(gXMM, gXMM)
-	//VDIVPS(static[6], gXMM, gXMM)
-	VMULPS(static[8], gXMM, gXMM)
-
-	// Blue
-	VPMULLD(static[5], cbXMM, bXMM)
-	VPADDD(yyXMM, bXMM, bXMM)
-	VPSRAD(Imm(8), bXMM, bXMM)
-	VCVTDQ2PS(bXMM, bXMM)
-	VMULPS(static[9], bXMM, bXMM)
-
-	//r + b + g
-	VADDPS(rXMM, bXMM, bXMM)
-	VADDPS(gXMM, bXMM, bXMM)
-
-	VMOVAPS(bXMM, Mem{Base: pixels, Index: idxyStride, Scale: 4})
-	//
-	Comment("End innerloop instructions")
-
-	ADDQ(Imm(4), x)
-	JMP(LabelRef("x"))
-
-	Label("xDone")
-	XORQ(x, x)
-	INCQ(y)
-	JMP(LabelRef("y"))
-
-	Label("done")
-	RET()
-}
-
-func genPixelsToGray8() {
-	TEXT("AsmYCbCrToGray8", NOSPLIT, "func(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int)  uint64")
-	Doc("AsmYCbCrToGray8 is a forward DCT transform for []float32")
-
-	// Load 128 x4
-	static := make([]reg.VecVirtual, 10)
+	VZEROUPPER()
+	static := make([]reg.VecVirtual, 9)
 	for i := 0; i < len(static); i++ {
 		static[i] = YMM()
 		VPBROADCASTD(pixelsToGray8Values.Offset(i*4), static[i])
 	}
 
-	yStride := Load(Param("yStride"), GP64())
-	idxyStrideBase := GP64()
-	idxyStride := GP64()
+	yy := YMM()
+	Cb := YMM()
+	Cr := YMM()
 
-	cStride := Load(Param("cStride"), GP64())
-	idxcStrideBase := GP64()
-	idxcStride := GP64()
-
-	maxY := Load(Param("maxY"), GP64())
-	maxX := Load(Param("maxX"), GP64())
-
-	sY := Mem{Base: Load(Param("sY").Base(), GP64())}
-	sCb := Mem{Base: Load(Param("sCb").Base(), GP64())}
-	sCr := Mem{Base: Load(Param("sCr").Base(), GP64())}
-	pixels := Load(Param("pixels").Base(), GP64())
-
-	yyXMM := YMM()
-	cbXMM := YMM()
-	crXMM := YMM()
-
-	rXMM := YMM()
-	gXMM := YMM()
-	bXMM := YMM()
-
-	idx := GP64()
-	XORQ(idx, idx)
+	red := YMM()
+	green := YMM()
+	blue := YMM()
+	gray := YMM()
 
 	y := GP64()
 	x := GP64()
@@ -856,7 +732,6 @@ func genPixelsToGray8() {
 	JE(LabelRef("xDone"))
 
 	Comment("Start innerloop instructions")
-	// Do something here
 
 	// yStride
 	MOVQ(idxyStrideBase, idxyStride)
@@ -866,45 +741,43 @@ func genPixelsToGray8() {
 	MOVQ(idxcStrideBase, idxcStride)
 	ADDQ(x, idxcStride)
 
-	VPMOVZXBD(sY.Idx(idxyStride, 1), yyXMM)
-	VPMOVZXBD(sCb.Idx(idxcStride, 1), cbXMM)
-	VPMOVZXBD(sCr.Idx(idxcStride, 1), crXMM)
+	VPMOVZXBD(sY.Idx(idxyStride, 1), yy)
+	VPMOVZXBD(sCb.Idx(idxcStride, 1), Cb)
+	VPMOVZXBD(sCr.Idx(idxcStride, 1), Cr)
 
-	VPMULLD(static[1], yyXMM, yyXMM)
-	VPSUBD(static[0], cbXMM, cbXMM)
-	VPSUBD(static[0], crXMM, crXMM)
+	VPMULLD(static[1], yy, yy)
+	VPSUBD(static[0], Cb, Cb)
+	VPSUBD(static[0], Cr, Cr)
 
 	// Red
-	VPMULLD(static[2], crXMM, rXMM)
-	VPADDD(yyXMM, rXMM, rXMM)
-	VPSRAD(Imm(8), rXMM, rXMM)
-	VCVTDQ2PS(rXMM, rXMM)
-	//VDIVPS(static[6], gXMM, gXMM)
-	VMULPS(static[7], rXMM, rXMM)
+	VPMULLD(static[2], Cr, red)
+	VPADDD(yy, red, red)
+	VPSRAD(Imm(8), red, red) // Divide by 256 (Shift 8 bytes right)
+	VCVTDQ2PS(red, red)
+	VMULPS(static[6], red, red) // Multiply by adjusting factor
 
 	// Green
-	VPMULLD(static[3], crXMM, crXMM)
-	VPMULLD(static[4], cbXMM, gXMM)
-	VPSUBQ(gXMM, yyXMM, gXMM)
-	VPSUBQ(crXMM, gXMM, gXMM)
-	VPSRAD(Imm(8), gXMM, gXMM)
-	VCVTDQ2PS(gXMM, gXMM)
-	//VDIVPS(static[6], gXMM, gXMM)
-	VMULPS(static[8], gXMM, gXMM)
+	VPMULLD(static[3], Cr, Cr)
+	VPMULLD(static[4], Cb, green)
+	VPSUBQ(green, yy, green)
+	VPSUBQ(Cr, green, green)
+	VPSRAD(Imm(8), green, green) // Divide by 256 (Shift 8 bytes right)
+	VCVTDQ2PS(green, green)
+	VMULPS(static[7], green, green) // Multiply by adjusting factor
 
 	// Blue
-	VPMULLD(static[5], cbXMM, bXMM)
-	VPADDD(yyXMM, bXMM, bXMM)
-	VPSRAD(Imm(8), bXMM, bXMM)
-	VCVTDQ2PS(bXMM, bXMM)
-	VMULPS(static[9], bXMM, bXMM)
+	VPMULLD(static[5], Cb, blue)
+	VPADDD(yy, blue, blue)
+	VPSRAD(Imm(8), blue, blue) // Divide by 256 (Shift 8 bytes right)
+	VCVTDQ2PS(blue, blue)
+	VMULPS(static[8], blue, blue) // Multiply by adjusting factor
 
-	//r + b + g
-	VADDPS(rXMM, bXMM, bXMM)
-	VADDPS(gXMM, bXMM, bXMM)
+	// Add Red + Blue + Green
+	VADDPS(red, blue, gray)
+	VADDPS(green, gray, gray)
 
-	VMOVAPS(bXMM, Mem{Base: pixels, Index: idxyStride, Scale: 4})
-	//
+	// Move result to memory
+	VMOVAPS(gray, Mem{Base: pixels, Index: idxyStride, Scale: 4})
 	Comment("End innerloop instructions")
 
 	ADDQ(Imm(8), x)
@@ -916,5 +789,6 @@ func genPixelsToGray8() {
 	JMP(LabelRef("y"))
 
 	Label("done")
+	VZEROUPPER()
 	RET()
 }

@@ -27,64 +27,59 @@ func init() {
 	}
 }
 
-// pixel2Gray converts a pixel to grayscale value base on luminosity
-func pixel2Gray(r, g, b, a uint32) float64 {
-	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
-}
-
-// Rgb2GrayFast function converts RGB to a gray scale array.
-func Rgb2GrayFast32(colorImg image.Image, pixels *[]float32) {
-	bounds := colorImg.Bounds()
-	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
-	if w != h {
+// ImageToGray function converts an Image to a gray scale array.
+func ImageToGray(img image.Image, pixels *[]float32) {
+	bounds := img.Bounds()
+	if bounds.Max.X-bounds.Min.X != bounds.Max.Y-bounds.Min.Y {
 		return
 	}
-	switch c := colorImg.(type) {
+	switch c := img.(type) {
 	case *image.YCbCr:
 		if FlagUseASM {
-			AsmYCbCrToGray8(*pixels,
+			AsmYCbCrToGray(*pixels,
 				c.Rect.Min.X, c.Rect.Min.Y, c.Rect.Max.X, c.Rect.Max.Y,
 				c.Y, c.Cb, c.Cr, c.YStride, c.CStride)
 		} else {
-			PixelYCnCRGray32(c, *pixels)
+			YCbCrToGrayAlt(c, *pixels)
 		}
 	case *image.RGBA:
-		rgb2GrayRGBA32(c, *pixels, w)
+		rgbaToGray(c, *pixels)
 	default:
-		rgb2GrayDefault32(c, *pixels, w)
+		imageToGrayDefault(c, *pixels)
 	}
 }
 
-// rgb2GrayDefault uses the image.Image interface
-func rgb2GrayDefault32(colorImg image.Image, pixels []float32, s int) {
+// imageToGrayDefault uses the image.Image interface to produce grayscale pixels
+func imageToGrayDefault(img image.Image, pixels []float32) {
+	b := img.Bounds()
+	s := b.Max.X - b.Min.X
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
-			pixels[(i*s)+j] = float32(pixel2Gray(colorImg.At(j, i).RGBA()))
+			pixels[(i*s)+j] = float32(pixelToGray(img.At(j, i).RGBA()))
 		}
 	}
 }
 
-// YCbCR2Gray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
-func YCbCR2Gray32(colorImg *image.YCbCr, pixels []float64) {
+// pixel2Gray converts a pixel to grayscale value base on luminosity
+func pixelToGray(r, g, b, a uint32) float64 {
+	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
+}
+
+// YCbCrToGray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
+func YCbCrToGray(colorImg *image.YCbCr, pixels []float64) {
 	s := colorImg.Rect.Dx()
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j += 4 {
-			pixels[(i*s)+j+0] = pixel2Gray(colorImg.YCbCrAt(j+0, i).RGBA())
-			pixels[(i*s)+j+1] = pixel2Gray(colorImg.YCbCrAt(j+1, i).RGBA())
-			pixels[(i*s)+j+2] = pixel2Gray(colorImg.YCbCrAt(j+2, i).RGBA())
-			pixels[(i*s)+j+3] = pixel2Gray(colorImg.YCbCrAt(j+3, i).RGBA())
+			pixels[(i*s)+j+0] = pixelToGray(colorImg.YCbCrAt(j+0, i).RGBA())
+			pixels[(i*s)+j+1] = pixelToGray(colorImg.YCbCrAt(j+1, i).RGBA())
+			pixels[(i*s)+j+2] = pixelToGray(colorImg.YCbCrAt(j+2, i).RGBA())
+			pixels[(i*s)+j+3] = pixelToGray(colorImg.YCbCrAt(j+3, i).RGBA())
 		}
 	}
 }
 
-//func PixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
-//	AsmYCbCrToGray8(pixels,
-//		img.Rect.Min.X, img.Rect.Min.Y, img.Rect.Max.X, img.Rect.Max.Y,
-//		img.Y, img.Cb, img.Cr, img.YStride, img.CStride)
-//	//pixelYCnCRGray32(img, pixels)
-//}
-
-func PixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
+// YCbCrToGrayAlt convers an *image.YCbCr to array of pixels.
+func YCbCrToGrayAlt(img *image.YCbCr, pixels []float32) {
 	s := img.Rect.Max.X - img.Rect.Min.X
 	for y := 0; y < s; y++ {
 		for x := 0; x < s; x++ {
@@ -125,32 +120,14 @@ func PixelYCnCRGray32(img *image.YCbCr, pixels []float32) {
 	}
 }
 
-// rgb2GrayYCbCR uses *image.RGBA which is signifiantly faster than the image.Image interface.
-func rgb2GrayRGBA32(colorImg *image.RGBA, pixels []float32, s int) {
+// rgbaToGray uses *image.RGBA which is signifiantly faster than the image.Image interface.
+func rgbaToGray(img *image.RGBA, pixels []float32) {
+	s := img.Rect.Max.X - img.Rect.Min.X
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j++ {
-			pixels[(i*s)+j] = float32(pixel2Gray(colorImg.At(j, i).RGBA()))
+			pixels[(i*s)+j] = float32(pixelToGray(img.At(j, i).RGBA()))
 		}
 	}
-}
-
-// Rgb2Gray function converts RGB to a gray scale array.
-func Rgb2Gray32(colorImg image.Image) [][]float64 {
-	bounds := colorImg.Bounds()
-	w, h := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
-	pixels := make([][]float64, h)
-
-	for i := range pixels {
-		pixels[i] = make([]float64, w)
-		for j := range pixels[i] {
-			color := colorImg.At(j, i)
-			r, g, b, _ := color.RGBA()
-			lum := 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
-			pixels[i][j] = lum
-		}
-	}
-
-	return pixels
 }
 
 // FlattenPixels function flattens 2d array into 1d array.
