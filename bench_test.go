@@ -55,7 +55,9 @@ func BenchmarkCR3(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				r.Seek(0, 0)
+				if _, err = r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
 				if _, err = DecodeCR3(r); err != nil {
 					b.Fatal(err)
 				}
@@ -137,9 +139,10 @@ func BenchmarkTiff(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				r.Seek(0, 0)
-				_, err = DecodeTiff(r)
-				if err != nil {
+				if _, err = r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
+				if _, err = DecodeTiff(r); err != nil {
 					if err != ErrNoExif {
 						b.Error(err)
 					}
@@ -165,7 +168,9 @@ func BenchmarkJPEG(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				r.Seek(0, 0)
+				if _, err = r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
 				_, err = DecodeJPEG(r)
 				if err != nil {
 					if err != ErrNoExif {
@@ -193,7 +198,9 @@ func BenchmarkHeif(b *testing.B) {
 
 			b.Run("Tiff", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					r.Seek(0, 0)
+					if _, err = r.Seek(0, 0); err != nil {
+						b.Fatal(err)
+					}
 					rr := readerPool.Get().(*bufio.Reader)
 					rr.Reset(r)
 
@@ -216,7 +223,9 @@ func BenchmarkHeif(b *testing.B) {
 			})
 			b.Run("BMFF", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					r.Seek(0, 0)
+					if _, err = r.Seek(0, 0); err != nil {
+						b.Fatal(err)
+					}
 					ir := exif2.NewIfdReader(zerolog.Logger{})
 
 					br := isobmff.NewReader(r)

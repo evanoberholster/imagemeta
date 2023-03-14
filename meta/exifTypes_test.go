@@ -210,7 +210,9 @@ func BenchmarkExposureBias(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				eb.eb.MarshalText()
+				if _, err := eb.eb.MarshalText(); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
@@ -231,10 +233,13 @@ func BenchmarkExposureBias(b *testing.B) {
 ////
 
 func TestApertureMsgPack(t *testing.T) {
+	var err error
 	v := NewAperture(10, 5)
 
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	if err = msgp.Encode(&buf, &v); err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
@@ -242,15 +247,15 @@ func TestApertureMsgPack(t *testing.T) {
 	}
 
 	vn := NewAperture(0, 0)
-	err := msgp.Decode(&buf, &vn)
-	if err != nil {
+	if err = msgp.Decode(&buf, &vn); err != nil {
 		t.Error(err)
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, &v)
-	err = msgp.NewReader(&buf).Skip()
-	if err != nil {
+	if err = msgp.Encode(&buf, &v); err != nil {
+		t.Error(err)
+	}
+	if err = msgp.NewReader(&buf).Skip(); err != nil {
 		t.Error(err)
 	}
 
@@ -315,21 +320,26 @@ func TestMsgPack(t *testing.T) {
 }
 
 func testSerial(t *testing.T, v MsgPackInterface) {
+	var err error
 	var buf bytes.Buffer
-	msgp.Encode(&buf, v)
+	if err = msgp.Encode(&buf, v); err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
 		t.Log("WARNING: TestAperture Msgsize() is inaccurate")
 	}
 
-	err := msgp.Decode(&buf, v)
+	err = msgp.Decode(&buf, v)
 	if err != nil {
 		t.Error(err)
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, v)
+	if err = msgp.Encode(&buf, v); err != nil {
+		t.Error(err)
+	}
 	err = msgp.NewReader(&buf).Skip()
 	if err != nil {
 		t.Error(err)

@@ -16,7 +16,9 @@ import (
 
 func (ir *ifdReader) parseTag(t Tag) {
 	if ir.customTagParser != nil {
-		ir.customTagParser(ir, t)
+		if err := ir.customTagParser(ir, t); err != nil {
+			ir.logError(err).Send()
+		}
 		return
 	}
 	switch ifds.IfdType(t.Ifd) {

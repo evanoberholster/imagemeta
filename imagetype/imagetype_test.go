@@ -49,7 +49,9 @@ func TestScan(t *testing.T) {
 				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType.String(), imageType.String())
 			}
 
-			f.Seek(0, 0)
+			if _, err = f.Seek(0, 0); err != nil {
+				t.Error(err)
+			}
 			imageType, err = ReadAt(f)
 			if header.imageType == ImageUnknown {
 				if err != ErrImageTypeNotFound {
