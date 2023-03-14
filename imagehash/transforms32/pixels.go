@@ -8,8 +8,6 @@ package transforms32
 import (
 	"image"
 	"math"
-
-	cpu "github.com/klauspost/cpuid/v2"
 )
 
 var (
@@ -17,15 +15,8 @@ var (
 	FlagUseASM    = false
 	ForwardDCT64  = forwardDCT64
 	ForwardDCT256 = forwardDCT256
+	YCbCrToGray   = yCbCrToGrayAlt
 )
-
-func init() {
-	FlagUseASM = cpu.CPU.Supports(cpu.AVX, cpu.AVX2, cpu.SSE, cpu.SSE2, cpu.SSE4)
-	if FlagUseASM {
-		ForwardDCT256 = asmForwardDCT256
-		ForwardDCT64 = asmForwardDCT64
-	}
-}
 
 // ImageToGray function converts an Image to a gray scale array.
 func ImageToGray(img image.Image, pixels *[]float32) {
@@ -35,13 +26,7 @@ func ImageToGray(img image.Image, pixels *[]float32) {
 	}
 	switch c := img.(type) {
 	case *image.YCbCr:
-		if FlagUseASM {
-			AsmYCbCrToGray(*pixels,
-				c.Rect.Min.X, c.Rect.Min.Y, c.Rect.Max.X, c.Rect.Max.Y,
-				c.Y, c.Cb, c.Cr, c.YStride, c.CStride)
-		} else {
-			YCbCrToGrayAlt(c, *pixels)
-		}
+		YCbCrToGray(c, *pixels)
 	case *image.RGBA:
 		rgbaToGray(c, *pixels)
 	default:
@@ -61,12 +46,12 @@ func imageToGrayDefault(img image.Image, pixels []float32) {
 }
 
 // pixel2Gray converts a pixel to grayscale value base on luminosity
-func pixelToGray(r, g, b, a uint32) float64 {
-	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
+func pixelToGray(r, g, b, a uint32) float32 {
+	return float32(0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256))
 }
 
-// YCbCrToGray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
-func YCbCrToGray(colorImg *image.YCbCr, pixels []float64) {
+// yCbCrToGray uses *image.YCbCr which is signifiantly faster than the image.Image interface.
+func yCbCrToGray(colorImg *image.YCbCr, pixels []float32) {
 	s := colorImg.Rect.Dx()
 	for i := 0; i < s; i++ {
 		for j := 0; j < s; j += 4 {
@@ -78,8 +63,8 @@ func YCbCrToGray(colorImg *image.YCbCr, pixels []float64) {
 	}
 }
 
-// YCbCrToGrayAlt convers an *image.YCbCr to array of pixels.
-func YCbCrToGrayAlt(img *image.YCbCr, pixels []float32) {
+// yCbCrToGrayAlt convers an *image.YCbCr to array of pixels.
+func yCbCrToGrayAlt(img *image.YCbCr, pixels []float32) {
 	s := img.Rect.Max.X - img.Rect.Min.X
 	for y := 0; y < s; y++ {
 		for x := 0; x < s; x++ {

@@ -15,6 +15,6 @@ func asmForwardDCT64(input []float32)
 // asmForwardDCT256 is a forward DCT transform for [256]float32
 func asmForwardDCT256(input []float32)
 
-// AsmYCbCrToGra converts a YCbCr image to grayscale pixels.
+// asmYCbCrToGra converts a YCbCr image to grayscale pixels.
 // Converts using 8x SIMD instructions and requires AVX and AVX2
-func AsmYCbCrToGray(pixels []float32, minX int, minY int, maxX int, maxY int, sY []uint8, sCb []uint8, sCr []uint8, yStride int, cStride int)
+func asmYCbCrToGray(pixels []float32, minX int, minY int, maxX int, maxY int, sY []uint8, sCb []uint8, sCr []uint8, yStride int, cStride int)

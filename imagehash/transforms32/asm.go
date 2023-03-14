@@ -683,8 +683,8 @@ var (
 )
 
 func yCbCrToGray() {
-	TEXT("AsmYCbCrToGray", NOSPLIT|NOPTR, "func(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int)")
-	Doc("AsmYCbCrToGra converts a YCbCr image to grayscale pixels. \n // Converts using 8x SIMD instructions and requires AVX and AVX2 ")
+	TEXT("asmYCbCrToGray", NOSPLIT|NOPTR, "func(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int)")
+	Doc("asmYCbCrToGra converts a YCbCr image to grayscale pixels. \n // Converts using 8x SIMD instructions and requires AVX and AVX2 ")
 
 	yStride := Load(Param("yStride"), GP64())
 	idxyStrideBase := GP64()

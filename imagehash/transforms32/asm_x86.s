@@ -4674,9 +4674,9 @@ TEXT ·asmForwardDCT256(SB), NOPTR, $1024-24
 	// end DCT256
 	RET
 
-// func AsmYCbCrToGray(pixels []float32, minX int, minY int, maxX int, maxY int, sY []uint8, sCb []uint8, sCr []uint8, yStride int, cStride int)
+// func asmYCbCrToGray(pixels []float32, minX int, minY int, maxX int, maxY int, sY []uint8, sCb []uint8, sCr []uint8, yStride int, cStride int)
 // Requires: AVX, AVX2
-TEXT ·AsmYCbCrToGray(SB), NOSPLIT|NOPTR, $0-144
+TEXT ·asmYCbCrToGray(SB), NOSPLIT|NOPTR, $0-144
 	MOVQ         yStride+128(FP), AX
 	MOVQ         cStride+136(FP), BX
 	MOVQ         maxY+48(FP), R8
