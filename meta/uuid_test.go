@@ -97,7 +97,7 @@ func TestUUIDUnmarshalText(t *testing.T) {
 		if err = u.UnmarshalText([]byte(v.uuid.String())); err != nil {
 			t.Error(err)
 		}
-		if err = u2.UnmarshalText([]byte(v.str)); err != nil {
+		if err = u2.UnmarshalText([]byte(v.str)); !errors.Is(err, v.err) {
 			t.Error(err)
 		}
 
