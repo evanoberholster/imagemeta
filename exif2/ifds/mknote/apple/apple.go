@@ -45,7 +45,12 @@ const (
 	iPhone14Pro
 	iPhone14ProMax
 
-	//TODO: add iPad Models
+	//TODO: add iPad and iPod Touch Models
+	iPodtouch
+	iPad
+	iPad2
+	iPadAir
+	iPadmini
 )
 
 // CameraModelFromString returns a apple camera model from the given string
@@ -103,6 +108,12 @@ var mapAppleCameraModel = map[string]CameraModel{
 	"iPhone 14 Plus":    iPhone14Plus,
 	"iPhone 14 Pro":     iPhone14Pro,
 	"iPhone 14 Pro Max": iPhone14ProMax,
+	// iPad Models
+	"iPod touch": iPodtouch,
+	"iPad":       iPad,
+	"iPad 2":     iPad2,
+	"iPad Air":   iPadAir,
+	"iPad mini":  iPadmini,
 }
 
 var mapAppleCameraModelString = map[CameraModel]string{
@@ -144,4 +155,9 @@ var mapAppleCameraModelString = map[CameraModel]string{
 	iPhone14Plus:   "iPhone 14 Plus",
 	iPhone14Pro:    "iPhone 14 Pro",
 	iPhone14ProMax: "iPhone 14 Pro Max",
+	iPodtouch:      "iPod touch",
+	iPad:           "iPad",
+	iPad2:          "iPad 2",
+	iPadAir:        "iPad Air",
+	iPadmini:       "iPad mini",
 }
