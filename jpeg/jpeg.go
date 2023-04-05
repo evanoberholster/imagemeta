@@ -83,67 +83,55 @@ func ScanJPEG(r io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) 
 	}()
 
 	for jr.nextMarker() {
-		switch jr.marker {
-		case markerSOF0, markerSOF1,
-			markerSOF2, markerSOF3,
-			markerSOF5, markerSOF6,
-			markerSOF7, markerSOF9,
-			markerSOF10:
-			if logInfo() {
-				jr.logMarker("")
-			}
-			jr.err = jr.readSOF(jr.buf)
-		case markerDHT:
-			if logInfo() {
-				jr.logMarker("")
-			}
-			// Artificial End Of Image for DHT Marker.
-			// This is done to improve performance.
-			if jr.pos == 1 {
-				return nil
-			}
-			// Ignore DHT Markers
-			jr.ignoreMarker()
-		case markerSOI:
-			if logInfo() {
-				jr.logMarker("")
-			}
-			jr.pos++
-			jr.err = jr.discard(2)
-		case markerEOI:
-			if logInfo() {
-				jr.logMarker("")
-			}
-			jr.pos--
-			// Return EndOfImage
-			if jr.pos == 1 {
-				return ErrEndOfImage
-			}
-			jr.err = jr.discard(2)
-		case markerDQT:
-			// Ignore DQT Markers and close parsing
-			// Stop parsing at DQT Markers
-			//return nil
-			if logInfo() {
-				jr.logMarker("")
-			}
-			jr.ignoreMarker()
-			return nil
-		case markerDRI:
-			return jr.discard(6)
-		case markerAPP0:
-			jr.readAPP0()
-		case markerAPP1:
-			jr.readAPP1()
-		case markerAPP2:
-			jr.readAPP2()
-		case markerAPP13:
-			jr.readAPP13()
+		switch jr.marker >> 4 {
+		case 12: // SOF Markers
+			jr.readSOFMarker()
+		case 14: // APP Markers
+			jr.readAPPMarker()
 		default:
-			if logInfo() {
-				jr.logMarker("")
+			switch jr.marker {
+			case markerDHT:
+				if logInfo() {
+					jr.logMarker("")
+				}
+				// Artificial End Of Image for DHT Marker.
+				// This is done to improve performance.
+				if jr.pos == 1 {
+					return nil
+				}
+				// Ignore DHT Markers
+				jr.ignoreMarker()
+			case markerSOI:
+				if logInfo() {
+					jr.logMarker("")
+				}
+				jr.pos++
+				jr.err = jr.discard(2)
+			case markerEOI:
+				if logInfo() {
+					jr.logMarker("")
+				}
+				jr.pos--
+				// Return EndOfImage
+				if jr.pos == 1 {
+					return ErrEndOfImage
+				}
+				jr.err = jr.discard(2)
+			case markerDQT:
+				// Stop parsing at DQT Markers
+				if logInfo() {
+					jr.logMarker("")
+				}
+				jr.ignoreMarker() // Ignore DQT Markers and close parsing
+				return nil
+			case markerDRI:
+				jr.err = jr.discard(6)
+			default: // unknown marker
+				if logInfo() {
+					jr.logMarker("")
+				}
+				jr.ignoreMarker()
 			}
-			jr.ignoreMarker()
 		}
 	}
 	return jr.err
@@ -321,16 +309,16 @@ func (jr *jpegReader) readXMP() (err error) {
 	return jr.discard(remain)
 }
 
-// readSOF reads a JPEG Start of file with the uint16
+// readSOFMarker reads a JPEG Start of file with the uint16
 // width, height, and components of the JPEG image.
-func (jr *jpegReader) readSOF(buf []byte) error {
-	height := jpegEndian.Uint16(buf[5:7])
-	width := jpegEndian.Uint16(buf[7:9])
-	comp := uint8(buf[9])
+func (jr *jpegReader) readSOFMarker() {
+	height := jpegEndian.Uint16(jr.buf[5:7])
+	width := jpegEndian.Uint16(jr.buf[7:9])
+	comp := uint8(jr.buf[9])
 	if jr.pos == 1 {
 		jr.sofHeader = sofHeader{height, width, comp}
 	}
-	return jr.discard(int(jr.size) + 2)
+	jr.err = jr.discard(int(jr.size) + 2)
 }
 
 // sofHeader contains height, width and number of components.
@@ -338,6 +326,25 @@ type sofHeader struct {
 	height     uint16
 	width      uint16
 	components uint8
+}
+
+// readAPPMarker reads an APP JPEG Marker
+func (jr *jpegReader) readAPPMarker() {
+	switch jr.marker {
+	case markerAPP0:
+		jr.readAPP0()
+	case markerAPP1:
+		jr.readAPP1()
+	case markerAPP2:
+		jr.readAPP2()
+	case markerAPP13:
+		jr.readAPP13()
+	default:
+		if logInfo() {
+			jr.logMarker("")
+		}
+		jr.ignoreMarker()
+	}
 }
 
 // ignoreMarker discards the marker size
@@ -360,6 +367,7 @@ const (
 	markerSOF5  markerType = 0xC5
 	markerSOF6  markerType = 0xC6
 	markerSOF7  markerType = 0xC7
+	markerSOF8  markerType = 0xC8
 	markerSOF9  markerType = 0xC9
 	markerSOF10 markerType = 0xCA
 	markerSOF11 markerType = 0xCB
@@ -376,12 +384,19 @@ const (
 	markerAPP0  markerType = 0xE0
 	markerAPP1  markerType = 0xE1
 	markerAPP2  markerType = 0xE2
+	markerAPP3  markerType = 0xE3
+	markerAPP4  markerType = 0xE4
+	markerAPP5  markerType = 0xE5
+	markerAPP6  markerType = 0xE6
 	markerAPP7  markerType = 0xE7
 	markerAPP8  markerType = 0xE8
 	markerAPP9  markerType = 0xE9
 	markerAPP10 markerType = 0xEA
+	markerAPP11 markerType = 0xEB
+	markerAPP12 markerType = 0xEC
 	markerAPP13 markerType = 0xED
 	markerAPP14 markerType = 0xEE
+	markerAPP15 markerType = 0xEF
 
 	// Prefixes for JPEG markers
 	exifPrefix       = "Exif\000\000"
@@ -408,6 +423,7 @@ var (
 		markerSOF5:  "SOF5",
 		markerSOF6:  "SOF6",
 		markerSOF7:  "SOF7",
+		markerSOF8:  "SOF8",
 		markerSOF9:  "SOF9",
 		markerSOF10: "SOF10",
 		markerSOF11: "SOF11",
@@ -419,12 +435,19 @@ var (
 		markerAPP0:  "APP0",
 		markerAPP1:  "APP1",
 		markerAPP2:  "APP2",
+		markerAPP3:  "APP3",
+		markerAPP4:  "APP4",
+		markerAPP5:  "APP5",
+		markerAPP6:  "APP6",
 		markerAPP7:  "APP7",
 		markerAPP8:  "APP8",
 		markerAPP9:  "APP9",
 		markerAPP10: "APP10",
+		markerAPP11: "APP11",
+		markerAPP12: "APP12",
 		markerAPP13: "APP13",
 		markerAPP14: "APP14",
+		markerAPP15: "APP15",
 	}
 )
 
