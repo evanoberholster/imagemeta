@@ -11,6 +11,9 @@ var (
 
 	// cr3XPacketUUID is the uuid that corresponds with Canon CR3 xpacket data
 	cr3XPacketUUID = meta.UUIDFromString("be7acfcb-97a9-42e8-9c71-999491e3afac")
+
+	// cr3PreviewUUID is the uuid that corresponds with Canon CR3 Preview Image.
+	cr3PreviewUUID = meta.UUIDFromString("eaf42b5e-1c98-4b88-b9fb-b7dc406e4d16")
 )
 
 func (r *Reader) readUUIDBox(b *box) error {
@@ -34,6 +37,10 @@ func (r *Reader) readUUIDBox(b *box) error {
 		}
 	case cr3MetaBoxUUID:
 		if _, err = readCrxMoovBox(b, r.ExifReader); err != nil {
+			return err
+		}
+	case cr3PreviewUUID:
+		if err = r.readPreview(b); err != nil {
 			return err
 		}
 	default:

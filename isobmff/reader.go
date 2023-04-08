@@ -34,10 +34,12 @@ type Reader struct {
 	br *bufio.Reader
 
 	ftyp FileTypeBox
+	prvw PRVWBox
 	heic HeicMeta
 
-	ExifReader func(r io.Reader, h meta.ExifHeader) error
-	XMPReader  func(r io.Reader) error
+	ExifReader         func(r io.Reader, h meta.ExifHeader) error
+	XMPReader          func(r io.Reader) error
+	PreviewImageReader func(r io.Reader, h meta.PreviewHeader) error
 
 	offset int
 	rPool  bool
