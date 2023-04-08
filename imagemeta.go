@@ -191,7 +191,7 @@ func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
-	pr := preview.NewPreviewReader(exif2.Logger)
+	pr := preview.NewPreviewReader(preview.Logger)
 
 	bmr := isobmff.NewReader(rr)
 	bmr.PreviewImageReader = pr.RenderPreview
