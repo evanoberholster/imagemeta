@@ -118,3 +118,9 @@ type XmpHeader struct {
 func NewXMPHeader(offset, length uint32) XmpHeader {
 	return XmpHeader{offset, length}
 }
+
+type PreviewHeader struct {
+	Size   uint32
+	Width  uint16
+	Height uint16
+}
