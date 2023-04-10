@@ -14,6 +14,7 @@ import (
 	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/png"
+	"github.com/evanoberholster/imagemeta/preview"
 	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/pkg/errors"
 )
@@ -182,4 +183,38 @@ func DecodePng(r io.ReadSeeker) (exif2.Exif, error) {
 	}
 
 	return ir.Exif, nil
+}
+
+// PreviewCR3 previews a CR3 file from an io.Reader returning preview image binary or an error.
+func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
+	rr := readerPool.Get().(*bufio.Reader)
+	defer readerPool.Put(rr)
+	rr.Reset(r)
+
+	pr := preview.NewPreviewReader(preview.Logger)
+
+	bmr := isobmff.NewReader(rr)
+	bmr.PreviewImageReader = pr.RenderPreview
+	defer bmr.Close()
+
+	if err := bmr.ReadFTYP(); err != nil {
+		return nil, errors.Wrapf(err, "ReadFtypBox")
+	}
+
+	// moov
+	if err := bmr.ReadMetadata(); err != nil {
+		return nil, err
+	}
+
+	// uuid xpacket
+	if err := bmr.ReadMetadata(); err != nil {
+		return nil, err
+	}
+
+	// uuid preview
+	if err := bmr.ReadMetadata(); err != nil {
+		return nil, err
+	}
+
+	return pr.PreviewImage, nil
 }

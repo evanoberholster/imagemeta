@@ -27,6 +27,8 @@ func (r *Reader) ReadMetadata() (err error) {
 	case typeMoov:
 		err = r.readMoovBox(&b)
 		b.close()
+	case typeUUID:
+		err = r.readUUIDBox(&b)
 	default:
 		if logLevelInfo() {
 			logInfo().Object("box", b).Send()
