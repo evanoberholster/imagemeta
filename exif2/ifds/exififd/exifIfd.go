@@ -1,7 +1,9 @@
 // Package exififd provides types for "RootIfd/ExifIfd"
 package exififd
 
-import "github.com/evanoberholster/imagemeta/exif2/tag"
+import (
+	"github.com/evanoberholster/imagemeta/exif2/tag"
+)
 
 func TagString(id tag.ID) string {
 	name, ok := TagIDMap[id]
@@ -60,10 +62,10 @@ var TagIDMap = map[tag.ID]string{
 	ImageNumber:                "ImageNumber",
 	ImageUniqueID:              "ImageUniqueID",
 	InteroperabilityTag:        "InteroperabilityTag",
+	PhotographicSensitivity:    "PhotographicSensitivity",
 	ISOSpeed:                   "ISOSpeed",
 	ISOSpeedLatitudeyyy:        "ISOSpeedLatitudeyyy",
 	ISOSpeedLatitudezzz:        "ISOSpeedLatitudezzz",
-	ISOSpeedRatings:            "ISOSpeedRatings",
 	LensMake:                   "LensMake",
 	LensModel:                  "LensModel",
 	LensSerialNumber:           "LensSerialNumber",
@@ -112,7 +114,7 @@ const (
 	FNumber                    tag.ID = 0x829d
 	ExposureProgram            tag.ID = 0x8822
 	SpectralSensitivity        tag.ID = 0x8824
-	ISOSpeedRatings            tag.ID = 0x8827
+	PhotographicSensitivity    tag.ID = 0x8827
 	OECF                       tag.ID = 0x8828
 	TimeZoneOffset             tag.ID = 0x882a // int16s[n]
 	SelfTimerMode              tag.ID = 0x882b // int16u
@@ -197,3 +199,52 @@ const (
 	CompositeImageExposureTime tag.ID = 0xa462 // undef
 	Gamma                      tag.ID = 0xa500 // rational64u
 )
+
+// ExifIfd is the Exif Ifd
+// Based on Exif 2.23 Sepc https://web.archive.org/web/20190624045241if_/http://www.cipa.jp:80/std/documents/e/DC-008-Translation-2019-E.pdf
+type ExifIfd struct {
+	ExifVersion              [4]byte
+	PixelXDimension          uint32
+	PixelYDimension          uint32
+	ComponentsConfiguration  [4]uint8
+	UserComment              string
+	DateTimeOriginal         [20]byte
+	DateTimeDigitized        [20]byte
+	OffsetTime               [7]byte
+	OffsetTimeOriginal       [7]byte
+	OffsetTimeDigitized      [7]byte
+	SubsecTime               uint16
+	SubsecTimeOriginal       uint16
+	SubsecTimeDigitized      uint16
+	ExposureTime             tag.Rational64
+	FNumber                  tag.Rational64
+	ExposureProgram          tag.ExposureProgram
+	ISOSpeed                 uint32
+	ShutterSpeedValue        tag.ShutterSpeedValue // APEX
+	ApertureValue            tag.ApertureValue     // APEX
+	BrightnessValue          tag.BrightnessValue   // APEX
+	ExposureBiasValue        tag.ExposureBiasValue // APEX
+	SubjectDistance          tag.Rational64
+	LightSource              tag.LightSource
+	Flash                    tag.Flash
+	FocalLength              tag.FocalLength
+	FocalPlaneXResolution    tag.Rational64
+	FocalPlaneYResolution    tag.Rational64
+	FocalPlaneResolutionUnit uint16
+	ExposureMode             tag.ExposureMode
+	DigitalZoomRatio         tag.Rational64
+	FocalLengthIn35mmFilm    tag.FocalLength
+	//GainControl              uint16 // values
+	//Contrast                 uint16 // values
+	//Saturation               uint16 // values
+	//Sharpness                uint16 // values
+	//
+	ImageUnique       tag.ImageUnique // ASCII hexadecimal notation 33 bytes
+	CameraOwnerName   string
+	BodySerialNumber  string
+	LensSpecification [4]tag.Rational64
+	LensMake          string
+	LensModel         string
+	LensSerialNumber  string
+	//other                    map[tag.ID]string
+}

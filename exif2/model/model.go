@@ -1,4 +1,4 @@
-package ifds
+package model
 
 import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/apple"

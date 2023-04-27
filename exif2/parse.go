@@ -9,6 +9,8 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/apple"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/canon"
+	"github.com/evanoberholster/imagemeta/exif2/make"
+	"github.com/evanoberholster/imagemeta/exif2/model"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -106,7 +108,7 @@ func (ir *ifdReader) parseTag(t Tag) {
 			ir.Exif.ExposureMode = meta.ExposureMode(ir.ParseUint16(t))
 		case exififd.MeteringMode:
 			ir.Exif.MeteringMode = meta.MeteringMode(ir.ParseUint16(t))
-		case exififd.ISOSpeedRatings:
+		case exififd.ISOSpeed:
 			ir.Exif.ISOSpeed = ir.ParseUint32(t)
 
 		case ifds.Flash:
@@ -139,17 +141,17 @@ func (ir *ifdReader) parseTag(t Tag) {
 	case ifds.GPSIFD:
 		switch t.ID {
 		case gpsifd.GPSAltitudeRef:
-			ir.Exif.GPS.altitudeRef = ir.ParseGPSRef(t)
+			ir.Exif.GPS.altitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSLatitudeRef:
-			ir.Exif.GPS.latitudeRef = ir.ParseGPSRef(t)
+			ir.Exif.GPS.latitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSLongitudeRef:
-			ir.Exif.GPS.longitudeRef = ir.ParseGPSRef(t)
+			ir.Exif.GPS.longitudeRef = ir.parseGPSRef(t)
 		case gpsifd.GPSAltitude:
-			ir.Exif.GPS.altitude = ir.ParseGPSAltitude(t)
+			ir.Exif.GPS.altitude = ir.parseGPSAltitude(t)
 		case gpsifd.GPSLatitude:
-			ir.Exif.GPS.latitude = ir.ParseGPSCoord(t)
+			ir.Exif.GPS.latitude = ir.parseGPSCoord(t)
 		case gpsifd.GPSLongitude:
-			ir.Exif.GPS.longitude = ir.ParseGPSCoord(t)
+			ir.Exif.GPS.longitude = ir.parseGPSCoord(t)
 		case gpsifd.GPSTimeStamp:
 			ir.Exif.GPS.time = ir.parseGPSTimeStamp(t)
 		case gpsifd.GPSDateStamp:
@@ -160,28 +162,28 @@ func (ir *ifdReader) parseTag(t Tag) {
 	}
 }
 
-func (ir *ifdReader) ParseCameraMake(t Tag) (ifds.CameraMake, string) {
+func (ir *ifdReader) ParseCameraMake(t Tag) (make.CameraMake, string) {
 	str := ir.ParseBuffer(t)
-	if mk, ok := ifds.CameraMakeFromString(string(str)); ok {
+	if mk, ok := make.CameraMakeFromString(string(str)); ok {
 		return mk, mk.String()
 	}
-	return ifds.CameraMakeUnknown, string(str)
+	return make.CameraMakeUnknown, string(str)
 }
 
-func (ir *ifdReader) ParseCameraModel(t Tag) (ifds.CameraModel, string) {
+func (ir *ifdReader) ParseCameraModel(t Tag) (model.CameraModel, string) {
 	str := ir.ParseBuffer(t)
 	switch ir.Exif.CameraMake {
-	case ifds.Canon:
-		if model, ok := canon.CameraModelFromString(string(str)); ok {
-			return ifds.CameraModel(model), model.String()
+	case make.Canon:
+		if m, ok := canon.CameraModelFromString(string(str)); ok {
+			return model.CameraModel(m), m.String()
 		}
-	case ifds.Apple:
-		if model, ok := apple.CameraModelFromString(string(str)); ok {
-			ir.Exif.CameraModel = ifds.CameraModel(model)
-			return ifds.CameraModel(model), model.String()
+	case make.Apple:
+		if m, ok := apple.CameraModelFromString(string(str)); ok {
+			ir.Exif.CameraModel = model.CameraModel(m)
+			return model.CameraModel(m), m.String()
 		}
 	}
-	return ifds.CameraModelUnknown, string(str)
+	return model.CameraModelUnknown, string(str)
 }
 
 //func (ir *ifdReader) parseApplicationNotes(t Tag) ApplicationNotes {
@@ -429,8 +431,8 @@ func (ir *ifdReader) ParseOffsetTime(t Tag) *time.Location {
 	return time.UTC
 }
 
-// ParseGPSCoord parses the GPS Coordinate (Lat or Lng) from the corresponding Tag.
-func (ir *ifdReader) ParseGPSCoord(t Tag) float64 {
+// parseGPSCoord parses the GPS Coordinate (Lat or Lng) from the corresponding Tag.
+func (ir *ifdReader) parseGPSCoord(t Tag) float64 {
 	if t.UnitCount == 3 {
 		switch t.Type {
 		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
@@ -450,8 +452,8 @@ func (ir *ifdReader) ParseGPSCoord(t Tag) float64 {
 	return 0.0
 }
 
-// ParseGPSAltitude parses the GPS Altitude from the corresponding Tag.
-func (ir *ifdReader) ParseGPSAltitude(t Tag) float32 {
+// parseGPSAltitude parses the GPS Altitude from the corresponding Tag.
+func (ir *ifdReader) parseGPSAltitude(t Tag) float32 {
 	if t.UnitCount == 1 {
 		switch t.Type {
 		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
@@ -529,9 +531,9 @@ func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
 	return time.Time{}
 }
 
-// ParseGPSRef parsese the GPS Reference for GPSAltitudeRef, GPSLatitudeRef, and GPSLongitudeRef.
+// parseGPSRef parsese the GPS Reference for GPSAltitudeRef, GPSLatitudeRef, and GPSLongitudeRef.
 // Returns bool, true is reprsentative of a negative value (-1 Altitude, S Latitude, or W Longitude)
-func (ir *ifdReader) ParseGPSRef(t Tag) bool {
+func (ir *ifdReader) parseGPSRef(t Tag) bool {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(ir.buffer.buf[:4])
 		switch t.ID {
@@ -551,11 +553,9 @@ func (ir *ifdReader) ParseGPSRef(t Tag) bool {
 
 // TagParser interface is used for Custom Tag Parsers.
 type TagParser interface {
-	ParseCameraMake(t Tag) (ifds.CameraMake, string)
-	ParseCameraModel(t Tag) (ifds.CameraModel, string)
+	ParseCameraMake(t Tag) (make.CameraMake, string)
+	ParseCameraModel(t Tag) (model.CameraModel, string)
 	ParseDate(t Tag) time.Time
-	ParseGPSAltitude(t Tag) float32
-	ParseGPSCoord(t Tag) float64
 	ParseRationalU(t Tag) [2]uint32
 	ParseString(t Tag) string
 	ParseSubSecTime(t Tag) uint16

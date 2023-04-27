@@ -166,3 +166,24 @@ func (tt Type) IsValid() bool {
 		tt == TypeUndefined ||
 		tt == TypeIfd
 }
+
+// Rational64 is a rational value
+type Rational64 [2]uint32
+
+// Num returns the the Rational Numerator as a unit32
+func (rat Rational64) Num() uint32 {
+	return rat[0]
+}
+
+// Den returns the Rational Denominator as a unit32
+func (rat Rational64) Den() uint32 {
+	return rat[1]
+}
+
+// Float returns the Rational as a float64
+func (rat Rational64) Float() float64 {
+	return float64(rat.Num()) / float64(rat.Den())
+}
+
+// SRational is a signed rational value
+type SRational [2]int32

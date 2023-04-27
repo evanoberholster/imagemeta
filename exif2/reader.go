@@ -6,6 +6,7 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
 	"github.com/evanoberholster/imagemeta/exif2/ifds/mknote/nikon"
+	"github.com/evanoberholster/imagemeta/exif2/make"
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -257,11 +258,11 @@ func (ir *ifdReader) readSubIfds(t Tag) {
 
 func (ir *ifdReader) readMakerNotes(t Tag) {
 	switch ir.Exif.CameraMake {
-	case ifds.Canon:
+	case make.Canon:
 		if err := ir.readIfdHeader(t.childIfd()); err != nil {
 			ir.logError(err).Send()
 		}
-	case ifds.Nikon:
+	case make.Nikon:
 		if t.Size() > 18 { // read Nikon Makernotes header 18 bytes
 			buf, err := ir.fastRead(18)
 			if err != nil {

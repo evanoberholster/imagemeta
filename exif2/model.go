@@ -5,13 +5,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
+	"github.com/evanoberholster/imagemeta/exif2/make"
+	"github.com/evanoberholster/imagemeta/exif2/model"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Exif data structure
 type Exif struct {
+	//GPSInfo                   gpsifd.GPSInfo       // GPSInfo
 	ApplicationNotes          []byte               // 0x02bc
 	GPS                       GPSInfo              // 0x8825
 	SubjectArea               SubjectArea          // ExifIFD / 0x9214
@@ -32,8 +34,8 @@ type Exif struct {
 	CameraSerial              string               // ExifIFD / 0xa431	(called BodySerialNumber by the EXIF spec.)
 	Make                      string               // IFD0 / 0x010f
 	Model                     string               // IFD0 / 0x0110
-	CameraModel               ifds.CameraModel     // CameraModel
-	CameraMake                ifds.CameraMake      // CameraMake
+	CameraModel               model.CameraModel    // CameraModel
+	CameraMake                make.CameraMake      // CameraMake
 	XResolution               uint32               // IFD0 / 0x011a rational64u
 	YResolution               uint32               // IFD0 / 0x011b
 	ExposureTime              meta.ExposureTime    // 0x829a

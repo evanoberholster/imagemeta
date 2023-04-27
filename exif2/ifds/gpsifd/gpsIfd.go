@@ -52,86 +52,6 @@ const (
 	GPSHPositioningError tag.ID = 0x001f
 )
 
-// TypeGPSLatitudeRef represents the GPS Latitude Reference types
-type TypeGPSLatitudeRef uint8
-
-// ExifTool will also accept a number when writing GPSLatitudeRef, positive for north latitudes or negative for south, or a string containing N, North, S or South.
-const (
-	GPSLatitudeRegUnknown TypeGPSLatitudeRef = 0
-	GPSLatitudeRefNorth   TypeGPSLatitudeRef = 'N'
-	GPSLatitudeRefSouth   TypeGPSLatitudeRef = 'S'
-)
-
-// TypeGPSLongitudeRef represents the GPS Longitude Reference types
-type TypeGPSLongitudeRef uint8
-
-// ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West.
-const (
-	GPSLongitudeRefUnknown TypeGPSLongitudeRef = 0
-	GPSLongitudeRefEast    TypeGPSLongitudeRef = 'E'
-	GPSLongitudeRefWest    TypeGPSLongitudeRef = 'W'
-)
-
-// TypeGPSDestBearingRef represents the GPS Destination Bearing Reference types
-type TypeGPSDestBearingRef uint8
-
-// GPS Destination Bearing Reference types
-const (
-	GPSDestBearingRefUnknown   TypeGPSDestBearingRef = 0
-	GPSDestBearingRefMagNorth  TypeGPSDestBearingRef = 'M'
-	GPSDestBearingRefTrueNorth TypeGPSDestBearingRef = 'T'
-)
-
-// GPSDestDistanceRef
-type TypeGPSDestDistanceRef uint8
-
-// GPS Destination Distance Reference types
-const (
-	GPSDestDistanceRefUnknown TypeGPSDestDistanceRef = 0
-	GPSDestDistanceRefK       TypeGPSDestDistanceRef = 'K'
-	GPSDestDistanceRefM       TypeGPSDestDistanceRef = 'M'
-	GPSDestDistanceRefNM      TypeGPSDestDistanceRef = 'N'
-)
-
-// GPSAltitudeRef
-type TypeGPSAltitudeRef uint8
-
-const (
-	GPSAltitudeRefAbove TypeGPSAltitudeRef = 0
-	GPSAltitudeRefBelow TypeGPSAltitudeRef = 1
-)
-
-// GPSSpeedRef
-type TypeGPSSpeedRef uint8
-
-// GPS Speed Reference types
-const (
-	GPSSpeedRefUnknown TypeGPSSpeedRef = 0
-	GPSSpeedRefK       TypeGPSSpeedRef = 'K'
-	GPSSpeedRefM       TypeGPSSpeedRef = 'M'
-	GPSSpeedRefN       TypeGPSSpeedRef = 'N'
-)
-
-// TypeGPSStaus
-type TypeGPSStaus uint8
-
-// GPS Status
-const (
-	GPSStatusUnknown TypeGPSStaus = 0
-	GPSStatusA       TypeGPSStaus = 'A'
-	GPSStatusV       TypeGPSStaus = 'V'
-)
-
-// TypeGPSMeasureMode
-type TypeGPSMeasureMode uint8
-
-// GPS Measure Mode
-const (
-	GPSMeasureModeUnknown TypeGPSMeasureMode = 0
-	GPSMeasureMode2       TypeGPSMeasureMode = '2'
-	GPSMeasureMode3       TypeGPSMeasureMode = '3'
-)
-
 // GPSInfo struct as per Exiftool.
 // These GPS tags are part of the EXIF standard, and are stored in a separate IFD within the EXIF information.
 // Some GPS tags have values which are fixed-length strings. For these, the indicated string lengths include a null terminator.
@@ -158,18 +78,18 @@ type GPSInfo struct {
 	GPSDestBearing       tag.Rational64         // 0x0018 rational64u
 	GPSDestDistance      tag.Rational64         // 0x001a rational64u
 	GPSHPositioningError tag.Rational64         // 0x001f rational64u
-	GPSLatitudeRef       TypeGPSLatitudeRef     // 0x0001 string[2]
-	GPSLongitudeRef      TypeGPSLongitudeRef    // 0x0003 string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
-	GPSAltitudeRef       TypeGPSAltitudeRef     // 0x0005 int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
-	GPSStatus            TypeGPSStaus           // 0x0009 string[2]	'A' = Measurement Active 'V' = Measurement Void
-	GPSMeasureMode       TypeGPSMeasureMode     // 0x000a string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
-	GPSSpeedRef          TypeGPSSpeedRef        // 0x000c string[2]	'K' = km/h 'M' = mph 'N' = knots
-	GPSTrackRef          TypeGPSDestBearingRef  // 0x000e string[2]	'M' = Magnetic North 'T' = True North
-	GPSImgDirectionRef   TypeGPSDestBearingRef  // 0x0010 string[2]	'M' = Magnetic North  'T' = True North
-	GPSDestLatitudeRef   TypeGPSLatitudeRef     // 0x0013 string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
-	GPSDestLongitudeRef  TypeGPSLongitudeRef    // 0x0015 string[2]	'E' = East  'W' = West
-	GPSDestBearingRef    TypeGPSDestBearingRef  // 0x0017 string[2]	'M' = Magnetic North  'T' = True North
-	GPSDestDistanceRef   TypeGPSDestDistanceRef // 0x0019 string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
+	GPSLatitudeRef       tag.GPSLatitudeRef     // 0x0001 string[2]
+	GPSLongitudeRef      tag.GPSLongitudeRef    // 0x0003 string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
+	GPSAltitudeRef       tag.GPSAltitudeRef     // 0x0005 int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
+	GPSStatus            tag.GPSStatus          // 0x0009 string[2]	'A' = Measurement Active 'V' = Measurement Void
+	GPSMeasureMode       tag.GPSMeasureMode     // 0x000a string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
+	GPSSpeedRef          tag.GPSSpeedRef        // 0x000c string[2]	'K' = km/h 'M' = mph 'N' = knots
+	GPSTrackRef          tag.GPSDestBearingRef  // 0x000e string[2]	'M' = Magnetic North 'T' = True North
+	GPSImgDirectionRef   tag.GPSDestBearingRef  // 0x0010 string[2]	'M' = Magnetic North  'T' = True North
+	GPSDestLatitudeRef   tag.GPSLatitudeRef     // 0x0013 string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
+	GPSDestLongitudeRef  tag.GPSLongitudeRef    // 0x0015 string[2]	'E' = East  'W' = West
+	GPSDestBearingRef    tag.GPSDestBearingRef  // 0x0017 string[2]	'M' = Magnetic North  'T' = True North
+	GPSDestDistanceRef   tag.GPSDestDistanceRef // 0x0019 string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
 	GPSDifferential      uint16                 // 0x001e int16u	0 = No Correction 1 = Differential Corrected
 }
 
@@ -178,7 +98,7 @@ type GPSInfo struct {
 // Latitude returns GPSInfo Latitude as a float64.
 func (gps GPSInfo) Latitude() float64 {
 	coord := rational64ToCoord(gps.GPSLatitude)
-	if gps.GPSLatitudeRef == GPSLatitudeRefSouth {
+	if gps.GPSLatitudeRef == tag.GPSLatitudeRefSouth {
 		coord *= -1
 	}
 	return coord
@@ -187,7 +107,7 @@ func (gps GPSInfo) Latitude() float64 {
 // Longitude returns GPSInfo Longitude as a float64.
 func (gps GPSInfo) Longitude() float64 {
 	coord := rational64ToCoord(gps.GPSLongitude)
-	if gps.GPSLongitudeRef == GPSLongitudeRefWest {
+	if gps.GPSLongitudeRef == tag.GPSLongitudeRefWest {
 		coord *= -1
 	}
 	return coord
@@ -196,7 +116,7 @@ func (gps GPSInfo) Longitude() float64 {
 // Altitude returns GPSInfo Altitude as a float64.
 func (gps GPSInfo) Altitude() float64 {
 	res := float64(gps.GPSAltitude[0]) / float64(gps.GPSAltitude[1])
-	if gps.GPSAltitudeRef == GPSAltitudeRefBelow {
+	if gps.GPSAltitudeRef == tag.GPSAltitudeRefBelow {
 		res *= -1
 	}
 	return res
@@ -212,7 +132,7 @@ func (gps GPSInfo) Altitude() float64 {
 // DestLatitude returns GPSInfo Destination Latitude as a float64.
 func (gps GPSInfo) DestLatitude() float64 {
 	coord := rational64ToCoord(gps.GPSDestLatitude)
-	if gps.GPSDestLatitudeRef == GPSLatitudeRefSouth {
+	if gps.GPSDestLatitudeRef == tag.GPSLatitudeRefSouth {
 		coord *= -1
 	}
 	return coord
@@ -221,7 +141,7 @@ func (gps GPSInfo) DestLatitude() float64 {
 // DestLongitude returns GPSInfo Destination Longitude as a float64.
 func (gps GPSInfo) DestLongitude() float64 {
 	coord := rational64ToCoord(gps.GPSDestLongitude)
-	if gps.GPSDestLongitudeRef == GPSLongitudeRefWest {
+	if gps.GPSDestLongitudeRef == tag.GPSLongitudeRefWest {
 		coord *= -1
 	}
 	return coord

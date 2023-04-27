@@ -1,4 +1,4 @@
-package ifds
+package make
 
 //go:generate stringer -type=CameraMake
 
@@ -62,15 +62,14 @@ const (
 )
 
 var (
-	_strCameraMake       = "AcerAgfaAiptekAppleAsusBenQCanonCasioDJIFujiFilmGeGeniusGoogleGoProHasselbladHPHitachiHTCHuaweiInsta360KodakKonicaKyoceraLeicaLGMamyiaMicrosoftMinoltaMotorolaNikonNokiaOlympusOnePlusPanasonicPentaxPhaseOnePolaroidRIMRicohSamsungSanyoSharpSigmaSonySonyEricssonToshibaVivitarXiamoiZTEHisilicon"
-	_strCameraMakeOffset = []uint16{0, 0, 4, 8, 14, 19, 23, 27, 32, 37, 40, 48, 50, 56, 62, 67, 77, 79, 86, 89, 95, 103, 108, 114, 121, 126, 128, 134, 143, 150, 158, 163, 168, 175, 182, 191, 197, 205, 213, 216, 221, 228, 233, 238, 243, 247, 259, 266, 273, 279, 282, 291}
+	_strCameraMake = [51]string{"", "Acer", "Agfa", "Aiptek", "Apple", "Asus", "BenQ", "Canon", "Casio", "DJI", "FujiFilm", "Ge", "Genius", "Google", "GoPro", "Hasselblad", "HP", "Hitachi", "HTC", "Huawei", "Insta360", "Kodak", "Konica", "Kyocera", "Leica", "LG", "Mamyia", "Microsoft", "Minolta", "Motorola", "Nikon", "Nokia", "Olympus", "OnePlus", "Panasonic", "Pentax", "PhaseOne", "Polaroid", "RIM", "Ricoh", "Samsung", "Sanyo", "Sharp", "Sigma", "Sony", "SonyEricsson", "Toshiba", "Vivitar", "Xiamoi", "ZTE", "Hisilicon"}
 )
 
 func (cm CameraMake) String() string {
-	if cm <= Hisilicon {
-		return _strCameraMake[_strCameraMakeOffset[cm]:_strCameraMakeOffset[cm+1]]
+	if int(cm) < len(_strCameraMake) {
+		return _strCameraMake[cm]
 	}
-	return ""
+	return _strCameraMake[0]
 }
 
 // CameraMakeFromString returns a camera make from the given string
