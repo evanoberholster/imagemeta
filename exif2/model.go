@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/exif2/ifds/exififd"
+	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/make"
 	"github.com/evanoberholster/imagemeta/exif2/model"
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -13,9 +15,9 @@ import (
 
 // Exif data structure
 type Exif struct {
-	//GPSInfo                   gpsifd.GPSInfo       // GPSInfo
 	ApplicationNotes          []byte               // 0x02bc
-	GPS                       GPSInfo              // 0x8825
+	GPS                       gpsifd.GPSInfo       // GPSInfoIfd / 0x8825
+	Exif                      exififd.ExifIfd      // ExifIfd
 	SubjectArea               SubjectArea          // ExifIFD / 0x9214
 	LensInfo                  LensInfo             // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
 	Makernotes                MakerNotes           // ExifIFD / MakerNote
@@ -138,14 +140,11 @@ func (e Exif) String() string {
 	sb.WriteString(fmt.Sprintf("Date Modified: \t%s\n", e.ModifyDate()))
 	sb.WriteString(fmt.Sprintf("Date Created: \t%s\n", e.CreateDate()))
 	sb.WriteString(fmt.Sprintf("Date Original: \t%s\n", e.DateTimeOriginal()))
-	sb.WriteString(fmt.Sprintf("Date GPS: \t%s\n", e.GPS.Date()))
 	sb.WriteString(fmt.Sprintf("Artist: \t%s\n", e.Artist))
 	sb.WriteString(fmt.Sprintf("Copyright: \t%s\n", e.Copyright))
 	sb.WriteString(fmt.Sprintf("Software: \t%s\n", e.Software))
 	sb.WriteString(fmt.Sprintf("Image Desc: \t%s\n", e.ImageDescription))
-	sb.WriteString(fmt.Sprintf("GPS Altitude: \t%0.2f\n", e.GPS.Altitude()))
-	sb.WriteString(fmt.Sprintf("GPS Latitude: \t%f\n", e.GPS.Latitude()))
-	sb.WriteString(fmt.Sprintf("GPS Longitude: \t%f\n", e.GPS.Longitude()))
+	sb.WriteString(e.GPS.String())
 	return sb.String()
 }
 
@@ -157,50 +156,6 @@ type ColorSpace uint16
 
 // SubjectArea coordinates
 type SubjectArea []uint16
-
-// GPSInfo data sctructure
-type GPSInfo struct {
-	latitude     float64 // Combination of GPSLatitudeRef and GPSLatitude
-	longitude    float64 // Combination of GPSLongitudeRef and GPSLongitude
-	date         time.Time
-	time         uint32  // time in seconds
-	altitude     float32 // Combination of GPSAltitudeRef and GPSAltitude
-	latitudeRef  bool
-	longitudeRef bool
-	altitudeRef  bool
-}
-
-// Date returns the GPSDatesamp and GPSTimestamp tags as a composite
-func (g GPSInfo) Date() time.Time {
-	if g.time != 0 {
-		return g.date.Add(time.Duration(g.time) * time.Second)
-	}
-	return g.date
-}
-
-// Latitude returns the GPS Latitude and GPS Latitude Reference as a composite.
-func (g GPSInfo) Latitude() float64 {
-	if g.latitudeRef {
-		return -1 * g.latitude
-	}
-	return g.latitude
-}
-
-// Longitude returns the GPS Longitude and GPS Longitude Reference as a composite.
-func (g GPSInfo) Longitude() float64 {
-	if g.longitudeRef {
-		return -1 * g.longitude
-	}
-	return g.longitude
-}
-
-// Altitude retursn the GPS Altitude and GPS Altitude Reference as a composite.
-func (g GPSInfo) Altitude() float32 {
-	if g.altitudeRef {
-		return -1 * g.altitude
-	}
-	return g.altitude
-}
 
 // TimeTags contains time Exif tags
 type TimeTags struct {

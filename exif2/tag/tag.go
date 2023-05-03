@@ -4,6 +4,8 @@ package tag
 import (
 	"errors"
 	"fmt"
+
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Errors
@@ -167,23 +169,34 @@ func (tt Type) IsValid() bool {
 		tt == TypeIfd
 }
 
-// Rational64 is a rational value
-type Rational64 [2]uint32
+// Rational is a rational value
+type Rational [2]uint32
 
 // Num returns the the Rational Numerator as a unit32
-func (rat Rational64) Num() uint32 {
+func (rat Rational) Num() uint32 {
 	return rat[0]
 }
 
 // Den returns the Rational Denominator as a unit32
-func (rat Rational64) Den() uint32 {
+func (rat Rational) Den() uint32 {
 	return rat[1]
 }
 
 // Float returns the Rational as a float64
-func (rat Rational64) Float() float64 {
+func (rat Rational) Float() float64 {
+	if rat.Den() == 0 {
+		return 0.0
+	}
 	return float64(rat.Num()) / float64(rat.Den())
 }
 
 // SRational is a signed rational value
 type SRational [2]int32
+
+type TagValue struct {
+	Buf       []byte          // 8 bytes
+	UnitCount uint32          // 4 bytes
+	ID        ID              // 2 bytes
+	Type      Type            // 1 byte
+	ByteOrder utils.ByteOrder // 1 byte
+}

@@ -12,7 +12,7 @@ type ImageUnique [16]byte
 type ShutterSpeedValue SRational
 
 // ApertureVale
-type ApertureValue Rational64
+type ApertureValue Rational
 
 // BrightnessValue
 type BrightnessValue SRational
@@ -21,11 +21,11 @@ type BrightnessValue SRational
 type ExposureBiasValue SRational
 
 // FocalLength
-type FocalLength Rational64
+type FocalLength Rational
 
 // Float returns the Focal Length as a Float
 func (tfl FocalLength) Float() float64 {
-	return Rational64(tfl).Float()
+	return Rational(tfl).Float()
 }
 
 func (tfl FocalLength) String() string {
@@ -33,7 +33,7 @@ func (tfl FocalLength) String() string {
 }
 
 // LensSpecification
-type LensSpecification [4]Rational64
+type LensSpecification [4]Rational
 
 func (tls LensSpecification) String() string {
 	return fmt.Sprintf("%0.1f-%0.1fmm f/%0.2f - %0.2f", tls[0].Float(), tls[1].Float(), tls[2].Float(), tls[3].Float())
