@@ -68,122 +68,126 @@ func (ir *ifdReader) parseTag(t Tag) {
 			//t.logTag(ir.logWarn()).Send()
 		}
 	case ifds.ExifIFD:
-		switch t.ID {
-		case exififd.LensMake:
-			ir.Exif.LensMake = ir.ParseString(t)
-		case exififd.LensModel:
-			ir.Exif.LensModel = ir.ParseString(t)
-		case exififd.LensSerialNumber:
-			ir.Exif.LensSerial = ir.ParseString(t)
-		case exififd.CameraOwnerName:
-			if ir.Exif.Artist == "" {
-				ir.Exif.Artist = ir.ParseString(t)
-			}
-		case exififd.BodySerialNumber:
-			if ir.Exif.CameraSerial == "" {
-				ir.Exif.CameraSerial = ir.ParseString(t)
-			}
-		case exififd.PixelXDimension:
-			if ir.Exif.ImageWidth == 0 {
-				ir.Exif.ImageWidth = uint16(ir.ParseUint32(t))
-			}
-		case exififd.PixelYDimension:
-			if ir.Exif.ImageHeight == 0 {
-				ir.Exif.ImageHeight = uint16(ir.ParseUint32(t))
-			}
-		case exififd.ExposureTime:
-			ir.Exif.ExposureTime = ir.parseExposureTime(t)
-		case exififd.ApertureValue:
-			if ir.Exif.FNumber == 0.0 {
-				r := ir.ParseRationalU(t)
-				f := float64(r[0]) / float64(r[1])
-				ir.Exif.FNumber = meta.Aperture(math.Round(math.Pow(math.Sqrt2, float64(f))*100) / 100)
-			}
-		case exififd.FNumber:
-			ir.Exif.FNumber = ir.parseAperture(t)
-		case exififd.ExposureProgram:
-			ir.Exif.ExposureProgram = meta.ExposureProgram(ir.ParseUint16(t))
-		case exififd.ExposureBiasValue:
-			ir.Exif.ExposureBias = ir.parseExposureBias(t)
-		case exififd.ExposureMode:
-			ir.Exif.ExposureMode = meta.ExposureMode(ir.ParseUint16(t))
-		case exififd.MeteringMode:
-			ir.Exif.MeteringMode = meta.MeteringMode(ir.ParseUint16(t))
-		case exififd.ISOSpeed:
-			ir.Exif.ISOSpeed = ir.ParseUint32(t)
-		case ifds.Flash:
-			ir.Exif.Flash = meta.Flash(ir.ParseUint16(t))
-		case ifds.FocalLength:
-			ir.Exif.FocalLength = ir.parseFocalLength(t)
-		case exififd.FocalLengthIn35mmFilm:
-			ir.Exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
-		case exififd.LensSpecification:
-			ir.Exif.LensInfo = ir.parseLensInfo(t)
-		case ifds.DateTimeOriginal:
-			ir.Exif.Time.dateTimeOriginal = ir.ParseDate(t)
-		case ifds.DateTimeDigitized:
-			ir.Exif.Time.createDate = ir.ParseDate(t)
-		case exififd.SubSecTime:
-			ir.Exif.Time.subSecTime = ir.ParseSubSecTime(t)
-		case exififd.SubSecTimeOriginal:
-			ir.Exif.Time.subSecTimeOriginal = ir.ParseSubSecTime(t)
-		case exififd.SubSecTimeDigitized:
-			ir.Exif.Time.subSecTimeDigitized = ir.ParseSubSecTime(t)
-		case exififd.OffsetTime:
-			ir.Exif.Time.offsetTime = ir.ParseOffsetTime(t)
-		case exififd.OffsetTimeOriginal:
-			ir.Exif.Time.offsetTimeOriginal = ir.ParseOffsetTime(t)
-		case exififd.OffsetTimeDigitized:
-			ir.Exif.Time.offsetTimeDigitized = ir.ParseOffsetTime(t)
-		default:
-			//t.logTag(ir.logWarn()).Send()
-		}
+		ir.parseExifIfd(t)
 	case ifds.GPSIFD:
-		ir.parseGPS(t)
+		ir.parseGPSIfd(t)
 	}
 }
 
-func (ir *ifdReader) parseGPS(t Tag) {
+func (ir *ifdReader) parseExifIfd(t Tag) {
+	switch t.ID {
+	case exififd.LensMake:
+		ir.Exif.LensMake = ir.ParseString(t)
+	case exififd.LensModel:
+		ir.Exif.LensModel = ir.ParseString(t)
+	case exififd.LensSerialNumber:
+		ir.Exif.LensSerial = ir.ParseString(t)
+	case exififd.CameraOwnerName:
+		if ir.Exif.Artist == "" {
+			ir.Exif.Artist = ir.ParseString(t)
+		}
+	case exififd.BodySerialNumber:
+		if ir.Exif.CameraSerial == "" {
+			ir.Exif.CameraSerial = ir.ParseString(t)
+		}
+	case exififd.PixelXDimension:
+		if ir.Exif.ImageWidth == 0 {
+			ir.Exif.ImageWidth = uint16(ir.ParseUint32(t))
+		}
+	case exififd.PixelYDimension:
+		if ir.Exif.ImageHeight == 0 {
+			ir.Exif.ImageHeight = uint16(ir.ParseUint32(t))
+		}
+	case exififd.ExposureTime:
+		ir.Exif.ExposureTime = ir.parseExposureTime(t)
+	case exififd.ApertureValue:
+		if ir.Exif.FNumber == 0.0 {
+			r := ir.ParseRationalU(t)
+			f := float64(r[0]) / float64(r[1])
+			ir.Exif.FNumber = meta.Aperture(math.Round(math.Pow(math.Sqrt2, float64(f))*100) / 100)
+		}
+	case exififd.FNumber:
+		ir.Exif.FNumber = ir.parseAperture(t)
+	case exififd.ExposureProgram:
+		ir.Exif.ExposureProgram = meta.ExposureProgram(ir.ParseUint16(t))
+	case exififd.ExposureBiasValue:
+		ir.Exif.ExposureBias = ir.parseExposureBias(t)
+	case exififd.ExposureMode:
+		ir.Exif.ExposureMode = meta.ExposureMode(ir.ParseUint16(t))
+	case exififd.MeteringMode:
+		ir.Exif.MeteringMode = meta.MeteringMode(ir.ParseUint16(t))
+	case exififd.ISOSpeed:
+		ir.Exif.ISOSpeed = ir.ParseUint32(t)
+	case ifds.Flash:
+		ir.Exif.Flash = meta.Flash(ir.ParseUint16(t))
+	case ifds.FocalLength:
+		ir.Exif.FocalLength = ir.parseFocalLength(t)
+	case exififd.FocalLengthIn35mmFilm:
+		ir.Exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
+	case exififd.LensSpecification:
+		ir.Exif.LensInfo = ir.parseLensInfo(t)
+	case ifds.DateTimeOriginal:
+		ir.Exif.Time.dateTimeOriginal = ir.ParseDate(t)
+	case ifds.DateTimeDigitized:
+		ir.Exif.Time.createDate = ir.ParseDate(t)
+	case exififd.SubSecTime:
+		ir.Exif.Time.subSecTime = ir.ParseSubSecTime(t)
+	case exififd.SubSecTimeOriginal:
+		ir.Exif.Time.subSecTimeOriginal = ir.ParseSubSecTime(t)
+	case exififd.SubSecTimeDigitized:
+		ir.Exif.Time.subSecTimeDigitized = ir.ParseSubSecTime(t)
+	case exififd.OffsetTime:
+		ir.Exif.Time.offsetTime = ir.ParseOffsetTime(t)
+	case exififd.OffsetTimeOriginal:
+		ir.Exif.Time.offsetTimeOriginal = ir.ParseOffsetTime(t)
+	case exififd.OffsetTimeDigitized:
+		ir.Exif.Time.offsetTimeDigitized = ir.ParseOffsetTime(t)
+	default:
+		//t.logTag(ir.logWarn()).Send()
+	}
+}
+
+func (ir *ifdReader) parseGPSIfd(t Tag) {
 	var err error
 	if ifds.IfdType(t.Ifd) == ifds.GPSIFD {
 		switch t.ID {
-		case gpsifd.GPSMapDatum: //string                 // 0x0012 string
+		case gpsifd.GPSMapDatum: // 0x0012 string
 			err = ir.Exif.GPS.GPSMapDatum.FromBytes(ir.TagValue(t))
-		case gpsifd.GPSSatellites: //string                 // 0x0008 string
+		case gpsifd.GPSSatellites: // 0x0008 string
 			ir.Exif.GPS.GPSSatellites = string(ir.ParseBytes(t))
-		case gpsifd.GPSProcessingMethod: //[]byte                 // 0x001b undef	(values of "GPS", "CELLID", "WLAN" or "MANUAL" by the EXIF spec.)
-			ir.Exif.GPS.GPSProcessingMethod = tag.NewGPSProcessingMethod(ir.ParseBytes(t))
-		case gpsifd.GPSAreaInformation: //[]byte                 // 0x001c undef
+		case gpsifd.GPSProcessingMethod: // 0x001b undef	(values of "GPS", "CELLID", "WLAN" or "MANUAL" by the EXIF spec.)
+			err = ir.Exif.GPS.GPSProcessingMethod.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSAreaInformation: // 0x001c undef
 			ir.Exif.GPS.GPSAreaInformation = append(ir.Exif.GPS.GPSAreaInformation, ir.ParseBytes(t)...)
-		case gpsifd.GPSVersionID: //[4]uint8               // 0x0000 int8u[4]
+		case gpsifd.GPSVersionID: // 0x0000 int8u[4]
 			err = ir.Exif.GPS.GPSVersionID.FromBytes(ir.TagValue(t))
-		case gpsifd.GPSDateStamp: //[11]byte               // 0x001d string[11] (time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd)
-			ir.ParseGPSDateStamp(&ir.Exif.GPS.GPSDateStamp, t)
-		case gpsifd.GPSLatitude:
-			err = ir.Exif.GPS.GPSLatitude.FromBytes(ir.TagValue(t)) //tag.GPSCoordinate      // 0x0002 rational64u[3]
-		case gpsifd.GPSLongitude: //tag.GPSCoordinate      // 0x0004 rational64u[3]
+		case gpsifd.GPSDateStamp: // 0x001d string[11]
+			err = ir.Exif.GPS.GPSDateStamp.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSLatitude: // 0x0002 rational64u[3]
+			err = ir.Exif.GPS.GPSLatitude.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSLongitude: // 0x0004 rational64u[3]
 			err = ir.Exif.GPS.GPSLongitude.FromBytes(ir.TagValue(t))
-		case gpsifd.GPSDestLatitude: //tag.GPSCoordinate      // 0x0014 rational64u[3]
+		case gpsifd.GPSDestLatitude: // 0x0014 rational64u[3]
 			err = ir.Exif.GPS.GPSDestLatitude.FromBytes(ir.TagValue(t))
-		case gpsifd.GPSDestLongitude: //tag.GPSCoordinate      // 0x0016 rational64u[3]
+		case gpsifd.GPSDestLongitude: // 0x0016 rational64u[3]
 			err = ir.Exif.GPS.GPSDestLongitude.FromBytes(ir.TagValue(t))
-		case gpsifd.GPSTimeStamp: //[3]tag.Rational64      // 0x0007 rational64u[3] (UTC time of GPS fix)
-			ir.Exif.GPS.GPSTimeStamp = tag.GPSTimeStamp(ir.ParseGPSCoordinate(t))
-		case gpsifd.GPSAltitude: //tag.Rational64         // 0x0006 rational64u
+		case gpsifd.GPSTimeStamp: // 0x0007 rational64u[3]
+			err = ir.Exif.GPS.GPSTimeStamp.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSAltitude: // 0x0006 rational64u
 			ir.Exif.GPS.GPSAltitude = ir.ParseRational(t)
-		case gpsifd.GPSDOP: //tag.Rational64         // 0x000b rational64u
+		case gpsifd.GPSDOP: // 0x000b rational64u
 			ir.Exif.GPS.GPSDOP = ir.ParseRational(t)
-		case gpsifd.GPSSpeed: //tag.Rational64         // 0x000d rational64u
+		case gpsifd.GPSSpeed: // 0x000d rational64u
 			ir.Exif.GPS.GPSSpeed = ir.ParseRational(t)
-		case gpsifd.GPSTrack: //tag.Rational64         // 0x000f rational64u
+		case gpsifd.GPSTrack: // 0x000f rational64u
 			ir.Exif.GPS.GPSTrack = ir.ParseRational(t)
-		case gpsifd.GPSImgDirection: //tag.Rational64         // 0x0011 rational64u
+		case gpsifd.GPSImgDirection: // 0x0011 rational64u
 			ir.Exif.GPS.GPSImgDirection = ir.ParseRational(t)
-		case gpsifd.GPSDestBearing: //tag.Rational64         // 0x0018 rational64u
+		case gpsifd.GPSDestBearing: // 0x0018 rational64u
 			ir.Exif.GPS.GPSDestBearing = ir.ParseRational(t)
-		case gpsifd.GPSDestDistance: //tag.Rational64         // 0x001a rational64u
+		case gpsifd.GPSDestDistance: // 0x001a rational64u
 			ir.Exif.GPS.GPSDestDistance = ir.ParseRational(t)
-		case gpsifd.GPSHPositioningError: //tag.Rational64         // 0x001f rational64u
+		case gpsifd.GPSHPositioningError: // 0x001f rational64u
 			ir.Exif.GPS.GPSHPositioningError = ir.ParseRational(t)
 		case gpsifd.GPSLatitudeRef: //tag.GPSLatitudeRef     // 0x0001 string[2]
 			ir.Exif.GPS.GPSLatitudeRef = tag.GPSLatitudeRef(ir.ParseGPSRef(t))
@@ -671,37 +675,37 @@ func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
 }
 
 // ParseGPSDateStamp parses a GPSDateStamp
-func (ir *ifdReader) ParseGPSDateStamp(ds *tag.GPSDateStamp, t Tag) {
-	if t.IsType(tag.TypeASCII) {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return
-		}
-		// check recieved value
-		if buf[4] == ':' && buf[7] == ':' && len(buf) < 12 {
-			*ds = tag.NewGPSDateStamp(uint16(parseStrUint(buf[0:4])), uint8(parseStrUint(buf[5:7])), uint8(parseStrUint(buf[8:10])))
-			//return time.Date(int(parseStrUint(buf[0:4])), time.Month(parseStrUint(buf[5:7])), int(parseStrUint(buf[8:10])), 0, 0, 0, 0, time.UTC)
-			return
-		}
-		// check recieved value
-		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
-			buf[13] == ':' && buf[16] == ':' && len(buf) > 19 {
-
-			*ds = tag.NewGPSDateStamp(uint16(parseStrUint(buf[0:4])), uint8((parseStrUint(buf[5:7]))), uint8(parseStrUint(buf[8:10])))
-			return
-			//return time.Date(
-			//	int(parseStrUint(buf[0:4])),
-			//	time.Month(parseStrUint(buf[5:7])),
-			//	int(parseStrUint(buf[8:10])),
-			//	int(parseStrUint(buf[11:13])),
-			//	int(parseStrUint(buf[14:16])),
-			//	int(parseStrUint(buf[17:19])), 0, time.UTC)
-		}
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("error reading GPSDateStamp")
-	}
-}
+//func (ir *ifdReader) ParseGPSDateStamp(ds *tag.GPSDateStamp, t Tag) {
+//	if t.IsType(tag.TypeASCII) {
+//		buf, err := ir.readTagValue()
+//		if err != nil {
+//			return
+//		}
+//		// check recieved value
+//		if buf[4] == ':' && buf[7] == ':' && len(buf) < 12 {
+//			*ds = tag.NewGPSDateStamp(uint16(parseStrUint(buf[0:4])), uint8(parseStrUint(buf[5:7])), uint8(parseStrUint(buf[8:10])))
+//			//return time.Date(int(parseStrUint(buf[0:4])), time.Month(parseStrUint(buf[5:7])), int(parseStrUint(buf[8:10])), 0, 0, 0, 0, time.UTC)
+//			return
+//		}
+//		// check recieved value
+//		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
+//			buf[13] == ':' && buf[16] == ':' && len(buf) > 19 {
+//
+//			*ds = tag.NewGPSDateStamp(uint16(parseStrUint(buf[0:4])), uint8((parseStrUint(buf[5:7]))), uint8(parseStrUint(buf[8:10])))
+//			return
+//			//return time.Date(
+//			//	int(parseStrUint(buf[0:4])),
+//			//	time.Month(parseStrUint(buf[5:7])),
+//			//	int(parseStrUint(buf[8:10])),
+//			//	int(parseStrUint(buf[11:13])),
+//			//	int(parseStrUint(buf[14:16])),
+//			//	int(parseStrUint(buf[17:19])), 0, time.UTC)
+//		}
+//	}
+//	if ir.logLevelWarn() {
+//		t.logTag(ir.logWarn()).Msg("error reading GPSDateStamp")
+//	}
+//}
 
 func (ir *ifdReader) ParseGPSRef(t Tag) uint8 {
 	if t.IsEmbedded() {

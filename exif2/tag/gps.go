@@ -14,7 +14,9 @@ type GPSVersionID [4]byte
 // FromBytes parses the GPSVersionID from TagValue
 func (vi *GPSVersionID) FromBytes(val TagValue) error {
 	if len(val.Buf) == 4 {
-		copy(vi[:], val.Buf[:4])
+		var buf [4]byte
+		copy(buf[:], val.Buf[:4])
+		*vi = buf
 	}
 	return nil
 }
@@ -28,16 +30,19 @@ const (
 	GPSMapDatumTokyo   = "Tokyo"
 )
 
-// FromBytes the GPSMapDatum from TagValue
+// FromBytes parses the GPSMapDatum from TagValue
 func (md *GPSMapDatum) FromBytes(val TagValue) error {
-	switch string(val.Buf) {
+	buf := trimNULBuffer(val.Buf)
+	switch string(buf) {
 	case GPSMapDatumUnknown, "UNKNOWN":
 		*md = GPSMapDatumUnknown
 	case GPSMapDatumTokyo, "TOKYO":
 		*md = GPSMapDatumTokyo
 	case GPSMapDatumWGS84, "WGS 84", "WGS84":
 		*md = GPSMapDatumWGS84
+	case "":
 	default:
+		*md = GPSMapDatum(buf)
 	}
 	return nil
 }
@@ -53,24 +58,23 @@ const (
 	GPSProcessingMethodManual = "Manual"
 )
 
-// NewGPSProcessingMethos returns the GPSProcessingMethod given []byte
-func NewGPSProcessingMethod(buf []byte) GPSProcessingMethod {
+// FromBytes parses the GPSProcessingMethod from TagValue
+func (pm *GPSProcessingMethod) FromBytes(val TagValue) error {
+	buf := trimNULBuffer(val.Buf)
 	switch string(buf) {
 	case GPSProcessingMethodGPS:
-		return GPSProcessingMethodGPS
-
+		*pm = GPSProcessingMethodGPS
 	case GPSProcessingMethodCellID:
-		return GPSProcessingMethodCellID
-
+		*pm = GPSProcessingMethodCellID
 	case GPSProcessingMethodWLAN:
-		return GPSProcessingMethodWLAN
-
+		*pm = GPSProcessingMethodWLAN
 	case GPSProcessingMethodManual:
-		return GPSProcessingMethodManual
-
+		*pm = GPSProcessingMethodManual
+	case "":
 	default:
-		return GPSProcessingMethod(buf)
+		*pm = GPSProcessingMethod(buf)
 	}
+	return nil
 }
 
 // GPSLatitudeRef represents the GPS Latitude Reference types
@@ -189,6 +193,7 @@ func NewGPSCoordinate(n0, d0, n1, d1, n2, d2 uint32) GPSCoordinate {
 	}
 }
 
+// FromBytes parses a GPSCoordinate from TagValue
 func (c *GPSCoordinate) FromBytes(t TagValue) error {
 	if t.UnitCount == 3 && len(t.Buf) >= 24 {
 		switch t.Type {
@@ -214,8 +219,22 @@ func (c GPSCoordinate) Float() float64 {
 	return coord
 }
 
-// GPSTimeStamp is a hour:min:sec value
+// GPSTimeStamp is a hour:min:sec value (UTC time of GPS fix)
 type GPSTimeStamp [3]Rational
+
+// FromBytes parses a GPSTimeStamp from TagValue
+func (ts *GPSTimeStamp) FromBytes(val TagValue) error {
+	if val.UnitCount == 3 && len(val.Buf) >= 24 {
+		switch val.Type {
+		case TypeRational, TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
+			*ts = GPSTimeStamp{
+				Rational{val.ByteOrder.Uint32(val.Buf[:4]), val.ByteOrder.Uint32(val.Buf[4:8])},
+				Rational{val.ByteOrder.Uint32(val.Buf[8:12]), val.ByteOrder.Uint32(val.Buf[12:16])},
+				Rational{val.ByteOrder.Uint32(val.Buf[16:20]), val.ByteOrder.Uint32(val.Buf[20:24])}}
+		}
+	}
+	return nil
+}
 
 //func (ts GPSTimeStamp) String() string {
 //	return fmt.Sprintf("%d:%d:%d", uint32(ts[0].Float()), uint32(ts[1].Float()), uint32(ts[2].Float()))
@@ -233,9 +252,20 @@ type GPSDateStamp struct {
 	Day   uint8
 }
 
-// NewGPSDateStamp returns a new GPSDateStamp
-func NewGPSDateStamp(year uint16, month uint8, day uint8) GPSDateStamp {
-	return GPSDateStamp{year, month, day}
+// FromBytes parses a GPSDateStamp from TagValue
+// (time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd)
+func (ds *GPSDateStamp) FromBytes(val TagValue) error {
+	if val.Type.Is(TypeASCII) {
+		if val.Buf[4] == ':' && val.Buf[7] == ':' && len(val.Buf) < 12 {
+			*ds = GPSDateStamp{uint16(parseStrUint(val.Buf[0:4])), uint8(parseStrUint(val.Buf[5:7])), uint8(parseStrUint(val.Buf[8:10]))}
+		}
+		// check recieved value
+		if val.Buf[4] == ':' && val.Buf[7] == ':' && val.Buf[10] == ' ' &&
+			val.Buf[13] == ':' && val.Buf[16] == ':' && len(val.Buf) > 19 {
+			*ds = GPSDateStamp{uint16(parseStrUint(val.Buf[0:4])), uint8(parseStrUint(val.Buf[5:7])), uint8(parseStrUint(val.Buf[8:10]))}
+		}
+	}
+	return nil
 }
 
 func (ds GPSDateStamp) IsNil() bool {
