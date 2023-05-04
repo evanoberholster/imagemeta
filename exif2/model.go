@@ -9,19 +9,20 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/ifds/gpsifd"
 	"github.com/evanoberholster/imagemeta/exif2/make"
 	"github.com/evanoberholster/imagemeta/exif2/model"
+	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Exif data structure
 type Exif struct {
-	ApplicationNotes          []byte               // 0x02bc
-	GPS                       gpsifd.GPSInfo       // GPSInfoIfd / 0x8825
-	Exif                      exififd.ExifIfd      // ExifIfd
-	SubjectArea               SubjectArea          // ExifIFD / 0x9214
-	LensInfo                  LensInfo             // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
-	Makernotes                MakerNotes           // ExifIFD / MakerNote
-	Time                      TimeTags             // TimeTags
+	GPS              gpsifd.GPSInfo  // GPSInfoIfd / 0x8825
+	Exif             exififd.ExifIfd // ExifIfd
+	ApplicationNotes []byte          // 0x02bc
+	SubjectArea      SubjectArea     // ExifIFD / 0x9214
+	LensInfo         LensInfo        // ExifIFD / 0xa432	(4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec.)
+	Makernotes       MakerNotes      // ExifIFD / MakerNote
+	//Time                      TimeTags             // TimeTags
 	ProcessingSoftware        string               // IFD0 / 0x000b
 	DocumentName              string               // IFD0 / 0x010d
 	ImageDescription          string               // IFD0 / 0x010e
@@ -42,8 +43,6 @@ type Exif struct {
 	YResolution               uint32               // IFD0 / 0x011b
 	ExposureTime              meta.ExposureTime    // 0x829a
 	SubjectDistance           float32              // ExifIFD / 0x9206
-	FocalLength               meta.FocalLength     // ExifIFD / 0x920a
-	FocalLengthIn35mmFormat   meta.FocalLength     // ExifIFD / 0xa405
 	StripOffsets              uint32               // IFD0 / 0x0111 PreviewImageStart
 	StripByteCounts           uint32               // IFD0 / 0x0117 PreviewImageLength
 	ThumbnailOffset           uint32               // 0x0201
@@ -75,44 +74,47 @@ type Exif struct {
 
 // ModifyDate return the exif modified date with subsec offset if present
 func (e Exif) ModifyDate() time.Time {
-	t := e.Time.modifyDate
-	if e.Time.subSecTime != 0 {
-		t = t.Add(time.Duration(e.Time.subSecTime) * time.Millisecond)
-	}
-	if e.Time.offsetTime != nil {
-		t = t.In(e.Time.offsetTime)
-		_, offset := t.Zone()
-		t = t.Add(time.Duration(offset) * -1 * time.Second)
-	}
-	return t
+	//t := e.Time.modifyDate
+	//if e.Time.subSecTime != 0 {
+	//	t = t.Add(time.Duration(e.Time.subSecTime) * time.Millisecond)
+	//}
+	//if e.Time.offsetTime != nil {
+	//	t = t.In(e.Time.offsetTime)
+	//	_, offset := t.Zone()
+	//	t = t.Add(time.Duration(offset) * -1 * time.Second)
+	//}
+	//return t
+	return tag.UnknownDate
 }
 
 // DateTimeOriginal returns the exif Original DateTime with subsec offset if present
 func (e Exif) DateTimeOriginal() time.Time {
-	t := e.Time.dateTimeOriginal
-	if e.Time.subSecTimeOriginal != 0 {
-		t = t.Add(time.Duration(e.Time.subSecTimeOriginal) * time.Millisecond)
-	}
-	if e.Time.offsetTimeOriginal != nil {
-		t = t.In(e.Time.offsetTimeOriginal)
-		_, offset := t.Zone()
-		t = t.Add(time.Duration(offset) * -1 * time.Second)
-	}
-	return t
+	//t := e.Time.dateTimeOriginal
+	//if e.Time.subSecTimeOriginal != 0 {
+	//	t = t.Add(time.Duration(e.Time.subSecTimeOriginal) * time.Millisecond)
+	//}
+	//if e.Time.offsetTimeOriginal != nil {
+	//	t = t.In(e.Time.offsetTimeOriginal)
+	//	_, offset := t.Zone()
+	//	t = t.Add(time.Duration(offset) * -1 * time.Second)
+	//}
+	//return t
+	return tag.UnknownDate
 }
 
 // CreateDate reurns the CreateDate with subsec offset if present
 func (e Exif) CreateDate() time.Time {
-	t := e.Time.createDate
-	if e.Time.subSecTimeDigitized != 0 {
-		t = t.Add(time.Duration(e.Time.subSecTimeDigitized) * time.Millisecond)
-	}
-	if e.Time.offsetTimeDigitized != nil {
-		t = t.In(e.Time.offsetTimeDigitized)
-		_, offset := t.Zone()
-		t = t.Add(time.Duration(offset) * -1 * time.Second)
-	}
-	return t
+	//t := e.Time.createDate
+	//if e.Time.subSecTimeDigitized != 0 {
+	//	t = t.Add(time.Duration(e.Time.subSecTimeDigitized) * time.Millisecond)
+	//}
+	//if e.Time.offsetTimeDigitized != nil {
+	//	t = t.In(e.Time.offsetTimeDigitized)
+	//	_, offset := t.Zone()
+	//	t = t.Add(time.Duration(offset) * -1 * time.Second)
+	//}
+	//return t
+	return tag.UnknownDate
 }
 
 // Sring implements the Stringer interface for Exif
@@ -132,8 +134,8 @@ func (e Exif) String() string {
 	sb.WriteString(fmt.Sprintf("Aperture: \t%0.2f\n", e.FNumber))
 	sb.WriteString(fmt.Sprintf("ISO: \t\t%d\n", e.ISOSpeed))
 	sb.WriteString(fmt.Sprintf("Flash: \t\t%s\n", e.Flash))
-	sb.WriteString(fmt.Sprintf("Focal Length: \t%s\n", e.FocalLength))
-	sb.WriteString(fmt.Sprintf("Fl 35mm Eqv: \t%s\n", e.FocalLengthIn35mmFormat))
+	sb.WriteString(fmt.Sprintf("Focal Length: \t%s\n", e.Exif.FocalLength))
+	sb.WriteString(fmt.Sprintf("Fl 35mm Eqv: \t%s\n", e.Exif.FocalLengthIn35mmFilm))
 	sb.WriteString(fmt.Sprintf("Exposure Prgm: \t%s\n", e.ExposureProgram))
 	sb.WriteString(fmt.Sprintf("Metering Mode: \t%s\n", e.MeteringMode))
 	sb.WriteString(fmt.Sprintf("Exposure Mode: \t%s\n", e.ExposureMode))

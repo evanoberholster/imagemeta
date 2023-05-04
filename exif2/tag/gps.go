@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// UnknownDate is unsed when a Date is unknown or incorrectly formed
 var UnknownDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // GPSVersionID is the GPS Version ID
@@ -13,17 +14,23 @@ type GPSVersionID [4]byte
 
 // FromBytes parses the GPSVersionID from TagValue
 func (vi *GPSVersionID) FromBytes(val TagValue) error {
-	if len(val.Buf) == 4 {
-		var buf [4]byte
-		copy(buf[:], val.Buf[:4])
-		*vi = buf
+	if len(val.Buf) >= 1 {
+		copy(vi[:], val.Buf[:])
 	}
 	return nil
+}
+
+func (vi *GPSVersionID) String() string {
+	if vi[0] != 0 {
+		return fmt.Sprintf("%d.%d.%d.%d", vi[0], vi[1], vi[2], vi[3])
+	}
+	return ""
 }
 
 // GPSMapDatum is the GPS Map Datum
 type GPSMapDatum string
 
+// GPSMapDatum values
 const (
 	GPSMapDatumUnknown = "Unknown"
 	GPSMapDatumWGS84   = "WGS-84"
@@ -43,6 +50,64 @@ func (md *GPSMapDatum) FromBytes(val TagValue) error {
 	case "":
 	default:
 		*md = GPSMapDatum(buf)
+	}
+	return nil
+}
+
+// GPSSatellites are the GPS satellites used for measurement
+type GPSSatellites string
+
+// Most common number of GPSSatellites used
+const (
+	GPSSatellites0  = "0"
+	GPSSatellites4  = "4"
+	GPSSatellites5  = "5"
+	GPSSatellites6  = "6"
+	GPSSatellites7  = "7"
+	GPSSatellites8  = "8"
+	GPSSatellites9  = "9"
+	GPSSatellites10 = "10"
+	GPSSatellites11 = "11"
+	GPSSatellites12 = "12"
+	GPSSatellites13 = "13"
+	GPSSatellites14 = "14"
+	GPSSatellites15 = "15"
+	GPSSatellites16 = "16"
+)
+
+// FromBytes parses the GPSSatellites from TagValue
+func (s *GPSSatellites) FromBytes(val TagValue) error {
+	buf := trimNULBuffer(val.Buf)
+	switch string(buf) {
+	case GPSSatellites4:
+		*s = GPSSatellites4
+	case GPSSatellites5:
+		*s = GPSSatellites5
+	case GPSSatellites6:
+		*s = GPSSatellites6
+	case GPSSatellites7:
+		*s = GPSSatellites7
+	case GPSSatellites8:
+		*s = GPSSatellites8
+	case GPSSatellites9:
+		*s = GPSSatellites9
+	case GPSSatellites10:
+		*s = GPSSatellites10
+	case GPSSatellites11:
+		*s = GPSSatellites11
+	case GPSSatellites12:
+		*s = GPSSatellites12
+	case GPSSatellites13:
+		*s = GPSSatellites13
+	case GPSSatellites14:
+		*s = GPSSatellites14
+	case GPSSatellites15:
+		*s = GPSSatellites15
+	case GPSSatellites16:
+		*s = GPSSatellites16
+	case "":
+	default:
+		*s = GPSSatellites(buf)
 	}
 	return nil
 }
@@ -80,6 +145,17 @@ func (pm *GPSProcessingMethod) FromBytes(val TagValue) error {
 // GPSLatitudeRef represents the GPS Latitude Reference types
 type GPSLatitudeRef uint8
 
+// FromBytes parses the GPSLatitudeRef from TagValue
+func (lr *GPSLatitudeRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*lr = GPSLatitudeRef(val.Buf[0])
+		}
+	}
+	return nil
+}
+
 // ExifTool will also accept a number when writing GPSLatitudeRef, positive for north latitudes or negative for south, or a string containing N, North, S or South.
 const (
 	GPSLatitudeRegUnknown GPSLatitudeRef = 0
@@ -101,6 +177,17 @@ func (latR GPSLatitudeRef) Adjust(coord GPSCoordinate) float64 {
 
 // GPSLongitudeRef represents the GPS Longitude Reference types
 type GPSLongitudeRef uint8
+
+// FromBytes parses the GPSLongitudeRef from TagValue
+func (lr *GPSLongitudeRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*lr = GPSLongitudeRef(val.Buf[0])
+		}
+	}
+	return nil
+}
 
 // ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West.
 const (
@@ -124,6 +211,17 @@ func (lngR GPSLongitudeRef) Adjust(coord GPSCoordinate) float64 {
 // TypeGPSDestBearingRef represents the GPS Destination Bearing Reference types
 type GPSDestBearingRef uint8
 
+// FromBytes parses the GPSDestBearingRef from TagValue
+func (dbr *GPSDestBearingRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*dbr = GPSDestBearingRef(val.Buf[0])
+		}
+	}
+	return nil
+}
+
 // GPS Destination Bearing Reference types
 const (
 	GPSDestBearingRefUnknown   GPSDestBearingRef = 0
@@ -133,6 +231,17 @@ const (
 
 // GPSDestDistanceRef
 type GPSDestDistanceRef uint8
+
+// FromBytes parses the GPSDestDistanceRef from TagValue
+func (ddr *GPSDestDistanceRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*ddr = GPSDestDistanceRef(val.Buf[0])
+		}
+	}
+	return nil
+}
 
 // GPS Destination Distance Reference types
 const (
@@ -145,6 +254,17 @@ const (
 // GPSAltitudeRef
 type GPSAltitudeRef uint8
 
+// FromBytes parses the GPSAltitudeRef from TagValue
+func (ar *GPSAltitudeRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*ar = GPSAltitudeRef(val.Buf[0])
+		}
+	}
+	return nil
+}
+
 const (
 	GPSAltitudeRefAbove GPSAltitudeRef = 0
 	GPSAltitudeRefBelow GPSAltitudeRef = 1
@@ -152,6 +272,17 @@ const (
 
 // GPSSpeedRef
 type GPSSpeedRef uint8
+
+// FromBytes parses the GPSSpeedRef from TagValue
+func (sr *GPSSpeedRef) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*sr = GPSSpeedRef(val.Buf[0])
+		}
+	}
+	return nil
+}
 
 // GPS Speed Reference types
 const (
@@ -164,6 +295,17 @@ const (
 // GPSStatus
 type GPSStatus uint8
 
+// FromBytes parses the GPSStatus from TagValue
+func (s *GPSStatus) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*s = GPSStatus(val.Buf[0])
+		}
+	}
+	return nil
+}
+
 // GPS Status
 const (
 	GPSStatusUnknown GPSStatus = 0
@@ -173,6 +315,17 @@ const (
 
 // GPSMeasureMode
 type GPSMeasureMode uint8
+
+// FromBytes parses the GPSMeasureMode from TagValue
+func (mm *GPSMeasureMode) FromBytes(val TagValue) error {
+	if len(val.Buf) > 0 {
+		switch val.Type {
+		case TypeASCII, TypeByte:
+			*mm = GPSMeasureMode(val.Buf[0])
+		}
+	}
+	return nil
+}
 
 // GPS Measure Mode
 const (
@@ -224,13 +377,14 @@ type GPSTimeStamp [3]Rational
 
 // FromBytes parses a GPSTimeStamp from TagValue
 func (ts *GPSTimeStamp) FromBytes(val TagValue) error {
-	if val.UnitCount == 3 && len(val.Buf) >= 24 {
-		switch val.Type {
-		case TypeRational, TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
+	switch val.Type {
+	case TypeRational, TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
+		if val.UnitCount == 3 && len(val.Buf) >= 24 {
 			*ts = GPSTimeStamp{
 				Rational{val.ByteOrder.Uint32(val.Buf[:4]), val.ByteOrder.Uint32(val.Buf[4:8])},
 				Rational{val.ByteOrder.Uint32(val.Buf[8:12]), val.ByteOrder.Uint32(val.Buf[12:16])},
 				Rational{val.ByteOrder.Uint32(val.Buf[16:20]), val.ByteOrder.Uint32(val.Buf[20:24])}}
+			return nil
 		}
 	}
 	return nil
@@ -256,13 +410,15 @@ type GPSDateStamp struct {
 // (time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd)
 func (ds *GPSDateStamp) FromBytes(val TagValue) error {
 	if val.Type.Is(TypeASCII) {
-		if val.Buf[4] == ':' && val.Buf[7] == ':' && len(val.Buf) < 12 {
+		if len(val.Buf) == 11 && val.Buf[4] == ':' && val.Buf[7] == ':' {
 			*ds = GPSDateStamp{uint16(parseStrUint(val.Buf[0:4])), uint8(parseStrUint(val.Buf[5:7])), uint8(parseStrUint(val.Buf[8:10]))}
+			return nil
 		}
 		// check recieved value
-		if val.Buf[4] == ':' && val.Buf[7] == ':' && val.Buf[10] == ' ' &&
-			val.Buf[13] == ':' && val.Buf[16] == ':' && len(val.Buf) > 19 {
+		if len(val.Buf) > 19 && val.Buf[4] == ':' && val.Buf[7] == ':' && val.Buf[10] == ' ' &&
+			val.Buf[13] == ':' && val.Buf[16] == ':' {
 			*ds = GPSDateStamp{uint16(parseStrUint(val.Buf[0:4])), uint8(parseStrUint(val.Buf[5:7])), uint8(parseStrUint(val.Buf[8:10]))}
+			return nil
 		}
 	}
 	return nil

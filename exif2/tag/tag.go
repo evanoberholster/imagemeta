@@ -201,6 +201,17 @@ type TagValue struct {
 	ByteOrder utils.ByteOrder // 1 byte
 }
 
+func (tv TagValue) Uint32() (uint32, error) {
+	switch len(tv.Buf) {
+	case 2:
+		return uint32(tv.ByteOrder.Uint16(tv.Buf)), nil
+	case 4:
+		return tv.ByteOrder.Uint32(tv.Buf), nil
+	default:
+		return 0, nil // Error here
+	}
+}
+
 // parseStrUint parses a []byte of a string representation of a uint value and returns the value.
 func parseStrUint(buf []byte) (u uint) {
 	for i := 0; i < len(buf); i++ {

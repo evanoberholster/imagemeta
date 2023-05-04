@@ -1,6 +1,38 @@
 package tag
 
-import "fmt"
+import (
+	"fmt"
+)
+
+// ExifVersion is the Exif Version
+type ExifVersion [4]byte
+
+// FromBytes parses the ExifVersion from TagValue
+func (ev *ExifVersion) FromBytes(val TagValue) error {
+	if len(val.Buf) >= 1 {
+		copy(ev[:], val.Buf[:])
+	}
+
+	return nil
+}
+
+func (ev *ExifVersion) String() string {
+	if ev[0] != 0 {
+		return string(ev[:])
+	}
+	return ""
+}
+
+// ComponentsConfiguration is the Components Configuration array
+type ComponentsConfiguration [4]byte
+
+// FromBytes parses the Components Configuration from TagValue
+func (cc *ComponentsConfiguration) FromBytes(val TagValue) error {
+	if len(val.Buf) >= 1 {
+		copy(cc[:], val.Buf[:])
+	}
+	return nil
+}
 
 // Flash is the Flash type
 type Flash uint8
@@ -17,11 +49,42 @@ type ApertureValue Rational
 // BrightnessValue
 type BrightnessValue SRational
 
+// FromBytes parses FocalLength from TagValue
+func (bv *BrightnessValue) FromBytes(val TagValue) error {
+	return nil
+}
+
 // ExposureBiasValue
 type ExposureBiasValue SRational
 
+// FromBytes parses FocalLength from TagValue
+func (ebv *ExposureBiasValue) FromBytes(val TagValue) error {
+	return nil
+}
+
 // FocalLength
 type FocalLength Rational
+
+// FromBytes parses FocalLength from TagValue
+func (fl *FocalLength) FromBytes(val TagValue) error {
+	l := len(val.Buf)
+	switch val.Type {
+	case TypeShort:
+		if l == 2 {
+			*fl = FocalLength{uint32(val.ByteOrder.Uint16(val.Buf)), 1}
+		}
+	case TypeLong:
+		*fl = FocalLength{val.ByteOrder.Uint32(val.Buf), 1}
+	case TypeRational, TypeSignedRational:
+		switch l {
+		case 4:
+			*fl = FocalLength{val.ByteOrder.Uint32(val.Buf[:4]), 1}
+		case 8:
+			*fl = FocalLength{val.ByteOrder.Uint32(val.Buf[:4]), val.ByteOrder.Uint32(val.Buf[4:8])}
+		}
+	}
+	return nil
+}
 
 // Float returns the Focal Length as a Float
 func (tfl FocalLength) Float() float64 {
@@ -155,4 +218,70 @@ func (tls LightSource) String() string {
 		return "Other Light Source"
 	}
 	return strTypeLightSource[0]
+}
+
+// DateTime is an Exif DateTime value
+type DateTime struct {
+	Year  uint16
+	Month uint8
+	Day   uint8
+	Hour  uint8
+	Min   uint8
+	Sec   uint8
+}
+
+// FromBytes parses a DateTime from TagValue
+func (dt *DateTime) FromBytes(val TagValue) error {
+	if val.Type.Is(TypeASCII) {
+		// check recieved value
+		buf := val.Buf
+		if len(buf) >= 19 && buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
+			buf[13] == ':' && buf[16] == ':' {
+			*dt = DateTime{
+				Year:  uint16(parseStrUint(buf[0:4])),
+				Month: uint8(parseStrUint(buf[5:7])),
+				Day:   uint8(parseStrUint(buf[8:10])),
+				Hour:  uint8(parseStrUint(buf[11:13])),
+				Min:   uint8(parseStrUint(buf[14:16])),
+				Sec:   uint8(parseStrUint(buf[17:19])),
+			}
+		}
+	}
+	return nil
+}
+
+// OffsetTime is an Exif OffsetTime value
+type OffsetTime struct {
+	Hour int8
+	Min  int8
+}
+
+// FromBytes parses an OffsetTime from TagValue
+func (ot *OffsetTime) FromBytes(val TagValue) error {
+	//if val.Type.Is(TypeASCII) {
+	if len(val.Buf) == 7 && val.Buf[3] == ':' {
+		hour := int(parseStrUint(val.Buf[1:3]))
+		min := int(parseStrUint(val.Buf[4:6]))
+		if val.Buf[0] == '-' {
+			hour *= -1
+		}
+		*ot = OffsetTime{
+			Hour: int8(hour),
+			Min:  int8(min),
+		}
+	}
+	//}
+	return nil
+}
+
+// SubSecTime is an Exif SubSecTime value
+type SubSecTime uint16
+
+// FromBytes parses a SubSecTime from TagValue
+func (sst *SubSecTime) FromBytes(val TagValue) error {
+	switch val.Type {
+	case TypeASCII, TypeASCIINoNul, TypeByte:
+		*sst = SubSecTime(parseStrUint(val.Buf))
+	}
+	return nil
 }

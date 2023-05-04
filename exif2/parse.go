@@ -50,7 +50,7 @@ func (ir *ifdReader) parseTag(t Tag) {
 		case ifds.ImageDescription:
 			ir.Exif.ImageDescription = ir.ParseString(t)
 		case ifds.DateTime:
-			ir.Exif.Time.modifyDate = ir.ParseDate(t)
+			//ir.Exif.Time.modifyDate = ir.ParseDate(t)
 		case ifds.DNGVersion:
 			// TODO: If DNG version > 0 imagetype is DNG
 			if ir.Exif.ImageType == imagetype.ImageTiff {
@@ -75,7 +75,36 @@ func (ir *ifdReader) parseTag(t Tag) {
 }
 
 func (ir *ifdReader) parseExifIfd(t Tag) {
+	var err error
 	switch t.ID {
+	case exififd.ExifVersion:
+		err = ir.Exif.Exif.ExifVersion.FromBytes(ir.TagValue(t))
+	case exififd.ComponentsConfiguration:
+		err = ir.Exif.Exif.ComponentsConfiguration.FromBytes(ir.TagValue(t))
+	case exififd.PixelXDimension:
+		ir.Exif.Exif.PixelXDimension, err = ir.TagValue(t).Uint32()
+	case exififd.PixelYDimension:
+		ir.Exif.Exif.PixelYDimension, err = ir.TagValue(t).Uint32()
+	case ifds.DateTimeOriginal:
+		err = ir.Exif.Exif.DateTimeOriginal.FromBytes(ir.TagValue(t))
+	case ifds.DateTimeDigitized:
+		err = ir.Exif.Exif.DateTimeDigitized.FromBytes(ir.TagValue(t))
+	case exififd.SubSecTime:
+		err = ir.Exif.Exif.SubsecTime.FromBytes(ir.TagValue(t))
+	case exififd.SubSecTimeOriginal:
+		err = ir.Exif.Exif.SubsecTimeOriginal.FromBytes(ir.TagValue(t))
+	case exififd.SubSecTimeDigitized:
+		err = ir.Exif.Exif.SubsecTimeDigitized.FromBytes(ir.TagValue(t))
+	case exififd.OffsetTime:
+		err = ir.Exif.Exif.OffsetTime.FromBytes(ir.TagValue(t))
+		//ir.Exif.Time.offsetTime = ir.ParseOffsetTime(t)
+	case exififd.OffsetTimeOriginal:
+		err = ir.Exif.Exif.OffsetTimeOriginal.FromBytes(ir.TagValue(t))
+		//ir.Exif.Time.offsetTimeOriginal = ir.ParseOffsetTime(t)
+	case exififd.OffsetTimeDigitized:
+		err = ir.Exif.Exif.OffsetTimeDigitized.FromBytes(ir.TagValue(t))
+		//ir.Exif.Time.offsetTimeDigitized = ir.ParseOffsetTime(t)
+		//
 	case exififd.LensMake:
 		ir.Exif.LensMake = ir.ParseString(t)
 	case exififd.LensModel:
@@ -90,14 +119,7 @@ func (ir *ifdReader) parseExifIfd(t Tag) {
 		if ir.Exif.CameraSerial == "" {
 			ir.Exif.CameraSerial = ir.ParseString(t)
 		}
-	case exififd.PixelXDimension:
-		if ir.Exif.ImageWidth == 0 {
-			ir.Exif.ImageWidth = uint16(ir.ParseUint32(t))
-		}
-	case exififd.PixelYDimension:
-		if ir.Exif.ImageHeight == 0 {
-			ir.Exif.ImageHeight = uint16(ir.ParseUint32(t))
-		}
+
 	case exififd.ExposureTime:
 		ir.Exif.ExposureTime = ir.parseExposureTime(t)
 	case exififd.ApertureValue:
@@ -121,29 +143,16 @@ func (ir *ifdReader) parseExifIfd(t Tag) {
 	case ifds.Flash:
 		ir.Exif.Flash = meta.Flash(ir.ParseUint16(t))
 	case ifds.FocalLength:
-		ir.Exif.FocalLength = ir.parseFocalLength(t)
+		ir.Exif.Exif.FocalLength.FromBytes(ir.TagValue(t)) // = ir.parseFocalLength(t)
 	case exififd.FocalLengthIn35mmFilm:
-		ir.Exif.FocalLengthIn35mmFormat = ir.parseFocalLength(t)
+		ir.Exif.Exif.FocalLengthIn35mmFilm.FromBytes(ir.TagValue(t)) //= ir.parseFocalLength(t)
 	case exififd.LensSpecification:
 		ir.Exif.LensInfo = ir.parseLensInfo(t)
-	case ifds.DateTimeOriginal:
-		ir.Exif.Time.dateTimeOriginal = ir.ParseDate(t)
-	case ifds.DateTimeDigitized:
-		ir.Exif.Time.createDate = ir.ParseDate(t)
-	case exififd.SubSecTime:
-		ir.Exif.Time.subSecTime = ir.ParseSubSecTime(t)
-	case exififd.SubSecTimeOriginal:
-		ir.Exif.Time.subSecTimeOriginal = ir.ParseSubSecTime(t)
-	case exififd.SubSecTimeDigitized:
-		ir.Exif.Time.subSecTimeDigitized = ir.ParseSubSecTime(t)
-	case exififd.OffsetTime:
-		ir.Exif.Time.offsetTime = ir.ParseOffsetTime(t)
-	case exififd.OffsetTimeOriginal:
-		ir.Exif.Time.offsetTimeOriginal = ir.ParseOffsetTime(t)
-	case exififd.OffsetTimeDigitized:
-		ir.Exif.Time.offsetTimeDigitized = ir.ParseOffsetTime(t)
 	default:
 		//t.logTag(ir.logWarn()).Send()
+	}
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
@@ -154,7 +163,7 @@ func (ir *ifdReader) parseGPSIfd(t Tag) {
 		case gpsifd.GPSMapDatum: // 0x0012 string
 			err = ir.Exif.GPS.GPSMapDatum.FromBytes(ir.TagValue(t))
 		case gpsifd.GPSSatellites: // 0x0008 string
-			ir.Exif.GPS.GPSSatellites = string(ir.ParseBytes(t))
+			err = ir.Exif.GPS.GPSSatellites.FromBytes(ir.TagValue(t))
 		case gpsifd.GPSProcessingMethod: // 0x001b undef	(values of "GPS", "CELLID", "WLAN" or "MANUAL" by the EXIF spec.)
 			err = ir.Exif.GPS.GPSProcessingMethod.FromBytes(ir.TagValue(t))
 		case gpsifd.GPSAreaInformation: // 0x001c undef
@@ -189,30 +198,30 @@ func (ir *ifdReader) parseGPSIfd(t Tag) {
 			ir.Exif.GPS.GPSDestDistance = ir.ParseRational(t)
 		case gpsifd.GPSHPositioningError: // 0x001f rational64u
 			ir.Exif.GPS.GPSHPositioningError = ir.ParseRational(t)
-		case gpsifd.GPSLatitudeRef: //tag.GPSLatitudeRef     // 0x0001 string[2]
-			ir.Exif.GPS.GPSLatitudeRef = tag.GPSLatitudeRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSLongitudeRef: //tag.GPSLongitudeRef    // 0x0003 string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
-			ir.Exif.GPS.GPSLongitudeRef = tag.GPSLongitudeRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSAltitudeRef: //tag.GPSAltitudeRef     // 0x0005 int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
-			ir.Exif.GPS.GPSAltitudeRef = tag.GPSAltitudeRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSStatus: //tag.GPSStatus          // 0x0009 string[2]	'A' = Measurement Active 'V' = Measurement Void
-			ir.Exif.GPS.GPSStatus = tag.GPSStatus(ir.ParseGPSRef(t))
-		case gpsifd.GPSMeasureMode: //tag.GPSMeasureMode     // 0x000a string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
-			ir.Exif.GPS.GPSMeasureMode = tag.GPSMeasureMode(ir.ParseGPSRef(t))
-		case gpsifd.GPSSpeedRef: //tag.GPSSpeedRef        // 0x000c string[2]	'K' = km/h 'M' = mph 'N' = knots
-			ir.Exif.GPS.GPSSpeedRef = tag.GPSSpeedRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSTrackRef: //tag.GPSDestBearingRef  // 0x000e string[2]	'M' = Magnetic North 'T' = True North
-			ir.Exif.GPS.GPSTrackRef = tag.GPSDestBearingRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSImgDirectionRef: //tag.GPSDestBearingRef  // 0x0010 string[2]	'M' = Magnetic North  'T' = True North
-			ir.Exif.GPS.GPSDestBearingRef = tag.GPSDestBearingRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSDestLatitudeRef: //tag.GPSLatitudeRef     // 0x0013 string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
-			ir.Exif.GPS.GPSDestLatitudeRef = tag.GPSLatitudeRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSDestLongitudeRef: //tag.GPSLongitudeRef    // 0x0015 string[2]	'E' = East  'W' = West
-			ir.Exif.GPS.GPSDestLongitudeRef = tag.GPSLongitudeRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSDestBearingRef: //tag.GPSDestBearingRef  // 0x0017 string[2]	'M' = Magnetic North  'T' = True North
-			ir.Exif.GPS.GPSDestBearingRef = tag.GPSDestBearingRef(ir.ParseGPSRef(t))
-		case gpsifd.GPSDestDistanceRef: //tag.GPSDestDistanceRef // 0x0019 string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
-			ir.Exif.GPS.GPSDestDistanceRef = tag.GPSDestDistanceRef(ir.ParseGPSRef(t))
+		case gpsifd.GPSLatitudeRef: // 0x0001 string[2]
+			err = ir.Exif.GPS.GPSLatitudeRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSLongitudeRef: // 0x0003 string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
+			err = ir.Exif.GPS.GPSLongitudeRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSAltitudeRef: // 0x0005 int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
+			err = ir.Exif.GPS.GPSAltitudeRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSStatus: // 0x0009 string[2]	'A' = Measurement Active 'V' = Measurement Void
+			err = ir.Exif.GPS.GPSStatus.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSMeasureMode: // 0x000a string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
+			err = ir.Exif.GPS.GPSMeasureMode.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSSpeedRef: // 0x000c string[2]	'K' = km/h 'M' = mph 'N' = knots
+			err = ir.Exif.GPS.GPSSpeedRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSTrackRef: // 0x000e string[2]	'M' = Magnetic North 'T' = True North
+			err = ir.Exif.GPS.GPSTrackRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSImgDirectionRef: // 0x0010 string[2]	'M' = Magnetic North  'T' = True North
+			err = ir.Exif.GPS.GPSDestBearingRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSDestLatitudeRef: // 0x0013 string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
+			err = ir.Exif.GPS.GPSDestLatitudeRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSDestLongitudeRef: // 0x0015 string[2]	'E' = East  'W' = West
+			err = ir.Exif.GPS.GPSDestLongitudeRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSDestBearingRef: // 0x0017 string[2]	'M' = Magnetic North  'T' = True North
+			err = ir.Exif.GPS.GPSDestBearingRef.FromBytes(ir.TagValue(t))
+		case gpsifd.GPSDestDistanceRef: // 0x0019 string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
+			err = ir.Exif.GPS.GPSDestDistanceRef.FromBytes(ir.TagValue(t))
 		case gpsifd.GPSDifferential: //uint16                 // 0x001e int16u	0 = No Correction 1 = Differential Corrected
 			// TODO
 		}
@@ -297,20 +306,21 @@ func (ir *ifdReader) parseExposureBias(t Tag) meta.ExposureBias {
 }
 
 // parseFocalLength supports tag type Rational, SRational, Short, and Long
-func (ir *ifdReader) parseFocalLength(t Tag) meta.FocalLength {
-	switch t.Type {
-	case tag.TypeShort, tag.TypeLong:
-		return meta.NewFocalLength(ir.ParseUint32(t), 1)
-	case tag.TypeRational, tag.TypeSignedRational:
-		val := ir.ParseRationalU(t)
-		return meta.FocalLength(float32(val[0]) / float32(val[1]))
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
-	}
-	return meta.FocalLength(0)
-}
-
+//
+//	func (ir *ifdReader) parseFocalLength(t Tag) meta.FocalLength {
+//		switch t.Type {
+//		case tag.TypeShort, tag.TypeLong:
+//			return meta.NewFocalLength(ir.ParseUint32(t), 1)
+//		case tag.TypeRational, tag.TypeSignedRational:
+//			val := ir.ParseRationalU(t)
+//			return meta.FocalLength(float32(val[0]) / float32(val[1]))
+//		}
+//		if ir.logLevelWarn() {
+//			t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
+//		}
+//		return meta.FocalLength(0)
+//	}
+//
 // ParseSubSecTime parses an ASCII or ASCII no Nul.
 // Embedded tag with value length 4 bytes.
 // Value is in milliseconds.
@@ -497,29 +507,29 @@ func (ir *ifdReader) ParseBytes(t Tag) []byte {
 
 // ParseDate parses an ASCII value as a Date.
 // Non-embedded tag with 20 byte length.
-func (ir *ifdReader) ParseDate(t Tag) time.Time {
-	if t.IsType(tag.TypeASCII) {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return time.Time{}
-		}
-		// check recieved value
-		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
-			buf[13] == ':' && buf[16] == ':' {
-			year := parseStrUint(buf[0:4])
-			month := parseStrUint(buf[5:7])
-			day := parseStrUint(buf[8:10])
-			hour := parseStrUint(buf[11:13])
-			min := parseStrUint(buf[14:16])
-			sec := parseStrUint(buf[17:19])
-			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), 0, time.UTC)
-		}
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
-	}
-	return time.Time{}
-}
+//func (ir *ifdReader) ParseDate(t Tag) time.Time {
+//	if t.IsType(tag.TypeASCII) {
+//		buf, err := ir.readTagValue()
+//		if err != nil {
+//			return time.Time{}
+//		}
+//		// check recieved value
+//		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
+//			buf[13] == ':' && buf[16] == ':' {
+//			year := parseStrUint(buf[0:4])
+//			month := parseStrUint(buf[5:7])
+//			day := parseStrUint(buf[8:10])
+//			hour := parseStrUint(buf[11:13])
+//			min := parseStrUint(buf[14:16])
+//			sec := parseStrUint(buf[17:19])
+//			return time.Date(int(year), time.Month(month), int(day), int(hour), int(min), int(sec), 0, time.UTC)
+//		}
+//	}
+//	if ir.logLevelWarn() {
+//		t.logTag(ir.logWarn()).Msg("Unrecognized tag type")
+//	}
+//	return time.Time{}
+//}
 
 // ParseOffsetTime parses an ASCII value as a Timezone.
 // Non-embedded tag with 6 byte length.
@@ -596,83 +606,84 @@ func (ir *ifdReader) ParseGPSCoordinate(t Tag) tag.GPSCoordinate {
 //}
 
 // parseGPSAltitude parses the GPS Altitude from the corresponding Tag.
-func (ir *ifdReader) parseGPSAltitude(t Tag) float32 {
-	if t.UnitCount == 1 {
-		switch t.Type {
-		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
-			buf, err := ir.readTagValue()
-			if err != nil {
-				return 0.0
-			}
-			return (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
-		}
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("error reading GPS Alt. Tag is not Rational or SRational")
-	}
-	return 0.0
-}
+//func (ir *ifdReader) parseGPSAltitude(t Tag) float32 {
+//	if t.UnitCount == 1 {
+//		switch t.Type {
+//		case tag.TypeRational, tag.TypeSignedRational: // Some cameras write tag out of spec using signed rational. We accept that too.
+//			buf, err := ir.readTagValue()
+//			if err != nil {
+//				return 0.0
+//			}
+//			return (float32(t.ByteOrder.Uint32(buf[:4])) / float32(t.ByteOrder.Uint32(buf[4:8])))
+//		}
+//	}
+//	if ir.logLevelWarn() {
+//		t.logTag(ir.logWarn()).Msg("error reading GPS Alt. Tag is not Rational or SRational")
+//	}
+//	return 0.0
+//}
 
 // parseGPSTimeStamp parses the GPSTimeStamp tag in UTC.
-func (ir *ifdReader) parseGPSTimeStamp(t Tag) uint32 {
-	if t.UnitCount == 3 && t.Type == tag.TypeRational {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return 0
-		}
-		var result uint32
-		value := [6]uint32{
-			t.ByteOrder.Uint32(buf[:4]),
-			t.ByteOrder.Uint32(buf[4:8]),
-			t.ByteOrder.Uint32(buf[8:12]),
-			t.ByteOrder.Uint32(buf[12:16]),
-			t.ByteOrder.Uint32(buf[16:20]),
-			t.ByteOrder.Uint32(buf[20:24])}
-		if value[1] > 0 {
-			result += (value[0] / value[1]) * hoursToSeconds
-		}
-		if value[3] > 0 {
-			result += (value[2] / value[3]) * minutesToSeconds
-		}
-		if value[5] > 0 {
-			result += (value[4] / value[5])
-		}
-		return result
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("error reading GPS Time Stamp")
-	}
-	return 0
-}
-
+//
+//	func (ir *ifdReader) parseGPSTimeStamp(t Tag) uint32 {
+//		if t.UnitCount == 3 && t.Type == tag.TypeRational {
+//			buf, err := ir.readTagValue()
+//			if err != nil {
+//				return 0
+//			}
+//			var result uint32
+//			value := [6]uint32{
+//				t.ByteOrder.Uint32(buf[:4]),
+//				t.ByteOrder.Uint32(buf[4:8]),
+//				t.ByteOrder.Uint32(buf[8:12]),
+//				t.ByteOrder.Uint32(buf[12:16]),
+//				t.ByteOrder.Uint32(buf[16:20]),
+//				t.ByteOrder.Uint32(buf[20:24])}
+//			if value[1] > 0 {
+//				result += (value[0] / value[1]) * hoursToSeconds
+//			}
+//			if value[3] > 0 {
+//				result += (value[2] / value[3]) * minutesToSeconds
+//			}
+//			if value[5] > 0 {
+//				result += (value[4] / value[5])
+//			}
+//			return result
+//		}
+//		if ir.logLevelWarn() {
+//			t.logTag(ir.logWarn()).Msg("error reading GPS Time Stamp")
+//		}
+//		return 0
+//	}
+//
 // parseGPSDateStamp parses a GPSDateStamp from the tag
-func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
-	if t.IsType(tag.TypeASCII) {
-		buf, err := ir.readTagValue()
-		if err != nil {
-			return time.Time{}
-		}
-		// check recieved value
-		if buf[4] == ':' && buf[7] == ':' && len(buf) < 12 {
-			return time.Date(int(parseStrUint(buf[0:4])), time.Month(parseStrUint(buf[5:7])), int(parseStrUint(buf[8:10])), 0, 0, 0, 0, time.UTC)
-		}
-		// check recieved value
-		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
-			buf[13] == ':' && buf[16] == ':' && len(buf) > 19 {
-			return time.Date(
-				int(parseStrUint(buf[0:4])),
-				time.Month(parseStrUint(buf[5:7])),
-				int(parseStrUint(buf[8:10])),
-				int(parseStrUint(buf[11:13])),
-				int(parseStrUint(buf[14:16])),
-				int(parseStrUint(buf[17:19])), 0, time.UTC)
-		}
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("error reading GPSDateStamp")
-	}
-	return time.Time{}
-}
+//func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
+//	if t.IsType(tag.TypeASCII) {
+//		buf, err := ir.readTagValue()
+//		if err != nil {
+//			return time.Time{}
+//		}
+//		// check recieved value
+//		if buf[4] == ':' && buf[7] == ':' && len(buf) < 12 {
+//			return time.Date(int(parseStrUint(buf[0:4])), time.Month(parseStrUint(buf[5:7])), int(parseStrUint(buf[8:10])), 0, 0, 0, 0, time.UTC)
+//		}
+//		// check recieved value
+//		if buf[4] == ':' && buf[7] == ':' && buf[10] == ' ' &&
+//			buf[13] == ':' && buf[16] == ':' && len(buf) > 19 {
+//			return time.Date(
+//				int(parseStrUint(buf[0:4])),
+//				time.Month(parseStrUint(buf[5:7])),
+//				int(parseStrUint(buf[8:10])),
+//				int(parseStrUint(buf[11:13])),
+//				int(parseStrUint(buf[14:16])),
+//				int(parseStrUint(buf[17:19])), 0, time.UTC)
+//		}
+//	}
+//	if ir.logLevelWarn() {
+//		t.logTag(ir.logWarn()).Msg("error reading GPSDateStamp")
+//	}
+//	return time.Time{}
+//}
 
 // ParseGPSDateStamp parses a GPSDateStamp
 //func (ir *ifdReader) ParseGPSDateStamp(ds *tag.GPSDateStamp, t Tag) {
@@ -707,7 +718,7 @@ func (ir *ifdReader) parseGPSDateStamp(t Tag) time.Time {
 //	}
 //}
 
-func (ir *ifdReader) ParseGPSRef(t Tag) uint8 {
+func (ir *ifdReader) parseGPSRef(t Tag) uint8 {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(ir.buffer.buf[:4])
 		switch t.Type {
@@ -723,29 +734,29 @@ func (ir *ifdReader) ParseGPSRef(t Tag) uint8 {
 
 // parseGPSRef parsese the GPS Reference for GPSAltitudeRef, GPSLatitudeRef, and GPSLongitudeRef.
 // Returns bool, true is reprsentative of a negative value (-1 Altitude, S Latitude, or W Longitude)
-func (ir *ifdReader) parseGPSRef(t Tag) bool {
-	if t.IsEmbedded() {
-		t.EmbeddedValue(ir.buffer.buf[:4])
-		switch t.ID {
-		case gpsifd.GPSAltitudeRef:
-			return t.IsType(tag.TypeByte) && (ir.buffer.buf[0] == byte(1))
-		case gpsifd.GPSLatitudeRef:
-			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'S')
-		case gpsifd.GPSLongitudeRef:
-			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'W')
-		}
-	}
-	if ir.logLevelWarn() {
-		t.logTag(ir.logWarn()).Msg("error reading GPS Reference")
-	}
-	return false
-}
+//func (ir *ifdReader) parseGPSRef(t Tag) bool {
+//	if t.IsEmbedded() {
+//		t.EmbeddedValue(ir.buffer.buf[:4])
+//		switch t.ID {
+//		case gpsifd.GPSAltitudeRef:
+//			return t.IsType(tag.TypeByte) && (ir.buffer.buf[0] == byte(1))
+//		case gpsifd.GPSLatitudeRef:
+//			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'S')
+//		case gpsifd.GPSLongitudeRef:
+//			return t.IsType(tag.TypeASCII) && (ir.buffer.buf[0] == 'W')
+//		}
+//	}
+//	if ir.logLevelWarn() {
+//		t.logTag(ir.logWarn()).Msg("error reading GPS Reference")
+//	}
+//	return false
+//}
 
 // TagParser interface is used for Custom Tag Parsers.
 type TagParser interface {
 	ParseCameraMake(t Tag) (make.CameraMake, string)
 	ParseCameraModel(t Tag) (model.CameraModel, string)
-	ParseDate(t Tag) time.Time
+	//ParseDate(t Tag) time.Time
 	ParseRationalU(t Tag) [2]uint32
 	ParseString(t Tag) string
 	ParseSubSecTime(t Tag) uint16

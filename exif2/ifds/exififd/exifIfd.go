@@ -2,6 +2,8 @@
 package exififd
 
 import (
+	"encoding/json"
+
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 )
 
@@ -203,36 +205,36 @@ const (
 // ExifIfd is the Exif Ifd
 // Based on Exif 2.23 Sepc https://web.archive.org/web/20190624045241if_/http://www.cipa.jp:80/std/documents/e/DC-008-Translation-2019-E.pdf
 type ExifIfd struct {
-	ExifVersion              [4]byte
-	PixelXDimension          uint32
-	PixelYDimension          uint32
-	ComponentsConfiguration  [4]uint8
+	ExifVersion              tag.ExifVersion             `tagid:"0x9000" json:"ExifVersion,omitempty" msgpack:"0"`
+	PixelXDimension          uint32                      `tagid:"0xa002" json:"PixelXDimension,omitempty" msgpack:"1"`
+	PixelYDimension          uint32                      `tagid:"0xa003" json:"PixelYDimension,omitempty" msgpack:"2"`
+	ComponentsConfiguration  tag.ComponentsConfiguration `tagid:"0x9101" json:"ComponentsConfiguration,omitempty" msgpack:"3"`
 	UserComment              string
-	DateTimeOriginal         [20]byte
-	DateTimeDigitized        [20]byte
-	OffsetTime               [7]byte
-	OffsetTimeOriginal       [7]byte
-	OffsetTimeDigitized      [7]byte
-	SubsecTime               uint16
-	SubsecTimeOriginal       uint16
-	SubsecTimeDigitized      uint16
-	ExposureTime             tag.Rational64
-	FNumber                  tag.Rational64
+	DateTimeOriginal         tag.DateTime   `tagid:"0x9003" json:"DateTimeOriginal,omitempty" msgpack:"0"`
+	DateTimeDigitized        tag.DateTime   `tagid:"0x9004" json:"DateTimeDigitized,omitempty" msgpack:"0"`
+	OffsetTime               tag.OffsetTime `tagid:"0x9010" json:"OffsetTime,omitempty" msgpack:"0"`
+	OffsetTimeOriginal       tag.OffsetTime `tagid:"0x9011" json:"OffsetTimeOriginal,omitempty" msgpack:"0"`
+	OffsetTimeDigitized      tag.OffsetTime `tagid:"0x9012" json:"OffsetTimeDigitized,omitempty" msgpack:"0"`
+	SubsecTime               tag.SubSecTime `tagid:"0x9290" json:"SubsecTime,omitempty" msgpack:"0"`
+	SubsecTimeOriginal       tag.SubSecTime `tagid:"0x9291" json:"SubsecTimeOriginal,omitempty" msgpack:"0"`
+	SubsecTimeDigitized      tag.SubSecTime `tagid:"0x9292" json:"SubsecTimeDigitized,omitempty" msgpack:"0"`
+	ExposureTime             tag.Rational
+	FNumber                  tag.Rational
 	ExposureProgram          tag.ExposureProgram
 	ISOSpeed                 uint32
 	ShutterSpeedValue        tag.ShutterSpeedValue // APEX
 	ApertureValue            tag.ApertureValue     // APEX
 	BrightnessValue          tag.BrightnessValue   // APEX
 	ExposureBiasValue        tag.ExposureBiasValue // APEX
-	SubjectDistance          tag.Rational64
+	SubjectDistance          tag.Rational
 	LightSource              tag.LightSource
 	Flash                    tag.Flash
 	FocalLength              tag.FocalLength
-	FocalPlaneXResolution    tag.Rational64
-	FocalPlaneYResolution    tag.Rational64
+	FocalPlaneXResolution    tag.Rational
+	FocalPlaneYResolution    tag.Rational
 	FocalPlaneResolutionUnit uint16
 	ExposureMode             tag.ExposureMode
-	DigitalZoomRatio         tag.Rational64
+	DigitalZoomRatio         tag.Rational
 	FocalLengthIn35mmFilm    tag.FocalLength
 	//GainControl              uint16 // values
 	//Contrast                 uint16 // values
@@ -242,9 +244,21 @@ type ExifIfd struct {
 	ImageUnique       tag.ImageUnique // ASCII hexadecimal notation 33 bytes
 	CameraOwnerName   string
 	BodySerialNumber  string
-	LensSpecification [4]tag.Rational64
+	LensSpecification [4]tag.Rational
 	LensMake          string
 	LensModel         string
 	LensSerialNumber  string
 	//other                    map[tag.ID]string
+}
+
+func (exif ExifIfd) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Version         string `json:"Version,omitempty"`
+		PixelXDimension uint32 `json:"PixelXDimension,omitempty"`
+		PixelYDimension uint32 `json:"PixelYDimension,omitempty"`
+	}{
+		Version:         exif.ExifVersion.String(),
+		PixelXDimension: exif.PixelXDimension,
+		PixelYDimension: exif.PixelYDimension,
+	})
 }

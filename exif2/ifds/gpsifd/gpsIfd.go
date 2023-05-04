@@ -2,7 +2,9 @@
 package gpsifd
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -63,38 +65,58 @@ const (
 // https://web.archive.org/web/20190624045241if_/http://www.cipa.jp:80/std/documents/e/DC-008-Translation-2019-E.pdf
 // Updated 04/09/2023
 type GPSInfo struct {
-	GPSMapDatum          tag.GPSMapDatum         `json:"MapDatum,omitempty" msgpack:"0"`          // 0x0012 string
-	GPSSatellites        string                  `json:"Satellites,omitempty" msgpack:"1"`        // 0x0008 string
-	GPSProcessingMethod  tag.GPSProcessingMethod `json:"ProcessingMethod,omitempty" msgpack:"2"`  // 0x001b undef	(values of "GPS", "CELLID", "WLAN" or "MANUAL" by the EXIF spec.)
-	GPSAreaInformation   []byte                  `json:"AreaInformation,omitempty" msgpack:"3"`   // 0x001c undef
-	GPSVersionID         tag.GPSVersionID        `json:"VersionID,omitempty" msgpack:"4"`         // 0x0000 int8u[4]
-	GPSDateStamp         tag.GPSDateStamp        `json:"DateStamp,omitempty" msgpack:"5"`         // 0x001d string[11] (time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd)
-	GPSLatitude          tag.GPSCoordinate       `json:"Latitude,omitempty" msgpack:"6"`          // 0x0002 rational64u[3]
-	GPSLongitude         tag.GPSCoordinate       `json:"Longitude,omitempty" msgpack:"7"`         // 0x0004 rational64u[3]
-	GPSDestLatitude      tag.GPSCoordinate       `json:"DestLatitude,omitempty" msgpack:"8"`      // 0x0014 rational64u[3]
-	GPSDestLongitude     tag.GPSCoordinate       `json:"DestLongitude,omitempty" msgpack:"9"`     // 0x0016 rational64u[3]
-	GPSTimeStamp         tag.GPSTimeStamp        `json:"TimeStamp,omitempty" msgpack:"a"`         // 0x0007 rational64u[3] (UTC time of GPS fix)
-	GPSAltitude          tag.Rational            `json:"Altitude,omitempty" msgpack:"b"`          // 0x0006 rational64u
-	GPSDOP               tag.Rational            `json:"DOP,omitempty" msgpack:"c"`               // 0x000b rational64u
-	GPSSpeed             tag.Rational            `json:"Speed,omitempty" msgpack:"d"`             // 0x000d rational64u
-	GPSTrack             tag.Rational            `json:"Track,omitempty" msgpack:"e"`             // 0x000f rational64u
-	GPSImgDirection      tag.Rational            `json:"ImgDirection,omitempty" msgpack:"f"`      // 0x0011 rational64u
-	GPSDestBearing       tag.Rational            `json:"DestBearing,omitempty" msgpack:"g"`       // 0x0018 rational64u
-	GPSDestDistance      tag.Rational            `json:"DestDistance,omitempty" msgpack:"h"`      // 0x001a rational64u
-	GPSHPositioningError tag.Rational            `json:"HPositioningError,omitempty" msgpack:"i"` // 0x001f rational64u
-	GPSLatitudeRef       tag.GPSLatitudeRef      `json:"LatitudeRef,omitempty" msgpack:"j"`       // 0x0001 string[2] 'E' = East  'W' = West
-	GPSLongitudeRef      tag.GPSLongitudeRef     `json:"LongitudeRef,omitempty" msgpack:"k"`      // 0x0003 string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
-	GPSAltitudeRef       tag.GPSAltitudeRef      `json:"AltitudeRef,omitempty" msgpack:"l"`       // 0x0005 int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
-	GPSStatus            tag.GPSStatus           `json:"Status,omitempty" msgpack:"m"`            // 0x0009 string[2]	'A' = Measurement Active 'V' = Measurement Void
-	GPSMeasureMode       tag.GPSMeasureMode      `json:"MeasureMode,omitempty" msgpack:"n"`       // 0x000a string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
-	GPSSpeedRef          tag.GPSSpeedRef         `json:"SpeedRef,omitempty" msgpack:"o"`          // 0x000c string[2]	'K' = km/h 'M' = mph 'N' = knots
-	GPSTrackRef          tag.GPSDestBearingRef   `json:"TrackRef,omitempty" msgpack:"p"`          // 0x000e string[2]	'M' = Magnetic North 'T' = True North
-	GPSImgDirectionRef   tag.GPSDestBearingRef   `json:"ImgDirectionRef,omitempty" msgpack:"q"`   // 0x0010 string[2]	'M' = Magnetic North  'T' = True North
-	GPSDestLatitudeRef   tag.GPSLatitudeRef      `json:"DestLatitudeRef,omitempty" msgpack:"r"`   // 0x0013 string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
-	GPSDestLongitudeRef  tag.GPSLongitudeRef     `json:"DestLongitudeRef,omitempty" msgpack:"s"`  // 0x0015 string[2]	'E' = East  'W' = West
-	GPSDestBearingRef    tag.GPSDestBearingRef   `json:"DestBearingRef,omitempty" msgpack:"t"`    // 0x0017 string[2]	'M' = Magnetic North  'T' = True North
-	GPSDestDistanceRef   tag.GPSDestDistanceRef  `json:"DestDistanceRef,omitempty" msgpack:"u"`   // 0x0019 string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
-	GPSDifferential      tag.GPSDifferential     `json:"Differential,omitempty" msgpack:"v"`      // 0x001e int16u	0 = No Correction 1 = Differential Corrected
+	GPSMapDatum          tag.GPSMapDatum         `tagid:"0x0012" json:"MapDatum,omitempty" msgpack:"0"`          //  string
+	GPSSatellites        tag.GPSSatellites       `tagid:"0x0008" json:"Satellites,omitempty" msgpack:"1"`        //  string
+	GPSProcessingMethod  tag.GPSProcessingMethod `tagid:"0x001b" json:"ProcessingMethod,omitempty" msgpack:"2"`  //  undef	(values of "GPS", "CELLID", "WLAN" or "MANUAL" by the EXIF spec.)
+	GPSAreaInformation   []byte                  `tagid:"0x001c" json:"AreaInformation,omitempty" msgpack:"3"`   //  undef
+	GPSVersionID         tag.GPSVersionID        `tagid:"0x0000" json:"VersionID,omitempty" msgpack:"4"`         //  int8u[4]
+	GPSDateStamp         tag.GPSDateStamp        `tagid:"0x001d" json:"DateStamp,omitempty" msgpack:"5"`         //  string[11] (time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd)
+	GPSLatitude          tag.GPSCoordinate       `tagid:"0x0002" json:"Latitude,omitempty" msgpack:"6"`          //  rational64u[3]
+	GPSLongitude         tag.GPSCoordinate       `tagid:"0x0004" json:"Longitude,omitempty" msgpack:"7"`         //  rational64u[3]
+	GPSDestLatitude      tag.GPSCoordinate       `tagid:"0x0014" json:"DestLatitude,omitempty" msgpack:"8"`      //  rational64u[3]
+	GPSDestLongitude     tag.GPSCoordinate       `tagid:"0x0016" json:"DestLongitude,omitempty" msgpack:"9"`     //  rational64u[3]
+	GPSTimeStamp         tag.GPSTimeStamp        `tagid:"0x0007" json:"TimeStamp,omitempty" msgpack:"a"`         //  rational64u[3] (UTC time of GPS fix)
+	GPSAltitude          tag.Rational            `tagid:"0x0006" json:"Altitude,omitempty" msgpack:"b"`          //  rational64u
+	GPSDOP               tag.Rational            `tagid:"0x000b" json:"DOP,omitempty" msgpack:"c"`               //  rational64u
+	GPSSpeed             tag.Rational            `tagid:"0x000d" json:"Speed,omitempty" msgpack:"d"`             //  rational64u
+	GPSTrack             tag.Rational            `tagid:"0x000f" json:"Track,omitempty" msgpack:"e"`             //  rational64u
+	GPSImgDirection      tag.Rational            `tagid:"0x0011" json:"ImgDirection,omitempty" msgpack:"f"`      //  rational64u
+	GPSDestBearing       tag.Rational            `tagid:"0x0018" json:"DestBearing,omitempty" msgpack:"g"`       //  rational64u
+	GPSDestDistance      tag.Rational            `tagid:"0x001a" json:"DestDistance,omitempty" msgpack:"h"`      //  rational64u
+	GPSHPositioningError tag.Rational            `tagid:"0x001f" json:"HPositioningError,omitempty" msgpack:"i"` //  rational64u
+	GPSLatitudeRef       tag.GPSLatitudeRef      `tagid:"0x0001" json:"LatitudeRef,omitempty" msgpack:"j"`       //  string[2] 'E' = East  'W' = West
+	GPSLongitudeRef      tag.GPSLongitudeRef     `tagid:"0x0003" json:"LongitudeRef,omitempty" msgpack:"k"`      //  string[2] (ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West) 'E' = East 'W' = West
+	GPSAltitudeRef       tag.GPSAltitudeRef      `tagid:"0x0005" json:"AltitudeRef,omitempty" msgpack:"l"`       //  int8u (ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level) 0 = Above Sea Level 1 = Below Sea Level
+	GPSStatus            tag.GPSStatus           `tagid:"0x0009" json:"Status,omitempty" msgpack:"m"`            //  string[2]	'A' = Measurement Active 'V' = Measurement Void
+	GPSMeasureMode       tag.GPSMeasureMode      `tagid:"0x000a" json:"MeasureMode,omitempty" msgpack:"n"`       //  string[2]	2 = 2-Dimensional Measurement 3 = 3-Dimensional Measurement
+	GPSSpeedRef          tag.GPSSpeedRef         `tagid:"0x000c" json:"SpeedRef,omitempty" msgpack:"o"`          //  string[2]	'K' = km/h 'M' = mph 'N' = knots
+	GPSTrackRef          tag.GPSDestBearingRef   `tagid:"0x000e" json:"TrackRef,omitempty" msgpack:"p"`          //  string[2]	'M' = Magnetic North 'T' = True North
+	GPSImgDirectionRef   tag.GPSDestBearingRef   `tagid:"0x0010" json:"ImgDirectionRef,omitempty" msgpack:"q"`   //  string[2]	'M' = Magnetic North  'T' = True North
+	GPSDestLatitudeRef   tag.GPSLatitudeRef      `tagid:"0x0013" json:"DestLatitudeRef,omitempty" msgpack:"r"`   //  string[2] (tags 0x0013-0x001a used for subject location according to MWG 2.0)  'N' = North  'S' = South
+	GPSDestLongitudeRef  tag.GPSLongitudeRef     `tagid:"0x0015" json:"DestLongitudeRef,omitempty" msgpack:"s"`  //  string[2]	'E' = East  'W' = West
+	GPSDestBearingRef    tag.GPSDestBearingRef   `tagid:"0x0017" json:"DestBearingRef,omitempty" msgpack:"t"`    //  string[2]	'M' = Magnetic North  'T' = True North
+	GPSDestDistanceRef   tag.GPSDestDistanceRef  `tagid:"0x0019" json:"DestDistanceRef,omitempty" msgpack:"u"`   //  string[2]	'K' = Kilometers 'M' = Miles 'N' = Nautical Miles
+	GPSDifferential      tag.GPSDifferential     `tagid:"0x001e" json:"Differential,omitempty" msgpack:"v"`      //  int16u	0 = No Correction 1 = Differential Corrected
+}
+
+func (gps GPSInfo) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Version         string    `json:"version,omitempty"`
+		Latitude        float64   `json:"latitude"`
+		Longitude       float64   `json:"longitude"`
+		Altitude        float32   `json:"altitude"`
+		PositionalError float64   `json:"error,omitempty"`
+		DateTime        time.Time `json:"datetime,omitempty"`
+		Satellites      string    `json:"satellites,omitempty"`
+	}{
+		Version:         gps.GPSVersionID.String(),
+		Latitude:        gps.Latitude(),
+		Longitude:       gps.Longitude(),
+		Altitude:        float32(gps.Altitude()),
+		PositionalError: math.Floor(gps.GPSHPositioningError.Float()*1000) / 1000,
+		DateTime:        gps.DateTime(),
+		Satellites:      string(gps.GPSSatellites),
+	})
 }
 
 func (gps GPSInfo) String() string {
@@ -123,7 +145,7 @@ func (gps GPSInfo) Altitude() float64 {
 	if gps.GPSAltitudeRef == tag.GPSAltitudeRefBelow {
 		res *= -1
 	}
-	return res
+	return math.Floor(res*1000) / 1000
 }
 
 // DateTime returns GPSInfo DateStamp and TimeStamp as a time.Time at UTC.
