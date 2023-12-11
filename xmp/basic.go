@@ -20,7 +20,7 @@ func (basic *Basic) parse(p property) (err error) {
 	case xmpns.ModifyDate:
 		basic.ModifyDate, err = parseDate(p.Value())
 	case xmpns.Rating:
-		basic.Rating = int8(parseInt(p.Value()))
+		basic.Rating = int8(parseUint8(p.Value()))
 	default:
 		return ErrPropertyNotSet
 	}
