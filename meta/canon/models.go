@@ -2,9 +2,12 @@ package canon
 
 import "fmt"
 
+//go:generate msgp
+
 // CanonModelID represents a Canon model ID numbers.
 // Based on Phil Harvey's exiftool
 // Updated Dec-5-2024
+// TODO: Implement support for Third Party Lenses
 type CanonModelID uint32
 
 const (
@@ -1247,4 +1250,111 @@ func (lt CanonLensType) Valid() error {
 		return fmt.Errorf("invalid lens type: %d", lt)
 	}
 	return nil
+}
+
+// CanonRFLensType represents Canon RF lens identifiers
+type CanonRFLensType uint16
+
+const (
+	RFLens50mmF12L          CanonRFLensType = 0  // Canon RF 50mm F1.2L USM
+	RFLens24105mmF4L        CanonRFLensType = 1  // Canon RF 24-105mm F4L IS USM
+	RFLens2870mmF2L         CanonRFLensType = 2  // Canon RF 28-70mm F2L USM
+	RFLens35mmF18Macro      CanonRFLensType = 3  // Canon RF 35mm F1.8 MACRO IS STM
+	RFLens85mmF12L          CanonRFLensType = 4  // Canon RF 85mm F1.2L USM
+	RFLens85mmF12LDS        CanonRFLensType = 5  // Canon RF 85mm F1.2L USM DS
+	RFLens2470mmF28L        CanonRFLensType = 6  // Canon RF 24-70mm F2.8L IS USM
+	RFLens1535mmF28L        CanonRFLensType = 7  // Canon RF 15-35mm F2.8L IS USM
+	RFLens24240mmF463       CanonRFLensType = 8  // Canon RF 24-240mm F4-6.3 IS USM
+	RFLens70200mmF28L       CanonRFLensType = 9  // Canon RF 70-200mm F2.8L IS USM
+	RFLens85mmF2Macro       CanonRFLensType = 10 // Canon RF 85mm F2 MACRO IS STM
+	RFLens600mmF11          CanonRFLensType = 11 // Canon RF 600mm F11 IS STM
+	RFLens600mmF11x14       CanonRFLensType = 12 // Canon RF 600mm F11 IS STM + RF1.4x
+	RFLens600mmF11x2        CanonRFLensType = 13 // Canon RF 600mm F11 IS STM + RF2x
+	RFLens800mmF11          CanonRFLensType = 14 // Canon RF 800mm F11 IS STM
+	RFLens800mmF11x14       CanonRFLensType = 15 // Canon RF 800mm F11 IS STM + RF1.4x
+	RFLens800mmF11x2        CanonRFLensType = 16 // Canon RF 800mm F11 IS STM + RF2x
+	RFLens24105mmF471       CanonRFLensType = 17 // Canon RF 24-105mm F4-7.1 IS STM
+	RFLens100500mmF4571L    CanonRFLensType = 18 // Canon RF 100-500mm F4.5-7.1L IS USM
+	RFLens100500mmF4571Lx14 CanonRFLensType = 19 // Canon RF 100-500mm F4.5-7.1L IS USM + RF1.4x
+	RFLens100500mmF4571Lx2  CanonRFLensType = 20 // Canon RF 100-500mm F4.5-7.1L IS USM + RF2x
+	RFLens70200mmF4L        CanonRFLensType = 21 // Canon RF 70-200mm F4L IS USM
+	RFLens100mmF28LMacro    CanonRFLensType = 22 // Canon RF 100mm F2.8L MACRO IS USM
+	RFLens50mmF18STM        CanonRFLensType = 23 // Canon RF 50mm F1.8 STM
+	RFLens1435mmF4L         CanonRFLensType = 24 // Canon RF 14-35mm F4L IS USM
+	RFLensS1845mmF4563      CanonRFLensType = 25 // Canon RF-S 18-45mm F4.5-6.3 IS STM
+	RFLens100400mmF568      CanonRFLensType = 26 // Canon RF 100-400mm F5.6-8 IS USM
+	RFLens100400mmF568x14   CanonRFLensType = 27 // Canon RF 100-400mm F5.6-8 IS USM + RF1.4x
+	RFLens100400mmF568x2    CanonRFLensType = 28 // Canon RF 100-400mm F5.6-8 IS USM + RF2x
+	RFLensS18150mmF3563     CanonRFLensType = 29 // Canon RF-S 18-150mm F3.5-6.3 IS STM
+	RFLens24mmF18Macro      CanonRFLensType = 30 // Canon RF 24mm F1.8 MACRO IS STM
+	RFLens16mmF28STM        CanonRFLensType = 31 // Canon RF 16mm F2.8 STM
+	RFLens400mmF28L         CanonRFLensType = 32 // Canon RF 400mm F2.8L IS USM
+	RFLens400mmF28Lx14      CanonRFLensType = 33 // Canon RF 400mm F2.8L IS USM + RF1.4x
+	RFLens400mmF28Lx2       CanonRFLensType = 34 // Canon RF 400mm F2.8L IS USM + RF2x
+	RFLens600mmF4L          CanonRFLensType = 35 // Canon RF 600mm F4L IS USM
+	RFLens600mmF4Lx14       CanonRFLensType = 36 // Canon RF 600mm F4L IS USM + RF1.4x
+	RFLens600mmF4Lx2        CanonRFLensType = 37 // Canon RF 600mm F4L IS USM + RF2x
+	RFLens800mmF56L         CanonRFLensType = 38 // Canon RF 800mm F5.6L IS USM
+	RFLens800mmF56Lx14      CanonRFLensType = 39 // Canon RF 800mm F5.6L IS USM + RF1.4x
+	RFLens800mmF56Lx2       CanonRFLensType = 40 // Canon RF 800mm F5.6L IS USM + RF2x
+	RFLens1200mmF8L         CanonRFLensType = 41 // Canon RF 1200mm F8L IS USM
+	RFLens1200mmF8Lx14      CanonRFLensType = 42 // Canon RF 1200mm F8L IS USM + RF1.4x
+	RFLens1200mmF8Lx2       CanonRFLensType = 43 // Canon RF 1200mm F8L IS USM + RF2x
+	RFLens52mmF28LFisheye   CanonRFLensType = 44 // Canon RF 5.2mm F2.8L Dual Fisheye 3D VR
+	RFLens1530mmF4563       CanonRFLensType = 45 // Canon RF 15-30mm F4.5-6.3 IS STM
+	RFLens135mmF18L         CanonRFLensType = 46 // Canon RF 135mm F1.8L IS USM
+	RFLens2450mmF4563       CanonRFLensType = 47 // Canon RF 24-50mm F4.5-6.3 IS STM
+	RFLensS55210mmF571      CanonRFLensType = 48 // Canon RF-S 55-210mm F5-7.1 IS STM
+	RFLens100300mmF28L      CanonRFLensType = 49 // Canon RF 100-300mm F2.8L IS USM
+	RFLens100300mmF28Lx14   CanonRFLensType = 50 // Canon RF 100-300mm F2.8L IS USM + RF1.4x
+	RFLens100300mmF28Lx2    CanonRFLensType = 51 // Canon RF 100-300mm F2.8L IS USM + RF2x
+	RFLens1020mmF4L         CanonRFLensType = 52 // Canon RF 10-20mm F4L IS STM
+	RFLens28mmF28STM        CanonRFLensType = 53 // Canon RF 28mm F2.8 STM
+	RFLens24105mmF28LZ      CanonRFLensType = 54 // Canon RF 24-105mm F2.8L IS USM Z
+	RFLensS1018mmF4563      CanonRFLensType = 55 // Canon RF-S 10-18mm F4.5-6.3 IS STM
+	RFLens35mmF14LVCM       CanonRFLensType = 56 // Canon RF 35mm F1.4L VCM
+	RFLens70200mmF28LZ      CanonRFLensType = 57 // Canon RF 70-200mm F2.8L IS USM Z
+	RFLens50mmF14LVCM       CanonRFLensType = 58 // Canon RF 50mm F1.4L VCM
+	RFLens24mmF14LVCM       CanonRFLensType = 59 // Canon RF 24mm F1.4L VCM
+)
+
+// Concatenated string of all RF lens names
+const strCanonRFLensTypeString = "Canon RF 50mm F1.2L USMCanon RF 24-105mm F4L IS USMCanon RF 28-70mm F2L USM" +
+	"Canon RF 35mm F1.8 MACRO IS STMCanon RF 85mm F1.2L USMCanon RF 85mm F1.2L USM DS" +
+	"Canon RF 24-70mm F2.8L IS USMCanon RF 15-35mm F2.8L IS USMCanon RF 24-240mm F4-6.3 IS USM" +
+	"Canon RF 70-200mm F2.8L IS USMCanon RF 85mm F2 MACRO IS STMCanon RF 600mm F11 IS STM" +
+	"Canon RF 600mm F11 IS STM + RF1.4xCanon RF 600mm F11 IS STM + RF2xCanon RF 800mm F11 IS STM" +
+	"Canon RF 800mm F11 IS STM + RF1.4xCanon RF 800mm F11 IS STM + RF2xCanon RF 24-105mm F4-7.1 IS STM" +
+	"Canon RF 100-500mm F4.5-7.1L IS USMCanon RF 100-500mm F4.5-7.1L IS USM + RF1.4x" +
+	"Canon RF 100-500mm F4.5-7.1L IS USM + RF2xCanon RF 70-200mm F4L IS USM" +
+	"Canon RF 100mm F2.8L MACRO IS USMCanon RF 50mm F1.8 STMCanon RF 14-35mm F4L IS USM" +
+	"Canon RF-S 18-45mm F4.5-6.3 IS STMCanon RF 100-400mm F5.6-8 IS USM" +
+	"Canon RF 100-400mm F5.6-8 IS USM + RF1.4xCanon RF 100-400mm F5.6-8 IS USM + RF2x" +
+	"Canon RF-S 18-150mm F3.5-6.3 IS STMCanon RF 24mm F1.8 MACRO IS STMCanon RF 16mm F2.8 STM" +
+	"Canon RF 400mm F2.8L IS USMCanon RF 400mm F2.8L IS USM + RF1.4xCanon RF 400mm F2.8L IS USM + RF2x" +
+	"Canon RF 600mm F4L IS USMCanon RF 600mm F4L IS USM + RF1.4xCanon RF 600mm F4L IS USM + RF2x" +
+	"Canon RF 800mm F5.6L IS USMCanon RF 800mm F5.6L IS USM + RF1.4xCanon RF 800mm F5.6L IS USM + RF2x" +
+	"Canon RF 1200mm F8L IS USMCanon RF 1200mm F8L IS USM + RF1.4xCanon RF 1200mm F8L IS USM + RF2x" +
+	"Canon RF 5.2mm F2.8L Dual Fisheye 3D VRCanon RF 15-30mm F4.5-6.3 IS STMCanon RF 135mm F1.8L IS USM" +
+	"Canon RF 24-50mm F4.5-6.3 IS STMCanon RF-S 55-210mm F5-7.1 IS STMCanon RF 100-300mm F2.8L IS USM" +
+	"Canon RF 100-300mm F2.8L IS USM + RF1.4xCanon RF 100-300mm F2.8L IS USM + RF2x" +
+	"Canon RF 10-20mm F4L IS STMCanon RF 28mm F2.8 STMCanon RF 24-105mm F2.8L IS USM Z" +
+	"Canon RF-S 10-18mm F4.5-6.3 IS STMCanon RF 35mm F1.4L VCMCanon RF 70-200mm F2.8L IS USM Z" +
+	"Canon RF 50mm F1.4L VCMCanon RF 24mm F1.4L VCM"
+
+// Indices into the concatenated string for efficient slicing
+var strCanonRFLensTypeDist = []int{
+	0, 23, 51, 75, 105, 129, 156, 185, 214, 245, 274, 302, 329, 361, 391, 417,
+	449, 479, 509, 543, 584, 625, 654, 687, 710, 737, 771, 802, 841, 880, 916,
+	947, 971, 1000, 1033, 1066, 1099, 1127, 1160, 1193, 1226, 1259, 1292, 1325,
+	1363, 1395, 1423, 1454, 1485, 1516, 1557, 1598, 1629, 1656, 1689, 1725,
+	1756, 1787, 1820, 1847,
+}
+
+// String returns a human-readable representation of the RF lens type
+func (rt CanonRFLensType) String() string {
+	if int(rt) < len(strCanonRFLensTypeDist)-1 {
+		return strCanonRFLensTypeString[strCanonRFLensTypeDist[rt]:strCanonRFLensTypeDist[rt+1]]
+	}
+	return fmt.Sprintf("Unknown RF lens type: %d", rt)
 }

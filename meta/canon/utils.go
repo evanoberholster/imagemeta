@@ -1,27 +1,72 @@
 package canon
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
-// Ev - ported from Phil Harvey's exiftool
-// Updated May-10-2020
+// CanonEv converts Canon hex-based EV (modulo 0x20) to real number
 // https://github.com/exiftool/exiftool/lib/Image/ExifTool/Canon.pm
-func Ev(val int16) int16 {
-	var sign int16
+// Examples:
+//
+//	0x00 -> 0
+//	0x0c -> 0.33333
+//	0x10 -> 0.5
+//	0x14 -> 0.66666
+//	0x20 -> 1
+func CanonEv(val float32) float32 {
+	// Handle negative values
+	sign := float32(1.0)
 	if val < 0 {
 		val = -val
-		sign = -1
-	} else {
-		sign = 1
+		sign = -1.0
 	}
-	frac := val & 0x1f
+
+	// Extract fraction (lower 5 bits)
+	frac := float32(int(val) & 0x1f)
+
+	// Remove fraction from value
 	val -= frac
+
 	// Convert 1/3 and 2/3 codes
-	if frac == 0x0c {
-		frac = 0x20 / 3
-	} else if frac == 0x14 {
-		frac = 0x40 / 3
+	switch int(frac) {
+	case 0x0c:
+		frac = float32(0x20) / 3.0
+	case 0x14:
+		frac = float32(0x40) / 3.0
 	}
-	return sign * (val + frac) / 0x20
+
+	// Calculate final value
+	return sign * (val + frac) / float32(0x20)
+}
+
+// CanonEvInv converts a number to Canon hex-based EV (modulo 0x20)
+// This is the inverse of CanonEv
+func CanonEvInv(num float32) float32 {
+	// Handle negative values
+	sign := 1.0
+	if num < 0 {
+		num = -num
+		sign = -1.0
+	}
+
+	// Split into integer and fraction parts
+	val := math.Floor(float64(num))
+	frac := float64(num) - val
+
+	// Convert fraction to Canon EV code
+	var fracCode float64
+	switch {
+	case math.Abs(frac-0.33) < 0.05:
+		fracCode = 0x0c
+	case math.Abs(frac-0.67) < 0.05:
+		fracCode = 0x14
+	default:
+		fracCode = math.Floor(frac*float64(0x20) + 0.5)
+	}
+
+	// Calculate final value
+	return float32(sign * (val*float64(0x20) + fracCode))
 }
 
 // TempConv - ported from Phil Harvey's exiftool
