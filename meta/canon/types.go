@@ -1,21 +1,48 @@
 package canon
 
 // CameraSettings is Canon Makernote Camera Settings
-// TODO: Incomplete
+// Based on Phil Harvey's exiftool
+// Canon camera settings (MakerNotes tag 0x01)
+// BinaryData (keys are indices into the int16s array)
+// Reference: https://github.com/exiftool/exiftool/blob/master/lib/Image/ExifTool/Canon.pm
 type CameraSettings struct {
-	Macromode         bool            // [1]
-	SelfTimer         bool            // [2]
-	ContinuousDrive   ContinuousDrive // [5]
-	FocusMode         FocusMode       // [7]
-	MeteringMode      MeteringMode    // [17]
-	FocusRange        FocusRange      // [18]
-	CanonExposureMode ExposureMode    // [20]
-	//MaxFocalLength    int16           // [23]
-	//MinFocalLength    int16           // [24]
-	//FocalUnits        int16                       // [25]
-	//FocusContinuous   CanonFocusContinous  // [32]
-	//SpotMeteringMode  bool                        // [39]
-	AESetting AESetting // [33]
+	ISO                uint32             `json:"iso"`
+	SelfTimer          SelfTimer          `json:"selfTimer"`          // [2]
+	Quality            CanonQuality       `json:"quality"`            // [3]
+	ContinuousDrive    ContinuousDrive    `json:"continuousDrive"`    // [5]
+	FocusMode          CanonFocusMode     `json:"focusMode"`          // [7]
+	RecordMode         CanonRecordMode    `json:"recordMode"`         // [9]
+	ImageSize          CanonImageSize     `json:"imageSize"`          // [10]
+	EasyMode           CanonEasyMode      `json:"easyMode"`           // [11]
+	DigitalZoom        int16              `json:"digitalZoom"`        // [12]
+	Contrast           int16              `json:"contrast"`           // [13]
+	Saturation         int16              `json:"saturation"`         // [14]
+	Sharpness          int16              `json:"sharpness"`          // [15]
+	MeteringMode       MeteringMode       `json:"meteringMode"`       // [17]
+	FocusRange         FocusRange         `json:"focusRange"`         // [18]
+	AFPoint            AFPointSetting     `json:"afPoint"`            // [19]
+	ExposureMode       ExposureMode       `json:"exposureMode"`       // [20]
+	LensType           uint16             `json:"lensType"`           // LensType // [22]
+	MaxFocalLength     FocalLength        `json:"maxFocalLength"`     // [23]
+	MinFocalLength     FocalLength        `json:"minFocalLength"`     // [24]
+	FocalUnits         FocalUnits         `json:"focalUnits"`         // [25]
+	FlashBits          FlashBits          `json:"flashBits"`          // [29]
+	AESetting          AESetting          `json:"aeSetting"`          // [33]
+	ImageStabilization ImageStabilization `json:"imageStabilization"` // [34]
+	DisplayAperture    DisplayAperture    `json:"displayAperture"`    // [35]. Stored as uint16, divide by 10 to get f-stop
+	ZoomSourceWidth    uint16             `json:"zoomSourceWidth"`    // [36]
+	ZoomTargetWidth    uint16             `json:"zoomTargetWidth"`    // [37]
+	SRAWQuality        SRAWQuality        `json:"srawQuality"`        // [43]
+	Clarity            Clarity            `json:"clarity"`            // [44]
+	MacroMode          MacroMode          `json:"macroMode"`          // [1]
+	CanonFlashMode     CanonFlashMode     `json:"flashMode"`          // [4]
+	FocusContinuous    FocusContinuous    `json:"focusContinuous"`    // [32]
+	PhotoEffect        PhotoEffect        `json:"photoEffect"`        // [40]
+	SpotMeteringMode   SpotMeteringMode   `json:"spotMeteringMode"`   // [39]
+
+	// ManualFlashOutput uint8 // [41] TODO: Not supported
+	// ColorTone         uint8 // [42] TODO: Not supported
+	// MacroMode indicates if macro photography is enabled
 }
 
 // ShotInfo is Canon Makernote Shot Information
@@ -40,12 +67,12 @@ type FileInfo struct {
 
 // AFInfo is Canon Makernote Autofocus Information
 type AFInfo struct {
-	AFAreaMode    AFAreaMode
-	NumAFPoints   uint16
-	ValidAFPoints uint16
 	AFPoints      []AFPoint
 	InFocus       []int
 	Selected      []int
+	AFAreaMode    AFAreaMode
+	NumAFPoints   uint16
+	ValidAFPoints uint16
 }
 
 // AFPoint is an Auto Focus Point
