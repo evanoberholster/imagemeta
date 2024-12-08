@@ -10,26 +10,27 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
+// parser parses a property and assigns it to the correct namespace.
 func (xmp *XMP) parser(p property) (err error) {
 	if len(p.Value()) == 0 {
 		return
 	}
 	switch p.Namespace() {
-	case xmpns.XMLnsNS:
+	case xmpns.XMLNamespace:
 		return // Null operation
-	case xmpns.ExifNS:
+	case xmpns.ExifNamespace:
 		err = xmp.Exif.parse(p)
-	case xmpns.AuxNS:
+	case xmpns.AuxNamespace:
 		err = xmp.Aux.parse(p)
-	case xmpns.DcNS:
+	case xmpns.DcNamespace:
 		err = xmp.DC.parse(p)
-	case xmpns.XmpNS, xmpns.XapNS:
+	case xmpns.XmpNamespace:
 		err = xmp.Basic.parse(p)
-	case xmpns.TiffNS:
+	case xmpns.TiffNamespace:
 		err = xmp.Tiff.parse(p)
-	case xmpns.CrsNS:
+	case xmpns.CrsNamespace:
 		err = xmp.CRS.parse(p)
-	case xmpns.XmpMMNS, xmpns.XapMMNS:
+	case xmpns.XmpMMNamespace:
 		err = xmp.MM.parse(p)
 	default:
 		//fmt.Println(p, ns)

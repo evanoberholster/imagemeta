@@ -4,47 +4,51 @@ import "fmt"
 
 var (
 	// XMPRootProperty is the root Property for an XMP file
-	XMPRootProperty = NewProperty(XNS, XmpMeta)
+	XMPRootProperty = NewProperty(XNamespace, XmpMeta)
 	// RDFDescription is the rdf:Description Property
-	RDFDescription = NewProperty(RdfNS, Description)
+	RDFDescription = NewProperty(RdfNamespace, Description)
 	// RDFSeq is the rdf:Seq Property
-	RDFSeq = NewProperty(RdfNS, Seq)
+	RDFSeq = NewProperty(RdfNamespace, Seq)
 	// RDFBag is the rdf:Seq Property
-	RDFBag = NewProperty(RdfNS, Bag)
+	RDFBag = NewProperty(RdfNamespace, Bag)
 	// RDFAlt is the rdf:Alt Property
-	RDFAlt = NewProperty(RdfNS, Alt)
+	RDFAlt = NewProperty(RdfNamespace, Alt)
 	// RDFLi is the rdf:Li Property
-	RDFLi = NewProperty(RdfNS, Li)
+	RDFLi = NewProperty(RdfNamespace, Li)
 )
 
 // Property is an XMP Namespace with the associated Property Name
-type Property [2]uint8
+type Property struct {
+	ns   Namespace
+	name Name
+}
 
 // NewProperty returns the correspoding Property for the given Namespace and Name.
 func NewProperty(ns Namespace, name Name) Property {
-	return Property{uint8(ns), uint8(name)}
+	return Property{ns, name}
 }
 
 // Equals returns true if one property is equal to the other.
 func (p Property) Equals(p1 Property) bool {
-	return p[0] == p1[0] && p[1] == p1[1]
+	return p.ns == p1.ns && p.name == p1.name
 }
 
 // IdentifyProperty returns a Property correspondent to the "space" and "name" byte values.
 func IdentifyProperty(space []byte, name []byte) Property {
-	return Property{uint8(IdentifyNamespace(space)), uint8(IdentifyName(name))}
+	ns, _ := IdentifyNamespace(string(space))
+	return Property{ns, IdentifyName(name)}
 }
 
 // Namespace returns the property's XMP Namespace
 func (p Property) Namespace() Namespace {
-	return Namespace(p[0])
+	return p.ns
 }
 
 // Name returns the property's name
 func (p Property) Name() Name {
-	return Name(p[1])
+	return p.name
 }
 
 func (p Property) String() string {
-	return fmt.Sprintf("%s:%s", p.Namespace().String(), p.Name().String())
+	return fmt.Sprintf("%s:%s", p.ns.Prefix(), p.name.String())
 }

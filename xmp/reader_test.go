@@ -21,9 +21,9 @@ func TestReadTagHeader(t *testing.T) {
 	}{
 		{"", io.EOF, Tag{}, false},
 		{"         ", ErrBufferFull, Tag{}, false},
-		{"<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.RDF), pt: tagPType}, t: startTag}, true},
-		{"<rdf:description/>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: soloTag}, true},
-		{"\n" + "</rdf:Description>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNS, xmpns.Description), pt: tagPType}, t: stopTag}, true},
+		{"<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNamespace, xmpns.RDF), pt: tagPType}, t: startTag}, true},
+		{"<rdf:description/>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNamespace, xmpns.Description), pt: tagPType}, t: soloTag}, true},
+		{"\n" + "</rdf:Description>", nil, Tag{property: property{parent: xmpns.XMPRootProperty, self: xmpns.NewProperty(xmpns.RdfNamespace, xmpns.Description), pt: tagPType}, t: stopTag}, true},
 		{"<hello >               ", ErrNegativeRead, Tag{}, false},
 		{"<? >               ", io.EOF, Tag{}, false},
 	}

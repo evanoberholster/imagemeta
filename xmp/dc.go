@@ -21,7 +21,7 @@ import (
 	"github.com/evanoberholster/imagemeta/xmp/xmpns"
 )
 
-var xmlLang = xmpns.NewProperty(xmpns.XMLNS, xmpns.Lang)
+var xmlLang = xmpns.NewProperty(xmpns.XMLNamespace, xmpns.Lang)
 
 func (dc *DublinCore) parse(p property) (err error) {
 	if len(p.Value()) == 0 {
@@ -46,7 +46,10 @@ func (dc *DublinCore) parse(p property) (err error) {
 			dc.TitleLang = append(dc.TitleLang, parseString(p.Value()))
 		}
 	case xmpns.Description:
-		dc.Description = append(dc.Description, parseString(p.Value()))
+		if p.pt == tagPType {
+			dc.Description = append(dc.Description, parseString(p.Value()))
+		}
+
 		// Subject
 		// Contributor
 		// Description
@@ -87,10 +90,8 @@ type DublinCore struct {
 	Format imagetype.ImageType `xml:"format"`
 	// An unambiguous reference to the resource within a given context.
 	Identifier string `xml:"identifier"`
-
 	// A language of the resource.
 	// XMP usage is a list of languages used in the content of the resource.
-	// TODO - RDFSeq is a guess
 	Language []string `xml:"language"`
 	// An entity responsible for making the resource available
 	// Examples of a publisher include a person, an organization, or a
