@@ -8,7 +8,7 @@ import (
 
 //go:generate msgp
 
-// MacroMode represents Canon macro mode settings
+// MacroMode represents Canon macro mode settings.
 type MacroMode uint8
 
 const (
@@ -16,6 +16,7 @@ const (
 	MacroModeNormal MacroMode = 2
 )
 
+// String returns the string representation of the MacroMode.
 func (m MacroMode) String() string {
 	switch m {
 	case MacroModeMacro:
@@ -27,6 +28,7 @@ func (m MacroMode) String() string {
 	}
 }
 
+// Valid checks if the MacroMode value is valid.
 func (m MacroMode) Valid() error {
 	switch m {
 	case MacroModeMacro, MacroModeNormal:
@@ -36,7 +38,7 @@ func (m MacroMode) Valid() error {
 	}
 }
 
-// SelfTimer represents Canon self-timer settings
+// SelfTimer represents Canon self-timer settings.
 type SelfTimer uint16
 
 const (
@@ -44,6 +46,7 @@ const (
 	SelfTimerCustom SelfTimer = 0x4000
 )
 
+// String returns the string representation of the SelfTimer setting.
 func (st SelfTimer) String() string {
 	if st == 0 {
 		return "Off"
@@ -55,6 +58,7 @@ func (st SelfTimer) String() string {
 	return fmt.Sprintf("%.1f s", seconds)
 }
 
+// ParseSelfTimer converts a string to a SelfTimer value.
 func ParseSelfTimer(s string) (SelfTimer, error) {
 	if strings.HasPrefix(strings.ToLower(s), "off") {
 		return SelfTimerOff, nil
@@ -79,7 +83,7 @@ func ParseSelfTimer(s string) (SelfTimer, error) {
 	return val, nil
 }
 
-// CanonFlashMode represents Canon flash mode settings
+// CanonFlashMode represents Canon flash mode settings.
 type CanonFlashMode int8
 
 const (
@@ -117,7 +121,7 @@ func (f CanonFlashMode) String() string {
 	}
 }
 
-// Valid efficiently validates flash mode values using range checks
+// Valid checks if the flash mode value is valid.
 func (f CanonFlashMode) Valid() error {
 	// Check continuous range 0-6 and special case 16
 	if (f >= FlashModeOff && f <= FlashModeRedEyeOn) || f == FlashModeExternal {
@@ -126,7 +130,7 @@ func (f CanonFlashMode) Valid() error {
 	return fmt.Errorf("invalid flash mode: %d", f)
 }
 
-// ContinuousDrive is part of the CanonCameraSettings field
+// ContinuousDrive represents the continuous drive mode setting.
 //
 //	0:  "Single",
 //	1:  "Continuous",
@@ -180,7 +184,7 @@ func StringToContinuousDrive(s string) (ContinuousDrive, bool) {
 	return cd, ok
 }
 
-// CanonFocusMode represents Canon focus mode settings
+// CanonFocusMode represents Canon focus mode settings.
 type CanonFocusMode uint16
 
 const (
@@ -245,7 +249,7 @@ func (f CanonFocusMode) String() string {
 	return focusModeNames[192:] // "Unknown"
 }
 
-// CanonRecordMode represents Canon image recording modes
+// CanonRecordMode represents Canon image recording modes.
 type CanonRecordMode int16
 
 const (
@@ -321,7 +325,7 @@ func ParseRecordMode(s string) (CanonRecordMode, error) {
 	return 0, fmt.Errorf("unknown record mode: %s", s)
 }
 
-// MeteringMode is part of the CanonCameraSettings field
+// MeteringMode represents the camera's metering mode setting.
 //
 //	0: "Default",
 //	1: "Spot",
@@ -366,7 +370,7 @@ func StringToMeteringMode(s string) (MeteringMode, bool) {
 	return mm, ok
 }
 
-// FocusRange is part of the CanonCameraSettings field
+// FocusRange represents the camera's focus range setting.
 //
 //	0:  "Manual",
 //	1:  "Auto",
@@ -418,7 +422,7 @@ func StringToFocusRange(s string) (FocusRange, bool) {
 	return fr, ok
 }
 
-// ExposureMode is part of the CanonCameraSettings field
+// ExposureMode represents the camera's exposure mode setting.
 //
 //	0: "Easy",
 //	1: "Program AE",
@@ -469,7 +473,7 @@ func StringToExposureMode(s string) (ExposureMode, bool) {
 	return em, ok
 }
 
-// FocusDistance -
+// FocusDistance holds the upper and lower focus distance limits.
 type FocusDistance [2]int16
 
 // NewFocusDistance creates a new FocusDistance with the upper
@@ -478,7 +482,7 @@ func NewFocusDistance(upper, lower uint16) FocusDistance {
 	return FocusDistance{int16(upper), int16(lower)}
 }
 
-// BracketMode - Canon Makernote Backet Mode
+// BracketMode represents Canon's bracketing mode settings.
 //
 //	0: "Off",
 //	1: "AEB",
@@ -526,7 +530,7 @@ func StringToBracketMode(s string) (BracketMode, bool) {
 	return bm, ok
 }
 
-// AESetting - Canon Makernote AutoExposure Setting
+// AESetting represents Canon's Auto Exposure setting.
 //
 //	0: "Normal AE",
 //	1: "Exposure Compensation",
@@ -569,7 +573,7 @@ func StringToAESetting(s string) (AESetting, bool) {
 	return ae, ok
 }
 
-// AFAreaMode - Canon Autofocus Area Mode
+// AFAreaMode represents Canon's autofocus area mode.
 //
 //	0:  "Off (Manual Focus)",
 //	1:  "AF Point Expansion (surround)",
@@ -631,6 +635,7 @@ func StringToAFAreaMode(s string) (AFAreaMode, bool) {
 }
 
 // PictureStyle represents a Canon picture style.
+// The values can be standard, user-defined, or PC-installed styles.
 type PictureStyle uint16
 
 const (
@@ -702,7 +707,7 @@ func (ps PictureStyle) IsValid() bool {
 	return ok
 }
 
-// CanonQuality represents Canon image quality settings
+// CanonQuality represents Canon image quality settings.
 type CanonQuality int16
 
 const (
@@ -737,7 +742,7 @@ func (q CanonQuality) String() string {
 	return "Unknown"
 }
 
-// CanonImageSize represents Canon image size settings
+// CanonImageSize represents Canon image size settings.
 type CanonImageSize uint16
 
 const (
@@ -791,7 +796,7 @@ func (s CanonImageSize) String() string {
 	return "Unknown"
 }
 
-// CanonEasyMode represents Canon camera easy shooting modes
+// CanonEasyMode represents Canon camera's "Easy Shooting" or scene modes.
 // References:
 //   - http://homepage3.nifty.com/kamisaka/makernote/makernote_canon.htm (kamisaka)
 //   - http://www.burren.cx/david/canon.html (burren)
@@ -1022,7 +1027,7 @@ func (e CanonEasyMode) String() string {
 	return "Unknown"
 }
 
-// FocusContinuous represents Canon continuous focus settings
+// FocusContinuous represents Canon continuous focus settings.
 type FocusContinuous uint8
 
 const (
@@ -1055,7 +1060,7 @@ func (fc FocusContinuous) Valid() error {
 	return fmt.Errorf("invalid focus continuous mode: %d", fc)
 }
 
-// ImageStabilization represents Canon image stabilization settings
+// ImageStabilization represents Canon image stabilization settings.
 type ImageStabilization int16
 
 const (
@@ -1111,7 +1116,7 @@ func (is ImageStabilization) Valid() error {
 	return fmt.Errorf("invalid image stabilization mode: %d", is)
 }
 
-// SRAWQuality represents Canon sRAW quality settings
+// SRAWQuality represents Canon sRAW quality settings.
 type SRAWQuality int16
 
 const (
@@ -1142,7 +1147,7 @@ func (sq SRAWQuality) Valid() error {
 	return fmt.Errorf("invalid sRAW quality: %d", sq)
 }
 
-// FlashBits represents Canon flash settings bitmask
+// FlashBits represents Canon flash settings as a bitmask.
 type FlashBits uint16
 
 const (
@@ -1224,7 +1229,7 @@ func (fb FlashBits) Valid() error {
 	return nil
 }
 
-// FocalUnits represents the conversion factor from raw focal length values to millimeters
+// FocalUnits represents the conversion factor from raw focal length values to millimeters.
 type FocalUnits int16
 
 // String returns the string representation of focal units in mm format
@@ -1240,7 +1245,7 @@ func (f FocalUnits) Valid() error {
 	return nil
 }
 
-// FocalLength represents the minimum focal length in millimeters
+// FocalLength represents a focal length in millimeters.
 type FocalLength int16
 
 // ToRaw converts millimeter value to raw units using focal units
@@ -1264,7 +1269,7 @@ func (f FocalLength) String() string {
 	return fmt.Sprintf("%d mm", int(f))
 }
 
-// PhotoEffect represents Canon photo effect settings
+// PhotoEffect represents Canon photo effect settings.
 type PhotoEffect uint8
 
 const (
@@ -1317,7 +1322,7 @@ func ParsePhotoEffect(s string) (PhotoEffect, error) {
 	return 0, fmt.Errorf("unknown photo effect: %s", s)
 }
 
-// DisplayAperture represents the camera's display aperture value in f-stops
+// DisplayAperture represents the camera's display aperture value in f-stops.
 type DisplayAperture uint16
 
 // FromRaw converts a raw integer value to DisplayAperture (divided by 10)
@@ -1335,7 +1340,7 @@ func (a DisplayAperture) String() string {
 	return fmt.Sprintf("f/%.1f", a.ToFloat32())
 }
 
-// SpotMeteringMode represents Canon spot metering modes
+// SpotMeteringMode represents Canon spot metering modes.
 type SpotMeteringMode uint8
 
 const (
@@ -1355,7 +1360,7 @@ func (sm SpotMeteringMode) String() string {
 	}
 }
 
-// Clarity represents Canon clarity setting for EOS R models
+// Clarity represents Canon clarity setting for EOS R models.
 type Clarity int16
 
 // String returns the string representation of the clarity value
@@ -1363,7 +1368,7 @@ func (c Clarity) String() string {
 	return fmt.Sprintf("%d", c)
 }
 
-// AFPointSetting represents Canon autofocus point settings
+// AFPointSetting represents Canon autofocus point settings.
 type AFPointSetting uint16
 
 const (
@@ -1412,4 +1417,94 @@ func (ap AFPointSetting) Valid() error {
 		return nil
 	}
 	return fmt.Errorf("invalid AF point: 0x%04X", uint16(ap))
+}
+
+// FlashMeteringMode represents the camera's flash metering mode.
+type FlashMeteringMode uint8
+
+const (
+	FlashMeteringModeETTL           FlashMeteringMode = 0
+	FlashMeteringModeTTL            FlashMeteringMode = 3
+	FlashMeteringModeExternalAuto   FlashMeteringMode = 4
+	FlashMeteringModeExternalManual FlashMeteringMode = 5
+	FlashMeteringModeOff            FlashMeteringMode = 6
+)
+
+// flashMeteringModeMap maps FlashMeteringMode to its string representation.
+var flashMeteringModeMap = map[FlashMeteringMode]string{
+	FlashMeteringModeETTL:           "E-TTL",
+	FlashMeteringModeTTL:            "TTL",
+	FlashMeteringModeExternalAuto:   "External Auto",
+	FlashMeteringModeExternalManual: "External Manual",
+	FlashMeteringModeOff:            "Off",
+}
+
+// String returns the string representation of the FlashMeteringMode.
+func (fmm FlashMeteringMode) String() string {
+	if s, ok := flashMeteringModeMap[fmm]; ok {
+		return s
+	}
+	return "Unknown"
+}
+
+// WhiteBalance represents Canon camera white balance settings.
+type WhiteBalance int16
+
+const (
+	WBAuto                 WhiteBalance = 0
+	WBDaylight             WhiteBalance = 1
+	WBCloudy               WhiteBalance = 2
+	WBTungsten             WhiteBalance = 3
+	WBFluorescent          WhiteBalance = 4
+	WBFlash                WhiteBalance = 5
+	WBCustom               WhiteBalance = 6
+	WBBlackAndWhite        WhiteBalance = 7
+	WBShade                WhiteBalance = 8
+	WBManualTemperature    WhiteBalance = 9
+	WBPCSet1               WhiteBalance = 10
+	WBPCSet2               WhiteBalance = 11
+	WBPCSet3               WhiteBalance = 12
+	WBDaylightFluorescent  WhiteBalance = 14
+	WBCustom1              WhiteBalance = 15
+	WBCustom2              WhiteBalance = 16
+	WBUnderwater           WhiteBalance = 17
+	WBCustom3              WhiteBalance = 18
+	WBCustom4              WhiteBalance = 19
+	WBPCSet4               WhiteBalance = 20
+	WBPCSet5               WhiteBalance = 21
+	WBAutoAmbiencePriority WhiteBalance = 23
+)
+
+// whiteBalanceMap maps WhiteBalance values to their string representations.
+var whiteBalanceMap = map[WhiteBalance]string{
+	WBAuto:                 "Auto",
+	WBDaylight:             "Daylight",
+	WBCloudy:               "Cloudy",
+	WBTungsten:             "Tungsten",
+	WBFluorescent:          "Fluorescent",
+	WBFlash:                "Flash",
+	WBCustom:               "Custom",
+	WBBlackAndWhite:        "Black & White",
+	WBShade:                "Shade",
+	WBManualTemperature:    "Manual Temperature (Kelvin)",
+	WBPCSet1:               "PC Set1",
+	WBPCSet2:               "PC Set2",
+	WBPCSet3:               "PC Set3",
+	WBDaylightFluorescent:  "Daylight Fluorescent",
+	WBCustom1:              "Custom 1",
+	WBCustom2:              "Custom 2",
+	WBUnderwater:           "Underwater",
+	WBCustom3:              "Custom 3",
+	WBCustom4:              "Custom 4",
+	WBPCSet4:               "PC Set4",
+	WBPCSet5:               "PC Set5",
+	WBAutoAmbiencePriority: "Auto (ambience priority)",
+}
+
+// String returns the string representation of the WhiteBalance.
+func (wb WhiteBalance) String() string {
+	if s, ok := whiteBalanceMap[wb]; ok {
+		return s
+	}
+	return "Unknown"
 }

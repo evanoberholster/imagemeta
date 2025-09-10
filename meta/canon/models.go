@@ -2,11 +2,12 @@ package canon
 
 import "fmt"
 
-//go:generate msgp
+//go:generate stringer -type=CanonModelID
 
 // CanonModelID represents a Canon model ID numbers.
 // Based on Phil Harvey's exiftool
-// Updated Dec-5-2024
+// Updated: 2024-09-09
+// Reference: https://exiftool.org/TagNames/Canon.html
 // TODO: Implement support for Third Party Lenses
 type CanonModelID uint32
 
@@ -126,6 +127,8 @@ const (
 	ModelPowerShotSD1200   CanonModelID = 0x2640000
 	ModelPowerShotG11      CanonModelID = 0x2700000
 	ModelPowerShotSX120    CanonModelID = 0x2710000
+	ModelPowerShotS90      CanonModelID = 0x2720000
+	ModelPowerShotSX20     CanonModelID = 0x2750000
 	ModelPowerShotSD980    CanonModelID = 0x2760000
 	ModelPowerShotSD940    CanonModelID = 0x2770000
 	ModelPowerShotA495     CanonModelID = 0x2800000
@@ -331,17 +334,28 @@ const (
 	ModelEOSRebelXT   CanonModelID = 0x80000189 // 350D / Kiss Digital N
 	ModelEOSRebelXTi  CanonModelID = 0x80000236 // 400D / Kiss Digital X
 	ModelEOSRebelXSi  CanonModelID = 0x80000176 // 450D / Kiss X2
+	ModelEOS450D      CanonModelID = 0x80000176 // Same as ModelEOSRebelXSi
 	ModelEOSRebelT1i  CanonModelID = 0x80000252 // 500D / Kiss X3
+	ModelEOS500D      CanonModelID = 0x80000252 // Same as ModelEOSRebelT1i
 	ModelEOSRebelT2i  CanonModelID = 0x80000270 // 550D / Kiss X4
+	ModelEOS550D      CanonModelID = 0x80000270 // Same as ModelEOSRebelT2i
 	ModelEOSRebelT3i  CanonModelID = 0x80000286 // 600D / Kiss X5
+	ModelEOS600D      CanonModelID = 0x80000286 // Same as ModelEOSRebelT3i
 	ModelEOSRebelT4i  CanonModelID = 0x80000301 // 650D / Kiss X6i
+	ModelEOS650D      CanonModelID = 0x80000301 // Same as ModelEOSRebelT4i
 	ModelEOSRebelT5i  CanonModelID = 0x80000326 // 700D / Kiss X7i
+	ModelEOS700D      CanonModelID = 0x80000326 // Same as ModelEOSRebelT5i
 	ModelEOSRebelXS   CanonModelID = 0x80000254 // 1000D / Kiss F
+	ModelEOS1000D     CanonModelID = 0x80000254 // Same as ModelEOSRebelXS
 	ModelEOSRebelT3   CanonModelID = 0x80000288 // 1100D / Kiss X50
+	ModelEOS1100D     CanonModelID = 0x80000288 // Same as ModelEOSRebelT3
 	ModelEOSRebelT5   CanonModelID = 0x80000327 // 1200D / Kiss X70 / Hi
+	ModelEOS1200D     CanonModelID = 0x80000327 // Same as ModelEOSRebelT5
 	ModelEOSRebelSL1  CanonModelID = 0x80000346 // 100D / Kiss X7
 	ModelEOSRebelT6s  CanonModelID = 0x80000347 // 760D / 8000D
+	ModelEOS760D      CanonModelID = 0x80000347 // Same as ModelEOSRebelT6s
 	ModelEOSRebelT6i  CanonModelID = 0x80000393 // 750D / Kiss X8i
+	ModelEOS750D      CanonModelID = 0x80000393 // Same as ModelEOSRebelT6i
 	ModelEOSRebelT6   CanonModelID = 0x80000404 // 1300D / Kiss X80
 	ModelEOSRebelT7i  CanonModelID = 0x80000405 // 800D / Kiss X9i
 	ModelEOSRebelSL2  CanonModelID = 0x80000417 // 200D / Kiss X9
@@ -353,12 +367,13 @@ const (
 	// EOS R Series (Mirrorless)
 	ModelEOSR5       CanonModelID = 0x80000421
 	ModelEOSR        CanonModelID = 0x80000424
-	ModelEOSRP       CanonModelID = 0x8000043
+	ModelEOSRP       CanonModelID = 0x80000433
 	ModelEOSR3       CanonModelID = 0x80000450
 	ModelEOSR6       CanonModelID = 0x80000453
 	ModelEOSR7       CanonModelID = 0x80000464
 	ModelEOSR10      CanonModelID = 0x80000465
 	ModelEOSR50      CanonModelID = 0x80000480
+	ModelEOSR50V     CanonModelID = 0x80000516
 	ModelEOSR6MarkII CanonModelID = 0x80000481
 	ModelEOSR8       CanonModelID = 0x80000487
 	ModelEOSR1       CanonModelID = 0x80000495
@@ -376,15 +391,18 @@ const (
 	ModelEOSM50       CanonModelID = 0x412      // Special case without "0000"
 	ModelEOSM50MarkII CanonModelID = 0x80000468 // IB
 	ModelEOSM6        CanonModelID = 0x4070000
-	ModelEOSM6Mark2   CanonModelID = 0x811
+	ModelEOSM6MarkII  CanonModelID = 0x811
 
 	// PowerShot Series
 	ModelPowerShotZOOM CanonModelID = 0x80000467
 	ModelPowerShotV10  CanonModelID = 0x80000491 // 25
+	ModelPowerShotV1   CanonModelID = 0x80000497
 
 	// Cinema Cameras
 	ModelEOSD2000C CanonModelID = 0x80000520 // IB
 	ModelEOSD6000C CanonModelID = 0x80000560 // PH (guess)
+	ModelEOSC500   CanonModelID = 0x4007e1c4
+	ModelEOSC700   CanonModelID = 0x4007e1c5
 )
 
 // canonModelIDMap maps CanonModelID values to their string representations.
@@ -625,7 +643,7 @@ var canonModelIDMap = map[CanonModelID]string{
 	ModelPowerShotG5XMark2: "PowerShot G5 X Mark II",
 	ModelPowerShotSX70:     "PowerShot SX70 HS",
 	ModelPowerShotG7XMark3: "PowerShot G7 X Mark III",
-	ModelEOSM6Mark2:        "EOS M6 Mark II",
+	ModelEOSM6MarkII:       "EOS M6 Mark II",
 	ModelEOSM200:           "EOS M200",
 	ModelDC19:              "DC19/DC21/DC22",
 	ModelXHA1:              "XH A1",
@@ -739,15 +757,17 @@ var canonModelIDMap = map[CanonModelID]string{
 	ModelPowerShotV10:      "PowerShot V10",
 	ModelEOSD2000C:         "EOS D2000C",
 	ModelEOSD6000C:         "EOS D6000C",
+	ModelPowerShotV1:       "PowerShot V1",
+	ModelEOSR50V:           "EOS R50 V",
 }
 
 // String returns the string representation of the CanonModelID value.
-func (id CanonModelID) String() string {
-	if str, ok := canonModelIDMap[id]; ok {
-		return str
-	}
-	return "Unknown"
-}
+//func (id CanonModelID) String() string {
+//	if str, ok := canonModelIDMap[id]; ok {
+//		return str
+//	}
+//	return "Unknown"
+//}
 
 // IsVideoModelID returns true if the ID is in the video camera range
 func IsVideoModelID(id CanonModelID) bool {
@@ -768,7 +788,7 @@ func IsMirrorlessModelID(id CanonModelID) bool {
 	// M Series
 	case ModelEOSM, ModelEOSM2, ModelEOSM10, ModelEOSM3,
 		ModelEOSM5, ModelEOSM100, ModelEOSM200, ModelEOSM50,
-		ModelEOSM50MarkII, ModelEOSM6, ModelEOSM6Mark2:
+		ModelEOSM50MarkII, ModelEOSM6, ModelEOSM6MarkII:
 		return true
 
 	default:
