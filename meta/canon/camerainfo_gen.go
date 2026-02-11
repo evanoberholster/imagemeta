@@ -7,6 +7,58 @@ import (
 )
 
 // DecodeMsg implements msgp.Decodable
+func (z *AFPointsInFocus5D) DecodeMsg(dc *msgp.Reader) (err error) {
+	{
+		var zb0001 uint16
+		zb0001, err = dc.ReadUint16()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = AFPointsInFocus5D(zb0001)
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z AFPointsInFocus5D) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteUint16(uint16(z))
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z AFPointsInFocus5D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendUint16(o, uint16(z))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *AFPointsInFocus5D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	{
+		var zb0001 uint16
+		zb0001, bts, err = msgp.ReadUint16Bytes(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = AFPointsInFocus5D(zb0001)
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z AFPointsInFocus5D) Msgsize() (s int) {
+	s = msgp.Uint16Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *CIExposureTime) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
 		var zb0001 float32
@@ -111,6 +163,11261 @@ func (z CIFocalLength) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1000D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "LensModel":
+			z.LensModel, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1000D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 20
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "LensModel"
+	err = en.Append(0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.LensModel)
+	if err != nil {
+		err = msgp.WrapError(err, "LensModel")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1000D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 20
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "LensModel"
+	o = append(o, 0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	o = msgp.AppendString(o, z.LensModel)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1000D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "LensModel":
+			z.LensModel, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1000D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 19 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 10 + msgp.StringPrefixSize + len(z.LensModel) + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "SharpnessFrequency":
+			z.SharpnessFrequency, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessFrequency")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 10
+	// write "ExposureTime"
+	err = en.Append(0x8a, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "SharpnessFrequency"
+	err = en.Append(0xb2, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x46, 0x72, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessFrequency)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessFrequency")
+		return
+	}
+	// write "Sharpness"
+	err = en.Append(0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Sharpness)
+	if err != nil {
+		err = msgp.WrapError(err, "Sharpness")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 10
+	// string "ExposureTime"
+	o = append(o, 0x8a, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "SharpnessFrequency"
+	o = append(o, 0xb2, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x46, 0x72, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x79)
+	o = msgp.AppendUint8(o, z.SharpnessFrequency)
+	// string "Sharpness"
+	o = append(o, 0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	o = msgp.AppendInt8(o, z.Sharpness)
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "SharpnessFrequency":
+			z.SharpnessFrequency, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessFrequency")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1D) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Float32Size + 12 + z.FocalLength.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 19 + msgp.Uint8Size + 10 + msgp.Int8Size + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1DX) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1DX) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 18
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1DX) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 18
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1DX) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1DX) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1DmkII) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CanonImageSize":
+			z.CanonImageSize, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "CanonImageSize")
+				return
+			}
+		case "JPEGQuality":
+			z.JPEGQuality, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "JPEGQuality")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "Saturation":
+			z.Saturation, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Saturation")
+				return
+			}
+		case "ColorTone":
+			z.ColorTone, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTone")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "Contrast":
+			z.Contrast, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Contrast")
+				return
+			}
+		case "ISO":
+			z.ISO, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ISO")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1DmkII) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 15
+	// write "ExposureTime"
+	err = en.Append(0x8f, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "CanonImageSize"
+	err = en.Append(0xae, 0x43, 0x61, 0x6e, 0x6f, 0x6e, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.CanonImageSize)
+	if err != nil {
+		err = msgp.WrapError(err, "CanonImageSize")
+		return
+	}
+	// write "JPEGQuality"
+	err = en.Append(0xab, 0x4a, 0x50, 0x45, 0x47, 0x51, 0x75, 0x61, 0x6c, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.JPEGQuality)
+	if err != nil {
+		err = msgp.WrapError(err, "JPEGQuality")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "Saturation"
+	err = en.Append(0xaa, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Saturation)
+	if err != nil {
+		err = msgp.WrapError(err, "Saturation")
+		return
+	}
+	// write "ColorTone"
+	err = en.Append(0xa9, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x6f, 0x6e, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ColorTone)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTone")
+		return
+	}
+	// write "Sharpness"
+	err = en.Append(0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Sharpness)
+	if err != nil {
+		err = msgp.WrapError(err, "Sharpness")
+		return
+	}
+	// write "Contrast"
+	err = en.Append(0xa8, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Contrast)
+	if err != nil {
+		err = msgp.WrapError(err, "Contrast")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ISO)
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1DmkII) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 15
+	// string "ExposureTime"
+	o = append(o, 0x8f, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "CanonImageSize"
+	o = append(o, 0xae, 0x43, 0x61, 0x6e, 0x6f, 0x6e, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65)
+	o = msgp.AppendUint16(o, z.CanonImageSize)
+	// string "JPEGQuality"
+	o = append(o, 0xab, 0x4a, 0x50, 0x45, 0x47, 0x51, 0x75, 0x61, 0x6c, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint16(o, z.JPEGQuality)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "Saturation"
+	o = append(o, 0xaa, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendInt8(o, z.Saturation)
+	// string "ColorTone"
+	o = append(o, 0xa9, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x6f, 0x6e, 0x65)
+	o = msgp.AppendInt8(o, z.ColorTone)
+	// string "Sharpness"
+	o = append(o, 0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	o = msgp.AppendInt8(o, z.Sharpness)
+	// string "Contrast"
+	o = append(o, 0xa8, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74)
+	o = msgp.AppendInt8(o, z.Contrast)
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendString(o, z.ISO)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1DmkII) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CanonImageSize":
+			z.CanonImageSize, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "CanonImageSize")
+				return
+			}
+		case "JPEGQuality":
+			z.JPEGQuality, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "JPEGQuality")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "Saturation":
+			z.Saturation, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Saturation")
+				return
+			}
+		case "ColorTone":
+			z.ColorTone, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTone")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "Contrast":
+			z.Contrast, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Contrast")
+				return
+			}
+		case "ISO":
+			z.ISO, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ISO")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1DmkII) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Float32Size + 12 + z.FocalLength.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 15 + msgp.Uint16Size + 12 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 11 + msgp.Int8Size + 10 + msgp.Int8Size + 10 + msgp.Int8Size + 9 + msgp.Int8Size + 4 + msgp.StringPrefixSize + len(z.ISO)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1DmkIII) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "ShutterCount":
+			z.ShutterCount, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "TimeStamp":
+			z.TimeStamp, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "TimeStamp")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1DmkIII) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 21
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x15, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "ShutterCount"
+	err = en.Append(0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.ShutterCount)
+	if err != nil {
+		err = msgp.WrapError(err, "ShutterCount")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "TimeStamp"
+	err = en.Append(0xa9, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.TimeStamp)
+	if err != nil {
+		err = msgp.WrapError(err, "TimeStamp")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1DmkIII) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 21
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x15, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "ShutterCount"
+	o = append(o, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint32(o, z.ShutterCount)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "TimeStamp"
+	o = append(o, 0xa9, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70)
+	o = msgp.AppendUint32(o, z.TimeStamp)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1DmkIII) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "ShutterCount":
+			z.ShutterCount, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "TimeStamp":
+			z.TimeStamp, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "TimeStamp")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1DmkIII) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 19 + msgp.Uint8Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 13 + msgp.Uint32Size + 15 + msgp.Uint32Size + 10 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1DmkIIN) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "Contrast":
+			z.Contrast, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Contrast")
+				return
+			}
+		case "Saturation":
+			z.Saturation, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "Saturation")
+				return
+			}
+		case "ColorTone":
+			z.ColorTone, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTone")
+				return
+			}
+		case "ISO":
+			z.ISO, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ISO")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1DmkIIN) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 13
+	// write "ExposureTime"
+	err = en.Append(0x8d, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "Sharpness"
+	err = en.Append(0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Sharpness)
+	if err != nil {
+		err = msgp.WrapError(err, "Sharpness")
+		return
+	}
+	// write "Contrast"
+	err = en.Append(0xa8, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Contrast)
+	if err != nil {
+		err = msgp.WrapError(err, "Contrast")
+		return
+	}
+	// write "Saturation"
+	err = en.Append(0xaa, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.Saturation)
+	if err != nil {
+		err = msgp.WrapError(err, "Saturation")
+		return
+	}
+	// write "ColorTone"
+	err = en.Append(0xa9, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x6f, 0x6e, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ColorTone)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTone")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ISO)
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1DmkIIN) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 13
+	// string "ExposureTime"
+	o = append(o, 0x8d, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "Sharpness"
+	o = append(o, 0xa9, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73)
+	o = msgp.AppendInt8(o, z.Sharpness)
+	// string "Contrast"
+	o = append(o, 0xa8, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74)
+	o = msgp.AppendInt8(o, z.Contrast)
+	// string "Saturation"
+	o = append(o, 0xaa, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendInt8(o, z.Saturation)
+	// string "ColorTone"
+	o = append(o, 0xa9, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x6f, 0x6e, 0x65)
+	o = msgp.AppendInt8(o, z.ColorTone)
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendString(o, z.ISO)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1DmkIIN) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ExposureTime":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0002)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0003 uint16
+				zb0003, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0003)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0004 uint16
+				zb0004, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0004)
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "Sharpness":
+			z.Sharpness, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Sharpness")
+				return
+			}
+		case "Contrast":
+			z.Contrast, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Contrast")
+				return
+			}
+		case "Saturation":
+			z.Saturation, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Saturation")
+				return
+			}
+		case "ColorTone":
+			z.ColorTone, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTone")
+				return
+			}
+		case "ISO":
+			z.ISO, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ISO")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1DmkIIN) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Float32Size + 12 + z.FocalLength.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 10 + msgp.Int8Size + 9 + msgp.Int8Size + 11 + msgp.Int8Size + 10 + msgp.Int8Size + 4 + msgp.StringPrefixSize + len(z.ISO)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo1DmkIV) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "MeasuredEV2":
+			z.MeasuredEV2, err = dc.ReadInt16()
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV2")
+				return
+			}
+		case "MeasuredEV3":
+			z.MeasuredEV3, err = dc.ReadInt16()
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV3")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CameraPictureStyle":
+			err = z.CameraPictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "CameraPictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo1DmkIV) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 23
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x17, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "MeasuredEV2"
+	err = en.Append(0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x32)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt16(z.MeasuredEV2)
+	if err != nil {
+		err = msgp.WrapError(err, "MeasuredEV2")
+		return
+	}
+	// write "MeasuredEV3"
+	err = en.Append(0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x33)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt16(z.MeasuredEV3)
+	if err != nil {
+		err = msgp.WrapError(err, "MeasuredEV3")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "CameraPictureStyle"
+	err = en.Append(0xb2, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.CameraPictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "CameraPictureStyle")
+		return
+	}
+	// write "HighISONoiseReduction"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighISONoiseReduction)
+	if err != nil {
+		err = msgp.WrapError(err, "HighISONoiseReduction")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo1DmkIV) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 23
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x17, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "MeasuredEV2"
+	o = append(o, 0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x32)
+	o = msgp.AppendInt16(o, z.MeasuredEV2)
+	// string "MeasuredEV3"
+	o = append(o, 0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x33)
+	o = msgp.AppendInt16(o, z.MeasuredEV3)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "CameraPictureStyle"
+	o = append(o, 0xb2, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.CameraPictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "CameraPictureStyle")
+		return
+	}
+	// string "HighISONoiseReduction"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.HighISONoiseReduction)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo1DmkIV) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "MeasuredEV2":
+			z.MeasuredEV2, bts, err = msgp.ReadInt16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV2")
+				return
+			}
+		case "MeasuredEV3":
+			z.MeasuredEV3, bts, err = msgp.ReadInt16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV3")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CameraPictureStyle":
+			bts, err = z.CameraPictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "CameraPictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo1DmkIV) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 12 + msgp.Int16Size + 12 + msgp.Int16Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 19 + z.CameraPictureStyle.Msgsize() + 22 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo40D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		case "LensModel":
+			z.LensModel, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo40D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 20
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	// write "LensModel"
+	err = en.Append(0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.LensModel)
+	if err != nil {
+		err = msgp.WrapError(err, "LensModel")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo40D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 20
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	// string "LensModel"
+	o = append(o, 0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	o = msgp.AppendString(o, z.LensModel)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo40D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		case "LensModel":
+			z.LensModel, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo40D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 19 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize() + 10 + msgp.StringPrefixSize + len(z.LensModel)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo450D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "OwnerName":
+			z.OwnerName, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "OwnerName")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "LensModel":
+			z.LensModel, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo450D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 19
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x13, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "OwnerName"
+	err = en.Append(0xa9, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.OwnerName)
+	if err != nil {
+		err = msgp.WrapError(err, "OwnerName")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "LensModel"
+	err = en.Append(0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.LensModel)
+	if err != nil {
+		err = msgp.WrapError(err, "LensModel")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo450D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 19
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x13, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "OwnerName"
+	o = append(o, 0xa9, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65)
+	o = msgp.AppendString(o, z.OwnerName)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "LensModel"
+	o = append(o, 0xa9, 0x4c, 0x65, 0x6e, 0x73, 0x4d, 0x6f, 0x64, 0x65, 0x6c)
+	o = msgp.AppendString(o, z.LensModel)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo450D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "OwnerName":
+			z.OwnerName, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "OwnerName")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "LensModel":
+			z.LensModel, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensModel")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo450D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 19 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.StringPrefixSize + len(z.OwnerName) + 10 + msgp.Uint32Size + 10 + msgp.StringPrefixSize + len(z.LensModel) + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo500D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo500D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 22
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "HighISONoiseReduction"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighISONoiseReduction)
+	if err != nil {
+		err = msgp.WrapError(err, "HighISONoiseReduction")
+		return
+	}
+	// write "AutoLightingOptimizer"
+	err = en.Append(0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.AutoLightingOptimizer)
+	if err != nil {
+		err = msgp.WrapError(err, "AutoLightingOptimizer")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo500D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 22
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "HighISONoiseReduction"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.HighISONoiseReduction)
+	// string "AutoLightingOptimizer"
+	o = append(o, 0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	o = msgp.AppendUint8(o, z.AutoLightingOptimizer)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo500D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo500D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 22 + msgp.Uint8Size + 22 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo50D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo50D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 22
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "HighISONoiseReduction"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighISONoiseReduction)
+	if err != nil {
+		err = msgp.WrapError(err, "HighISONoiseReduction")
+		return
+	}
+	// write "AutoLightingOptimizer"
+	err = en.Append(0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.AutoLightingOptimizer)
+	if err != nil {
+		err = msgp.WrapError(err, "AutoLightingOptimizer")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo50D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 22
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "HighISONoiseReduction"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.HighISONoiseReduction)
+	// string "AutoLightingOptimizer"
+	o = append(o, 0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	o = msgp.AppendUint8(o, z.AutoLightingOptimizer)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo50D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo50D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 22 + msgp.Uint8Size + 22 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo550D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo550D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 19
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x13, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo550D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 19
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x13, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo550D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo550D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo5D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "AFPointsInFocus5D":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "AFPointsInFocus5D")
+					return
+				}
+				z.AFPointsInFocus5D = AFPointsInFocus5D(zb0007)
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0008)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0009 uint16
+				zb0009, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0009)
+			}
+		case "FirmwareRevision":
+			z.FirmwareRevision, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareRevision")
+				return
+			}
+		case "ShortOwnerName":
+			z.ShortOwnerName, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ShortOwnerName")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "TimeStamp":
+			z.TimeStamp, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "TimeStamp")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo5D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 20
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "AFPointsInFocus5D"
+	err = en.Append(0xb1, 0x41, 0x46, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x49, 0x6e, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x35, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.AFPointsInFocus5D))
+	if err != nil {
+		err = msgp.WrapError(err, "AFPointsInFocus5D")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareRevision"
+	err = en.Append(0xb0, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareRevision)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareRevision")
+		return
+	}
+	// write "ShortOwnerName"
+	err = en.Append(0xae, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ShortOwnerName)
+	if err != nil {
+		err = msgp.WrapError(err, "ShortOwnerName")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "TimeStamp"
+	err = en.Append(0xa9, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.TimeStamp)
+	if err != nil {
+		err = msgp.WrapError(err, "TimeStamp")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo5D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 20
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x14, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "AFPointsInFocus5D"
+	o = append(o, 0xb1, 0x41, 0x46, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x49, 0x6e, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x35, 0x44)
+	o = msgp.AppendUint16(o, uint16(z.AFPointsInFocus5D))
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareRevision"
+	o = append(o, 0xb0, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareRevision)
+	// string "ShortOwnerName"
+	o = append(o, 0xae, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65)
+	o = msgp.AppendString(o, z.ShortOwnerName)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint16(o, z.FileIndex)
+	// string "TimeStamp"
+	o = append(o, 0xa9, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x6d, 0x70)
+	o = msgp.AppendUint32(o, z.TimeStamp)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo5D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "AFPointsInFocus5D":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "AFPointsInFocus5D")
+					return
+				}
+				z.AFPointsInFocus5D = AFPointsInFocus5D(zb0007)
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0008)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0009 uint16
+				zb0009, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0009)
+			}
+		case "FirmwareRevision":
+			z.FirmwareRevision, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareRevision")
+				return
+			}
+		case "ShortOwnerName":
+			z.ShortOwnerName, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ShortOwnerName")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "TimeStamp":
+			z.TimeStamp, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "TimeStamp")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo5D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 9 + z.LensType.Msgsize() + 18 + msgp.Uint8Size + 19 + msgp.Uint8Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint16Size + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 17 + msgp.StringPrefixSize + len(z.FirmwareRevision) + 15 + msgp.StringPrefixSize + len(z.ShortOwnerName) + 15 + msgp.Uint32Size + 10 + msgp.Uint16Size + 10 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo5DmkII) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo5DmkII) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 23
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x17, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "MacroMagnification"
+	err = en.Append(0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.MacroMagnification)
+	if err != nil {
+		err = msgp.WrapError(err, "MacroMagnification")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "HighISONoiseReduction"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighISONoiseReduction)
+	if err != nil {
+		err = msgp.WrapError(err, "HighISONoiseReduction")
+		return
+	}
+	// write "AutoLightingOptimizer"
+	err = en.Append(0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.AutoLightingOptimizer)
+	if err != nil {
+		err = msgp.WrapError(err, "AutoLightingOptimizer")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo5DmkII) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 23
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x17, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "MacroMagnification"
+	o = append(o, 0xb2, 0x4d, 0x61, 0x63, 0x72, 0x6f, 0x4d, 0x61, 0x67, 0x6e, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.MacroMagnification)
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "HighISONoiseReduction"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.HighISONoiseReduction)
+	// string "AutoLightingOptimizer"
+	o = append(o, 0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	o = msgp.AppendUint8(o, z.AutoLightingOptimizer)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo5DmkII) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "MacroMagnification":
+			z.MacroMagnification, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MacroMagnification")
+				return
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo5DmkII) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 19 + msgp.Uint8Size + 22 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 22 + msgp.Uint8Size + 22 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo5DmkIII) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo5DmkIII) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 18
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo5DmkIII) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 18
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo5DmkIII) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo5DmkIII) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo600D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo600D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 22
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "HighISONoiseReduction"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighISONoiseReduction)
+	if err != nil {
+		err = msgp.WrapError(err, "HighISONoiseReduction")
+		return
+	}
+	// write "AutoLightingOptimizer"
+	err = en.Append(0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.AutoLightingOptimizer)
+	if err != nil {
+		err = msgp.WrapError(err, "AutoLightingOptimizer")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo600D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 22
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "HighISONoiseReduction"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x49, 0x53, 0x4f, 0x4e, 0x6f, 0x69, 0x73, 0x65, 0x52, 0x65, 0x64, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, z.HighISONoiseReduction)
+	// string "AutoLightingOptimizer"
+	o = append(o, 0xb5, 0x41, 0x75, 0x74, 0x6f, 0x4c, 0x69, 0x67, 0x68, 0x74, 0x69, 0x6e, 0x67, 0x4f, 0x70, 0x74, 0x69, 0x6d, 0x69, 0x7a, 0x65, 0x72)
+	o = msgp.AppendUint8(o, z.AutoLightingOptimizer)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo600D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "HighISONoiseReduction":
+			z.HighISONoiseReduction, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighISONoiseReduction")
+				return
+			}
+		case "AutoLightingOptimizer":
+			z.AutoLightingOptimizer, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "AutoLightingOptimizer")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo600D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 22 + msgp.Uint8Size + 22 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo60D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo60D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 16
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x10, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo60D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 16
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x10, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo60D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo60D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo650D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo650D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 18
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo650D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 18
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo650D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo650D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *CameraInfo6D) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -197,7 +11504,7 @@ func (z *CameraInfo6D) DecodeMsg(dc *msgp.Reader) (err error) {
 				return
 			}
 		case "WhiteBalance":
-			z.WhiteBalance, err = dc.ReadUint16()
+			err = z.WhiteBalance.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "WhiteBalance")
 				return
@@ -209,7 +11516,7 @@ func (z *CameraInfo6D) DecodeMsg(dc *msgp.Reader) (err error) {
 				return
 			}
 		case "PictureStyle":
-			z.PictureStyle, err = dc.ReadUint8()
+			err = z.PictureStyle.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "PictureStyle")
 				return
@@ -363,7 +11670,7 @@ func (z *CameraInfo6D) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint16(z.WhiteBalance)
+	err = z.WhiteBalance.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "WhiteBalance")
 		return
@@ -383,7 +11690,7 @@ func (z *CameraInfo6D) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteUint8(z.PictureStyle)
+	err = z.PictureStyle.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "PictureStyle")
 		return
@@ -503,13 +11810,21 @@ func (z *CameraInfo6D) MarshalMsg(b []byte) (o []byte, err error) {
 	}
 	// string "WhiteBalance"
 	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
-	o = msgp.AppendUint16(o, z.WhiteBalance)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
 	// string "ColorTemperature"
 	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
 	o = msgp.AppendUint16(o, z.ColorTemperature)
 	// string "PictureStyle"
 	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
-	o = msgp.AppendUint8(o, z.PictureStyle)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
 	// string "LensType"
 	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
 	o, err = z.LensType.MarshalMsg(o)
@@ -629,7 +11944,7 @@ func (z *CameraInfo6D) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				return
 			}
 		case "WhiteBalance":
-			z.WhiteBalance, bts, err = msgp.ReadUint16Bytes(bts)
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "WhiteBalance")
 				return
@@ -641,7 +11956,7 @@ func (z *CameraInfo6D) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				return
 			}
 		case "PictureStyle":
-			z.PictureStyle, bts, err = msgp.ReadUint8Bytes(bts)
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "PictureStyle")
 				return
@@ -710,7 +12025,3678 @@ func (z *CameraInfo6D) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *CameraInfo6D) Msgsize() (s int) {
-	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + msgp.Uint16Size + 17 + msgp.Uint16Size + 13 + msgp.Uint8Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo700D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			err = z.PictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo700D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 18
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "PictureStyle"
+	err = en.Append(0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo700D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 18
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x12, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "PictureStyle"
+	o = append(o, 0xac, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.PictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo700D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "PictureStyle":
+			bts, err = z.PictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo700D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 13 + z.PictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo70D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo70D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 16
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x10, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo70D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 16
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x10, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo70D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo70D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo750D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfo750D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 0
+	err = en.Append(0x80)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfo750D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 0
+	o = append(o, 0x80)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo750D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfo750D) Msgsize() (s int) {
+	s = 1
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo760D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfo760D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 0
+	err = en.Append(0x80)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfo760D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 0
+	o = append(o, 0x80)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo760D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfo760D) Msgsize() (s int) {
+	s = 1
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo7D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "MeasuredEV2":
+			z.MeasuredEV2, err = dc.ReadInt16()
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV2")
+				return
+			}
+		case "MeasuredEV":
+			z.MeasuredEV, err = dc.ReadInt16()
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV")
+				return
+			}
+		case "FlashMeteringMode":
+			err = z.FlashMeteringMode.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			err = z.WhiteBalance.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CameraPictureStyle":
+			err = z.CameraPictureStyle.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "CameraPictureStyle")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			err = z.PictureStyleInfo.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo7D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 22
+	// write "FNumber"
+	err = en.Append(0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "HighlightTonePriority"
+	err = en.Append(0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.HighlightTonePriority)
+	if err != nil {
+		err = msgp.WrapError(err, "HighlightTonePriority")
+		return
+	}
+	// write "MeasuredEV2"
+	err = en.Append(0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x32)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt16(z.MeasuredEV2)
+	if err != nil {
+		err = msgp.WrapError(err, "MeasuredEV2")
+		return
+	}
+	// write "MeasuredEV"
+	err = en.Append(0xaa, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt16(z.MeasuredEV)
+	if err != nil {
+		err = msgp.WrapError(err, "MeasuredEV")
+		return
+	}
+	// write "FlashMeteringMode"
+	err = en.Append(0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.FlashMeteringMode.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "WhiteBalance"
+	err = en.Append(0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.WhiteBalance.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "CameraPictureStyle"
+	err = en.Append(0xb2, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.CameraPictureStyle.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "CameraPictureStyle")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "PictureStyleInfo"
+	err = en.Append(0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	if err != nil {
+		return
+	}
+	err = z.PictureStyleInfo.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo7D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 22
+	// string "FNumber"
+	o = append(o, 0xde, 0x0, 0x16, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "HighlightTonePriority"
+	o = append(o, 0xb5, 0x48, 0x69, 0x67, 0x68, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x54, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79)
+	o = msgp.AppendUint8(o, z.HighlightTonePriority)
+	// string "MeasuredEV2"
+	o = append(o, 0xab, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56, 0x32)
+	o = msgp.AppendInt16(o, z.MeasuredEV2)
+	// string "MeasuredEV"
+	o = append(o, 0xaa, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x64, 0x45, 0x56)
+	o = msgp.AppendInt16(o, z.MeasuredEV)
+	// string "FlashMeteringMode"
+	o = append(o, 0xb1, 0x46, 0x6c, 0x61, 0x73, 0x68, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x4d, 0x6f, 0x64, 0x65)
+	o, err = z.FlashMeteringMode.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FlashMeteringMode")
+		return
+	}
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "WhiteBalance"
+	o = append(o, 0xac, 0x57, 0x68, 0x69, 0x74, 0x65, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65)
+	o, err = z.WhiteBalance.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "WhiteBalance")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "CameraPictureStyle"
+	o = append(o, 0xb2, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65)
+	o, err = z.CameraPictureStyle.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "CameraPictureStyle")
+		return
+	}
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "PictureStyleInfo"
+	o = append(o, 0xb0, 0x50, 0x69, 0x63, 0x74, 0x75, 0x72, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f)
+	o, err = z.PictureStyleInfo.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "PictureStyleInfo")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo7D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "HighlightTonePriority":
+			z.HighlightTonePriority, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HighlightTonePriority")
+				return
+			}
+		case "MeasuredEV2":
+			z.MeasuredEV2, bts, err = msgp.ReadInt16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV2")
+				return
+			}
+		case "MeasuredEV":
+			z.MeasuredEV, bts, err = msgp.ReadInt16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MeasuredEV")
+				return
+			}
+		case "FlashMeteringMode":
+			bts, err = z.FlashMeteringMode.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FlashMeteringMode")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "WhiteBalance":
+			bts, err = z.WhiteBalance.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "WhiteBalance")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "CameraPictureStyle":
+			bts, err = z.CameraPictureStyle.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "CameraPictureStyle")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "PictureStyleInfo":
+			bts, err = z.PictureStyleInfo.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "PictureStyleInfo")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo7D) Msgsize() (s int) {
+	s = 3 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 22 + msgp.Uint8Size + 12 + msgp.Int16Size + 11 + msgp.Int16Size + 18 + z.FlashMeteringMode.Msgsize() + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 13 + z.WhiteBalance.Msgsize() + 17 + msgp.Uint16Size + 19 + z.CameraPictureStyle.Msgsize() + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size + 17 + z.PictureStyleInfo.Msgsize()
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfo80D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			err = z.FocalLength.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			err = z.FocusDistanceUpper.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			err = z.FocusDistanceLower.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, err = dc.ReadUint16()
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			err = z.LensType.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, err = dc.ReadUint16()
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfo80D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 15
+	// write "FNumber"
+	err = en.Append(0x8f, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "ISO"
+	err = en.Append(0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	// write "FocalLength"
+	err = en.Append(0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = z.FocalLength.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// write "CameraOrientation"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraOrientation))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraOrientation")
+		return
+	}
+	// write "FocusDistanceUpper"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceUpper.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// write "FocusDistanceLower"
+	err = en.Append(0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = z.FocusDistanceLower.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// write "ColorTemperature"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(z.ColorTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "ColorTemperature")
+		return
+	}
+	// write "LensType"
+	err = en.Append(0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.LensType.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// write "MinFocalLength"
+	err = en.Append(0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MinFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MinFocalLength")
+		return
+	}
+	// write "MaxFocalLength"
+	err = en.Append(0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint16(uint16(z.MaxFocalLength))
+	if err != nil {
+		err = msgp.WrapError(err, "MaxFocalLength")
+		return
+	}
+	// write "FirmwareVersion"
+	err = en.Append(0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FirmwareVersion)
+	if err != nil {
+		err = msgp.WrapError(err, "FirmwareVersion")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfo80D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 15
+	// string "FNumber"
+	o = append(o, 0x8f, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "ISO"
+	o = append(o, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	// string "FocalLength"
+	o = append(o, 0xab, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o, err = z.FocalLength.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocalLength")
+		return
+	}
+	// string "CameraOrientation"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint8(o, uint8(z.CameraOrientation))
+	// string "FocusDistanceUpper"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72)
+	o, err = z.FocusDistanceUpper.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceUpper")
+		return
+	}
+	// string "FocusDistanceLower"
+	o = append(o, 0xb2, 0x46, 0x6f, 0x63, 0x75, 0x73, 0x44, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x4c, 0x6f, 0x77, 0x65, 0x72)
+	o, err = z.FocusDistanceLower.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "FocusDistanceLower")
+		return
+	}
+	// string "ColorTemperature"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6c, 0x6f, 0x72, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint16(o, z.ColorTemperature)
+	// string "LensType"
+	o = append(o, 0xa8, 0x4c, 0x65, 0x6e, 0x73, 0x54, 0x79, 0x70, 0x65)
+	o, err = z.LensType.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "LensType")
+		return
+	}
+	// string "MinFocalLength"
+	o = append(o, 0xae, 0x4d, 0x69, 0x6e, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MinFocalLength))
+	// string "MaxFocalLength"
+	o = append(o, 0xae, 0x4d, 0x61, 0x78, 0x46, 0x6f, 0x63, 0x61, 0x6c, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68)
+	o = msgp.AppendUint16(o, uint16(z.MaxFocalLength))
+	// string "FirmwareVersion"
+	o = append(o, 0xaf, 0x46, 0x69, 0x72, 0x6d, 0x77, 0x61, 0x72, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendString(o, z.FirmwareVersion)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfo80D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "FNumber":
+			{
+				var zb0002 float32
+				zb0002, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0002)
+			}
+		case "ExposureTime":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0003)
+			}
+		case "ISO":
+			{
+				var zb0004 uint32
+				zb0004, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0004)
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		case "FocalLength":
+			bts, err = z.FocalLength.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocalLength")
+				return
+			}
+		case "CameraOrientation":
+			{
+				var zb0006 uint8
+				zb0006, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraOrientation")
+					return
+				}
+				z.CameraOrientation = CameraOrientation(zb0006)
+			}
+		case "FocusDistanceUpper":
+			bts, err = z.FocusDistanceUpper.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceUpper")
+				return
+			}
+		case "FocusDistanceLower":
+			bts, err = z.FocusDistanceLower.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FocusDistanceLower")
+				return
+			}
+		case "ColorTemperature":
+			z.ColorTemperature, bts, err = msgp.ReadUint16Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColorTemperature")
+				return
+			}
+		case "LensType":
+			bts, err = z.LensType.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "LensType")
+				return
+			}
+		case "MinFocalLength":
+			{
+				var zb0007 uint16
+				zb0007, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MinFocalLength")
+					return
+				}
+				z.MinFocalLength = CIFocalLength(zb0007)
+			}
+		case "MaxFocalLength":
+			{
+				var zb0008 uint16
+				zb0008, bts, err = msgp.ReadUint16Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "MaxFocalLength")
+					return
+				}
+				z.MaxFocalLength = CIFocalLength(zb0008)
+			}
+		case "FirmwareVersion":
+			z.FirmwareVersion, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FirmwareVersion")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfo80D) Msgsize() (s int) {
+	s = 1 + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 4 + msgp.Uint32Size + 18 + msgp.Uint8Size + 12 + z.FocalLength.Msgsize() + 18 + msgp.Uint8Size + 19 + z.FocusDistanceUpper.Msgsize() + 19 + z.FocusDistanceLower.Msgsize() + 17 + msgp.Uint16Size + 9 + z.LensType.Msgsize() + 15 + msgp.Uint16Size + 15 + msgp.Uint16Size + 16 + msgp.StringPrefixSize + len(z.FirmwareVersion) + 10 + msgp.Uint32Size + 15 + msgp.Uint32Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoG5XII) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoG5XII) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 3
+	// write "ShutterCount"
+	err = en.Append(0x83, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.ShutterCount)
+	if err != nil {
+		err = msgp.WrapError(err, "ShutterCount")
+		return
+	}
+	// write "DirectoryIndex"
+	err = en.Append(0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.DirectoryIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "DirectoryIndex")
+		return
+	}
+	// write "FileIndex"
+	err = en.Append(0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.FileIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "FileIndex")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoG5XII) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 3
+	// string "ShutterCount"
+	o = append(o, 0x83, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint32(o, z.ShutterCount)
+	// string "DirectoryIndex"
+	o = append(o, 0xae, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.DirectoryIndex)
+	// string "FileIndex"
+	o = append(o, 0xa9, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendUint32(o, z.FileIndex)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoG5XII) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		case "DirectoryIndex":
+			z.DirectoryIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "DirectoryIndex")
+				return
+			}
+		case "FileIndex":
+			z.FileIndex, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FileIndex")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoG5XII) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Uint32Size + 15 + msgp.Uint32Size + 10 + msgp.Uint32Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoPowerShot) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ISO":
+			{
+				var zb0002 uint32
+				zb0002, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0002)
+			}
+		case "FNumber":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0003)
+			}
+		case "ExposureTime":
+			{
+				var zb0004 float32
+				zb0004, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0004)
+			}
+		case "Rotation":
+			z.Rotation, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "Rotation")
+				return
+			}
+		case "CameraTemperature":
+			z.CameraTemperature, err = dc.ReadInt32()
+			if err != nil {
+				err = msgp.WrapError(err, "CameraTemperature")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfoPowerShot) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 5
+	// write "ISO"
+	err = en.Append(0x85, 0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "FNumber"
+	err = en.Append(0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "Rotation"
+	err = en.Append(0xa8, 0x52, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.Rotation)
+	if err != nil {
+		err = msgp.WrapError(err, "Rotation")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt32(z.CameraTemperature)
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfoPowerShot) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 5
+	// string "ISO"
+	o = append(o, 0x85, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "FNumber"
+	o = append(o, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "Rotation"
+	o = append(o, 0xa8, 0x52, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint32(o, z.Rotation)
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendInt32(o, z.CameraTemperature)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoPowerShot) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ISO":
+			{
+				var zb0002 uint32
+				zb0002, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0002)
+			}
+		case "FNumber":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0003)
+			}
+		case "ExposureTime":
+			{
+				var zb0004 float32
+				zb0004, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0004)
+			}
+		case "Rotation":
+			z.Rotation, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Rotation")
+				return
+			}
+		case "CameraTemperature":
+			z.CameraTemperature, bts, err = msgp.ReadInt32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "CameraTemperature")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfoPowerShot) Msgsize() (s int) {
+	s = 1 + 4 + msgp.Uint32Size + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 9 + msgp.Uint32Size + 18 + msgp.Int32Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoPowerShot2) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ISO":
+			{
+				var zb0002 uint32
+				zb0002, err = dc.ReadUint32()
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0002)
+			}
+		case "FNumber":
+			{
+				var zb0003 float32
+				zb0003, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0003)
+			}
+		case "ExposureTime":
+			{
+				var zb0004 float32
+				zb0004, err = dc.ReadFloat32()
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0004)
+			}
+		case "Rotation":
+			z.Rotation, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "Rotation")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *CameraInfoPowerShot2) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 5
+	// write "ISO"
+	err = en.Append(0x85, 0xa3, 0x49, 0x53, 0x4f)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(uint32(z.ISO))
+	if err != nil {
+		err = msgp.WrapError(err, "ISO")
+		return
+	}
+	// write "FNumber"
+	err = en.Append(0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.FNumber))
+	if err != nil {
+		err = msgp.WrapError(err, "FNumber")
+		return
+	}
+	// write "ExposureTime"
+	err = en.Append(0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteFloat32(float32(z.ExposureTime))
+	if err != nil {
+		err = msgp.WrapError(err, "ExposureTime")
+		return
+	}
+	// write "Rotation"
+	err = en.Append(0xa8, 0x52, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.Rotation)
+	if err != nil {
+		err = msgp.WrapError(err, "Rotation")
+		return
+	}
+	// write "CameraTemperature"
+	err = en.Append(0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *CameraInfoPowerShot2) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 5
+	// string "ISO"
+	o = append(o, 0x85, 0xa3, 0x49, 0x53, 0x4f)
+	o = msgp.AppendUint32(o, uint32(z.ISO))
+	// string "FNumber"
+	o = append(o, 0xa7, 0x46, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72)
+	o = msgp.AppendFloat32(o, float32(z.FNumber))
+	// string "ExposureTime"
+	o = append(o, 0xac, 0x45, 0x78, 0x70, 0x6f, 0x73, 0x75, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65)
+	o = msgp.AppendFloat32(o, float32(z.ExposureTime))
+	// string "Rotation"
+	o = append(o, 0xa8, 0x52, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e)
+	o = msgp.AppendUint32(o, z.Rotation)
+	// string "CameraTemperature"
+	o = append(o, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoPowerShot2) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ISO":
+			{
+				var zb0002 uint32
+				zb0002, bts, err = msgp.ReadUint32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ISO")
+					return
+				}
+				z.ISO = ISO(zb0002)
+			}
+		case "FNumber":
+			{
+				var zb0003 float32
+				zb0003, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FNumber")
+					return
+				}
+				z.FNumber = FNumber(zb0003)
+			}
+		case "ExposureTime":
+			{
+				var zb0004 float32
+				zb0004, bts, err = msgp.ReadFloat32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "ExposureTime")
+					return
+				}
+				z.ExposureTime = CIExposureTime(zb0004)
+			}
+		case "Rotation":
+			z.Rotation, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Rotation")
+				return
+			}
+		case "CameraTemperature":
+			{
+				var zb0005 uint8
+				zb0005, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0005)
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *CameraInfoPowerShot2) Msgsize() (s int) {
+	s = 1 + 4 + msgp.Uint32Size + 8 + msgp.Float32Size + 13 + msgp.Float32Size + 9 + msgp.Uint32Size + 18 + msgp.Uint8Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoR6) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoR6) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 1
+	// write "ShutterCount"
+	err = en.Append(0x81, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.ShutterCount)
+	if err != nil {
+		err = msgp.WrapError(err, "ShutterCount")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoR6) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 1
+	// string "ShutterCount"
+	o = append(o, 0x81, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint32(o, z.ShutterCount)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoR6) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoR6) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Uint32Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoR6m2) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoR6m2) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 1
+	// write "ShutterCount"
+	err = en.Append(0x81, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.ShutterCount)
+	if err != nil {
+		err = msgp.WrapError(err, "ShutterCount")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoR6m2) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 1
+	// string "ShutterCount"
+	o = append(o, 0x81, 0xac, 0x53, 0x68, 0x75, 0x74, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74)
+	o = msgp.AppendUint32(o, z.ShutterCount)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoR6m2) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ShutterCount":
+			z.ShutterCount, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ShutterCount")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoR6m2) Msgsize() (s int) {
+	s = 1 + 13 + msgp.Uint32Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoUnknown) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoUnknown) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 0
+	err = en.Append(0x80)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoUnknown) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 0
+	o = append(o, 0x80)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoUnknown) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoUnknown) Msgsize() (s int) {
+	s = 1
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoUnknown16) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoUnknown16) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 0
+	err = en.Append(0x80)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoUnknown16) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 0
+	o = append(o, 0x80)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoUnknown16) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoUnknown16) Msgsize() (s int) {
+	s = 1
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *CameraInfoUnknown32) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "CameraTemperature":
+			{
+				var zb0002 uint8
+				zb0002, err = dc.ReadUint8()
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0002)
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z CameraInfoUnknown32) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 1
+	// write "CameraTemperature"
+	err = en.Append(0x81, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(uint8(z.CameraTemperature))
+	if err != nil {
+		err = msgp.WrapError(err, "CameraTemperature")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z CameraInfoUnknown32) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 1
+	// string "CameraTemperature"
+	o = append(o, 0x81, 0xb1, 0x43, 0x61, 0x6d, 0x65, 0x72, 0x61, 0x54, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = msgp.AppendUint8(o, uint8(z.CameraTemperature))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *CameraInfoUnknown32) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "CameraTemperature":
+			{
+				var zb0002 uint8
+				zb0002, bts, err = msgp.ReadUint8Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "CameraTemperature")
+					return
+				}
+				z.CameraTemperature = CameraTemperature(zb0002)
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z CameraInfoUnknown32) Msgsize() (s int) {
+	s = 1 + 18 + msgp.Uint8Size
 	return
 }
 
@@ -2704,6 +17690,692 @@ func (z *PictureStyleInfo2) UnmarshalMsg(bts []byte) (o []byte, err error) {
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *PictureStyleInfo2) Msgsize() (s int) {
 	s = 3 + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 20 + msgp.Int32Size + 19 + msgp.Int32Size + 22 + msgp.Int32Size + 22 + msgp.Int32Size + 16 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 17 + msgp.Int32Size + 20 + msgp.Int32Size + 20 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 19 + msgp.Int32Size + 20 + msgp.Int32Size + 21 + msgp.Int32Size + 20 + msgp.Int32Size + 23 + msgp.Int32Size + 23 + msgp.Int32Size + 13 + msgp.Int32Size + 14 + msgp.Int32Size + 15 + msgp.Int32Size + 14 + msgp.Int32Size + 17 + msgp.Int32Size + 17 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 17 + msgp.Int32Size + 18 + msgp.Int32Size + 19 + msgp.Int32Size + 18 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Int32Size + 21 + msgp.Uint16Size + 21 + msgp.Uint16Size + 21 + msgp.Uint16Size
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *PictureStyleInfo5D) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ContrastStandard":
+			z.ContrastStandard, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastStandard")
+				return
+			}
+		case "ContrastPortrait":
+			z.ContrastPortrait, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastPortrait")
+				return
+			}
+		case "ContrastLandscape":
+			z.ContrastLandscape, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastLandscape")
+				return
+			}
+		case "ContrastNeutral":
+			z.ContrastNeutral, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastNeutral")
+				return
+			}
+		case "ContrastFaithful":
+			z.ContrastFaithful, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastFaithful")
+				return
+			}
+		case "ContrastMonochrome":
+			z.ContrastMonochrome, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastMonochrome")
+				return
+			}
+		case "ContrastUserDef1":
+			z.ContrastUserDef1, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef1")
+				return
+			}
+		case "ContrastUserDef2":
+			z.ContrastUserDef2, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef2")
+				return
+			}
+		case "ContrastUserDef3":
+			z.ContrastUserDef3, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef3")
+				return
+			}
+		case "SharpnessStandard":
+			z.SharpnessStandard, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessStandard")
+				return
+			}
+		case "SharpnessPortrait":
+			z.SharpnessPortrait, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessPortrait")
+				return
+			}
+		case "SharpnessLandscape":
+			z.SharpnessLandscape, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessLandscape")
+				return
+			}
+		case "SharpnessNeutral":
+			z.SharpnessNeutral, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessNeutral")
+				return
+			}
+		case "SharpnessFaithful":
+			z.SharpnessFaithful, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessFaithful")
+				return
+			}
+		case "SharpnessMonochrome":
+			z.SharpnessMonochrome, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessMonochrome")
+				return
+			}
+		case "SharpnessUserDef1":
+			z.SharpnessUserDef1, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef1")
+				return
+			}
+		case "SharpnessUserDef2":
+			z.SharpnessUserDef2, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef2")
+				return
+			}
+		case "SharpnessUserDef3":
+			z.SharpnessUserDef3, err = dc.ReadUint8()
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef3")
+				return
+			}
+		case "SaturationStandard":
+			z.SaturationStandard, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationStandard")
+				return
+			}
+		case "SaturationPortrait":
+			z.SaturationPortrait, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationPortrait")
+				return
+			}
+		case "SaturationLandscape":
+			z.SaturationLandscape, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationLandscape")
+				return
+			}
+		case "SaturationNeutral":
+			z.SaturationNeutral, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationNeutral")
+				return
+			}
+		case "SaturationFaithful":
+			z.SaturationFaithful, err = dc.ReadInt8()
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationFaithful")
+				return
+			}
+		case "FilterEffectMonochrome":
+			{
+				var zb0002 int32
+				zb0002, err = dc.ReadInt32()
+				if err != nil {
+					err = msgp.WrapError(err, "FilterEffectMonochrome")
+					return
+				}
+				z.FilterEffectMonochrome = FilterEffect(zb0002)
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *PictureStyleInfo5D) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 24
+	// write "ContrastStandard"
+	err = en.Append(0xde, 0x0, 0x18, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastStandard)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastStandard")
+		return
+	}
+	// write "ContrastPortrait"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastPortrait)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastPortrait")
+		return
+	}
+	// write "ContrastLandscape"
+	err = en.Append(0xb1, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastLandscape)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastLandscape")
+		return
+	}
+	// write "ContrastNeutral"
+	err = en.Append(0xaf, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastNeutral)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastNeutral")
+		return
+	}
+	// write "ContrastFaithful"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastFaithful)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastFaithful")
+		return
+	}
+	// write "ContrastMonochrome"
+	err = en.Append(0xb2, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastMonochrome)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastMonochrome")
+		return
+	}
+	// write "ContrastUserDef1"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x31)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastUserDef1)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastUserDef1")
+		return
+	}
+	// write "ContrastUserDef2"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x32)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastUserDef2)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastUserDef2")
+		return
+	}
+	// write "ContrastUserDef3"
+	err = en.Append(0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x33)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.ContrastUserDef3)
+	if err != nil {
+		err = msgp.WrapError(err, "ContrastUserDef3")
+		return
+	}
+	// write "SharpnessStandard"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessStandard)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessStandard")
+		return
+	}
+	// write "SharpnessPortrait"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessPortrait)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessPortrait")
+		return
+	}
+	// write "SharpnessLandscape"
+	err = en.Append(0xb2, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessLandscape)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessLandscape")
+		return
+	}
+	// write "SharpnessNeutral"
+	err = en.Append(0xb0, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessNeutral)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessNeutral")
+		return
+	}
+	// write "SharpnessFaithful"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessFaithful)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessFaithful")
+		return
+	}
+	// write "SharpnessMonochrome"
+	err = en.Append(0xb3, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessMonochrome)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessMonochrome")
+		return
+	}
+	// write "SharpnessUserDef1"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x31)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessUserDef1)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessUserDef1")
+		return
+	}
+	// write "SharpnessUserDef2"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x32)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessUserDef2)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessUserDef2")
+		return
+	}
+	// write "SharpnessUserDef3"
+	err = en.Append(0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x33)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint8(z.SharpnessUserDef3)
+	if err != nil {
+		err = msgp.WrapError(err, "SharpnessUserDef3")
+		return
+	}
+	// write "SaturationStandard"
+	err = en.Append(0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.SaturationStandard)
+	if err != nil {
+		err = msgp.WrapError(err, "SaturationStandard")
+		return
+	}
+	// write "SaturationPortrait"
+	err = en.Append(0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.SaturationPortrait)
+	if err != nil {
+		err = msgp.WrapError(err, "SaturationPortrait")
+		return
+	}
+	// write "SaturationLandscape"
+	err = en.Append(0xb3, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.SaturationLandscape)
+	if err != nil {
+		err = msgp.WrapError(err, "SaturationLandscape")
+		return
+	}
+	// write "SaturationNeutral"
+	err = en.Append(0xb1, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.SaturationNeutral)
+	if err != nil {
+		err = msgp.WrapError(err, "SaturationNeutral")
+		return
+	}
+	// write "SaturationFaithful"
+	err = en.Append(0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt8(z.SaturationFaithful)
+	if err != nil {
+		err = msgp.WrapError(err, "SaturationFaithful")
+		return
+	}
+	// write "FilterEffectMonochrome"
+	err = en.Append(0xb6, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x45, 0x66, 0x66, 0x65, 0x63, 0x74, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteInt32(int32(z.FilterEffectMonochrome))
+	if err != nil {
+		err = msgp.WrapError(err, "FilterEffectMonochrome")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *PictureStyleInfo5D) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 24
+	// string "ContrastStandard"
+	o = append(o, 0xde, 0x0, 0x18, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	o = msgp.AppendInt8(o, z.ContrastStandard)
+	// string "ContrastPortrait"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	o = msgp.AppendInt8(o, z.ContrastPortrait)
+	// string "ContrastLandscape"
+	o = append(o, 0xb1, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	o = msgp.AppendInt8(o, z.ContrastLandscape)
+	// string "ContrastNeutral"
+	o = append(o, 0xaf, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	o = msgp.AppendInt8(o, z.ContrastNeutral)
+	// string "ContrastFaithful"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	o = msgp.AppendInt8(o, z.ContrastFaithful)
+	// string "ContrastMonochrome"
+	o = append(o, 0xb2, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	o = msgp.AppendInt8(o, z.ContrastMonochrome)
+	// string "ContrastUserDef1"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x31)
+	o = msgp.AppendInt8(o, z.ContrastUserDef1)
+	// string "ContrastUserDef2"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x32)
+	o = msgp.AppendInt8(o, z.ContrastUserDef2)
+	// string "ContrastUserDef3"
+	o = append(o, 0xb0, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x73, 0x74, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x33)
+	o = msgp.AppendInt8(o, z.ContrastUserDef3)
+	// string "SharpnessStandard"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	o = msgp.AppendUint8(o, z.SharpnessStandard)
+	// string "SharpnessPortrait"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	o = msgp.AppendUint8(o, z.SharpnessPortrait)
+	// string "SharpnessLandscape"
+	o = append(o, 0xb2, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	o = msgp.AppendUint8(o, z.SharpnessLandscape)
+	// string "SharpnessNeutral"
+	o = append(o, 0xb0, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	o = msgp.AppendUint8(o, z.SharpnessNeutral)
+	// string "SharpnessFaithful"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	o = msgp.AppendUint8(o, z.SharpnessFaithful)
+	// string "SharpnessMonochrome"
+	o = append(o, 0xb3, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	o = msgp.AppendUint8(o, z.SharpnessMonochrome)
+	// string "SharpnessUserDef1"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x31)
+	o = msgp.AppendUint8(o, z.SharpnessUserDef1)
+	// string "SharpnessUserDef2"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x32)
+	o = msgp.AppendUint8(o, z.SharpnessUserDef2)
+	// string "SharpnessUserDef3"
+	o = append(o, 0xb1, 0x53, 0x68, 0x61, 0x72, 0x70, 0x6e, 0x65, 0x73, 0x73, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x66, 0x33)
+	o = msgp.AppendUint8(o, z.SharpnessUserDef3)
+	// string "SaturationStandard"
+	o = append(o, 0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64)
+	o = msgp.AppendInt8(o, z.SaturationStandard)
+	// string "SaturationPortrait"
+	o = append(o, 0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x6f, 0x72, 0x74, 0x72, 0x61, 0x69, 0x74)
+	o = msgp.AppendInt8(o, z.SaturationPortrait)
+	// string "SaturationLandscape"
+	o = append(o, 0xb3, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x61, 0x6e, 0x64, 0x73, 0x63, 0x61, 0x70, 0x65)
+	o = msgp.AppendInt8(o, z.SaturationLandscape)
+	// string "SaturationNeutral"
+	o = append(o, 0xb1, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4e, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6c)
+	o = msgp.AppendInt8(o, z.SaturationNeutral)
+	// string "SaturationFaithful"
+	o = append(o, 0xb2, 0x53, 0x61, 0x74, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x61, 0x69, 0x74, 0x68, 0x66, 0x75, 0x6c)
+	o = msgp.AppendInt8(o, z.SaturationFaithful)
+	// string "FilterEffectMonochrome"
+	o = append(o, 0xb6, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x45, 0x66, 0x66, 0x65, 0x63, 0x74, 0x4d, 0x6f, 0x6e, 0x6f, 0x63, 0x68, 0x72, 0x6f, 0x6d, 0x65)
+	o = msgp.AppendInt32(o, int32(z.FilterEffectMonochrome))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *PictureStyleInfo5D) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ContrastStandard":
+			z.ContrastStandard, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastStandard")
+				return
+			}
+		case "ContrastPortrait":
+			z.ContrastPortrait, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastPortrait")
+				return
+			}
+		case "ContrastLandscape":
+			z.ContrastLandscape, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastLandscape")
+				return
+			}
+		case "ContrastNeutral":
+			z.ContrastNeutral, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastNeutral")
+				return
+			}
+		case "ContrastFaithful":
+			z.ContrastFaithful, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastFaithful")
+				return
+			}
+		case "ContrastMonochrome":
+			z.ContrastMonochrome, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastMonochrome")
+				return
+			}
+		case "ContrastUserDef1":
+			z.ContrastUserDef1, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef1")
+				return
+			}
+		case "ContrastUserDef2":
+			z.ContrastUserDef2, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef2")
+				return
+			}
+		case "ContrastUserDef3":
+			z.ContrastUserDef3, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ContrastUserDef3")
+				return
+			}
+		case "SharpnessStandard":
+			z.SharpnessStandard, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessStandard")
+				return
+			}
+		case "SharpnessPortrait":
+			z.SharpnessPortrait, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessPortrait")
+				return
+			}
+		case "SharpnessLandscape":
+			z.SharpnessLandscape, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessLandscape")
+				return
+			}
+		case "SharpnessNeutral":
+			z.SharpnessNeutral, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessNeutral")
+				return
+			}
+		case "SharpnessFaithful":
+			z.SharpnessFaithful, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessFaithful")
+				return
+			}
+		case "SharpnessMonochrome":
+			z.SharpnessMonochrome, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessMonochrome")
+				return
+			}
+		case "SharpnessUserDef1":
+			z.SharpnessUserDef1, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef1")
+				return
+			}
+		case "SharpnessUserDef2":
+			z.SharpnessUserDef2, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef2")
+				return
+			}
+		case "SharpnessUserDef3":
+			z.SharpnessUserDef3, bts, err = msgp.ReadUint8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SharpnessUserDef3")
+				return
+			}
+		case "SaturationStandard":
+			z.SaturationStandard, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationStandard")
+				return
+			}
+		case "SaturationPortrait":
+			z.SaturationPortrait, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationPortrait")
+				return
+			}
+		case "SaturationLandscape":
+			z.SaturationLandscape, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationLandscape")
+				return
+			}
+		case "SaturationNeutral":
+			z.SaturationNeutral, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationNeutral")
+				return
+			}
+		case "SaturationFaithful":
+			z.SaturationFaithful, bts, err = msgp.ReadInt8Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "SaturationFaithful")
+				return
+			}
+		case "FilterEffectMonochrome":
+			{
+				var zb0002 int32
+				zb0002, bts, err = msgp.ReadInt32Bytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "FilterEffectMonochrome")
+					return
+				}
+				z.FilterEffectMonochrome = FilterEffect(zb0002)
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *PictureStyleInfo5D) Msgsize() (s int) {
+	s = 3 + 17 + msgp.Int8Size + 17 + msgp.Int8Size + 18 + msgp.Int8Size + 16 + msgp.Int8Size + 17 + msgp.Int8Size + 19 + msgp.Int8Size + 17 + msgp.Int8Size + 17 + msgp.Int8Size + 17 + msgp.Int8Size + 18 + msgp.Uint8Size + 18 + msgp.Uint8Size + 19 + msgp.Uint8Size + 17 + msgp.Uint8Size + 18 + msgp.Uint8Size + 20 + msgp.Uint8Size + 18 + msgp.Uint8Size + 18 + msgp.Uint8Size + 18 + msgp.Uint8Size + 19 + msgp.Int8Size + 19 + msgp.Int8Size + 20 + msgp.Int8Size + 18 + msgp.Int8Size + 19 + msgp.Int8Size + 23 + msgp.Int32Size
 	return
 }
 

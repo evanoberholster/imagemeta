@@ -174,7 +174,9 @@ func (ci *CameraInfo1DmkIII) UnmarshalBinary(b []byte) error {
 	ci.DirectoryIndex = binary.LittleEndian.Uint32(b[0x17e:]) - 1          // 0x17e
 	//ci.TimeStamp1 = binary.LittleEndian.Uint32(b[0x45a : 0x45a+4])         // 0x45a
 	ci.TimeStamp = binary.LittleEndian.Uint32(b[0x45e : 0x45e+4]) // 0x45e
-	// PictureStyleInfo at 0x2aa
+	if len(b) >= 0x2aa+0xf6 {
+		ci.PictureStyleInfo.UnmarshalBinary(b[0x2aa : 0x2aa+0xf6])
+	}
 	return nil
 }
 
@@ -774,6 +776,100 @@ func (ci *CameraInfoPowerShot2) UnmarshalBinary(b []byte) error {
 // UnmarshalBinary implements encoding.BinaryUnmarshaler for CameraInfoUnknown32.
 func (ci *CameraInfoUnknown32) UnmarshalBinary(b []byte) error {
 	// Add unmarshaling logic if any specific fields are known for this format.
+	return nil
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler for PictureStyleInfo2.
+func (psi *PictureStyleInfo2) UnmarshalBinary(b []byte) error {
+	if len(b) < 0xf6 {
+		return fmt.Errorf("incorrect length for PictureStyleInfo2, should be at least %d bytes: %d", 0xf6, len(b))
+	}
+
+	// Standard settings
+	psi.ContrastStandard = int32(binary.LittleEndian.Uint32(b[0x00:]))
+	psi.SharpnessStandard = int32(binary.LittleEndian.Uint32(b[0x04:]))
+	psi.SaturationStandard = int32(binary.LittleEndian.Uint32(b[0x08:]))
+	psi.ColorToneStandard = int32(binary.LittleEndian.Uint32(b[0x0c:]))
+	psi.FilterEffectStandard = int32(binary.LittleEndian.Uint32(b[0x10:]))
+	psi.ToningEffectStandard = int32(binary.LittleEndian.Uint32(b[0x14:]))
+
+	// Portrait settings
+	psi.ContrastPortrait = int32(binary.LittleEndian.Uint32(b[0x18:]))
+	psi.SharpnessPortrait = int32(binary.LittleEndian.Uint32(b[0x1c:]))
+	psi.SaturationPortrait = int32(binary.LittleEndian.Uint32(b[0x20:]))
+	psi.ColorTonePortrait = int32(binary.LittleEndian.Uint32(b[0x24:]))
+	psi.FilterEffectPortrait = int32(binary.LittleEndian.Uint32(b[0x28:]))
+	psi.ToningEffectPortrait = int32(binary.LittleEndian.Uint32(b[0x2c:]))
+
+	// Landscape settings
+	psi.ContrastLandscape = int32(binary.LittleEndian.Uint32(b[0x30:]))
+	psi.SharpnessLandscape = int32(binary.LittleEndian.Uint32(b[0x34:]))
+	psi.SaturationLandscape = int32(binary.LittleEndian.Uint32(b[0x38:]))
+	psi.ColorToneLandscape = int32(binary.LittleEndian.Uint32(b[0x3c:]))
+	psi.FilterEffectLandscape = int32(binary.LittleEndian.Uint32(b[0x40:]))
+	psi.ToningEffectLandscape = int32(binary.LittleEndian.Uint32(b[0x44:]))
+
+	// Neutral settings
+	psi.ContrastNeutral = int32(binary.LittleEndian.Uint32(b[0x48:]))
+	psi.SharpnessNeutral = int32(binary.LittleEndian.Uint32(b[0x4c:]))
+	psi.SaturationNeutral = int32(binary.LittleEndian.Uint32(b[0x50:]))
+	psi.ColorToneNeutral = int32(binary.LittleEndian.Uint32(b[0x54:]))
+	psi.FilterEffectNeutral = int32(binary.LittleEndian.Uint32(b[0x58:]))
+	psi.ToningEffectNeutral = int32(binary.LittleEndian.Uint32(b[0x5c:]))
+
+	// Faithful settings
+	psi.ContrastFaithful = int32(binary.LittleEndian.Uint32(b[0x60:]))
+	psi.SharpnessFaithful = int32(binary.LittleEndian.Uint32(b[0x64:]))
+	psi.SaturationFaithful = int32(binary.LittleEndian.Uint32(b[0x68:]))
+	psi.ColorToneFaithful = int32(binary.LittleEndian.Uint32(b[0x6c:]))
+	psi.FilterEffectFaithful = int32(binary.LittleEndian.Uint32(b[0x70:]))
+	psi.ToningEffectFaithful = int32(binary.LittleEndian.Uint32(b[0x74:]))
+
+	// Monochrome settings
+	psi.ContrastMonochrome = int32(binary.LittleEndian.Uint32(b[0x78:]))
+	psi.SharpnessMonochrome = int32(binary.LittleEndian.Uint32(b[0x7c:]))
+	psi.SaturationMonochrome = int32(binary.LittleEndian.Uint32(b[0x80:]))
+	psi.ColorToneMonochrome = int32(binary.LittleEndian.Uint32(b[0x84:]))
+	psi.FilterEffectMonochrome = FilterEffect(binary.LittleEndian.Uint32(b[0x88:]))
+	psi.ToningEffectMonochrome = ToningEffect(binary.LittleEndian.Uint32(b[0x8c:]))
+
+	// Auto settings
+	psi.ContrastAuto = int32(binary.LittleEndian.Uint32(b[0x90:]))
+	psi.SharpnessAuto = int32(binary.LittleEndian.Uint32(b[0x94:]))
+	psi.SaturationAuto = int32(binary.LittleEndian.Uint32(b[0x98:]))
+	psi.ColorToneAuto = int32(binary.LittleEndian.Uint32(b[0x9c:]))
+	psi.FilterEffectAuto = FilterEffect(binary.LittleEndian.Uint32(b[0xa0:]))
+	psi.ToningEffectAuto = ToningEffect(binary.LittleEndian.Uint32(b[0xa4:]))
+
+	// User Defined 1
+	psi.ContrastUserDef1 = int32(binary.LittleEndian.Uint32(b[0xa8:]))
+	psi.SharpnessUserDef1 = int32(binary.LittleEndian.Uint32(b[0xac:]))
+	psi.SaturationUserDef1 = int32(binary.LittleEndian.Uint32(b[0xb0:]))
+	psi.ColorToneUserDef1 = int32(binary.LittleEndian.Uint32(b[0xb4:]))
+	psi.FilterEffectUserDef1 = FilterEffect(binary.LittleEndian.Uint32(b[0xb8:]))
+	psi.ToningEffectUserDef1 = ToningEffect(binary.LittleEndian.Uint32(b[0xbc:]))
+
+	// User Defined 2
+	psi.ContrastUserDef2 = int32(binary.LittleEndian.Uint32(b[0xc0:]))
+	psi.SharpnessUserDef2 = int32(binary.LittleEndian.Uint32(b[0xc4:]))
+	psi.SaturationUserDef2 = int32(binary.LittleEndian.Uint32(b[0xc8:]))
+	psi.ColorToneUserDef2 = int32(binary.LittleEndian.Uint32(b[0xcc:]))
+	psi.FilterEffectUserDef2 = FilterEffect(binary.LittleEndian.Uint32(b[0xd0:]))
+	psi.ToningEffectUserDef2 = ToningEffect(binary.LittleEndian.Uint32(b[0xd4:]))
+
+	// User Defined 3
+	psi.ContrastUserDef3 = int32(binary.LittleEndian.Uint32(b[0xd8:]))
+	psi.SharpnessUserDef3 = int32(binary.LittleEndian.Uint32(b[0xdc:]))
+	psi.SaturationUserDef3 = int32(binary.LittleEndian.Uint32(b[0xe0:]))
+	psi.ColorToneUserDef3 = int32(binary.LittleEndian.Uint32(b[0xe4:]))
+	psi.FilterEffectUserDef3 = FilterEffect(binary.LittleEndian.Uint32(b[0xe8:]))
+	psi.ToningEffectUserDef3 = ToningEffect(binary.LittleEndian.Uint32(b[0xec:]))
+
+	// Base picture styles
+	psi.UserDef1PictureStyle = binary.LittleEndian.Uint16(b[0xf0:])
+	psi.UserDef2PictureStyle = binary.LittleEndian.Uint16(b[0xf2:])
+	psi.UserDef3PictureStyle = binary.LittleEndian.Uint16(b[0xf4:])
+
 	return nil
 }
 
