@@ -3,104 +3,287 @@ package imagetype
 
 import (
 	"errors"
+	"mime"
+	"path/filepath"
 	"strings"
 )
 
 var (
 	// ErrDataLength is an error for data length
 	ErrDataLength = errors.New("error the data is not long enough")
-
-	// ImageType stringer Index
-	_ImageTypeIndex = [...]uint{0, 24, 34, 43, 52, 61, 71, 81, 90, 100, 117, 134, 155, 171, 188, 205, 222, 239, 264, 283, 293, 316, 325, 338, 350}
-
-	// ImageType extension Index
-	_ImageTypeExtIndex = [...]uint{0, 0, 3, 6, 9, 12, 16, 20, 23, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 61, 64, 67, 70, 76}
-)
-
-const (
-	// ImageType stringer Names
-	_ImageTypeString = "application/octet-streamimage/jpegimage/pngimage/gifimage/bmpimage/webpimage/heifimage/rawimage/tiffimage/x-adobe-dngimage/x-nikon-nefimage/x-panasonic-rawimage/x-sony-arwimage/x-canon-crwimage/x-gopro-gprimage/x-canon-cr3image/x-canon-cr2image/vnd.adobe.photoshopapplication/rdf+xmlimage/avifimage/x-portable-pixmapimage/jp2image/svg+xmlimage/magick"
-
-	// ImageType extension Names
-	_ImageTypeExtString = "jpgpnggifbmpwebpheifRAWTIFFDNGNEFRW2ARWCRWGPRCR3CR2PSDXMPavifppmjp2svgmagick"
 )
 
 //go:generate msgp
 
-// ImageType is type of Image or Metadata file
-//
-//	ImageUnknown: "application/octet-stream"
-//	ImageJPEG:    "image/jpeg"
-//	ImagePNG:     "image/png"
-//	ImageGIF:     "image/gif"
-//	ImageBMP:     "image/bmp"
-//	ImageWebP:    "image/webp"
-//	ImageHEIF:    "image/heif"
-//	ImageRAW:     "image/raw"
-//	ImageTiff:    "image/tiff"
-//	ImageDNG:     "image/x-adobe-dng"
-//	ImageNEF:     "image/x-nikon-nef"
-//	ImagePanaRAW: "image/x-panasonic-raw"
-//	ImageARW:     "image/x-sony-arw"
-//	ImageCRW:     "image/x-canon-crw"
-//	ImageGPR:     "image/x-gopro-gpr"
-//	ImageCR3:     "image/x-canon-cr3"
-//	ImageCR2:     "image/x-canon-cr2"
-//	ImagePSD:     "image/vnd.adobe.photoshop"
-//	ImageXMP:     "application/rdf+xml"
-//	ImageAVIF:    "image/avif"
-//	ImagePPM:     "image/x-portable-pixmap"
-type ImageType uint8
+// FileType is type of Image or Metadata file
+type FileType uint8
 
-// IsUnknown returns true if the Image Type is unknown
-func (it ImageType) IsUnknown() bool {
-	return it == ImageUnknown
+// MIMEType is the canonical MIME type for a file type.
+type MIMEType string
+
+// FileTypeExtension is the canonical filename extension for a file type.
+type FileTypeExtension string
+
+// ImageType is kept as an alias for backward compatibility.
+type ImageType = FileType
+
+func (mt MIMEType) String() string {
+	return string(mt)
+}
+
+func (ext FileTypeExtension) String() string {
+	return string(ext)
+}
+
+// IsUnknown returns true if the file type is unknown.
+func (ft FileType) IsUnknown() bool {
+	return ft == ImageUnknown
 }
 
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
-func (it ImageType) MarshalText() (text []byte, err error) {
-	return []byte(it.String()), nil
+func (ft FileType) MarshalText() (text []byte, err error) {
+	return []byte(ft.String()), nil
 }
 
 // UnmarshalText implements the TextUnmarshaler interface that is
 // used by encoding/json
-func (it *ImageType) UnmarshalText(text []byte) (err error) {
-	*it = FromString(string(text))
+func (ft *FileType) UnmarshalText(text []byte) (err error) {
+	*ft = FromString(string(text))
 	return nil
 }
 
-func (it ImageType) String() string {
-	if int(it) < len(_ImageTypeIndex)-1 {
-		return _ImageTypeString[_ImageTypeIndex[it]:_ImageTypeIndex[it+1]]
-	}
-	return _ImageTypeString[:_ImageTypeIndex[1]]
+// String returns the canonical MIME type for the file type.
+func (ft FileType) String() string {
+	return ft.MIMEType().String()
 }
 
-// Extension returns the default extension for the Imagetype
-func (it ImageType) Extension() string {
-	if int(it) < len(_ImageTypeExtIndex)-1 {
-		return _ImageTypeExtString[_ImageTypeExtIndex[it]:_ImageTypeExtIndex[it+1]]
+// MIMEType returns the canonical MIME type for the file type.
+func (ft FileType) MIMEType() MIMEType {
+	if mimeType, ok := fileTypeCanonicalMIME[ft]; ok {
+		return mimeType
 	}
-	return _ImageTypeExtString[:_ImageTypeExtIndex[1]]
+	return fileTypeCanonicalMIME[ImageUnknown]
 }
 
-// FromString returns an ImageType for the given content-type string or common filename extension
-func FromString(str string) ImageType {
+// Extension returns the canonical file extension for the file type.
+func (ft FileType) Extension() string {
+	return ft.FileTypeExtension().String()
+}
+
+// FileTypeExtension returns the canonical filename extension for the file type.
+func (ft FileType) FileTypeExtension() FileTypeExtension {
+	if ext, ok := fileTypeCanonicalExtension[ft]; ok {
+		return ext
+	}
+	return fileTypeCanonicalExtension[ImageUnknown]
+}
+
+// Family returns the broad semantic family for the image type.
+func (ft FileType) Family() MediaType {
+	return ft.MediaType()
+}
+
+// MediaType returns the broad semantic media class for the file type.
+func (ft FileType) MediaType() MediaType {
+	switch {
+	case ft.IsUnknown():
+		return MediaTypeUnknown
+	case ft == ImageXMP:
+		return MediaTypeMetadata
+	case ft == ImageSVG:
+		return MediaTypeVector
+	case ft.IsRAW():
+		return MediaTypeRaw
+	default:
+		return MediaTypeRaster
+	}
+}
+
+// BaseType returns the container/signature family used to classify this type.
+func (ft FileType) BaseType() BaseType {
+	if ft.IsUnknown() {
+		return BaseTypeUnknown
+	}
+
+	switch ft {
+	case ImageJPEG:
+		return BaseTypeJPEG
+	case ImagePNG, ImageAPNG:
+		return BaseTypePNG
+	case ImageGIF:
+		return BaseTypeGIF
+	case ImageBMP:
+		return BaseTypeBMP
+	case ImageWebP:
+		return BaseTypeRIFF
+	case ImageHEIF, ImageHEIC, ImageAVIF, ImageCR3:
+		return BaseTypeISOBMFF
+	case ImageTiff, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCR2, ImageGPR,
+		ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ, Image3FR, ImageX3F,
+		ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2, ImageSRF, ImageFFF,
+		ImageMOS, ImageK25:
+		return BaseTypeTIFF
+	case ImageCRW:
+		return BaseTypeCIFF
+	case ImagePSD:
+		return BaseTypePSD
+	case ImageXMP:
+		return BaseTypeXML
+	case ImagePPM, ImagePBM, ImagePGM, ImagePNM, ImagePAM:
+		return BaseTypeNetpbm
+	case ImageJP2K:
+		return BaseTypeJP2
+	case ImageSVG:
+		return BaseTypeSVG
+	case ImageMAGICK:
+		return BaseTypeMagick
+	case ImageICO, ImageCUR:
+		return BaseTypeICO
+	case ImageTGA:
+		return BaseTypeTGA
+	case ImageDDS:
+		return BaseTypeDDS
+	case ImageEXR:
+		return BaseTypeEXR
+	case ImageHDR:
+		return BaseTypeHDR
+	case ImageJXL:
+		return BaseTypeJXL
+	case ImageJXR:
+		return BaseTypeJXR
+	case ImageMNG:
+		return BaseTypeMNG
+	case ImageJNG:
+		return BaseTypeJNG
+	case ImageMPO:
+		return BaseTypeMPO
+	case ImageDPX:
+		return BaseTypeDPX
+	case ImageFITS:
+		return BaseTypeFITS
+	case ImageDCM:
+		return BaseTypeDICOM
+	case ImageFPX:
+		return BaseTypeFPX
+	case ImageDJVU:
+		return BaseTypeDJVU
+	case ImagePCX:
+		return BaseTypePCX
+	case ImageWPG:
+		return BaseTypeWPG
+	case ImagePICT:
+		return BaseTypePICT
+	case ImagePCD:
+		return BaseTypePCD
+	case ImageBPG:
+		return BaseTypeBPG
+	case ImageFLIF:
+		return BaseTypeFLIF
+	case ImagePGF:
+		return BaseTypePGF
+	case ImageXCF:
+		return BaseTypeXCF
+	case ImageQTIF:
+		return BaseTypeQTIF
+	case ImageRAW:
+		return BaseTypeUnknown
+	default:
+		return BaseTypeUnknown
+	}
+}
+
+// Container is kept for backward compatibility.
+func (ft FileType) Container() BaseType {
+	return ft.BaseType()
+}
+
+// IsRAW returns true for camera raw and raw-family image types.
+func (ft FileType) IsRAW() bool {
+	switch ft {
+	case ImageRAW, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCRW, ImageGPR,
+		ImageCR3, ImageCR2, ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ,
+		Image3FR, ImageX3F, ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2,
+		ImageSRF, ImageFFF, ImageMOS, ImageK25:
+		return true
+	default:
+		return false
+	}
+}
+
+// FromString returns a FileType for the given content-type string, extension,
+// or filename.
+func FromString(str string) FileType {
+	str = strings.TrimSpace(str)
+	if str == "" {
+		return ImageUnknown
+	}
+
+	normalized := strings.ToLower(str)
+
 	// from content-type
-	if it, ok := imageTypeValues[str]; ok {
+	if it, ok := mimeTypeValues[MIMEType(normalized)]; ok {
 		return it
 	}
+
+	// from content-type with optional parameters
+	if mediaType, _, err := mime.ParseMediaType(normalized); err == nil {
+		if it, ok := mimeTypeValues[MIMEType(mediaType)]; ok {
+			return it
+		}
+	}
+
 	// from extension
-	if it, ok := imageTypeExtensions[strings.ToLower(str)]; ok {
+	if it, ok := fileTypeExtensions[FileTypeExtension(normalized)]; ok {
 		return it
 	}
+	if !strings.HasPrefix(normalized, ".") {
+		if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
+			return it
+		}
+	}
+
+	// from file path / file name extension
+	if ext := strings.ToLower(filepath.Ext(normalized)); ext != "" {
+		if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
+			return it
+		}
+	}
+
+	// from common MIME shorthand "image/jpg; charset=..."
+	if idx := strings.IndexByte(normalized, ';'); idx > 0 {
+		if it, ok := mimeTypeValues[MIMEType(strings.TrimSpace(normalized[:idx]))]; ok {
+			return it
+		}
+	}
+
+	// from common query-like suffixes: "file.jpg?foo=bar"
+	if idx := strings.IndexAny(normalized, "?#"); idx > 0 {
+		if ext := strings.ToLower(filepath.Ext(normalized[:idx])); ext != "" {
+			if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
+				return it
+			}
+		}
+	}
+
+	// from extension token in path-like inputs without a leading dot
+	if idx := strings.LastIndexByte(normalized, '.'); idx > 0 && idx < len(normalized)-1 {
+		if it, ok := fileTypeExtensions[FileTypeExtension(normalized[idx:])]; ok {
+			return it
+		}
+	}
+
+	// from file names where ext is the full token (e.g. "jpeg")
+	if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
+		return it
+	}
+
 	return ImageUnknown
 }
 
 // Image file types Raw/Compressed/JPEG
 const (
-	ImageUnknown ImageType = iota
+	ImageUnknown FileType = iota
 	ImageJPEG
 	ImagePNG
 	ImageGIF
@@ -124,62 +307,565 @@ const (
 	ImageJP2K   // JP2K represents the JPEG 2000 image type.
 	ImageSVG    // SVG represents the SVG image type.
 	ImageMAGICK // MAGICK represents the libmagick compatible genetic image type.
+
+	// --- additions ---
+	ImageICO  // Windows icon
+	ImageCUR  // Windows cursor
+	ImageTGA  // Truevision TGA
+	ImageDDS  // DirectDraw Surface
+	ImageEXR  // OpenEXR
+	ImageHDR  // Radiance HDR (RGBE)
+	ImageJXL  // JPEG XL
+	ImageHEIC // HEIC (HEIF family, but common as its own label)
+	ImageAPNG // Animated PNG (still PNG container, but useful to distinguish)
+	ImagePBM  // Netpbm PBM
+	ImagePGM  // Netpbm PGM
+	ImagePNM  // Netpbm PNM (generic)
+	ImagePAM  // Netpbm PAM
+
+	// More camera RAWs
+	ImageRAF // Fujifilm RAF
+	ImageORF // Olympus ORF
+	ImageSRW // Samsung SRW
+	ImagePEF // Pentax PEF
+	ImageRWL // Leica RWL
+	ImageIIQ // Phase One IIQ
+	Image3FR // Hasselblad 3FR
+	ImageX3F // Sigma X3F
+	ImageMRW // Minolta MRW
+	ImageKDC // Kodak KDC
+	ImageDCR // Kodak DCR
+	ImageERF // Epson ERF
+
+	// --- added (ExifTool-supported image formats you were missing) ---
+	ImageJXR  // JPEG XR / HD Photo (JXR, WDP, HDP)
+	ImageMNG  // Multiple-image Network Graphics
+	ImageJNG  // JPEG Network Graphics
+	ImageMPO  // Multi Picture Object (multi-frame JPEG)
+	ImageDPX  // Digital Picture Exchange
+	ImageFITS // FITS (astronomy)
+	ImageDCM  // DICOM (medical imaging container)
+	ImageFPX  // FlashPix
+	ImageDJVU // DjVu
+	ImagePCX  // PC Paintbrush
+	ImageWPG  // WordPerfect Graphics
+	ImagePICT // Apple PICT
+	ImagePCD  // Photo CD
+	ImageBPG  // Better Portable Graphics
+	ImageFLIF // Free Lossless Image Format
+	ImagePGF  // Progressive Graphics File
+	ImageXCF  // GIMP native
+	ImageQTIF // QuickTime Image File (QTIF)
+
+	// --- added RAWs ExifTool supports ---
+	ImageNRW // Nikon NRW
+	ImageSR2 // Sony SR2
+	ImageSRF // Sony SRF
+	ImageFFF // Hasselblad FFF
+	ImageMOS // Leaf MOS
+	ImageK25 // Kodak K25
 )
 
-// ImageTypeValues maps a content-type string with an imagetype.
-var imageTypeValues = map[string]ImageType{
-	"application/octet-stream":  ImageUnknown,
-	"image/jpeg":                ImageJPEG,
-	"image/png":                 ImagePNG,
-	"image/gif":                 ImageGIF,
-	"image/bmp":                 ImageBMP,
-	"image/webp":                ImageWebP,
-	"image/heif":                ImageHEIF,
-	"image/raw":                 ImageRAW,
-	"image/tiff":                ImageTiff,
-	"image/x-adobe-dng":         ImageDNG,
-	"image/x-nikon-nef":         ImageNEF,
-	"image/x-panasonic-raw":     ImagePanaRAW,
-	"image/x-sony-arw":          ImageARW,
-	"image/x-canon-crw":         ImageCRW,
-	"image/x-gopro-gpr":         ImageGPR,
-	"image/x-canon-cr3":         ImageCR3,
-	"image/x-canon-cr2":         ImageCR2,
-	"image/vnd.adobe.photoshop": ImagePSD,
-	"application/rdf+xml":       ImageXMP,
-	"image/avif":                ImageAVIF,
-	"image/x-portable-pixmap":   ImagePPM,
-	"image/jp2":                 ImageJP2K,
-	"image/svg+xml":             ImageSVG,
-	"image/magick":              ImageMAGICK,
+// MediaType groups file types into high-level semantic classes.
+type MediaType uint8
+
+const (
+	MediaTypeUnknown MediaType = iota
+	MediaTypeRaster
+	MediaTypeVector
+	MediaTypeMetadata
+	MediaTypeRaw
+)
+
+func (m MediaType) String() string {
+	switch m {
+	case MediaTypeRaster:
+		return "raster"
+	case MediaTypeVector:
+		return "vector"
+	case MediaTypeMetadata:
+		return "metadata"
+	case MediaTypeRaw:
+		return "raw"
+	default:
+		return "unknown"
+	}
 }
 
-// ImageTypeExtensions maps filename extensions with an imagetype.
-var imageTypeExtensions = map[string]ImageType{
+// BaseType represents the container/signature class used for classification.
+type BaseType uint8
+
+const (
+	BaseTypeUnknown BaseType = iota
+	BaseTypeJPEG
+	BaseTypePNG
+	BaseTypeGIF
+	BaseTypeBMP
+	BaseTypeRIFF
+	BaseTypeISOBMFF
+	BaseTypeTIFF
+	BaseTypeCIFF
+	BaseTypePSD
+	BaseTypeXML
+	BaseTypeNetpbm
+	BaseTypeJP2
+	BaseTypeSVG
+	BaseTypeMagick
+	BaseTypeICO
+	BaseTypeTGA
+	BaseTypeDDS
+	BaseTypeEXR
+	BaseTypeHDR
+	BaseTypeJXL
+	BaseTypeJXR
+	BaseTypeMNG
+	BaseTypeJNG
+	BaseTypeMPO
+	BaseTypeDPX
+	BaseTypeFITS
+	BaseTypeDICOM
+	BaseTypeFPX
+	BaseTypeDJVU
+	BaseTypePCX
+	BaseTypeWPG
+	BaseTypePICT
+	BaseTypePCD
+	BaseTypeBPG
+	BaseTypeFLIF
+	BaseTypePGF
+	BaseTypeXCF
+	BaseTypeQTIF
+)
+
+func (b BaseType) String() string {
+	switch b {
+	case BaseTypeJPEG:
+		return "jpeg"
+	case BaseTypePNG:
+		return "png"
+	case BaseTypeGIF:
+		return "gif"
+	case BaseTypeBMP:
+		return "bmp"
+	case BaseTypeRIFF:
+		return "riff"
+	case BaseTypeISOBMFF:
+		return "isobmff"
+	case BaseTypeTIFF:
+		return "tiff"
+	case BaseTypeCIFF:
+		return "ciff"
+	case BaseTypePSD:
+		return "psd"
+	case BaseTypeXML:
+		return "xml"
+	case BaseTypeNetpbm:
+		return "netpbm"
+	case BaseTypeJP2:
+		return "jp2"
+	case BaseTypeSVG:
+		return "svg"
+	case BaseTypeMagick:
+		return "magick"
+	case BaseTypeICO:
+		return "ico"
+	case BaseTypeTGA:
+		return "tga"
+	case BaseTypeDDS:
+		return "dds"
+	case BaseTypeEXR:
+		return "exr"
+	case BaseTypeHDR:
+		return "hdr"
+	case BaseTypeJXL:
+		return "jxl"
+	case BaseTypeJXR:
+		return "jxr"
+	case BaseTypeMNG:
+		return "mng"
+	case BaseTypeJNG:
+		return "jng"
+	case BaseTypeMPO:
+		return "mpo"
+	case BaseTypeDPX:
+		return "dpx"
+	case BaseTypeFITS:
+		return "fits"
+	case BaseTypeDICOM:
+		return "dicom"
+	case BaseTypeFPX:
+		return "fpx"
+	case BaseTypeDJVU:
+		return "djvu"
+	case BaseTypePCX:
+		return "pcx"
+	case BaseTypeWPG:
+		return "wpg"
+	case BaseTypePICT:
+		return "pict"
+	case BaseTypePCD:
+		return "pcd"
+	case BaseTypeBPG:
+		return "bpg"
+	case BaseTypeFLIF:
+		return "flif"
+	case BaseTypePGF:
+		return "pgf"
+	case BaseTypeXCF:
+		return "xcf"
+	case BaseTypeQTIF:
+		return "qtif"
+	default:
+		return "unknown"
+	}
+}
+
+var fileTypeCanonicalMIME = map[FileType]MIMEType{
+	ImageUnknown: "application/octet-stream",
+	ImageJPEG:    "image/jpeg",
+	ImagePNG:     "image/png",
+	ImageGIF:     "image/gif",
+	ImageBMP:     "image/bmp",
+	ImageWebP:    "image/webp",
+	ImageHEIF:    "image/heif",
+	ImageRAW:     "image/raw",
+	ImageTiff:    "image/tiff",
+	ImageDNG:     "image/x-adobe-dng",
+	ImageNEF:     "image/x-nikon-nef",
+	ImagePanaRAW: "image/x-panasonic-raw",
+	ImageARW:     "image/x-sony-arw",
+	ImageCRW:     "image/x-canon-crw",
+	ImageGPR:     "image/x-gopro-gpr",
+	ImageCR3:     "image/x-canon-cr3",
+	ImageCR2:     "image/x-canon-cr2",
+	ImagePSD:     "image/vnd.adobe.photoshop",
+	ImageXMP:     "application/rdf+xml",
+	ImageAVIF:    "image/avif",
+	ImagePPM:     "image/x-portable-pixmap",
+	ImageJP2K:    "image/jp2",
+	ImageSVG:     "image/svg+xml",
+	ImageMAGICK:  "image/magick",
+	ImageICO:     "image/vnd.microsoft.icon",
+	ImageCUR:     "image/x-cursor",
+	ImageTGA:     "image/x-tga",
+	ImageDDS:     "image/vnd-ms.dds",
+	ImageEXR:     "image/x-exr",
+	ImageHDR:     "image/vnd.radiance",
+	ImageJXL:     "image/jxl",
+	ImageHEIC:    "image/heic",
+	ImageAPNG:    "image/apng",
+	ImagePBM:     "image/x-portable-bitmap",
+	ImagePGM:     "image/x-portable-graymap",
+	ImagePNM:     "image/x-portable-anymap",
+	ImagePAM:     "image/x-portable-arbitrarymap",
+	ImageRAF:     "image/x-fuji-raf",
+	ImageORF:     "image/x-olympus-orf",
+	ImageSRW:     "image/x-samsung-srw",
+	ImagePEF:     "image/x-pentax-pef",
+	ImageRWL:     "image/x-leica-rwl",
+	ImageIIQ:     "image/x-phaseone-iiq",
+	Image3FR:     "image/x-hasselblad-3fr",
+	ImageX3F:     "image/x-sigma-x3f",
+	ImageMRW:     "image/x-minolta-mrw",
+	ImageKDC:     "image/x-kodak-kdc",
+	ImageDCR:     "image/x-kodak-dcr",
+	ImageERF:     "image/x-epson-erf",
+	ImageJXR:     "image/vnd.ms-photo",
+	ImageMNG:     "image/x-mng",
+	ImageJNG:     "image/x-jng",
+	ImageMPO:     "image/mpo",
+	ImageDPX:     "image/x-dpx",
+	ImageFITS:    "image/fits",
+	ImageDCM:     "application/dicom",
+	ImageFPX:     "image/vnd.fpx",
+	ImageDJVU:    "image/vnd.djvu",
+	ImagePCX:     "image/x-pcx",
+	ImageWPG:     "application/x-wpg",
+	ImagePICT:    "image/x-pict",
+	ImagePCD:     "image/x-photo-cd",
+	ImageBPG:     "image/bpg",
+	ImageFLIF:    "image/flif",
+	ImagePGF:     "image/pgf",
+	ImageXCF:     "image/x-xcf",
+	ImageQTIF:    "image/qtif",
+	ImageNRW:     "image/x-nikon-nrw",
+	ImageSR2:     "image/x-sony-sr2",
+	ImageSRF:     "image/x-sony-srf",
+	ImageFFF:     "image/x-hasselblad-fff",
+	ImageMOS:     "image/x-leaf-mos",
+	ImageK25:     "image/x-kodak-k25",
+}
+
+var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
+	ImageUnknown: "",
+	ImageJPEG:    "jpg",
+	ImagePNG:     "png",
+	ImageGIF:     "gif",
+	ImageBMP:     "bmp",
+	ImageWebP:    "webp",
+	ImageHEIF:    "heif",
+	ImageRAW:     "raw",
+	ImageTiff:    "tiff",
+	ImageDNG:     "dng",
+	ImageNEF:     "nef",
+	ImagePanaRAW: "rw2",
+	ImageARW:     "arw",
+	ImageCRW:     "crw",
+	ImageGPR:     "gpr",
+	ImageCR3:     "cr3",
+	ImageCR2:     "cr2",
+	ImagePSD:     "psd",
+	ImageXMP:     "xmp",
+	ImageAVIF:    "avif",
+	ImagePPM:     "ppm",
+	ImageJP2K:    "jp2",
+	ImageSVG:     "svg",
+	ImageMAGICK:  "magick",
+	ImageICO:     "ico",
+	ImageCUR:     "cur",
+	ImageTGA:     "tga",
+	ImageDDS:     "dds",
+	ImageEXR:     "exr",
+	ImageHDR:     "hdr",
+	ImageJXL:     "jxl",
+	ImageHEIC:    "heic",
+	ImageAPNG:    "apng",
+	ImagePBM:     "pbm",
+	ImagePGM:     "pgm",
+	ImagePNM:     "pnm",
+	ImagePAM:     "pam",
+	ImageRAF:     "raf",
+	ImageORF:     "orf",
+	ImageSRW:     "srw",
+	ImagePEF:     "pef",
+	ImageRWL:     "rwl",
+	ImageIIQ:     "iiq",
+	Image3FR:     "3fr",
+	ImageX3F:     "x3f",
+	ImageMRW:     "mrw",
+	ImageKDC:     "kdc",
+	ImageDCR:     "dcr",
+	ImageERF:     "erf",
+	ImageJXR:     "jxr",
+	ImageMNG:     "mng",
+	ImageJNG:     "jng",
+	ImageMPO:     "mpo",
+	ImageDPX:     "dpx",
+	ImageFITS:    "fits",
+	ImageDCM:     "dcm",
+	ImageFPX:     "fpx",
+	ImageDJVU:    "djvu",
+	ImagePCX:     "pcx",
+	ImageWPG:     "wpg",
+	ImagePICT:    "pict",
+	ImagePCD:     "pcd",
+	ImageBPG:     "bpg",
+	ImageFLIF:    "flif",
+	ImagePGF:     "pgf",
+	ImageXCF:     "xcf",
+	ImageQTIF:    "qtif",
+	ImageNRW:     "nrw",
+	ImageSR2:     "sr2",
+	ImageSRF:     "srf",
+	ImageFFF:     "fff",
+	ImageMOS:     "mos",
+	ImageK25:     "k25",
+}
+
+// mimeTypeValues maps a content-type string with a file type.
+var mimeTypeValues = map[MIMEType]FileType{
+	"application/dicom":             ImageDCM,
+	"application/dicom+json":        ImageDCM, // sometimes used; still DICOM family
+	"application/dicom+xml":         ImageDCM,
+	"application/fits":              ImageFITS,
+	"application/octet-stream":      ImageUnknown,
+	"application/rdf+xml":           ImageXMP,
+	"application/x-pcx":             ImagePCX,
+	"application/x-wpg":             ImageWPG,
+	"application/x-xcf":             ImageXCF,
+	"image/aces":                    ImageEXR,  // uncommon; many servers just octet-stream
+	"image/apng":                    ImageAPNG, // official-ish; often served as image/png
+	"image/avif":                    ImageAVIF,
+	"image/bmp":                     ImageBMP,
+	"image/bpg":                     ImageBPG,
+	"image/fits":                    ImageFITS,
+	"image/flif":                    ImageFLIF,
+	"image/gif":                     ImageGIF,
+	"image/heic":                    ImageHEIC, // commonly used; HEIC is part of HEIF
+	"image/heic-sequence":           ImageHEIC,
+	"image/heif":                    ImageHEIF,
+	"image/heif-sequence":           ImageHEIF,
+	"image/jpeg":                    ImageJPEG,
+	"image/jp2":                     ImageJP2K,
+	"image/jxl":                     ImageJXL,
+	"image/jxr":                     ImageJXR, // uncommon, but seen
+	"image/magick":                  ImageMAGICK,
+	"image/mpo":                     ImageMPO,
+	"image/pgf":                     ImagePGF,
+	"image/png":                     ImagePNG,
+	"image/qtif":                    ImageQTIF,
+	"image/raw":                     ImageRAW,
+	"image/svg+xml":                 ImageSVG,
+	"image/tiff":                    ImageTiff,
+	"image/vnd-ms.dds":              ImageDDS,
+	"image/vnd.adobe.photoshop":     ImagePSD,
+	"image/vnd.djvu":                ImageDJVU,
+	"image/vnd.fpx":                 ImageFPX,
+	"image/vnd.microsoft.icon":      ImageICO,
+	"image/vnd.ms-photo":            ImageJXR, // common for .wdp/.jxr
+	"image/vnd.radiance":            ImageHDR,
+	"image/webp":                    ImageWebP,
+	"image/x-adobe-dng":             ImageDNG,
+	"image/x-canon-cr2":             ImageCR2,
+	"image/x-canon-cr3":             ImageCR3,
+	"image/x-canon-crw":             ImageCRW,
+	"image/x-cursor":                ImageCUR,
+	"image/x-dds":                   ImageDDS,
+	"image/x-djvu":                  ImageDJVU,
+	"image/x-dpx":                   ImageDPX,
+	"image/x-epson-erf":             ImageERF,
+	"image/x-exr":                   ImageEXR,
+	"image/x-flif":                  ImageFLIF,
+	"image/x-fuji-raf":              ImageRAF,
+	"image/x-gopro-gpr":             ImageGPR,
+	"image/x-hasselblad-3fr":        Image3FR,
+	"image/x-hasselblad-fff":        ImageFFF,
+	"image/x-hdp":                   ImageJXR,
+	"image/x-hdr":                   ImageHDR,
+	"image/x-icon":                  ImageICO, // also used for .ico
+	"image/x-jng":                   ImageJNG,
+	"image/x-jxr":                   ImageJXR,
+	"image/x-kodak-dcr":             ImageDCR,
+	"image/x-kodak-k25":             ImageK25,
+	"image/x-kodak-kdc":             ImageKDC,
+	"image/x-leaf-mos":              ImageMOS,
+	"image/x-leica-rwl":             ImageRWL,
+	"image/x-minolta-mrw":           ImageMRW,
+	"image/x-mng":                   ImageMNG,
+	"image/x-mpo":                   ImageMPO,
+	"image/x-nikon-nef":             ImageNEF,
+	"image/x-nikon-nrw":             ImageNRW,
+	"image/x-olympus-orf":           ImageORF,
+	"image/x-panasonic-raw":         ImagePanaRAW,
+	"image/x-pcx":                   ImagePCX,
+	"image/x-pentax-pef":            ImagePEF,
+	"image/x-phaseone-iiq":          ImageIIQ,
+	"image/x-photo-cd":              ImagePCD,
+	"image/x-pic":                   ImagePICT,
+	"image/x-pict":                  ImagePICT,
+	"image/x-pgf":                   ImagePGF,
+	"image/x-portable-anymap":       ImagePNM,
+	"image/x-portable-arbitrarymap": ImagePAM,
+	"image/x-portable-bitmap":       ImagePBM,
+	"image/x-portable-graymap":      ImagePGM,
+	"image/x-portable-pixmap":       ImagePPM,
+	"image/x-qtif":                  ImageQTIF,
+	"image/x-samsung-srw":           ImageSRW,
+	"image/x-sigma-x3f":             ImageX3F,
+	"image/x-sony-arw":              ImageARW,
+	"image/x-sony-sr2":              ImageSR2,
+	"image/x-sony-srf":              ImageSRF,
+	"image/x-targa":                 ImageTGA,
+	"image/x-tga":                   ImageTGA,
+	"image/x-wdp":                   ImageJXR,
+	"image/x-win-bitmap":            ImageICO, // seen occasionally
+	"image/x-xcf":                   ImageXCF,
+	"video/x-mng":                   ImageMNG, // often mislabeled as video/*
+}
+
+// fileTypeExtensions maps filename extensions with a file type.
+var fileTypeExtensions = map[FileTypeExtension]FileType{
 	"":        ImageUnknown,
-	".jpg":    ImageJPEG,
-	".png":    ImagePNG,
-	".gif":    ImageGIF,
-	".bmp":    ImageBMP,
-	".webp":   ImageWebP,
-	".heif":   ImageHEIF,
-	".raw":    ImageRAW,
-	".tiff":   ImageTiff,
-	".dng":    ImageDNG,
-	".nef":    ImageNEF,
-	".rw2":    ImagePanaRAW,
+	".3fr":    Image3FR,
+	".apng":   ImageAPNG, // if you want to distinguish; otherwise map to ImagePNG
 	".arw":    ImageARW,
-	".crw":    ImageCRW,
-	".gpr":    ImageGPR,
-	".cr3":    ImageCR3,
-	".cr2":    ImageCR2,
-	".psd":    ImagePSD,
-	".xmp":    ImageXMP,
 	".avif":   ImageAVIF,
-	".ppm":    ImagePPM,
+	".bmp":    ImageBMP,
+	".bpg":    ImageBPG,
+	".cr2":    ImageCR2,
+	".cr3":    ImageCR3,
+	".crw":    ImageCRW,
+	".cur":    ImageCUR,
+	".dcm":    ImageDCM,
+	".dcr":    ImageDCR,
+	".dds":    ImageDDS,
+	".djv":    ImageDJVU,
+	".djvu":   ImageDJVU,
+	".dng":    ImageDNG,
+	".dpx":    ImageDPX,
+	".erf":    ImageERF,
+	".exr":    ImageEXR,
+	".fff":    ImageFFF,
+	".fit":    ImageFITS,
+	".fits":   ImageFITS,
+	".flif":   ImageFLIF,
+	".fpx":    ImageFPX,
+	".fts":    ImageFITS,
+	".gif":    ImageGIF,
+	".gpr":    ImageGPR,
+	".hdp":    ImageJXR,
+	".hdr":    ImageHDR,
+	".heic":   ImageHEIC,
+	".heics":  ImageHEIC,
+	".heif":   ImageHEIF,
+	".heifs":  ImageHEIF,
+	".ico":    ImageICO,
+	".iiq":    ImageIIQ,
+	".j2k":    ImageJP2K,
+	".jfif":   ImageJPEG,
+	".jng":    ImageJNG,
+	".jpe":    ImageJPEG,
+	".jpeg":   ImageJPEG,
 	".jp2":    ImageJP2K,
-	".svg":    ImageSVG,
+	".jpg":    ImageJPEG,
+	".jpm":    ImageJP2K,
+	".jpx":    ImageJP2K,
+	".jxl":    ImageJXL,
+	".jxr":    ImageJXR,
+	".k25":    ImageK25,
+	".kdc":    ImageKDC,
 	".magick": ImageMAGICK,
+	".mng":    ImageMNG,
+	".mos":    ImageMOS,
+	".mpo":    ImageMPO,
+	".mrw":    ImageMRW,
+	".nef":    ImageNEF,
+	".nrw":    ImageNRW,
+	".orf":    ImageORF,
+	".pam":    ImagePAM,
+	".pbm":    ImagePBM,
+	".pcd":    ImagePCD,
+	".pct":    ImagePICT,
+	".pcx":    ImagePCX,
+	".pef":    ImagePEF,
+	".pgf":    ImagePGF,
+	".pgm":    ImagePGM,
+	".pic":    ImagePICT,
+	".pict":   ImagePICT,
+	".pnm":    ImagePNM,
+	".png":    ImagePNG,
+	".ppm":    ImagePPM,
+	".psd":    ImagePSD,
+	".qti":    ImageQTIF,
+	".qtif":   ImageQTIF,
+	".raf":    ImageRAF,
+	".raw":    ImageRAW,
+	".rw2":    ImagePanaRAW,
+	".rwl":    ImageRWL,
+	".sr2":    ImageSR2,
+	".srf":    ImageSRF,
+	".srw":    ImageSRW,
+	".svg":    ImageSVG,
+	".svgz":   ImageSVG, // gzipped svg
+	".tga":    ImageTGA,
+	".tif":    ImageTiff,
+	".tiff":   ImageTiff,
+	".wdp":    ImageJXR,
+	".webp":   ImageWebP,
+	".wpg":    ImageWPG,
+	".x3f":    ImageX3F,
+	".xcf":    ImageXCF,
+	".xmp":    ImageXMP,
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
