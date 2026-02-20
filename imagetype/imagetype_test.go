@@ -14,7 +14,7 @@ import (
 func TestScan(t *testing.T) {
 	exifHeaderTests := []struct {
 		filename  string
-		imageType ImageType
+		imageType FileType
 	}{
 		{"../testImages/ARW.exif", ImageTiff},
 		{"../testImages/NEF.exif", ImageTiff},
@@ -67,7 +67,7 @@ func TestScan(t *testing.T) {
 }
 
 func TestImageTypeIndices(t *testing.T) {
-	cases := map[ImageType]struct {
+	cases := map[FileType]struct {
 		ext string
 		mt  string
 	}{
@@ -78,29 +78,64 @@ func TestImageTypeIndices(t *testing.T) {
 		ImageBMP:     {"bmp", "image/bmp"},
 		ImageWebP:    {"webp", "image/webp"},
 		ImageHEIF:    {"heif", "image/heif"},
-		ImageRAW:     {"RAW", "image/raw"},
-		ImageTiff:    {"TIFF", "image/tiff"},
-		ImageDNG:     {"DNG", "image/x-adobe-dng"},
-		ImageNEF:     {"NEF", "image/x-nikon-nef"},
-		ImagePanaRAW: {"RW2", "image/x-panasonic-raw"},
-		ImageARW:     {"ARW", "image/x-sony-arw"},
-		ImageCRW:     {"CRW", "image/x-canon-crw"},
-		ImageGPR:     {"GPR", "image/x-gopro-gpr"},
-		ImageCR3:     {"CR3", "image/x-canon-cr3"},
-		ImageCR2:     {"CR2", "image/x-canon-cr2"},
-		ImagePSD:     {"PSD", "image/vnd.adobe.photoshop"},
-		ImageXMP:     {"XMP", "application/rdf+xml"},
+		ImageRAW:     {"raw", "image/raw"},
+		ImageTiff:    {"tiff", "image/tiff"},
+		ImageDNG:     {"dng", "image/x-adobe-dng"},
+		ImageNEF:     {"nef", "image/x-nikon-nef"},
+		ImagePanaRAW: {"rw2", "image/x-panasonic-raw"},
+		ImageARW:     {"arw", "image/x-sony-arw"},
+		ImageCRW:     {"crw", "image/x-canon-crw"},
+		ImageGPR:     {"gpr", "image/x-gopro-gpr"},
+		ImageCR3:     {"cr3", "image/x-canon-cr3"},
+		ImageCR2:     {"cr2", "image/x-canon-cr2"},
+		ImagePSD:     {"psd", "image/vnd.adobe.photoshop"},
+		ImageXMP:     {"xmp", "application/rdf+xml"},
 		ImageAVIF:    {"avif", "image/avif"},
 		ImagePPM:     {"ppm", "image/x-portable-pixmap"},
+		ImageHEIC:    {"heic", "image/heic"},
+		ImageJXR:     {"jxr", "image/vnd.ms-photo"},
+		ImageFITS:    {"fits", "image/fits"},
+		ImageDCM:     {"dcm", "application/dicom"},
 	}
 
 	for it, exp := range cases {
-		if it.Extension() != exp.ext {
-			t.Errorf("%d.Extension() returned '%s', '%s' expected", it, it.Extension(), exp.ext)
+		if it.FileTypeExtension() != FileTypeExtension(exp.ext) {
+			t.Errorf("%d.FileTypeExtension() returned '%s', '%s' expected", it, it.FileTypeExtension(), exp.ext)
 		}
 
-		if it.String() != exp.mt {
-			t.Errorf("%d.String() returned '%s', '%s' expected", it, it.String(), exp.mt)
+		if it.MIMEType() != MIMEType(exp.mt) {
+			t.Errorf("%d.MIMEType() returned '%s', '%s' expected", it, it.MIMEType(), exp.mt)
+		}
+	}
+}
+
+func TestImageTypeFamilyAndContainer(t *testing.T) {
+	cases := []struct {
+		imageType FileType
+		mediaType MediaType
+		baseType  BaseType
+	}{
+		{ImageUnknown, MediaTypeUnknown, BaseTypeUnknown},
+		{ImageJPEG, MediaTypeRaster, BaseTypeJPEG},
+		{ImageAPNG, MediaTypeRaster, BaseTypePNG},
+		{ImageHEIC, MediaTypeRaster, BaseTypeISOBMFF},
+		{ImageAVIF, MediaTypeRaster, BaseTypeISOBMFF},
+		{ImageDNG, MediaTypeRaw, BaseTypeTIFF},
+		{ImageCR3, MediaTypeRaw, BaseTypeISOBMFF},
+		{ImageXMP, MediaTypeMetadata, BaseTypeXML},
+		{ImageSVG, MediaTypeVector, BaseTypeSVG},
+		{ImagePPM, MediaTypeRaster, BaseTypeNetpbm},
+	}
+
+	for _, tc := range cases {
+		if got := tc.imageType.MediaType(); got != tc.mediaType {
+			t.Errorf("%s.MediaType() = %s, expected %s", tc.imageType, got, tc.mediaType)
+		}
+		if got := tc.imageType.Family(); got != tc.mediaType {
+			t.Errorf("%s.Family() = %s, expected %s", tc.imageType, got, tc.mediaType)
+		}
+		if got := tc.imageType.BaseType(); got != tc.baseType {
+			t.Errorf("%s.BaseType() = %s, expected %s", tc.imageType, got, tc.baseType)
 		}
 	}
 }
@@ -142,7 +177,7 @@ func TestImageType(t *testing.T) {
 	}
 
 	// Unknown
-	it = ImageType(255)
+	it = FileType(255)
 	if it.Extension() != "" {
 		t.Errorf("Incorrect Imagetype extension wanted %s got %s", "", it.Extension())
 	}
@@ -154,6 +189,20 @@ func TestImageType(t *testing.T) {
 	it = FromString(".jpg")
 	if it != ImageJPEG {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageJPEG, it)
+	}
+
+	for input, expected := range map[string]FileType{
+		"jpg":                       ImageJPEG,
+		"foo/bar/photo.jpeg":        ImageJPEG,
+		"image/jpeg; charset=utf-8": ImageJPEG,
+		"image/heic":                ImageHEIC,
+		"image/heif; q=1.0":         ImageHEIF,
+		"image/jp2":                 ImageJP2K,
+		".dcm":                      ImageDCM,
+	} {
+		if got := FromString(input); got != expected {
+			t.Errorf("FromString(%q) = %s, expected %s", input, got, expected)
+		}
 	}
 
 	it = FromString("hello")
@@ -198,7 +247,7 @@ func TestScanImageType(t *testing.T) {
 		{".RW2", "4.RW2", "image/x-panasonic-raw"},
 		{".XMP", "test.xmp", "application/rdf+xml"},
 		{".PSD", "0.psd", "image/vnd.adobe.photoshop"},
-		{".JP2/JPEG2000", "0.jp2", "image/jpeg"},
+		{".JP2/JPEG2000", "0.jp2", "image/jp2"},
 		{".BMP", "0.bmp", "image/bmp"},
 	}
 

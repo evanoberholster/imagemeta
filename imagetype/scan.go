@@ -16,11 +16,11 @@ const (
 	searchHeaderLength = 24
 )
 
-// Scan reads from the reader and returns an imageType based on
-// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if imageType was not
+// Scan reads from the reader and returns a fileType based on
+// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if fileType was not
 // identified.
-func Scan(r io.Reader) (imageType ImageType, err error) {
-	// Parse Header for an ImageType
+func Scan(r io.Reader) (fileType FileType, err error) {
+	// Parse Header for a FileType
 	br, ok := r.(*bufio.Reader)
 	if !ok || br.Size() < searchHeaderLength {
 		br = bufio.NewReaderSize(r, searchHeaderLength)
@@ -28,10 +28,10 @@ func Scan(r io.Reader) (imageType ImageType, err error) {
 	return ScanBuf(br)
 }
 
-// ScanBuf peeks at a bufio.Reader and returns an imageType based on
-// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if imageType was not
+// ScanBuf peeks at a bufio.Reader and returns a fileType based on
+// underlying rules. Returns ImageUnknown and ErrImageTypeNotFound if fileType was not
 // identified.
-func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
+func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 	var buf []byte
 
 	// Peek into the bufio.Reader for the length of searchHeaderLength bytes
@@ -42,10 +42,10 @@ func ScanBuf(br *bufio.Reader) (imageType ImageType, err error) {
 	return Buf(buf[:])
 }
 
-// ReadAt reads from the reader at the given offset and returns an imageType based on
-// underlying rules. Returns ImageUnknown and an error if imageType was not
+// ReadAt reads from the reader at the given offset and returns a fileType based on
+// underlying rules. Returns ImageUnknown and an error if fileType was not
 // identified.
-func ReadAt(r io.ReaderAt) (imageType ImageType, err error) {
+func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
 	buf := [searchHeaderLength]byte{}
 	if _, err = r.ReadAt(buf[:], 0); err != nil {
 		return ImageUnknown, err
@@ -54,28 +54,28 @@ func ReadAt(r io.ReaderAt) (imageType ImageType, err error) {
 	return Buf(buf[:])
 }
 
-// Buf parses a []byte for image magic numbers that identify the imagetype.
+// Buf parses a []byte for image magic numbers that identify the file type.
 // If []byte is less than searchHeaderLength returns ImageUnknown and ErrDataLength
-// If imageType was not identified returns ImageUnknown and ErrImageTypeNotFound
-func Buf(buf []byte) (imageType ImageType, err error) {
+// If fileType was not identified returns ImageUnknown and ErrImageTypeNotFound
+func Buf(buf []byte) (fileType FileType, err error) {
 	if len(buf) < searchHeaderLength {
 		return ImageUnknown, ErrDataLength
 	}
 
-	// Parse Header for an ImageType
-	imageType = parseBuffer(buf)
+	// Parse Header for a FileType
+	fileType = parseBuffer(buf)
 
-	// Check if ImageType is Unknown
-	if imageType == ImageUnknown {
+	// Check if fileType is Unknown
+	if fileType == ImageUnknown {
 		err = ErrImageTypeNotFound
 	}
 	return
 }
 
 // parseBuffer parses the []byte for image magic numbers
-// that identify the imagetype. Returns an ImageType. Returns ImageUnknown
-// when imagetype was not identified.
-func parseBuffer(buf []byte) ImageType {
+// that identify the file type. Returns a FileType. Returns ImageUnknown
+// when file type was not identified.
+func parseBuffer(buf []byte) FileType {
 	// JPEG Header
 	if isJPEG(buf) {
 		return ImageJPEG
@@ -83,7 +83,7 @@ func parseBuffer(buf []byte) ImageType {
 
 	// JPEG2000 Header
 	if isJPEG2000(buf) {
-		return ImageJPEG
+		return ImageJP2K
 	}
 
 	// Canon CRW Header
