@@ -880,7 +880,9 @@ var (
 	ftypBoxType = []byte("ftyp")
 	brandCRX    = []byte("crx ")
 	brandHEIC   = []byte("heic")
+	brandHEIF   = []byte("heif")
 	brandHEIX   = []byte("heix")
+	brandHEVX   = []byte("hevx")
 	brandMIF1   = []byte("mif1")
 	brandMSF1   = []byte("msf1")
 	brandHEVC   = []byte("hevc")
@@ -917,18 +919,55 @@ var (
 	jxlCodestreamSignature = []byte{0xFF, 0x0A}
 	jxlContainerSignature  = []byte{0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A}
 
-	psdSignature    = []byte("8BPS")
-	xmpSignature    = []byte("<x:xmpmeta")
-	gif87aSignature = []byte("GIF87a")
-	gif89aSignature = []byte("GIF89a")
+	psdSignature     = []byte("8BPS")
+	utf8BOMSignature = []byte{0xEF, 0xBB, 0xBF}
+	svgTagSignature  = []byte("<svg")
+	svgXMLSignature  = []byte("<?xml")
+	svgDocTypeSig    = []byte("<!doctype")
+	svgCommentSig    = []byte("<!--")
+	xmpSignature     = []byte("<x:xmpmeta")
+	gif87aSignature  = []byte("GIF87a")
+	gif89aSignature  = []byte("GIF89a")
 )
 
 func hasPrefix(buf, sig []byte) bool {
 	return len(buf) >= len(sig) && bytes.Equal(buf[:len(sig)], sig)
 }
 
+func hasPrefixFold(buf, sig []byte) bool {
+	return len(buf) >= len(sig) && bytes.EqualFold(buf[:len(sig)], sig)
+}
+
+func indexFold(buf, token []byte) int {
+	if len(token) == 0 || len(buf) < len(token) {
+		return -1
+	}
+
+	limit := len(buf) - len(token)
+	for i := 0; i <= limit; i++ {
+		if bytes.EqualFold(buf[i:i+len(token)], token) {
+			return i
+		}
+	}
+
+	return -1
+}
+
 func hasAt(buf []byte, offset int, sig []byte) bool {
 	return offset >= 0 && len(buf) >= offset+len(sig) && bytes.Equal(buf[offset:offset+len(sig)], sig)
+}
+
+func hasCompatibleBrand(buf []byte, brand []byte) bool {
+	return hasAt(buf, 16, brand) || hasAt(buf, 20, brand)
+}
+
+func hasAnyCompatibleBrand(buf []byte, brands ...[]byte) bool {
+	for _, brand := range brands {
+		if hasCompatibleBrand(buf, brand) {
+			return true
+		}
+	}
+	return false
 }
 
 // isTiff() Checks to see if an Image has the tiff format header.
@@ -969,6 +1008,44 @@ func isCR2(buf []byte) bool {
 // ftyp box with major_brand: 'crx ' and compatible_brands: 'crx ' 'isom'
 func isCR3(buf []byte) bool {
 	return isFTYPBox(buf) && isFTYPBrand(buf[8:], brandCRX)
+}
+
+// isobmffSubtype returns a specific ISOBMFF-based file type where possible.
+func isobmffSubtype(buf []byte) FileType {
+	if !isFTYPBox(buf) {
+		return ImageUnknown
+	}
+
+	if isCR3(buf) {
+		return ImageCR3
+	}
+
+	if isAVIF(buf) {
+		return ImageAVIF
+	}
+
+	// HEIC-branded variants.
+	if isFTYPBrand(buf[8:], brandHEIC) ||
+		isFTYPBrand(buf[8:], brandHEIX) ||
+		isFTYPBrand(buf[8:], brandHEVC) ||
+		isFTYPBrand(buf[8:], brandHEVX) ||
+		hasAnyCompatibleBrand(buf, brandHEIC, brandHEIX, brandHEVC, brandHEVX) {
+		return ImageHEIC
+	}
+
+	// Generic HEIF (mif1/msf1/heif without explicit HEIC branding).
+	if isFTYPBrand(buf[8:], brandHEIF) ||
+		isFTYPBrand(buf[8:], brandMIF1) ||
+		isFTYPBrand(buf[8:], brandMSF1) ||
+		hasAnyCompatibleBrand(buf, brandHEIF, brandMIF1, brandMSF1) {
+		return ImageHEIF
+	}
+
+	if isHeif(buf) {
+		return ImageHEIF
+	}
+
+	return ImageUnknown
 }
 
 // isHeif returns true if the header matches the start of a HEIF file.
@@ -1081,6 +1158,106 @@ func isRW2(buf []byte) bool {
 	return hasPrefix(buf, rw2TiffSignature) && hasAt(buf, 8, rw2RawSignature)
 }
 
+func tiffReadU16(buf []byte, offset int, littleEndian bool) (uint16, bool) {
+	if offset < 0 || len(buf) < offset+2 {
+		return 0, false
+	}
+	if littleEndian {
+		return uint16(buf[offset]) | (uint16(buf[offset+1]) << 8), true
+	}
+	return (uint16(buf[offset]) << 8) | uint16(buf[offset+1]), true
+}
+
+func tiffReadU32(buf []byte, offset int, littleEndian bool) (uint32, bool) {
+	if offset < 0 || len(buf) < offset+4 {
+		return 0, false
+	}
+	if littleEndian {
+		return uint32(buf[offset]) |
+			(uint32(buf[offset+1]) << 8) |
+			(uint32(buf[offset+2]) << 16) |
+			(uint32(buf[offset+3]) << 24), true
+	}
+	return (uint32(buf[offset]) << 24) |
+		(uint32(buf[offset+1]) << 16) |
+		(uint32(buf[offset+2]) << 8) |
+		uint32(buf[offset+3]), true
+}
+
+// tiffSecondarySubtype performs best-effort subtype detection for TIFF-based files.
+func tiffSecondarySubtype(buf []byte) FileType {
+	// RW2 has its own TIFF-like signature.
+	if isRW2(buf) {
+		return ImagePanaRAW
+	}
+
+	if !isTiff(buf) {
+		return ImageUnknown
+	}
+
+	// CR2 has a fixed marker in bytes 8..11.
+	if isCR2(buf) {
+		return ImageCR2
+	}
+
+	littleEndian := IsTiffLittleEndian(buf)
+	if !littleEndian && !IsTiffBigEndian(buf) {
+		return ImageUnknown
+	}
+
+	entryCount, ok := tiffReadU16(buf, 8, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+	firstTag, ok := tiffReadU16(buf, 10, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+	firstType, ok := tiffReadU16(buf, 12, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+	firstCount, ok := tiffReadU32(buf, 14, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+	firstValue, ok := tiffReadU32(buf, 18, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+	secondTag, ok := tiffReadU16(buf, 22, littleEndian)
+	if !ok {
+		return ImageUnknown
+	}
+
+	// Common first IFD structure used by many camera RAW formats.
+	if firstTag != 0x00FE || firstType != 4 || firstCount != 1 {
+		return ImageUnknown
+	}
+
+	// GoPro GPR samples have SubfileType=0 and high IFD entry count.
+	if (entryCount == 0x0039 || entryCount == 0x003A) && firstValue == 0 && secondTag == 0x0100 {
+		return ImageGPR
+	}
+
+	// DNG samples have high IFD entry count with SubfileType=1.
+	if entryCount == 0x003F && firstValue == 1 && secondTag == 0x0100 {
+		return ImageDNG
+	}
+
+	// Nikon NEF samples.
+	if (entryCount == 0x001B || entryCount == 0x001C) && firstValue == 1 && secondTag == 0x0100 {
+		return ImageNEF
+	}
+
+	// Sony ARW samples use Compression (0x0103) as second tag.
+	if (entryCount == 0x0012 || entryCount == 0x0013) && firstValue == 1 && secondTag == 0x0103 {
+		return ImageARW
+	}
+
+	return ImageUnknown
+}
+
 // isJPEG returns true if the first 2 bytes match a JPEG file header
 //
 // JPEG SOI Marker (FF D8)
@@ -1121,6 +1298,30 @@ func isPSD(buf []byte) bool {
 // XMP sidecar files. The XMPHeader are the first 10bytes of an XMP sidecar.
 func isXMP(buf []byte) bool {
 	return hasPrefix(buf, xmpSignature)
+}
+
+// isSVG returns true if the header appears to be an SVG XML document.
+func isSVG(buf []byte) bool {
+	if hasPrefix(buf, utf8BOMSignature) {
+		buf = buf[len(utf8BOMSignature):]
+	}
+
+	buf = bytes.TrimLeft(buf, " \t\r\n\f")
+	if len(buf) == 0 {
+		return false
+	}
+
+	if hasPrefixFold(buf, svgTagSignature) {
+		return true
+	}
+
+	if !hasPrefixFold(buf, svgXMLSignature) &&
+		!hasPrefixFold(buf, svgDocTypeSig) &&
+		!hasPrefixFold(buf, svgCommentSig) {
+		return false
+	}
+
+	return indexFold(buf, svgTagSignature) >= 0
 }
 
 // isGIF returns true if the header matches the header of a GIF version 87a

@@ -16,10 +16,10 @@ func TestScan(t *testing.T) {
 		filename  string
 		imageType FileType
 	}{
-		{"../testImages/ARW.exif", ImageTiff},
-		{"../testImages/NEF.exif", ImageTiff},
+		{"../testImages/ARW.exif", ImageARW},
+		{"../testImages/NEF.exif", ImageNEF},
 		{"../testImages/CR2.exif", ImageCR2},
-		{"../testImages/Heic.exif", ImageHEIF},
+		{"../testImages/Heic.exif", ImageHEIC},
 		{"../testImages/AVIF.avif", ImageAVIF},
 		{"../testImages/AVIF2.avif", ImageAVIF},
 		{"../testImages/CRW.CRW", ImageCRW},
@@ -235,14 +235,14 @@ func TestScanImageType(t *testing.T) {
 		{".JPG/NoExif", "20.jpg", "image/jpeg"},
 		{".JPG/GoPro", "hero6.jpg", "image/jpeg"},
 		{".JPEG", "21.jpeg", "image/jpeg"},
-		{".HEIC/iPhone", "1.heic", "image/heif"},
-		{".HEIC/Conv", "3.heic", "image/heif"},
-		{".HEIC/Alt", "4.heic", "image/heif"},
+		{".HEIC/iPhone", "1.heic", "image/heic"},
+		{".HEIC/Conv", "3.heic", "image/heic"},
+		{".HEIC/Alt", "4.heic", "image/heic"},
 		{".WEBP", "4.webp", "image/webp"},
-		{".GPR/GoPro", "hero6.gpr", "image/tiff"},
-		{".NEF/Nikon", "2.NEF", "image/tiff"},
-		{".ARW/Sony", "2.ARW", "image/tiff"},
-		{".DNG/Adobe", "1.DNG", "image/tiff"},
+		{".GPR/GoPro", "hero6.gpr", "image/x-gopro-gpr"},
+		{".NEF/Nikon", "2.NEF", "image/x-nikon-nef"},
+		{".ARW/Sony", "2.ARW", "image/x-sony-arw"},
+		{".DNG/Adobe", "1.DNG", "image/x-adobe-dng"},
 		{".PNG", "0.png", "image/png"},
 		{".RW2", "4.RW2", "image/x-panasonic-raw"},
 		{".XMP", "test.xmp", "application/rdf+xml"},
@@ -327,7 +327,7 @@ func TestBufDetectsJPEGXL(t *testing.T) {
 		{name: "codestream", buf: codestream},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			buf := make([]byte, searchHeaderLength)
+			buf := make([]byte, scanHeaderLength)
 			copy(buf, testCase.buf)
 
 			imageType, err := Buf(buf)
@@ -362,6 +362,9 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 		{name: "BPG", header: []byte{0x42, 0x50, 0x47, 0xFB}, expected: ImageBPG},
 		{name: "HDR/Radiance", header: []byte("#?RADIANCE"), expected: ImageHDR},
 		{name: "HDR/RGBE", header: []byte("#?RGBE"), expected: ImageHDR},
+		{name: "SVG/Root", header: []byte("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"), expected: ImageSVG},
+		{name: "SVG/XMLDecl", header: []byte("<?xml version=\"1.0\"?><svg viewBox=\"0 0 1 1\"></svg>"), expected: ImageSVG},
+		{name: "SVG/BOM", header: []byte{0xEF, 0xBB, 0xBF, '<', 's', 'v', 'g', ' ', '>', '<', '/', 's', 'v', 'g', '>'}, expected: ImageSVG},
 		{
 			name: "DJVU",
 			header: []byte{
@@ -379,7 +382,7 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			buf := make([]byte, searchHeaderLength)
+			buf := make([]byte, scanHeaderLength)
 			copy(buf, tc.header)
 
 			got, err := Buf(buf)

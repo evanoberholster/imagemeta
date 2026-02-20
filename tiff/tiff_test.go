@@ -20,10 +20,10 @@ func TestTiff(t *testing.T) {
 		tiffHeaderOffset uint32
 		imageType        imagetype.ImageType
 	}{
-		{"../testImages/ARW.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
-		{"../testImages/NEF.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageTiff},
+		{"../testImages/ARW.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageARW},
+		{"../testImages/NEF.exif", utils.LittleEndian, 0x0008, 0x00, imagetype.ImageNEF},
 		{"../testImages/CR2.exif", utils.LittleEndian, 0x0010, 0x00, imagetype.ImageCR2},
-		{"../testImages/Heic.exif", utils.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIF},
+		{"../testImages/Heic.exif", utils.BigEndian, 0x0008, 0x1178, imagetype.ImageHEIC},
 	}
 	for _, header := range exifHeaderTests {
 		t.Run(header.filename, func(t *testing.T) {
