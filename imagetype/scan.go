@@ -12,8 +12,8 @@ var (
 )
 
 const (
-	// searchHeaderLength is the number of bytes to read while searching for an Image Header
-	searchHeaderLength = 24
+	// scanHeaderLength is the number of bytes to read while scanning image headers.
+	scanHeaderLength = 64
 )
 
 // Scan reads from the reader and returns a fileType based on
@@ -22,8 +22,8 @@ const (
 func Scan(r io.Reader) (fileType FileType, err error) {
 	// Parse Header for a FileType
 	br, ok := r.(*bufio.Reader)
-	if !ok || br.Size() < searchHeaderLength {
-		br = bufio.NewReaderSize(r, searchHeaderLength)
+	if !ok || br.Size() < scanHeaderLength {
+		br = bufio.NewReaderSize(r, scanHeaderLength)
 	}
 	return ScanBuf(br)
 }
@@ -34,8 +34,8 @@ func Scan(r io.Reader) (fileType FileType, err error) {
 func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 	var buf []byte
 
-	// Peek into the bufio.Reader for the length of searchHeaderLength bytes
-	if buf, err = br.Peek(searchHeaderLength); err != nil {
+	// Peek into the bufio.Reader for the length of scanHeaderLength bytes
+	if buf, err = br.Peek(scanHeaderLength); err != nil {
 		return ImageUnknown, err
 	}
 
@@ -46,7 +46,7 @@ func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 // underlying rules. Returns ImageUnknown and an error if fileType was not
 // identified.
 func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
-	buf := [searchHeaderLength]byte{}
+	buf := [scanHeaderLength]byte{}
 	if _, err = r.ReadAt(buf[:], 0); err != nil {
 		return ImageUnknown, err
 	}
@@ -55,10 +55,10 @@ func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
 }
 
 // Buf parses a []byte for image magic numbers that identify the file type.
-// If []byte is less than searchHeaderLength returns ImageUnknown and ErrDataLength
+// If []byte is less than scanHeaderLength returns ImageUnknown and ErrDataLength
 // If fileType was not identified returns ImageUnknown and ErrImageTypeNotFound
 func Buf(buf []byte) (fileType FileType, err error) {
-	if len(buf) < searchHeaderLength {
+	if len(buf) < scanHeaderLength {
 		return ImageUnknown, ErrDataLength
 	}
 
@@ -76,155 +76,133 @@ func Buf(buf []byte) (fileType FileType, err error) {
 // that identify the file type. Returns a FileType. Returns ImageUnknown
 // when file type was not identified.
 func parseBuffer(buf []byte) FileType {
-	// JPEG Header
-	if isJPEG(buf) {
-		return ImageJPEG
-	}
-
-	// JPEG2000 Header
-	if isJPEG2000(buf) {
-		return ImageJP2K
-	}
-
-	// JPEG XL Header (codestream/container)
-	if isJXL(buf) {
-		return ImageJXL
-	}
-
-	// MNG/JNG Header
-	if isMNG(buf) {
-		return ImageMNG
-	}
-	if isJNG(buf) {
-		return ImageJNG
-	}
-
-	// Canon CRW Header
-	if isCRW(buf) {
-		return ImageCRW
-	}
-
-	// Canon CR2 Header
-	if isCR2(buf) {
-		return ImageCR2
-	}
-
-	// ISOBMFF Header
-	if isFTYPBox(buf) {
-		// Canon CR3 Header
-		if isCR3(buf) {
-			return ImageCR3
+	switch buf[0] {
+	case 0x00:
+		// ICO/CUR Header
+		if isICO(buf) {
+			return ImageICO
 		}
-		// AVIF Header
-		if isAVIF(buf) {
-			return ImageAVIF
+		if isCUR(buf) {
+			return ImageCUR
 		}
-		// Heif Header
-		if isHeif(buf) {
-			return ImageHEIF
+
+		// JPEG2000 Header
+		if isJPEG2000(buf) {
+			return ImageJP2K
 		}
-	}
 
-	// Panasonic/Leica Raw Header
-	if isRW2(buf) {
-		return ImagePanaRAW
-	}
+		// JPEG XL Header (container)
+		if isJXL(buf) {
+			return ImageJXL
+		}
 
-	// Tiff Header
-	if isTiff(buf) {
-		return ImageTiff
-	}
-
-	// ICO/CUR Header
-	if isICO(buf) {
-		return ImageICO
-	}
-	if isCUR(buf) {
-		return ImageCUR
-	}
-
-	// DDS Header
-	if isDDS(buf) {
-		return ImageDDS
-	}
-
-	// OpenEXR Header
-	if isEXR(buf) {
-		return ImageEXR
-	}
-
-	// DPX Header
-	if isDPX(buf) {
-		return ImageDPX
-	}
-
-	// FITS Header
-	if isFITS(buf) {
-		return ImageFITS
-	}
-
-	// Fuji RAF Header
-	if isRAF(buf) {
-		return ImageRAF
-	}
-
-	// GIMP XCF Header
-	if isXCF(buf) {
-		return ImageXCF
-	}
-
-	// FLIF Header
-	if isFLIF(buf) {
-		return ImageFLIF
-	}
-
-	// BPG Header
-	if isBPG(buf) {
-		return ImageBPG
-	}
-
-	// Radiance HDR Header
-	if isHDR(buf) {
-		return ImageHDR
-	}
-
-	// DjVu Header
-	if isDJVU(buf) {
-		return ImageDJVU
-	}
-
-	// PNG Header
-	if isPNG(buf) {
-		return ImagePNG
-	}
-
-	// PSD Header
-	if isPSD(buf) {
-		return ImagePSD
-	}
-
-	// BMP Header
-	if isBMP(buf) {
-		return ImageBMP
-	}
-
-	// Webp Header
-	if isWebP(buf) {
-		return ImageWebP
-	}
-
-	// XMP file Header
-	if isXMP(buf) {
-		return ImageXMP
-	}
-
-	if isGIF(buf) {
-		return ImageGIF
-	}
-
-	// Netpbm family (PBM/PGM/PPM/PAM)
-	if it, ok := netpbmType(buf); ok {
-		return it
+		// ISOBMFF Header
+		if it := isobmffSubtype(buf); it != ImageUnknown {
+			return it
+		}
+	case 0xFF:
+		// JPEG Header
+		if isJPEG(buf) {
+			return ImageJPEG
+		}
+		// JPEG XL Header (codestream)
+		if isJXL(buf) {
+			return ImageJXL
+		}
+	case 0x8A:
+		if isMNG(buf) {
+			return ImageMNG
+		}
+	case 0x8B:
+		if isJNG(buf) {
+			return ImageJNG
+		}
+	case 0x49, 0x4D:
+		// Canon CRW Header
+		if isCRW(buf) {
+			return ImageCRW
+		}
+		// TIFF secondary subtype detection
+		if it := tiffSecondarySubtype(buf); it != ImageUnknown {
+			return it
+		}
+		// Tiff Header
+		if isTiff(buf) {
+			return ImageTiff
+		}
+	case 'D':
+		if isDDS(buf) {
+			return ImageDDS
+		}
+	case 'v':
+		if isEXR(buf) {
+			return ImageEXR
+		}
+	case 'S':
+		if isDPX(buf) {
+			return ImageDPX
+		}
+		if isFITS(buf) {
+			return ImageFITS
+		}
+	case 'X':
+		if isDPX(buf) {
+			return ImageDPX
+		}
+	case 'F':
+		if isRAF(buf) {
+			return ImageRAF
+		}
+		if isFLIF(buf) {
+			return ImageFLIF
+		}
+	case 'g':
+		if isXCF(buf) {
+			return ImageXCF
+		}
+	case 'B':
+		if isBMP(buf) {
+			return ImageBMP
+		}
+		if isBPG(buf) {
+			return ImageBPG
+		}
+	case '#':
+		if isHDR(buf) {
+			return ImageHDR
+		}
+	case 'A':
+		if isDJVU(buf) {
+			return ImageDJVU
+		}
+	case 0x89:
+		if isPNG(buf) {
+			return ImagePNG
+		}
+	case '8':
+		if isPSD(buf) {
+			return ImagePSD
+		}
+	case 'R':
+		if isWebP(buf) {
+			return ImageWebP
+		}
+	case '<', ' ', '\t', '\n', '\r', 0xEF:
+		if isXMP(buf) {
+			return ImageXMP
+		}
+		if isSVG(buf) {
+			return ImageSVG
+		}
+	case 'G':
+		if isGIF(buf) {
+			return ImageGIF
+		}
+	case 'P':
+		// Netpbm family (PBM/PGM/PPM/PAM)
+		if it, ok := netpbmType(buf); ok {
+			return it
+		}
 	}
 
 	return ImageUnknown
