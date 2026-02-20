@@ -2,6 +2,7 @@
 package imagetype
 
 import (
+	"bytes"
 	"errors"
 	"mime"
 	"path/filepath"
@@ -868,29 +869,81 @@ var fileTypeExtensions = map[FileTypeExtension]FileType{
 	".xmp":    ImageXMP,
 }
 
+var (
+	tiffLittleEndianSignature = []byte{0x49, 0x49, 0x2A, 0x00}
+	tiffBigEndianSignature    = []byte{0x4D, 0x4D, 0x00, 0x2A}
+
+	crwByteOrderSignature = []byte{0x49, 0x49}
+	crwHeapSignature      = []byte("HEAPCCDR")
+	cr2Signature          = []byte{0x43, 0x52, 0x02, 0x00}
+
+	ftypBoxType = []byte("ftyp")
+	brandCRX    = []byte("crx ")
+	brandHEIC   = []byte("heic")
+	brandHEIX   = []byte("heix")
+	brandMIF1   = []byte("mif1")
+	brandMSF1   = []byte("msf1")
+	brandHEVC   = []byte("hevc")
+	brandAVIF   = []byte("avif")
+
+	bmpSignature         = []byte("BM")
+	icoSignature         = []byte{0x00, 0x00, 0x01, 0x00}
+	curSignature         = []byte{0x00, 0x00, 0x02, 0x00}
+	ddsSignature         = []byte("DDS ")
+	exrSignature         = []byte{0x76, 0x2F, 0x31, 0x01}
+	dpxBigSignature      = []byte("SDPX")
+	dpxLittleSignature   = []byte("XPDS")
+	mngSignature         = []byte{0x8A, 0x4D, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	jngSignature         = []byte{0x8B, 0x4A, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	fitsSignature        = []byte("SIMPLE  =")
+	rafSignature         = []byte("FUJIFILMCCD-RAW ")
+	xcfSignature         = []byte("gimp xcf ")
+	flifSignature        = []byte("FLIF")
+	bpgSignature         = []byte{0x42, 0x50, 0x47, 0xFB}
+	hdrRadianceSignature = []byte("#?RADIANCE")
+	hdrRGBESignature     = []byte("#?RGBE")
+	djvuFormSignature    = []byte("AT&TFORM")
+	djvuTypeDJVU         = []byte("DJVU")
+	djvuTypeDJVM         = []byte("DJVM")
+	djvuTypeDJVI         = []byte("DJVI")
+	rw2TiffSignature     = []byte{0x49, 0x49, 0x55, 0x00}
+	rw2RawSignature      = []byte{0x88, 0xE7, 0x74, 0xD8}
+	jpegSignature        = []byte{0xFF, 0xD8}
+	pngSignature         = []byte{0x89, 0x50, 0x4E, 0x47}
+	riffSignature        = []byte("RIFF")
+	webpSignature        = []byte("WEBP")
+	jpeg2000Signature    = []byte{0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A}
+
+	jxlCodestreamSignature = []byte{0xFF, 0x0A}
+	jxlContainerSignature  = []byte{0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A}
+
+	psdSignature    = []byte("8BPS")
+	xmpSignature    = []byte("<x:xmpmeta")
+	gif87aSignature = []byte("GIF87a")
+	gif89aSignature = []byte("GIF89a")
+)
+
+func hasPrefix(buf, sig []byte) bool {
+	return len(buf) >= len(sig) && bytes.Equal(buf[:len(sig)], sig)
+}
+
+func hasAt(buf []byte, offset int, sig []byte) bool {
+	return offset >= 0 && len(buf) >= offset+len(sig) && bytes.Equal(buf[offset:offset+len(sig)], sig)
+}
+
 // isTiff() Checks to see if an Image has the tiff format header.
 func isTiff(buf []byte) bool {
-	return len(buf) > 4 &&
-		// BigEndian Tiff Image Header
-		IsTiffBigEndian(buf[:4]) ||
-		// LittleEndian Tiff Image Header
-		IsTiffLittleEndian(buf[:4])
+	return IsTiffBigEndian(buf) || IsTiffLittleEndian(buf)
 }
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
 func IsTiffLittleEndian(buf []byte) bool {
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x2a &&
-		buf[3] == 0x00
+	return hasPrefix(buf, tiffLittleEndianSignature)
 }
 
 // IsTiffBigEndian checks the buf for the TiffBigEndianSignature
 func IsTiffBigEndian(buf []byte) bool {
-	return buf[0] == 0x4d &&
-		buf[1] == 0x4d &&
-		buf[2] == 0x00 &&
-		buf[3] == 0x2a
+	return hasPrefix(buf, tiffBigEndianSignature)
 }
 
 // isCRW returns true if it matches an image/x-canon-crw with 14 bytes of the header.
@@ -898,18 +951,9 @@ func IsTiffBigEndian(buf []byte) bool {
 // CanonCRWHeader is the file Header for a Canon CRW file. Currently only Little Endian support
 // Reference: https://exiftool.org/canon_raw.html
 func isCRW(buf []byte) bool {
-	// ByteOrder: LittleEndian
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		// Signature: HEAPCCDR
-		buf[6] == 0x48 &&
-		buf[7] == 0x45 &&
-		buf[8] == 0x41 &&
-		buf[9] == 0x50 &&
-		buf[10] == 0x43 &&
-		buf[11] == 0x43 &&
-		buf[12] == 0x44 &&
-		buf[13] == 0x52
+	// ByteOrder: LittleEndian + Signature: HEAPCCDR
+	return hasPrefix(buf, crwByteOrderSignature) &&
+		hasAt(buf, 6, crwHeapSignature)
 }
 
 // isCR2 returns true if it matches an image/x-canon-cr2.
@@ -917,19 +961,14 @@ func isCRW(buf []byte) bool {
 // CanonCR2Header is the Header for a Canon CR2 file
 // 4 bytes after TiffSignature and before the beginning of IFDO
 func isCR2(buf []byte) bool {
-	return isTiff(buf) &&
-		buf[8] == 0x43 &&
-		buf[9] == 0x52 &&
-		buf[10] == 0x02 &&
-		buf[11] == 0x00
+	return isTiff(buf) && hasAt(buf, 8, cr2Signature)
 }
 
 // isCR3 returns true if it matches an image/x-canon-cr3.
 //
 // ftyp box with major_brand: 'crx ' and compatible_brands: 'crx ' 'isom'
 func isCR3(buf []byte) bool {
-	return isFTYPBox(buf) &&
-		isFTYPBrand(buf[8:12], "crx ")
+	return isFTYPBox(buf) && isFTYPBrand(buf[8:], brandCRX)
 }
 
 // isHeif returns true if the header matches the start of a HEIF file.
@@ -937,143 +976,178 @@ func isCR3(buf []byte) bool {
 // Major brands: heic, mif1, heix
 // Minor brand contains:
 func isHeif(buf []byte) bool {
-	return isFTYPBox(buf) &&
-		(isFTYPBrand(buf[8:12], "heic") ||
-			isFTYPBrand(buf[8:12], "heix") ||
-			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[16:20], "heic")) ||
-			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[20:24], "heic")) ||
-			(isFTYPBrand(buf[8:12], "msf1") && isFTYPBrand(buf[20:24], "hevc")))
+	if !isFTYPBox(buf) {
+		return false
+	}
+
+	if isFTYPBrand(buf[8:], brandHEIC) || isFTYPBrand(buf[8:], brandHEIX) {
+		return true
+	}
+
+	return (isFTYPBrand(buf[8:], brandMIF1) && (hasAt(buf, 16, brandHEIC) || hasAt(buf, 20, brandHEIC))) ||
+		(isFTYPBrand(buf[8:], brandMSF1) && hasAt(buf, 20, brandHEVC))
 }
 
-// isFTYPBrand returns true if the Brand in []byte matches the brand in str.
+// isFTYPBrand returns true if the Brand in []byte matches the provided brand.
 // the Limit is 4 bytes
-func isFTYPBrand(buf []byte, str string) bool {
-	return string(buf[:4]) == str[:4]
-	//return buf[0] == str[0] && buf[1] == str[1] && buf[2] == str[2] && buf[3] == str[3]
+func isFTYPBrand(buf []byte, brand []byte) bool {
+	return hasPrefix(buf, brand)
 }
 
 // isFTYPBox returns true if the header matches an ftyp box.
 // This indicates an ISO Base Media File Format.
 func isFTYPBox(buf []byte) bool {
-	return buf[0] == 0x00 &&
+	// buf[0:4] is 'ftyp' box size
+	return len(buf) >= 8 &&
+		buf[0] == 0x00 &&
 		buf[1] == 0x00 &&
-		// buf[0:4] is 'ftyp' box size
-		buf[4] == 0x66 &&
-		buf[5] == 0x74 &&
-		buf[6] == 0x79 &&
-		buf[7] == 0x70
+		hasAt(buf, 4, ftypBoxType)
 }
 
 // isAVIF returns true if the header matches an ftyp box and
 // an avif box.
 func isAVIF(buf []byte) bool {
 	return isFTYPBox(buf) &&
-		(isFTYPBrand(buf[8:12], "avif") ||
-			(isFTYPBrand(buf[8:12], "mif1") && isFTYPBrand(buf[20:24], "avif")))
+		(isFTYPBrand(buf[8:], brandAVIF) ||
+			(isFTYPBrand(buf[8:], brandMIF1) && hasAt(buf, 20, brandAVIF)))
 }
 
 // isBMP returns true if the header matches the start of a BMP file
 // Bitmap Image
 func isBMP(buf []byte) bool {
-	return buf[0] == 0x42 &&
-		buf[1] == 0x4D
+	return hasPrefix(buf, bmpSignature)
+}
+
+func isICO(buf []byte) bool {
+	return hasPrefix(buf, icoSignature)
+}
+
+func isCUR(buf []byte) bool {
+	return hasPrefix(buf, curSignature)
+}
+
+func isDDS(buf []byte) bool {
+	return hasPrefix(buf, ddsSignature)
+}
+
+func isEXR(buf []byte) bool {
+	return hasPrefix(buf, exrSignature)
+}
+
+func isDPX(buf []byte) bool {
+	return hasPrefix(buf, dpxBigSignature) || hasPrefix(buf, dpxLittleSignature)
+}
+
+func isMNG(buf []byte) bool {
+	return hasPrefix(buf, mngSignature)
+}
+
+func isJNG(buf []byte) bool {
+	return hasPrefix(buf, jngSignature)
+}
+
+func isFITS(buf []byte) bool {
+	return hasPrefix(buf, fitsSignature)
+}
+
+func isRAF(buf []byte) bool {
+	return hasPrefix(buf, rafSignature)
+}
+
+func isXCF(buf []byte) bool {
+	return hasPrefix(buf, xcfSignature)
+}
+
+func isFLIF(buf []byte) bool {
+	return hasPrefix(buf, flifSignature)
+}
+
+func isBPG(buf []byte) bool {
+	return hasPrefix(buf, bpgSignature)
+}
+
+func isHDR(buf []byte) bool {
+	return hasPrefix(buf, hdrRadianceSignature) || hasPrefix(buf, hdrRGBESignature)
+}
+
+func isDJVU(buf []byte) bool {
+	return hasPrefix(buf, djvuFormSignature) &&
+		(hasAt(buf, 12, djvuTypeDJVU) || hasAt(buf, 12, djvuTypeDJVM) || hasAt(buf, 12, djvuTypeDJVI))
 }
 
 // isRW2 returns true if the first 4 bytes match the Panasonic Tiff alternate
 // header and bytes 8 through 12 match the RW2 header
 func isRW2(buf []byte) bool {
-	return buf[0] == 0x49 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x55 &&
-		buf[3] == 0x00 &&
-		buf[8] == 0x88 &&
-		buf[9] == 0xe7 &&
-		buf[10] == 0x74 &&
-		buf[11] == 0xd8
+	return hasPrefix(buf, rw2TiffSignature) && hasAt(buf, 8, rw2RawSignature)
 }
 
 // isJPEG returns true if the first 2 bytes match a JPEG file header
 //
 // JPEG SOI Marker (FF D8)
 func isJPEG(buf []byte) bool {
-	return buf[0] == 0xff &&
-		buf[1] == 0xd8
+	return hasPrefix(buf, jpegSignature)
 }
 
 // isPNG returns true if the first 4 bytes match a PNG file header.
 func isPNG(buf []byte) bool {
-	return buf[0] == 0x89 &&
-		buf[1] == 0x50 &&
-		buf[2] == 0x4E &&
-		buf[3] == 0x47
+	return hasPrefix(buf, pngSignature)
 }
 
 // isWebP returns true is the first 12 bytes match a WebP file header.
 // RIFF and WebP
 func isWebP(buf []byte) bool {
-	return buf[0] == 0x52 &&
-		buf[1] == 0x49 &&
-		buf[2] == 0x46 &&
-		buf[3] == 0x46 &&
-		buf[8] == 0x57 &&
-		buf[9] == 0x45 &&
-		buf[10] == 0x42 &&
-		buf[11] == 0x50
+	return hasPrefix(buf, riffSignature) && hasAt(buf, 8, webpSignature)
 }
 
 // isJPEG2000 returns true if the first 12 bytes match a JPEG2000 file header
 func isJPEG2000(buf []byte) bool {
-	return buf[0] == 0x0 &&
-		buf[1] == 0x0 &&
-		buf[2] == 0x0 &&
-		buf[3] == 0xC &&
-		buf[4] == 0x6A &&
-		buf[5] == 0x50 &&
-		buf[6] == 0x20 &&
-		buf[7] == 0x20 &&
-		buf[8] == 0xD &&
-		buf[9] == 0xA &&
-		buf[10] == 0x87 &&
-		buf[11] == 0xA
+	return hasPrefix(buf, jpeg2000Signature)
+}
+
+// isJXL returns true for JPEG XL codestream or container signatures.
+func isJXL(buf []byte) bool {
+	return hasPrefix(buf, jxlCodestreamSignature) || hasPrefix(buf, jxlContainerSignature)
 }
 
 // isPSD returns true if the header matches a PSDImage.
 //
 // PSD Photoshop document
 func isPSD(buf []byte) bool {
-	return buf[0] == 0x38 && buf[1] == 0x42 &&
-		buf[2] == 0x50 && buf[3] == 0x53
+	return hasPrefix(buf, psdSignature)
 }
 
 // isXMP returns true if the header matches "<x:xmpmeta" start of a file.
 //
 // XMP sidecar files. The XMPHeader are the first 10bytes of an XMP sidecar.
 func isXMP(buf []byte) bool {
-	return buf[0] == 0x3c &&
-		buf[1] == 0x78 &&
-		buf[2] == 0x3a &&
-		buf[3] == 0x78 &&
-		buf[4] == 0x6d &&
-		buf[5] == 0x70 &&
-		buf[6] == 0x6d &&
-		buf[7] == 0x65 &&
-		buf[8] == 0x74 &&
-		buf[9] == 0x61
+	return hasPrefix(buf, xmpSignature)
 }
 
 // isGIF returns true if the header matches the header of a GIF version 87a
 // or 89a.
 func isGIF(buf []byte) bool {
-	return buf[0] == 'G' &&
-		buf[1] == 'I' &&
-		buf[2] == 'F' &&
-		buf[3] == '8' &&
-		(buf[4] == '7' || buf[4] == '9') &&
-		buf[5] == 'a'
+	return hasPrefix(buf, gif87aSignature) || hasPrefix(buf, gif89aSignature)
 }
 
-func isPPM(buf []byte) bool {
-	return buf[0] == 'P' &&
-		(buf[1] == '3' || buf[1] == '6') &&
-		(buf[2] == '\n' || buf[2] == '\r' || buf[2] == '\t' || buf[2] == ' ')
+func netpbmType(buf []byte) (FileType, bool) {
+	if len(buf) < 3 || buf[0] != 'P' {
+		return ImageUnknown, false
+	}
+
+	if buf[2] != '\n' && buf[2] != '\r' && buf[2] != '\t' && buf[2] != ' ' {
+		return ImageUnknown, false
+	}
+
+	switch buf[1] {
+	case '1', '4':
+		return ImagePBM, true
+	case '2', '5':
+		return ImagePGM, true
+	case '3', '6':
+		return ImagePPM, true
+	case '7':
+		return ImagePAM, true
+	default:
+		return ImageUnknown, false
+	}
 }

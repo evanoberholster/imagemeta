@@ -86,6 +86,19 @@ func parseBuffer(buf []byte) FileType {
 		return ImageJP2K
 	}
 
+	// JPEG XL Header (codestream/container)
+	if isJXL(buf) {
+		return ImageJXL
+	}
+
+	// MNG/JNG Header
+	if isMNG(buf) {
+		return ImageMNG
+	}
+	if isJNG(buf) {
+		return ImageJNG
+	}
+
 	// Canon CRW Header
 	if isCRW(buf) {
 		return ImageCRW
@@ -122,6 +135,64 @@ func parseBuffer(buf []byte) FileType {
 		return ImageTiff
 	}
 
+	// ICO/CUR Header
+	if isICO(buf) {
+		return ImageICO
+	}
+	if isCUR(buf) {
+		return ImageCUR
+	}
+
+	// DDS Header
+	if isDDS(buf) {
+		return ImageDDS
+	}
+
+	// OpenEXR Header
+	if isEXR(buf) {
+		return ImageEXR
+	}
+
+	// DPX Header
+	if isDPX(buf) {
+		return ImageDPX
+	}
+
+	// FITS Header
+	if isFITS(buf) {
+		return ImageFITS
+	}
+
+	// Fuji RAF Header
+	if isRAF(buf) {
+		return ImageRAF
+	}
+
+	// GIMP XCF Header
+	if isXCF(buf) {
+		return ImageXCF
+	}
+
+	// FLIF Header
+	if isFLIF(buf) {
+		return ImageFLIF
+	}
+
+	// BPG Header
+	if isBPG(buf) {
+		return ImageBPG
+	}
+
+	// Radiance HDR Header
+	if isHDR(buf) {
+		return ImageHDR
+	}
+
+	// DjVu Header
+	if isDJVU(buf) {
+		return ImageDJVU
+	}
+
 	// PNG Header
 	if isPNG(buf) {
 		return ImagePNG
@@ -151,9 +222,9 @@ func parseBuffer(buf []byte) FileType {
 		return ImageGIF
 	}
 
-	// Netpbm color image format
-	if isPPM(buf) {
-		return ImagePPM
+	// Netpbm family (PBM/PGM/PPM/PAM)
+	if it, ok := netpbmType(buf); ok {
+		return it
 	}
 
 	return ImageUnknown
