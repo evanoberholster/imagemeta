@@ -309,6 +309,90 @@ func TestScanImageType(t *testing.T) {
 	}
 }
 
+func TestBufDetectsJPEGXL(t *testing.T) {
+	container := []byte{
+		0x00, 0x00, 0x00, 0x0C, // box size
+		0x4A, 0x58, 0x4C, 0x20, // "JXL "
+		0x0D, 0x0A, 0x87, 0x0A, // signature
+	}
+	codestream := []byte{
+		0xFF, 0x0A, // codestream magic
+	}
+
+	for _, testCase := range []struct {
+		name string
+		buf  []byte
+	}{
+		{name: "container", buf: container},
+		{name: "codestream", buf: codestream},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			buf := make([]byte, searchHeaderLength)
+			copy(buf, testCase.buf)
+
+			imageType, err := Buf(buf)
+			if err != nil {
+				t.Fatalf("Buf() returned unexpected error: %v", err)
+			}
+			if imageType != ImageJXL {
+				t.Fatalf("Buf() = %s, expected %s", imageType, ImageJXL)
+			}
+		})
+	}
+}
+
+func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
+	cases := []struct {
+		name     string
+		header   []byte
+		expected FileType
+	}{
+		{name: "ICO", header: []byte{0x00, 0x00, 0x01, 0x00}, expected: ImageICO},
+		{name: "CUR", header: []byte{0x00, 0x00, 0x02, 0x00}, expected: ImageCUR},
+		{name: "DDS", header: []byte("DDS "), expected: ImageDDS},
+		{name: "EXR", header: []byte{0x76, 0x2F, 0x31, 0x01}, expected: ImageEXR},
+		{name: "DPX/BigEndian", header: []byte("SDPX"), expected: ImageDPX},
+		{name: "DPX/LittleEndian", header: []byte("XPDS"), expected: ImageDPX},
+		{name: "MNG", header: []byte{0x8A, 0x4D, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, expected: ImageMNG},
+		{name: "JNG", header: []byte{0x8B, 0x4A, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}, expected: ImageJNG},
+		{name: "FITS", header: []byte("SIMPLE  ="), expected: ImageFITS},
+		{name: "RAF", header: []byte("FUJIFILMCCD-RAW "), expected: ImageRAF},
+		{name: "XCF", header: []byte("gimp xcf "), expected: ImageXCF},
+		{name: "FLIF", header: []byte("FLIF"), expected: ImageFLIF},
+		{name: "BPG", header: []byte{0x42, 0x50, 0x47, 0xFB}, expected: ImageBPG},
+		{name: "HDR/Radiance", header: []byte("#?RADIANCE"), expected: ImageHDR},
+		{name: "HDR/RGBE", header: []byte("#?RGBE"), expected: ImageHDR},
+		{
+			name: "DJVU",
+			header: []byte{
+				'A', 'T', '&', 'T', 'F', 'O', 'R', 'M',
+				0x00, 0x00, 0x00, 0x00,
+				'D', 'J', 'V', 'U',
+			},
+			expected: ImageDJVU,
+		},
+		{name: "PBM", header: []byte("P1\n"), expected: ImagePBM},
+		{name: "PGM", header: []byte("P5 "), expected: ImagePGM},
+		{name: "PPM", header: []byte("P6 "), expected: ImagePPM},
+		{name: "PAM", header: []byte("P7\t"), expected: ImagePAM},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := make([]byte, searchHeaderLength)
+			copy(buf, tc.header)
+
+			got, err := Buf(buf)
+			if err != nil {
+				t.Fatalf("Buf() returned unexpected error: %v", err)
+			}
+			if got != tc.expected {
+				t.Fatalf("Buf() = %s, expected %s", got, tc.expected)
+			}
+		})
+	}
+}
+
 func TestMsgp(t *testing.T) {
 	var err error
 	it, it2 := ImageJPEG, ImageUnknown
