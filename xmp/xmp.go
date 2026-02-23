@@ -29,7 +29,6 @@ type XMP struct {
 }
 
 // ParseXmp reads XMP Metadata from the given reader and returns XMP.
-//
 func ParseXmp(r io.Reader) (xmp XMP, err error) {
 	defer func() {
 		if state := recover(); state != nil {

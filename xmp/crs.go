@@ -8,7 +8,9 @@ import (
 type Double [2]uint16
 
 // CRS is Camera Raw Settings. Photoshop Camera Raw namespace tags.
-//	 xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+//
+//	xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+//
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#crs
 type CRS struct {
 	RawFileName string

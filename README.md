@@ -40,7 +40,8 @@ Example usage:
 ```
 
 ## Imagehash
- Zero allocation PerceptualHash algorithm (64Bit and 256Bit) [github.com/evanoberholster/imagemeta/imagehash](github.com/evanoberholster/imagemeta/imagehash). Adapted from [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
+
+Zero allocation PerceptualHash algorithm (64Bit and 256Bit) [github.com/evanoberholster/imagemeta/imagehash](github.com/evanoberholster/imagemeta/imagehash). Adapted from [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
 
 ## Contributing
 
@@ -62,7 +63,7 @@ Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" 
 - [x] Add CR3 and Heic image metadata support.
 - [x] Add Avif image metadata support
 - [ ] Add Canon Exif Makernote support
-- [ ] Add Nikon Exif Makernote support 
+- [ ] Add Nikon Exif Makernote support
 - [ ] Add Camera Make and Model Lookup tables
 - [ ] Add Preview Image extraction
 - [ ] Refactor XMP parsing as "xmp" package
@@ -77,12 +78,14 @@ Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" 
 Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org), go-exif [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif), and RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
 
 ## Special Thanks to:
+
 - The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
 - Laurent Clévy (@Lorenzo2472) (https://github.com/lclevy/canon_cr3) for Canon CR3 structure.
 - Lasse Heikkilä (https://trepo.tuni.fi/bitstream/handle/123456789/24147/heikkila.pdf) for HEIF structure from his thesis.
 - Imagehash authors (https://github.com/corona10/goimagehash)
 
 ### Contributors
+
 - Anders Brander [abrander](https://github.com/abrander)
 - Dobrosław Żybort [matrixik](https://github.com/matrixik)
 

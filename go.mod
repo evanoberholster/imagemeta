@@ -3,13 +3,11 @@ module github.com/evanoberholster/imagemeta
 go 1.20
 
 require (
-	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551
 	github.com/klauspost/cpuid/v2 v2.2.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.1
-	github.com/tidwall/pretty v1.2.1
 	github.com/tinylib/msgp v1.1.8
 )
 
