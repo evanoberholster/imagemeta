@@ -881,12 +881,19 @@ var (
 	brandCRX    = []byte("crx ")
 	brandHEIC   = []byte("heic")
 	brandHEIF   = []byte("heif")
+	brandHEIM   = []byte("heim")
+	brandHEIS   = []byte("heis")
 	brandHEIX   = []byte("heix")
+	brandHEVM   = []byte("hevm")
+	brandHEVS   = []byte("hevs")
 	brandHEVX   = []byte("hevx")
+	brandMIAF   = []byte("miaf")
 	brandMIF1   = []byte("mif1")
 	brandMSF1   = []byte("msf1")
 	brandHEVC   = []byte("hevc")
 	brandAVIF   = []byte("avif")
+	brandAVIS   = []byte("avis")
+	brandJXL    = []byte("jxl ")
 
 	bmpSignature         = []byte("BM")
 	icoSignature         = []byte{0x00, 0x00, 0x01, 0x00}
@@ -1024,20 +1031,31 @@ func isobmffSubtype(buf []byte) FileType {
 		return ImageAVIF
 	}
 
+	// JPEG XL brand fallback for containers without the leading 'JXL ' signature box.
+	if isFTYPBrand(buf[8:], brandJXL) ||
+		hasAnyCompatibleBrand(buf, brandJXL) {
+		return ImageJXL
+	}
+
 	// HEIC-branded variants.
 	if isFTYPBrand(buf[8:], brandHEIC) ||
+		isFTYPBrand(buf[8:], brandHEIM) ||
+		isFTYPBrand(buf[8:], brandHEIS) ||
 		isFTYPBrand(buf[8:], brandHEIX) ||
 		isFTYPBrand(buf[8:], brandHEVC) ||
+		isFTYPBrand(buf[8:], brandHEVM) ||
+		isFTYPBrand(buf[8:], brandHEVS) ||
 		isFTYPBrand(buf[8:], brandHEVX) ||
-		hasAnyCompatibleBrand(buf, brandHEIC, brandHEIX, brandHEVC, brandHEVX) {
+		hasAnyCompatibleBrand(buf, brandHEIC, brandHEIM, brandHEIS, brandHEIX, brandHEVC, brandHEVM, brandHEVS, brandHEVX) {
 		return ImageHEIC
 	}
 
 	// Generic HEIF (mif1/msf1/heif without explicit HEIC branding).
 	if isFTYPBrand(buf[8:], brandHEIF) ||
+		isFTYPBrand(buf[8:], brandMIAF) ||
 		isFTYPBrand(buf[8:], brandMIF1) ||
 		isFTYPBrand(buf[8:], brandMSF1) ||
-		hasAnyCompatibleBrand(buf, brandHEIF, brandMIF1, brandMSF1) {
+		hasAnyCompatibleBrand(buf, brandHEIF, brandMIAF, brandMIF1, brandMSF1) {
 		return ImageHEIF
 	}
 
@@ -1050,19 +1068,28 @@ func isobmffSubtype(buf []byte) FileType {
 
 // isHeif returns true if the header matches the start of a HEIF file.
 //
-// Major brands: heic, mif1, heix
+// Major brands: heic/heix (+ variants), mif1/msf1, heif/miaf
 // Minor brand contains:
 func isHeif(buf []byte) bool {
 	if !isFTYPBox(buf) {
 		return false
 	}
 
-	if isFTYPBrand(buf[8:], brandHEIC) || isFTYPBrand(buf[8:], brandHEIX) {
+	if isFTYPBrand(buf[8:], brandHEIC) ||
+		isFTYPBrand(buf[8:], brandHEIM) ||
+		isFTYPBrand(buf[8:], brandHEIS) ||
+		isFTYPBrand(buf[8:], brandHEIX) ||
+		isFTYPBrand(buf[8:], brandHEVC) ||
+		isFTYPBrand(buf[8:], brandHEVM) ||
+		isFTYPBrand(buf[8:], brandHEVS) ||
+		isFTYPBrand(buf[8:], brandHEVX) ||
+		isFTYPBrand(buf[8:], brandHEIF) ||
+		isFTYPBrand(buf[8:], brandMIAF) {
 		return true
 	}
 
-	return (isFTYPBrand(buf[8:], brandMIF1) && (hasAt(buf, 16, brandHEIC) || hasAt(buf, 20, brandHEIC))) ||
-		(isFTYPBrand(buf[8:], brandMSF1) && hasAt(buf, 20, brandHEVC))
+	return (isFTYPBrand(buf[8:], brandMIF1) && hasAnyCompatibleBrand(buf, brandHEIC, brandHEIM, brandHEIS, brandHEIX, brandHEVC, brandHEVM, brandHEVS, brandHEVX, brandHEIF, brandMIAF)) ||
+		(isFTYPBrand(buf[8:], brandMSF1) && hasAnyCompatibleBrand(buf, brandHEIC, brandHEIM, brandHEIS, brandHEIX, brandHEVC, brandHEVM, brandHEVS, brandHEVX, brandHEIF, brandMIAF))
 }
 
 // isFTYPBrand returns true if the Brand in []byte matches the provided brand.
@@ -1086,7 +1113,9 @@ func isFTYPBox(buf []byte) bool {
 func isAVIF(buf []byte) bool {
 	return isFTYPBox(buf) &&
 		(isFTYPBrand(buf[8:], brandAVIF) ||
-			(isFTYPBrand(buf[8:], brandMIF1) && hasAt(buf, 20, brandAVIF)))
+			isFTYPBrand(buf[8:], brandAVIS) ||
+			((isFTYPBrand(buf[8:], brandMIF1) || isFTYPBrand(buf[8:], brandMSF1)) &&
+				hasAnyCompatibleBrand(buf, brandAVIF, brandAVIS)))
 }
 
 // isBMP returns true if the header matches the start of a BMP file

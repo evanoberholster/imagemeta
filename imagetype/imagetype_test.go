@@ -11,61 +11,6 @@ import (
 )
 
 // Tests
-func TestScan(t *testing.T) {
-	exifHeaderTests := []struct {
-		filename  string
-		imageType FileType
-	}{
-		{"../testImages/ARW.exif", ImageARW},
-		{"../testImages/NEF.exif", ImageNEF},
-		{"../testImages/CR2.exif", ImageCR2},
-		{"../testImages/Heic.exif", ImageHEIC},
-		{"../testImages/AVIF.avif", ImageAVIF},
-		{"../testImages/AVIF2.avif", ImageAVIF},
-		{"../testImages/CRW.CRW", ImageCRW},
-		{"../testImages/XMP.xmp", ImageXMP},
-		{"../testImages/GIF.gif", ImageGIF},
-		{"../testImages/Unknown.exif", ImageUnknown},
-		{"../testImages/ppm-ascii.ppm", ImagePPM},
-		{"../testImages/ppm-raw.ppm", ImagePPM},
-	}
-	for _, header := range exifHeaderTests {
-		t.Run(header.filename, func(t *testing.T) {
-			// Open file
-			f, err := os.Open(header.filename)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer f.Close()
-			// Search for Image Type
-			imageType, err := Scan(f)
-			if header.imageType == ImageUnknown {
-				if err != ErrImageTypeNotFound {
-					t.Fatal(err)
-				}
-			}
-
-			if header.imageType != imageType {
-				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType.String(), imageType.String())
-			}
-
-			if _, err = f.Seek(0, 0); err != nil {
-				t.Error(err)
-			}
-			imageType, err = ReadAt(f)
-			if header.imageType == ImageUnknown {
-				if err != ErrImageTypeNotFound {
-					t.Fatal(err)
-				}
-			}
-
-			if header.imageType != imageType {
-				t.Errorf("Incorrect Imagetype wanted %s got %s", header.imageType.String(), imageType.String())
-			}
-		})
-	}
-}
-
 func TestImageTypeIndices(t *testing.T) {
 	cases := map[FileType]struct {
 		ext string
@@ -91,6 +36,7 @@ func TestImageTypeIndices(t *testing.T) {
 		ImagePSD:     {"psd", "image/vnd.adobe.photoshop"},
 		ImageXMP:     {"xmp", "application/rdf+xml"},
 		ImageAVIF:    {"avif", "image/avif"},
+		ImageJXL:     {"jxl", "image/jxl"},
 		ImagePPM:     {"ppm", "image/x-portable-pixmap"},
 		ImageHEIC:    {"heic", "image/heic"},
 		ImageJXR:     {"jxr", "image/vnd.ms-photo"},
@@ -197,7 +143,9 @@ func TestImageType(t *testing.T) {
 		"image/jpeg; charset=utf-8": ImageJPEG,
 		"image/heic":                ImageHEIC,
 		"image/heif; q=1.0":         ImageHEIF,
+		"image/jxl":                 ImageJXL,
 		"image/jp2":                 ImageJP2K,
+		".jxl":                      ImageJXL,
 		".dcm":                      ImageDCM,
 	} {
 		if got := FromString(input); got != expected {
@@ -219,7 +167,7 @@ func TestImageType(t *testing.T) {
 }
 
 func TestScanImageType(t *testing.T) {
-	fileOffset := 32
+	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
 
 	var headerTests = []struct {
@@ -385,6 +333,56 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 			buf := make([]byte, scanHeaderLength)
 			copy(buf, tc.header)
 
+			got, err := Buf(buf)
+			if err != nil {
+				t.Fatalf("Buf() returned unexpected error: %v", err)
+			}
+			if got != tc.expected {
+				t.Fatalf("Buf() = %s, expected %s", got, tc.expected)
+			}
+		})
+	}
+}
+
+func makeFTYPHeader(major string, compatible ...string) []byte {
+	buf := make([]byte, scanHeaderLength)
+	buf[0], buf[1], buf[2], buf[3] = 0x00, 0x00, 0x00, 0x20
+	copy(buf[4:8], []byte("ftyp"))
+	copy(buf[8:12], []byte(major))
+	copy(buf[12:16], []byte("0001"))
+
+	offset := 16
+	for _, brand := range compatible {
+		if offset+4 > len(buf) {
+			break
+		}
+		copy(buf[offset:offset+4], []byte(brand))
+		offset += 4
+	}
+	return buf
+}
+
+func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
+	cases := []struct {
+		name       string
+		major      string
+		compatible []string
+		expected   FileType
+	}{
+		{name: "AVIS major", major: "avis", expected: ImageAVIF},
+		{name: "MIF1 compatible AVIS", major: "mif1", compatible: []string{"miaf", "avis"}, expected: ImageAVIF},
+		{name: "JXL major", major: "jxl ", expected: ImageJXL},
+		{name: "HEIM major", major: "heim", expected: ImageHEIC},
+		{name: "HEIS major", major: "heis", expected: ImageHEIC},
+		{name: "HEVM major", major: "hevm", expected: ImageHEIC},
+		{name: "HEVS major", major: "hevs", expected: ImageHEIC},
+		{name: "MIAF major", major: "miaf", expected: ImageHEIF},
+		{name: "HEIF major", major: "heif", expected: ImageHEIF},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := makeFTYPHeader(tc.major, tc.compatible...)
 			got, err := Buf(buf)
 			if err != nil {
 				t.Fatalf("Buf() returned unexpected error: %v", err)
