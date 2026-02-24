@@ -1,8 +1,9 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/pkg/errors"
 )
 
 func (r *Reader) readIinf(b *box) (err error) {
@@ -45,7 +46,7 @@ func (r *Reader) readInfe(b *box) (err error) {
 		// Only support Infe version 2
 		if flags.version() != 2 {
 			if logLevelError() {
-				logError().Object("box", b).Err(errors.Wrapf(ErrInfeVersionNotSupported, "found version %d infe box. Only 2 is supported now", flags.version())).Send()
+				logError().Object("box", b).Err(fmt.Errorf("found version %d infe box. Only 2 is supported now: %w", flags.version(), ErrInfeVersionNotSupported)).Send()
 			}
 			i += size
 			continue

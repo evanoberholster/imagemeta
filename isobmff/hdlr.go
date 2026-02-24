@@ -1,18 +1,23 @@
 package isobmff
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 // readHdlr reads an "hdlr" box
 func readHdlr(b *box) (ht hdlrType, err error) {
 	if !b.isType(typeHdlr) {
-		return hdlrUnknown, errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
+		return hdlrUnknown, fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if err = b.readFlags(); err != nil {
 		return hdlrUnknown, err
 	}
-	buf, err := b.Peek(b.remain)
+
+	if b.remain < 8 {
+		return hdlrUnknown, fmt.Errorf("readHdlr: %w", ErrBufLength)
+	}
+
+	buf, err := b.Peek(8)
 	if err != nil {
 		return hdlrUnknown, err
 	}
@@ -45,13 +50,23 @@ func (ht hdlrType) String() string {
 	return "nnnn"
 }
 
+var (
+	hdlrPictFourCC = fourCCFromString("pict")
+	hdlrVideFourCC = fourCCFromString("vide")
+	hdlrMetaFourCC = fourCCFromString("meta")
+)
+
 func hdlrFromBuf(buf []byte) hdlrType {
-	switch string(buf[:4]) {
-	case "pict":
+	if len(buf) < 4 {
+		return hdlrUnknown
+	}
+
+	switch bmffEndian.Uint32(buf[:4]) {
+	case hdlrPictFourCC:
 		return hdlrPict
-	case "vide":
+	case hdlrVideFourCC:
 		return hdlrVide
-	case "meta":
+	case hdlrMetaFourCC:
 		return hdlrMeta
 	default:
 		return hdlrUnknown

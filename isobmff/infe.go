@@ -15,24 +15,36 @@ const (
 	itemTypeExif
 )
 
+var (
+	itemTypeHvc1FourCC = fourCCFromString("hvc1")
+	itemTypeExifFourCC = fourCCFromString("Exif")
+	itemTypeAv01FourCC = fourCCFromString("av01")
+	itemTypeGridFourCC = fourCCFromString("grid")
+	itemTypeInfeFourCC = fourCCFromString("infe")
+	itemTypeMimeFourCC = fourCCFromString("mime")
+	itemTypeURIFourCC  = fourCCFromString("uri ")
+)
+
 // itemType from Buffer. always should be 4 bytes.
 func itemTypeFromBuf(buf []byte) itemType {
-	str := string(buf[:4])
-	if str == "hvc1" {
-		return itemTypeHvc1
+	if len(buf) < 4 {
+		return itemTypeUnknown
 	}
-	switch str {
-	case "Exif":
+
+	switch bmffEndian.Uint32(buf[:4]) {
+	case itemTypeHvc1FourCC:
+		return itemTypeHvc1
+	case itemTypeExifFourCC:
 		return itemTypeExif
-	case "av01":
+	case itemTypeAv01FourCC:
 		return itemTypeAv01
-	case "grid":
+	case itemTypeGridFourCC:
 		return itemTypeGrid
-	case "infe":
+	case itemTypeInfeFourCC:
 		return itemTypeInfe
-	case "mime":
+	case itemTypeMimeFourCC:
 		return itemTypeMime
-	case "uri ":
+	case itemTypeURIFourCC:
 		return itemTypeURI
 	default:
 		return itemTypeUnknown

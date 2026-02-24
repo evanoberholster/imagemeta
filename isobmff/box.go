@@ -1,8 +1,9 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -79,38 +80,47 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
 	}
-
-	buf, err := b.Peek(16)
+	fmt.Println("Read Box", b.boxType)
+	buf, err := b.Peek(8)
 	if err != nil {
-		return inner, false, errors.Wrap(ErrBufLength, "readBox")
+		return inner, false, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
 	inner.reader = b.reader
 	inner.outer = b
 	inner.offset = int(b.size) - b.remain + b.offset
 	// Read box size and box type
 	inner.size = int64(bmffEndian.Uint32(buf[:4]))
-	inner.remain = int(inner.size)
 	inner.boxType = boxTypeFromBuf(buf[4:8])
 
-	switch inner.size {
-	case 1:
+	headerSize := 8
+	if inner.size == 1 {
+		buf, err = b.Peek(16)
+		if err != nil {
+			return inner, false, fmt.Errorf("readBox: %w", ErrBufLength)
+		}
+
 		// 1 means it's actually a 64-bit size, after the type.
 		inner.size = int64(bmffEndian.Uint64(buf[8:16]))
-		inner.remain = int(inner.size)
 		if inner.size < 0 {
 			// Go uses int64 for sizes typically, but BMFF uses uint64.
 			// We assume for now that nobody actually uses boxes larger
 			// than int64.
-			return inner, false, errors.Wrapf(errLargeBox, "readBox '%s'", inner.boxType)
+			return inner, false, fmt.Errorf("readBox '%s': %w", inner.boxType, errLargeBox)
 		}
-		_, err = inner.Discard(16)
-		return inner, true, err
-		//case 0:
-		// 0 means unknown & to read to end of file. No more boxes.
-		// r.noMoreBoxes = true
-		// TODO: error
+		headerSize = 16
 	}
-	_, err = inner.Discard(8)
+
+	if inner.size < int64(headerSize) {
+		return inner, false, fmt.Errorf("readBox invalid size %d for '%s': %w", inner.size, inner.boxType, ErrBufLength)
+	}
+
+	maxInt := int64(^uint(0) >> 1)
+	if inner.size > maxInt {
+		return inner, false, fmt.Errorf("readBox '%s': %w", inner.boxType, errLargeBox)
+	}
+
+	inner.remain = int(inner.size)
+	_, err = inner.Discard(headerSize)
 	return inner, true, err
 }
 
@@ -118,7 +128,7 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 func (b *box) readUint16() (uint16, error) {
 	buf, err := b.Peek(2)
 	if err != nil {
-		return 0, errors.Wrap(ErrBufLength, "readUint16")
+		return 0, fmt.Errorf("readUint16: %w", ErrBufLength)
 	}
 	_, err = b.Discard(2)
 	return bmffEndian.Uint16(buf[:2]), err
@@ -128,7 +138,7 @@ func (b *box) readUint16() (uint16, error) {
 func (b *box) readUUID() (u meta.UUID, err error) {
 	buf, err := b.Peek(16)
 	if err != nil {
-		return u, errors.Wrap(ErrBufLength, "readUUID")
+		return u, fmt.Errorf("readUUID: %w", ErrBufLength)
 	}
 	if err = u.UnmarshalBinary(buf); err != nil {
 		return u, err
@@ -157,12 +167,26 @@ func (t boxType) String() string {
 	return "nnnn"
 }
 
+func fourCCFromString(str string) uint32 {
+	if len(str) < 4 {
+		return 0
+	}
+	return uint32(str[0])<<24 | uint32(str[1])<<16 | uint32(str[2])<<8 | uint32(str[3])
+}
+
+var boxTypeInfeFourCC = fourCCFromString("infe")
+
 func boxTypeFromBuf(buf []byte) boxType {
-	str := string(buf[:4])
-	if str == "infe" { // inital check for performance reasons
+	if len(buf) < 4 {
+		return typeUnknown
+	}
+
+	fourCC := bmffEndian.Uint32(buf[:4])
+	if fourCC == boxTypeInfeFourCC { // initial check for performance reasons
 		return typeInfe
 	}
-	if b, ok := mapStringBoxType[str]; ok {
+
+	if b, ok := mapFourCCBoxType[fourCC]; ok {
 		return b
 	}
 	if logLevelError() {
@@ -180,7 +204,7 @@ type flags uint32
 func (b *box) readFlags() error {
 	buf, err := b.Peek(4)
 	if err != nil {
-		return errors.Wrap(ErrBufLength, "readFlags")
+		return fmt.Errorf("readFlags: %w", ErrBufLength)
 	}
 	b.readFlagsFromBuf(buf)
 	_, err = b.Discard(4)
@@ -254,6 +278,11 @@ const (
 	typeIref            // 'iref'
 	typeIrot            // 'irot'
 	typeIspe            // 'ispe'
+	typeJXL             // 'JXL '
+	typeJumb            // 'jumb'
+	typeJxlc            // 'jxlc'
+	typeJxll            // 'jxll'
+	typeJxlp            // 'jxlp'
 	typeLhvC            // 'lhvC'
 	typeMdat            // 'mdat'
 	typeMdft            // 'mdft'
@@ -326,6 +355,11 @@ var mapStringBoxType = map[string]boxType{
 	"iref": typeIref,
 	"irot": typeIrot,
 	"ispe": typeIspe,
+	"JXL ": typeJXL,
+	"jumb": typeJumb,
+	"jxlc": typeJxlc,
+	"jxll": typeJxll,
+	"jxlp": typeJxlp,
 	"lhvC": typeLhvC,
 	"mdat": typeMdat,
 	"mdft": typeMdft,
@@ -355,6 +389,16 @@ var mapStringBoxType = map[string]boxType{
 	"vmhd": typeVmhd,
 	"Exif": typeExif,
 }
+
+var mapFourCCBoxType = func() map[uint32]boxType {
+	m := make(map[uint32]boxType, len(mapStringBoxType))
+	for k, v := range mapStringBoxType {
+		if len(k) == 4 {
+			m[fourCCFromString(k)] = v
+		}
+	}
+	return m
+}()
 
 var mapBoxTypeString = map[boxType]string{
 	typeAuxC: "auxC",
@@ -398,6 +442,11 @@ var mapBoxTypeString = map[boxType]string{
 	typeIref: "iref",
 	typeIrot: "irot",
 	typeIspe: "ispe",
+	typeJXL:  "JXL ",
+	typeJumb: "jumb",
+	typeJxlc: "jxlc",
+	typeJxll: "jxll",
+	typeJxlp: "jxlp",
 	typeLhvC: "lhvC",
 	typeMdat: "mdat",
 	typeMdft: "mdft",

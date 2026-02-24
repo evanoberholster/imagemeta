@@ -1,10 +1,10 @@
 package isobmff
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -36,7 +36,7 @@ func logLevelTrace() bool {
 }
 
 func logErrorMsg(key string, format string, args ...interface{}) {
-	Logger.Error().AnErr(key, errors.Errorf(format, args...)).Send()
+	Logger.Error().AnErr(key, fmt.Errorf(format, args...)).Send()
 }
 
 func logInfo() *zerolog.Event {
