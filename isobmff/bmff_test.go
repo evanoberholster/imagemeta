@@ -27,7 +27,7 @@ func BenchmarkCR3(b *testing.B) {
 	buf, _ := io.ReadAll(f)
 	reader := bytes.NewReader(buf)
 
-	r := NewReader(reader)
+	r := NewReader(reader, nil, nil, nil)
 	defer r.Close()
 	for i := 0; i < b.N; i++ {
 		if _, err = reader.Seek(0, 0); err != nil {

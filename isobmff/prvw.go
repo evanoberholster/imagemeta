@@ -1,8 +1,9 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/pkg/errors"
 )
 
 type PRVWBox struct {
@@ -14,16 +15,16 @@ type PRVWBox struct {
 func (r *Reader) readPreview(b *box) (err error) {
 	inner, err := r.createPRVWBox(b)
 	if err != nil {
-		return errors.Wrapf(err, "ReadPRVWBox")
+		return fmt.Errorf("ReadPRVWBox: %w", err)
 	}
 
 	r.prvw, err = parsePreviewBox(&inner)
 	if err != nil {
-		return errors.Wrapf(err, "parsePreviewBox")
+		return fmt.Errorf("parsePreviewBox: %w", err)
 	}
 
-	if r.PreviewImageReader != nil {
-		if err = r.PreviewImageReader(&inner, meta.PreviewHeader(r.prvw)); err != nil {
+	if r.previewImageReader != nil {
+		if err = r.previewImageReader(&inner, meta.PreviewHeader(r.prvw)); err != nil {
 			if logLevelError() {
 				logError().Object("box", inner).Err(err).Send()
 			}
@@ -36,12 +37,12 @@ func (r *Reader) readPreview(b *box) (err error) {
 func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	_, err = b.Discard(8)
 	if err != nil {
-		return inner, errors.Wrap(ErrBufLength, "readPRVWBoxDiscard")
+		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
 	}
 
 	buf, err := b.Peek(8)
 	if err != nil {
-		return inner, errors.Wrap(ErrBufLength, "readPRVWBoxPeek")
+		return inner, fmt.Errorf("readPRVWBoxPeek: %w", ErrBufLength)
 	}
 
 	inner.reader = b.reader
@@ -61,7 +62,7 @@ func parsePreviewBox(b *box) (prvw PRVWBox, err error) {
 
 	buf, err := b.Peek(24)
 	if err != nil {
-		return prvw, errors.Wrap(ErrBufLength, "parsePreviewBoxPeek")
+		return prvw, fmt.Errorf("parsePreviewBoxPeek: %w", ErrBufLength)
 	}
 
 	prvw.Width = bmffEndian.Uint16(buf[14:16])
@@ -70,7 +71,7 @@ func parsePreviewBox(b *box) (prvw PRVWBox, err error) {
 
 	_, err = b.Discard(24)
 	if err != nil {
-		return prvw, errors.Wrap(ErrBufLength, "parsePreviewBoxDiscard")
+		return prvw, fmt.Errorf("parsePreviewBoxDiscard: %w", ErrBufLength)
 	}
 
 	return prvw, nil
