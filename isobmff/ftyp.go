@@ -28,7 +28,11 @@ func (r *Reader) ReadFTYP() (err error) {
 	}
 
 	r.ftyp, err = parseFileTypeBox(&b)
-	return err
+	if err != nil {
+		return err
+	}
+	r.initMetadataGoals()
+	return nil
 }
 
 func parseFileTypeBox(b *box) (ftyp FileTypeBox, err error) {

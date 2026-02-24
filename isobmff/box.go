@@ -3,6 +3,7 @@ package isobmff
 import (
 	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/rs/zerolog"
@@ -50,13 +51,24 @@ func (b *box) Discard(n int) (int, error) {
 // Read the bytes from underlying reader. Is limited by the
 // constrains of the box
 func (b *box) Read(p []byte) (n int, err error) {
-	if b.remain >= len(p) {
-		//fmt.Println(b.remain)
-		n, err = b.reader.br.Read(p)
-		b.adjust(n)
-		return n, err
+	if len(p) == 0 {
+		return 0, nil
 	}
-	return 0, ErrRemainLengthInsufficient
+	if b.remain == 0 {
+		return 0, io.EOF
+	}
+
+	readLen := len(p)
+	if readLen > b.remain {
+		readLen = b.remain
+	}
+
+	n, err = b.reader.br.Read(p[:readLen])
+	b.adjust(n)
+	if n == 0 && err == nil {
+		return 0, io.EOF
+	}
+	return n, err
 }
 
 func (b *box) adjust(n int) {
@@ -77,6 +89,39 @@ func (b *box) close() error {
 	return err
 }
 
+func parseBoxSizeAndType(buf []byte) (size int64, bt boxType, err error) {
+	if len(buf) < 8 {
+		return 0, typeUnknown, fmt.Errorf("readBox: %w", ErrBufLength)
+	}
+	size = int64(bmffEndian.Uint32(buf[:4]))
+	bt = boxTypeFromBuf(buf[4:8])
+	return size, bt, nil
+}
+
+func parseExtendedBoxSize(buf []byte, bt boxType) (int64, error) {
+	if len(buf) < 16 {
+		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
+	}
+	maxInt := uint64(^uint(0) >> 1)
+	size := bmffEndian.Uint64(buf[8:16])
+	if size > maxInt {
+		return 0, fmt.Errorf("readBox '%s': %w", bt, errLargeBox)
+	}
+	return int64(size), nil
+}
+
+func validateBoxSize(size int64, headerSize int, bt boxType) error {
+	if size < int64(headerSize) {
+		return fmt.Errorf("readBox invalid size %d for '%s': %w", size, bt, ErrBufLength)
+	}
+
+	maxInt := int64(^uint(0) >> 1)
+	if size > maxInt {
+		return fmt.Errorf("readBox '%s': %w", bt, errLargeBox)
+	}
+	return nil
+}
+
 func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
@@ -85,39 +130,31 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if err != nil {
 		return inner, false, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
-	inner.reader = b.reader
-	inner.outer = b
-	inner.offset = int(b.size) - b.remain + b.offset
-	// Read box size and box type
-	inner.size = int64(bmffEndian.Uint32(buf[:4]))
-	inner.boxType = boxTypeFromBuf(buf[4:8])
-
+	size, boxType, err := parseBoxSizeAndType(buf)
+	if err != nil {
+		return inner, false, err
+	}
 	headerSize := 8
-	if inner.size == 1 {
+	if size == 1 {
 		buf, err = b.Peek(16)
 		if err != nil {
 			return inner, false, fmt.Errorf("readBox: %w", ErrBufLength)
 		}
-
-		// 1 means it's actually a 64-bit size, after the type.
-		inner.size = int64(bmffEndian.Uint64(buf[8:16]))
-		if inner.size < 0 {
-			// Go uses int64 for sizes typically, but BMFF uses uint64.
-			// We assume for now that nobody actually uses boxes larger
-			// than int64.
-			return inner, false, fmt.Errorf("readBox '%s': %w", inner.boxType, errLargeBox)
+		size, err = parseExtendedBoxSize(buf, boxType)
+		if err != nil {
+			return inner, false, err
 		}
 		headerSize = 16
 	}
-
-	if inner.size < int64(headerSize) {
-		return inner, false, fmt.Errorf("readBox invalid size %d for '%s': %w", inner.size, inner.boxType, ErrBufLength)
+	if err = validateBoxSize(size, headerSize, boxType); err != nil {
+		return inner, false, err
 	}
 
-	maxInt := int64(^uint(0) >> 1)
-	if inner.size > maxInt {
-		return inner, false, fmt.Errorf("readBox '%s': %w", inner.boxType, errLargeBox)
-	}
+	inner.reader = b.reader
+	inner.outer = b
+	inner.offset = int(b.size) - b.remain + b.offset
+	inner.size = size
+	inner.boxType = boxType
 
 	inner.remain = int(inner.size)
 	_, err = inner.Discard(headerSize)
