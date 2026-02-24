@@ -2,6 +2,8 @@ package isobmff
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -223,6 +225,115 @@ func TestReadMetadataReadsExifWithTIFFOffsetPrefix(t *testing.T) {
 	}
 	if r.offset != len(data) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
+func TestReadMetadataSkipsUnknownTopLevelBox(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// unknown box with payload
+		0x00, 0x00, 0x00, 0x0C,
+		'a', 'b', 'c', 'd',
+		0x01, 0x02, 0x03, 0x04,
+		// meta (empty full box)
+		0x00, 0x00, 0x00, 0x0C,
+		'm', 'e', 't', 'a',
+		0x00, 0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() first call error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() second call error = %v", err)
+	}
+	if r.offset != len(data) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
+func TestReadMetadataReturnsEOF(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// meta (empty full box)
+		0x00, 0x00, 0x00, 0x0C,
+		'm', 'e', 't', 'a',
+		0x00, 0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() first call error = %v", err)
+	}
+	if err := r.ReadMetadata(); !errors.Is(err, io.EOF) {
+		t.Fatalf("ReadMetadata() EOF error = %v, want %v", err, io.EOF)
+	}
+}
+
+func TestReadInfeTruncatedReturnsError(t *testing.T) {
+	data := []byte{
+		0x00, 0x00, 0x00, 0x14, // size
+		'i', 'n', 'f', 'e', // type
+		0x02, 0x00, 0x00, 0x00, // version=2
+		0x00, 0x01, // item_ID
+		0x00, 0x00, // protection index
+		'm', 'i', 'm', 'e', // item_type
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readInfe(&b); !errors.Is(err, ErrBufLength) {
+		t.Fatalf("readInfe() error = %v, want %v", err, ErrBufLength)
+	}
+}
+
+func TestReadIlocUnsupportedFieldSizeReturnsError(t *testing.T) {
+	data := []byte{
+		0x00, 0x00, 0x00, 0x1A, // size
+		'i', 'l', 'o', 'c', // type
+		0x00, 0x00, 0x00, 0x00, // version=0
+		0x31, 0x00, // offset_size=3 (unsupported), length_size=1, base_offset_size=0
+		0x00, 0x01, // item_count=1
+		0x00, 0x01, // item_ID
+		0x00, 0x00, // data_reference_index
+		0x00, 0x01, // extent_count
+		0x00, 0x00, 0x00, // extent_offset (3 bytes)
+		0x05, // extent_length
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readIloc(&b); !errors.Is(err, ErrUnsupportedFieldSize) {
+		t.Fatalf("readIloc() error = %v, want %v", err, ErrUnsupportedFieldSize)
 	}
 }
 
