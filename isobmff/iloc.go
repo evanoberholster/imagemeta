@@ -1,19 +1,21 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog"
 )
 
 // itemLocationBox is a "iloc" box
 type itemLocationBox struct {
 	items                                             []ilocEntry
-	count                                             uint16
+	count                                             uint32
 	offsetSize, lengthSize, baseOffsetSize, indexSize uint8 // actually uint4
 }
 
 // MarshalZerologObject is a zerolog interface for logging
 func (ilb itemLocationBox) MarshalZerologObject(e *zerolog.Event) {
-	e.Array("entries", ilb).Uint16("items", ilb.count).Uint8("offsetSize", ilb.offsetSize).Uint8("lengthSize", ilb.lengthSize).Uint8("baseOffsetSize", ilb.baseOffsetSize).Uint8("indexSize", ilb.indexSize)
+	e.Array("entries", ilb).Uint32("items", ilb.count).Uint8("offsetSize", ilb.offsetSize).Uint8("lengthSize", ilb.lengthSize).Uint8("baseOffsetSize", ilb.baseOffsetSize).Uint8("indexSize", ilb.indexSize)
 }
 
 // MarshalZerologArray is a zerolog interface for logging
@@ -36,7 +38,7 @@ type ilocEntry struct {
 
 // MarshalZerologObject is a zerolog interface for logging
 func (ie ilocEntry) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint16("itemID", uint16(ie.id)).Object("extent", ie.firstExtent).Uint16("count", ie.count).Uint16("dri", ie.dataReferenceIndex).Uint8("cmeth", ie.constructionMethod)
+	e.Uint32("itemID", uint32(ie.id)).Object("extent", ie.firstExtent).Uint16("count", ie.count).Uint16("dri", ie.dataReferenceIndex).Uint8("cmeth", ie.constructionMethod)
 }
 
 // offsetLength contains an offset and length
@@ -55,44 +57,71 @@ func (r *Reader) readIloc(b *box) (err error) {
 		return err
 	}
 
-	buf, err := b.Peek(b.remain)
-	if err != nil {
-		return
-	}
-
 	if optionSpeed == 0 {
-		ilb.items = make([]ilocEntry, 0, ilb.count)
+		ilb.items = make([]ilocEntry, 0, int(ilb.count))
 	}
 
-	for i := 0; i < len(buf); {
+	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
-		ent.id = itemID(bmffEndian.Uint16(buf[i : i+2]))
-		i += 2
-
-		if b.flags.version() > 0 { // version 1
-			cmeth := bmffEndian.Uint16(buf[i : i+2])
-			ent.constructionMethod = byte(cmeth & 15)
-			i += 2
+		switch b.flags.version() {
+		case 0, 1:
+			v, readErr := b.readUint16()
+			if readErr != nil {
+				return readErr
+			}
+			ent.id = itemID(v)
+		case 2:
+			v, readErr := b.readUint32()
+			if readErr != nil {
+				return readErr
+			}
+			ent.id = itemID(v)
+		default:
+			return fmt.Errorf("readIloc: unsupported version %d", b.flags.version())
 		}
-		ent.dataReferenceIndex = bmffEndian.Uint16(buf[i : i+2])
-		i += 2
 
-		// Adjust for baseOffset per issue "https://github.com/go4org/go4/issues/47" thanks to petercgrant
-		if ilb.baseOffsetSize > 0 {
-			ent.baseOffset = uintN(ilb.baseOffsetSize, buf[i:i+int(ilb.baseOffsetSize)])
-			i += int(ilb.baseOffsetSize)
+		if b.flags.version() > 0 { // versions 1 and 2
+			cmeth, readErr := b.readUint16()
+			if readErr != nil {
+				return readErr
+			}
+			ent.constructionMethod = uint8(cmeth & 0x0f)
 		}
-		ent.count = bmffEndian.Uint16(buf[i : i+2])
-		i += 2
+		ent.dataReferenceIndex, err = b.readUint16()
+		if err != nil {
+			return err
+		}
+
+		ent.baseOffset, err = b.readUintN(ilb.baseOffsetSize)
+		if err != nil {
+			return err
+		}
+		ent.count, err = b.readUint16()
+		if err != nil {
+			return err
+		}
 
 		for j := 0; j < int(ent.count); j++ {
-			var ol offsetLength
+			if b.flags.version() > 0 && ilb.indexSize > 0 {
+				if _, err = b.readUintN(ilb.indexSize); err != nil {
+					return err
+				}
+			}
+
+			extentOffset, readErr := b.readUintN(ilb.offsetSize)
+			if readErr != nil {
+				return readErr
+			}
+			extentLength, readErr := b.readUintN(ilb.lengthSize)
+			if readErr != nil {
+				return readErr
+			}
+
 			if j == 0 {
-				ol.offset = uintN(ilb.offsetSize, buf[i:i+int(ilb.offsetSize)])
-				i += int(ilb.offsetSize)
-				ol.length = uintN(ilb.lengthSize, buf[i:i+int(ilb.lengthSize)])
-				i += int(ilb.lengthSize)
-				ent.firstExtent = ol
+				ent.firstExtent = offsetLength{
+					offset: ent.baseOffset + extentOffset,
+					length: extentLength,
+				}
 			}
 		}
 		if optionSpeed == 0 {
@@ -114,37 +143,42 @@ func (r *Reader) readIloc(b *box) (err error) {
 }
 
 func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
-	buf, err := b.Peek(8)
-	if err != nil {
+	if err = b.readFlags(); err != nil {
 		return ilb, err
 	}
-	b.readFlagsFromBuf(buf)
-	buf = buf[4:]
+
+	buf, err := b.Peek(2)
+	if err != nil {
+		return ilb, fmt.Errorf("readIlocHeader: %w", ErrBufLength)
+	}
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if b.flags.version() > 0 { // version 1
+	if b.flags.version() > 0 { // versions 1 and 2
 		ilb.indexSize = buf[1] & 15
 	}
-	ilb.count = bmffEndian.Uint16(buf[2:4])
+	if _, err = b.Discard(2); err != nil {
+		return ilb, err
+	}
+
+	switch b.flags.version() {
+	case 0, 1:
+		c, readErr := b.readUint16()
+		if readErr != nil {
+			return ilb, readErr
+		}
+		ilb.count = uint32(c)
+	case 2:
+		ilb.count, err = b.readUint32()
+		if err != nil {
+			return ilb, err
+		}
+	default:
+		return ilb, fmt.Errorf("readIlocHeader: unsupported version %d", b.flags.version())
+	}
+
 	if logLevelInfo() {
 		logInfoBox(b).Object("ItemLocation", ilb).Send()
 	}
-	_, err = b.Discard(8)
-	return ilb, err
-}
-
-func uintN(size uint8, buf []byte) uint64 {
-	switch size {
-	case 1:
-		return uint64(buf[0])
-	case 2:
-		return uint64(bmffEndian.Uint16(buf[:2]))
-	case 4:
-		return uint64(bmffEndian.Uint32(buf[:4]))
-	case 8:
-		return bmffEndian.Uint64(buf[:8])
-	default:
-		panic("error here")
-	}
+	return ilb, nil
 }

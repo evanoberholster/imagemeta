@@ -151,6 +151,9 @@ func (r *Reader) readBox() (b box, err error) {
 	// Read box size and box type (8-byte header)
 	buf, err := r.peek(8)
 	if err != nil {
+		if err == io.EOF {
+			return b, io.EOF
+		}
 		return b, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
 

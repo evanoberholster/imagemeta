@@ -2,6 +2,7 @@ package isobmff
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -13,6 +14,9 @@ func (r *Reader) ReadMetadata() (err error) {
 	for {
 		b, readErr := r.readBox()
 		if readErr != nil {
+			if readErr == io.EOF {
+				return io.EOF
+			}
 			return fmt.Errorf("ReadMetadata: %w", readErr)
 		}
 		switch b.boxType {
@@ -22,10 +26,8 @@ func (r *Reader) ReadMetadata() (err error) {
 			err = r.readExif(&b)
 		case typeMeta:
 			err = r.readMeta(&b)
-			b.close()
 		case typeMoov:
 			err = r.readMoovBox(&b)
-			b.close()
 		case typeUUID:
 			err = r.readUUIDBox(&b)
 		case typeJXL, typeJumb, typeJxlc, typeJxll, typeJxlp:
@@ -39,6 +41,7 @@ func (r *Reader) ReadMetadata() (err error) {
 			if logLevelInfo() {
 				logInfo().Object("box", b).Send()
 			}
+			err = b.close()
 		}
 		if err != nil && logLevelError() {
 			logError().Object("box", b).Err(err).Send()
@@ -51,7 +54,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 	if logLevelInfo() {
 		logInfo().Object("box", b).Send()
 	}
-	if r.heic.exif.ol.offset == 0 {
+	if r.heic.exif.ol.offset == 0 || r.heic.exif.ol.length == 0 {
 		return b.close()
 	}
 	inner, err := r.newExifBox(b)
@@ -59,12 +62,21 @@ func (r *Reader) readMdat(b *box) (err error) {
 		if logLevelError() {
 			logError().Object("box", inner).Err(err).Send()
 		}
-		return
+		return b.close()
+	}
+	if err = seekExifTIFFHeader(&inner); err != nil {
+		if logLevelDebug() {
+			logDebug().Object("box", inner).Err(err).Msg("skip non-TIFF mdat exif candidate")
+		}
+		return b.close()
 	}
 	imageType := r.metadataImageType()
 	header, err := readExifHeader(&inner, ifds.IFD0, imageType)
 	if err != nil {
-		return fmt.Errorf("readMdat: %w", err)
+		if logLevelDebug() {
+			logDebug().Object("box", inner).Err(err).Msg("skip invalid mdat exif header")
+		}
+		return b.close()
 	}
 	if r.exifReader != nil {
 		if err = r.exifReader(&inner, header); err != nil {
@@ -109,32 +121,46 @@ func (r *Reader) readExif(b *box) (err error) {
 }
 
 func (r *Reader) newExifBox(b *box) (inner box, err error) {
-	if _, err = b.Discard(int(r.heic.exif.ol.offset) - b.offset - 16); err != nil {
-		return
+	if r.heic.exif.ol.length == 0 {
+		return inner, ErrBufLength
 	}
-	buf, err := b.Peek(16)
-	if err != nil {
-		return
+
+	currentOffset := b.offset + int(b.size) - b.remain
+	targetOffset := r.heic.exif.ol.offset
+
+	var discardBytes uint64
+	if targetOffset >= uint64(currentOffset) {
+		discardBytes = targetOffset - uint64(currentOffset)
+	} else {
+		// Some encoders store extent offsets relative to mdat payload start.
+		discardBytes = targetOffset
 	}
-	var size int
-	for i := 0; i < len(buf); i += 4 {
-		if string(buf[i+4:i+4+4]) == "Exif" {
-			size = int(bmffEndian.Uint32(buf[i:i+4])) + i
-			break
-		}
+	if discardBytes > uint64(b.remain) {
+		return inner, ErrRemainLengthInsufficient
 	}
+	if _, err = b.Discard(int(discardBytes)); err != nil {
+		return inner, err
+	}
+
+	if r.heic.exif.ol.length > uint64(b.remain) {
+		return inner, ErrRemainLengthInsufficient
+	}
+	maxInt := int64(^uint(0) >> 1)
+	if r.heic.exif.ol.length > uint64(maxInt) {
+		return inner, errLargeBox
+	}
+
+	size := int64(r.heic.exif.ol.length)
 
 	inner = box{
 		reader:  b.reader,
 		outer:   b,
 		boxType: typeExif,
 		offset:  int(b.size) - b.remain + b.offset,
-		size:    int64(r.heic.exif.ol.length),
-		remain:  int(r.heic.exif.ol.length),
+		size:    size,
+		remain:  int(size),
 	}
-
-	_, err = inner.Discard(size + 4)
-	return inner, err
+	return inner, nil
 }
 
 func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
@@ -144,6 +170,9 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 		return
 	}
 	endian := utils.BinaryOrder(buf[:4])
+	if endian == utils.UnknownEndian {
+		return header, ErrBufLength
+	}
 	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.remain), it)
 	header.FirstIfd = firstIfd
 	if logLevelInfo() {
@@ -154,40 +183,55 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 }
 
 func seekExifTIFFHeader(b *box) error {
-	if b.remain < 8 {
-		return ErrBufLength
-	}
-
-	buf, err := b.Peek(8)
-	if err != nil {
-		return err
-	}
-
-	// Some Exif payloads include the APP1 prefix before TIFF data.
-	if hasExifAPP1Prefix(buf) {
-		if _, err = b.Discard(6); err != nil {
-			return err
-		}
+	for {
 		if b.remain < 8 {
 			return ErrBufLength
 		}
-		buf, err = b.Peek(8)
+		buf, err := b.Peek(8)
 		if err != nil {
 			return err
 		}
-	}
 
-	if hasTIFFHeader(buf[:4]) {
-		return nil
-	}
+		// Some Exif payloads include the APP1 prefix before TIFF data.
+		if hasExifAPP1Prefix(buf) {
+			if _, err = b.Discard(6); err != nil {
+				return err
+			}
+			continue
+		}
 
-	// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
-	offset := int(bmffEndian.Uint32(buf[:4]))
-	if offset < 0 || offset > b.remain-8 {
-		return nil
+		// Some payloads are wrapped in a local Exif box header.
+		if hasEmbeddedExifBoxHeader(buf) {
+			boxSize := bmffEndian.Uint32(buf[:4])
+			if boxSize < 8 || int(boxSize) > b.remain {
+				return ErrBufLength
+			}
+			if _, err = b.Discard(8); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if hasTIFFHeader(buf[:4]) {
+			return nil
+		}
+
+		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
+		offset := int(bmffEndian.Uint32(buf[:4]))
+		if offset < 0 || offset > b.remain-8 {
+			return nil
+		}
+		_, err = b.Discard(4 + offset)
+		return err
 	}
-	_, err = b.Discard(4 + offset)
-	return err
+}
+
+func hasEmbeddedExifBoxHeader(buf []byte) bool {
+	return len(buf) >= 8 &&
+		buf[4] == 'E' &&
+		buf[5] == 'x' &&
+		buf[6] == 'i' &&
+		buf[7] == 'f'
 }
 
 func hasExifAPP1Prefix(buf []byte) bool {
@@ -258,14 +302,22 @@ func (r *Reader) readMeta(b *box) (err error) {
 				logInfo().Object("box", inner).Send()
 			}
 		}
-		if err != nil && logLevelError() {
-			logError().Object("box", inner).Err(err).Send()
+		if err != nil {
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
 
 		if err = inner.close(); err != nil {
-			logError().Object("box", inner).Err(err).Send()
-			break
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
+	}
+	if err != nil {
+		return err
 	}
 	return b.close()
 }
@@ -292,13 +344,21 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 				logInfo().Object("box", inner).Send()
 			}
 		}
-		if err != nil && logLevelError() {
-			logError().Object("box", inner).Err(err).Send()
+		if err != nil {
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
 		if err = inner.close(); err != nil {
-			logError().Object("box", inner).Err(err).Send()
-			break
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
+	}
+	if err != nil {
+		return err
 	}
 	return b.close()
 }

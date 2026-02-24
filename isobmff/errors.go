@@ -10,6 +10,8 @@ var (
 	ErrRemainLengthInsufficient = errors.New("remain length insufficient")
 	ErrFlagsLength              = errors.New("failed to read 4 bytes of Flags")
 	ErrItemTypeLength           = errors.New("insufficient itemType Length")
+	ErrUnsupportedFieldSize     = errors.New("unsupported field size")
+	ErrBoxStringTooLong         = errors.New("box string too long")
 	errLargeBox                 = errors.New("unexpectedly large box")
 	ErrWrongBoxType             = errors.New("error wrong box type")
 
