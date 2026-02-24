@@ -1,83 +1,78 @@
 package isobmff
 
 import (
-	"io"
-
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/rs/zerolog"
 )
 
-// CrxMoovBox is a Canon Raw Moov Box
-type CrxMoovBox struct {
-	Meta CR3MetaBox
-	Trak [5]CR3Trak
-}
-
-// CR3MetaBox is a uuidBox that contains Metadata for CR3 files
-type CR3MetaBox struct {
-	//CCTP CCTPBox
-	//THMB THMBBox
-	CNCV CNCVBox
-	CTBO CTBOBox
-	Exif [4]meta.ExifHeader
-}
-
-// CR3Trak is a Canon CR3 Trak box
-type CR3Trak struct {
-	ImageSize, Offset uint32
-	Width, Height     uint16
-	Depth, ImageType  uint16
-}
-
-func readCrxMoovBox(b *box, exifReader ExifReader) (crx CrxMoovBox, err error) {
+func (r *Reader) readCrxMoovBox(b *box) (err error) {
+	sawTHMB := false
 	var inner box
 	var ok bool
 	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+
 		switch inner.boxType {
+		case typeCCTP:
+			err = readCCTPBox(&inner)
 		case typeCNCV:
-			crx.Meta.CNCV, err = readCNCVBox(&inner)
+			err = readCNCVBox(&inner)
 		case typeCTBO:
-			crx.Meta.CTBO, err = readCTBOBox(&inner)
+			err = readCTBOBox(&inner)
 		case typeCMT1:
-			crx.Meta.Exif[0], err = readCMTBox(&inner, exifReader, ifds.IFD0)
+			err = r.readCMTBox(&inner, ifds.IFD0)
 		case typeCMT2:
-			crx.Meta.Exif[1], err = readCMTBox(&inner, exifReader, ifds.ExifIFD)
+			err = r.readCMTBox(&inner, ifds.ExifIFD)
 		case typeCMT3:
-			crx.Meta.Exif[2], err = readCMTBox(&inner, exifReader, ifds.MknoteIFD)
+			err = r.readCMTBox(&inner, ifds.MknoteIFD)
 		case typeCMT4:
-			crx.Meta.Exif[3], err = readCMTBox(&inner, exifReader, ifds.GPSIFD)
-		//case typeTHMB:
-		//case typeCCTP:
+			err = r.readCMTBox(&inner, ifds.GPSIFD)
+		case typeTHMB, typeThmb:
+			sawTHMB = true
+			err = r.readTHMBBox(&inner)
 		default:
 			if logLevelDebug() {
-				logDebug().Object("box", inner).Send()
+				logDebug().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
 			}
 		}
-		if err != nil && logLevelError() {
-			logError().Object("box", inner).Err(err).Send()
+		if err != nil {
+			if logLevelError() {
+				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
+			}
+			return err
 		}
 		if err = inner.close(); err != nil {
-			return
+			return err
 		}
 	}
-	return crx, b.close()
+	if err != nil {
+		return err
+	}
+	if r.goalTHMB && !sawTHMB {
+		// Some CR3 variants do not include a THMB box.
+		r.goalTHMB = false
+	}
+	return b.close()
 }
 
 // CMT Box
 
-// readCMTBox reads a ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3
-func readCMTBox(b *box, exifReader func(r io.Reader, h meta.ExifHeader) error, ifdType ifds.IfdType) (header meta.ExifHeader, err error) {
-	if header, err = readExifHeader(b, ifdType, imagetype.ImageCR3); err != nil {
-		return
+// readCMTBox reads an ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3.
+func (r *Reader) readCMTBox(b *box, ifdType ifds.IfdType) (err error) {
+	if r.exifReader == nil {
+		return nil
 	}
-	if exifReader != nil {
-		if err = exifReader(b, header); err != nil && logLevelError() {
-			logError().Object("box", b).Object("exifReader", header).Send()
-		}
+	header, err := readExifHeader(b, ifdType, imagetype.ImageCR3)
+	if err != nil {
+		return err
 	}
-	return header, b.close()
+	callbackErr := r.exifReader(newLimitedReader(b, b.remain), header)
+	if callbackErr != nil {
+		return handleCallbackError(b, callbackErr)
+	}
+	r.haveExif = true
+	return nil
 }
 
 // CNCV Box
@@ -90,68 +85,243 @@ type CNCVBox struct {
 	version [30]byte
 }
 
-func readCNCVBox(b *box) (cncv CNCVBox, err error) {
+func readCNCVBox(b *box) (err error) {
 	if !b.isType(typeCNCV) {
-		return cncv, ErrWrongBoxType
+		return ErrWrongBoxType
+	}
+	if !logLevelInfo() {
+		return nil
+	}
+	var cncv CNCVBox
+	if b.remain < len(cncv.version) {
+		return ErrBufLength
 	}
 	buf, err := b.Peek(30)
 	if err != nil {
-		return CNCVBox{}, err
+		return err
 	}
 	copy(cncv.version[:], buf[:30])
-	if logLevelInfo() {
-		logInfo().Object("box", b).Str("CNCV", string(cncv.version[:])).Send()
+	logInfo().Object("box", b).Str("CNCV", string(cncv.version[:])).Send()
+	return nil
+}
+
+// CCTP Box
+
+type CCTPBox struct {
+	count   uint32
+	entries []CCTPEntry
+}
+
+type CCTPEntry struct {
+	size      uint32
+	trackType uint32
+	mediaType uint32
+	unknown   uint32
+	index     uint32
+}
+
+func (e CCTPEntry) MarshalZerologObject(ev *zerolog.Event) {
+	ev.Uint32("size", e.size).
+		Str("trackType", fourCCString(e.trackType)).
+		Uint32("mediaType", e.mediaType).
+		Uint32("unknown", e.unknown).
+		Uint32("index", e.index)
+}
+
+func (c CCTPBox) MarshalZerologArray(a *zerolog.Array) {
+	for i := range c.entries {
+		a.Object(c.entries[i])
 	}
-	return cncv, b.close()
+}
+
+func readCCTPBox(b *box) (err error) {
+	if !b.isType(typeCCTP) {
+		return ErrWrongBoxType
+	}
+	if !logLevelInfo() {
+		return nil
+	}
+	var cctp CCTPBox
+	if err = b.readFlags(); err != nil {
+		return err
+	}
+	if cctp.count, err = b.readUint32(); err != nil {
+		return err
+	}
+	entryCount := int(cctp.count)
+	maxEntries := b.remain / 24
+	if entryCount > maxEntries {
+		entryCount = maxEntries
+	}
+	cctp.entries = make([]CCTPEntry, 0, entryCount)
+	for i := 0; i < entryCount; i++ {
+		var ent CCTPEntry
+		if ent.size, err = b.readUint32(); err != nil {
+			return err
+		}
+		if ent.trackType, err = b.readFourCC(); err != nil {
+			return err
+		}
+		if ent.mediaType, err = b.readUint32(); err != nil {
+			return err
+		}
+		if ent.unknown, err = b.readUint32(); err != nil {
+			return err
+		}
+		if ent.index, err = b.readUint32(); err != nil {
+			return err
+		}
+		cctp.entries = append(cctp.entries, ent)
+	}
+	logInfo().Object("box", b).Array("tracks", cctp).Send()
+	return nil
 }
 
 // CTBO Box
 
-func readCTBOBox(b *box) (ctbo CTBOBox, err error) {
+func readCTBOBox(b *box) (err error) {
 	if !b.isType(typeCTBO) {
-		return ctbo, ErrWrongBoxType
+		return ErrWrongBoxType
 	}
-	buf, err := b.Peek(b.remain)
-	if err != nil {
-		return ctbo, err
+	if !logLevelInfo() {
+		return nil
 	}
-	// Item Count
-	ctbo.count = crxEndian.Uint32(buf[0:4])
-
-	// Each item is 20 bytes in length
-	for i := 4; i+20 <= len(buf); i += 20 {
-		idx := crxEndian.Uint32(buf[i:i+4]) - 1
-		if int(idx) < len(ctbo.items) {
-			ctbo.items[idx].offset = crxEndian.Uint64(buf[i+4 : i+12])
-			ctbo.items[idx].length = crxEndian.Uint64(buf[i+12 : i+20])
+	var ctbo CTBOBox
+	if ctbo.count, err = b.readUint32(); err != nil {
+		return err
+	}
+	itemCount := int(ctbo.count)
+	maxItems := b.remain / 20
+	if itemCount > maxItems {
+		itemCount = maxItems
+	}
+	ctbo.items = make([]offsetLength, 0, itemCount)
+	for i := 0; i < itemCount; i++ {
+		_, readErr := b.readUint32() // item index (1-based)
+		if readErr != nil {
+			return readErr
 		}
+		var ent offsetLength
+		if ent.offset, err = b.readUintN(8); err != nil {
+			return err
+		}
+		if ent.length, err = b.readUintN(8); err != nil {
+			return err
+		}
+		ctbo.items = append(ctbo.items, ent)
 	}
-	if logLevelInfo() {
-		logInfo().Object("box", b).Array("items", ctbo).Send()
+	if len(ctbo.items) > int(ctbo.count) {
+		ctbo.items = ctbo.items[:ctbo.count]
 	}
-	return ctbo, b.close()
+	logInfo().Object("box", b).Array("items", ctbo).Send()
+	return nil
 }
 
-// CTBOBox is a Canon tracks base offsets Box?
-// items are [2]{offset,length}
+// CTBOBox is a Canon tracks base offsets box.
 type CTBOBox struct {
-	items [5]offsetLength
+	items []offsetLength
 	count uint32
 }
 
-// MarshalZerologArray is a zerolog interface for logging
+// MarshalZerologArray is a zerolog interface for logging.
 func (ctbo CTBOBox) MarshalZerologArray(a *zerolog.Array) {
-	for i := 0; i < int(ctbo.count); i++ {
-		item := ctbo.items[i]
-		if item.length == 0 && item.offset == 0 {
-			break
-		}
-		a.Object(item)
+	for i := 0; i < len(ctbo.items); i++ {
+		a.Object(ctbo.items[i])
 	}
 }
 
+// THMB Box
+
+type THMBBox struct {
+	Width  uint16
+	Height uint16
+	Size   uint32
+}
+
+func (r *Reader) readTHMBBox(b *box) (err error) {
+	if !b.isType(typeTHMB) && !b.isType(typeThmb) {
+		return ErrWrongBoxType
+	}
+	if r.previewImageReader == nil {
+		return nil
+	}
+	var thmb THMBBox
+	thmb, err = parseTHMBBox(b)
+	if err != nil {
+		return err
+	}
+	if thmb.Size > uint32(b.remain) {
+		return ErrRemainLengthInsufficient
+	}
+
+	if thmb.Size > 0 {
+		payloadOffset := b.offset + int(b.size) - b.remain
+		payload := box{
+			reader:  b.reader,
+			outer:   b,
+			boxType: b.boxType,
+			offset:  payloadOffset,
+			size:    int64(thmb.Size),
+			remain:  int(thmb.Size),
+		}
+		header := meta.PreviewHeader{
+			Size:      thmb.Size,
+			Width:     thmb.Width,
+			Height:    thmb.Height,
+			ImageType: imagetype.ImageJPEG,
+			Source:    meta.PreviewSourceTHMB,
+		}
+		callbackErr := r.previewImageReader(newLimitedReader(&payload, payload.remain), header)
+		if callbackErr != nil {
+			if err = handleCallbackError(&payload, callbackErr); err != nil {
+				return err
+			}
+		} else {
+			r.haveTHMB = true
+		}
+		if closeErr := payload.close(); closeErr != nil {
+			return closeErr
+		}
+	}
+
+	return nil
+}
+
+func parseTHMBBox(b *box) (thmb THMBBox, err error) {
+	if b.remain < 16 {
+		return thmb, ErrBufLength
+	}
+	buf, err := b.Peek(16)
+	if err != nil {
+		return thmb, err
+	}
+
+	thmb.Width = bmffEndian.Uint16(buf[4:6])
+	thmb.Height = bmffEndian.Uint16(buf[6:8])
+	thmb.Size = bmffEndian.Uint32(buf[8:12])
+
+	if _, err = b.Discard(16); err != nil {
+		return thmb, err
+	}
+	return thmb, nil
+}
+
+func fourCCFromUint32(v uint32) [4]byte {
+	return [4]byte{
+		byte(v >> 24),
+		byte(v >> 16),
+		byte(v >> 8),
+		byte(v),
+	}
+}
+
+func fourCCString(v uint32) string {
+	buf := fourCCFromUint32(v)
+	return string(buf[:])
+}
+
 // Trak
-func readCrxTrakBox(b *box) (t CR3Trak, err error) {
+func readCrxTrakBox(b *box) (err error) {
 	//var inner box
 	//var ok bool
 	////for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
@@ -175,5 +345,5 @@ func readCrxTrakBox(b *box) (t CR3Trak, err error) {
 	if logLevelInfo() {
 		logInfo().Object("box", b).Send()
 	}
-	return t, b.close()
+	return nil
 }

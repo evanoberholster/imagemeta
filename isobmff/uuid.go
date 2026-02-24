@@ -30,14 +30,29 @@ func (r *Reader) readUUIDBox(b *box) error {
 	}
 	switch uuid {
 	case cr3XPacketUUID:
+		header, evalErr := evaluateXPacketHeader(b)
+		if evalErr != nil {
+			return evalErr
+		}
+		if logLevelInfo() {
+			logInfoBox(b).
+				Bool("hasXPacketPI", header.HasXPacketPI).
+				Bool("hasXMPMeta", header.HasXMPMeta).
+				Uint32("xpacketLength", header.Length).
+				Send()
+		}
 		if r.xmpReader != nil {
-			if err = r.xmpReader(b); err != nil {
-				b.close()
-				return err
+			callbackErr := r.xmpReader(newLimitedReader(b, b.remain), header)
+			if callbackErr != nil {
+				if err = handleCallbackError(b, callbackErr); err != nil {
+					return err
+				}
+			} else {
+				r.haveXMP = true
 			}
 		}
 	case cr3MetaBoxUUID:
-		if _, err = readCrxMoovBox(b, r.exifReader); err != nil {
+		if err = r.readCrxMoovBox(b); err != nil {
 			return err
 		}
 	case cr3PreviewUUID:

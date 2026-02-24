@@ -11,6 +11,10 @@ import (
 )
 
 func (r *Reader) ReadMetadata() (err error) {
+	if r.goalsInitialized && r.stopAfterMetadata {
+		return io.EOF
+	}
+
 	for {
 		b, readErr := r.readBox()
 		if readErr != nil {
@@ -39,12 +43,15 @@ func (r *Reader) ReadMetadata() (err error) {
 			}
 		default:
 			if logLevelInfo() {
-				logInfo().Object("box", b).Send()
+				logInfo().Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size).Send()
 			}
 			err = b.close()
 		}
 		if err != nil && logLevelError() {
-			logError().Object("box", b).Err(err).Send()
+			logError().Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size).Err(err).Send()
+		}
+		if err == nil && r.goalsInitialized && r.hasMetadataGoals() && r.metadataGoalsSatisfied() {
+			r.stopAfterMetadata = true
 		}
 		return err
 	}
@@ -79,13 +86,14 @@ func (r *Reader) readMdat(b *box) (err error) {
 		return b.close()
 	}
 	if r.exifReader != nil {
-		if err = r.exifReader(&inner, header); err != nil {
-
-			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+		callbackErr := r.exifReader(newLimitedReader(&inner, inner.remain), header)
+		if callbackErr != nil {
+			if err = handleCallbackError(&inner, callbackErr); err != nil {
+				return err
 			}
+		} else {
+			r.haveExif = true
 		}
-
 	}
 
 	if logLevelInfo() {
@@ -110,10 +118,13 @@ func (r *Reader) readExif(b *box) (err error) {
 	}
 
 	if r.exifReader != nil {
-		if err = r.exifReader(b, header); err != nil {
-			if logLevelError() {
-				logError().Object("box", b).Err(err).Send()
+		callbackErr := r.exifReader(newLimitedReader(b, b.remain), header)
+		if callbackErr != nil {
+			if err = handleCallbackError(b, callbackErr); err != nil {
+				return err
 			}
+		} else {
+			r.haveExif = true
 		}
 	}
 
@@ -251,19 +262,31 @@ func hasTIFFHeader(buf []byte) bool {
 }
 
 func (r *Reader) metadataImageType() imagetype.ImageType {
-	switch r.ftyp.MajorBrand {
+	if it, ok := imageTypeFromBrand(r.ftyp.MajorBrand); ok {
+		return it
+	}
+	for _, compatibleBrand := range r.ftyp.Compatible {
+		if it, ok := imageTypeFromBrand(compatibleBrand); ok {
+			return it
+		}
+	}
+	return imagetype.ImageHEIF
+}
+
+func imageTypeFromBrand(brand Brand) (imagetype.ImageType, bool) {
+	switch brand {
 	case brandJxl:
-		return imagetype.ImageJXL
+		return imagetype.ImageJXL, true
 	case brandAvif, brandAvis:
-		return imagetype.ImageAVIF
+		return imagetype.ImageAVIF, true
 	case brandHeic, brandHeim, brandHeis, brandHeix, brandHevc, brandHevm, brandHevs, brandHevx:
-		return imagetype.ImageHEIC
+		return imagetype.ImageHEIC, true
 	case brandHeif, brandMiaf, brandMif1, brandMif2, brandMsf1:
-		return imagetype.ImageHEIF
+		return imagetype.ImageHEIF, true
 	case brandCrx:
-		return imagetype.ImageCR3
+		return imagetype.ImageCR3, true
 	default:
-		return imagetype.ImageHEIF
+		return imagetype.ImageHEIF, false
 	}
 }
 
@@ -299,19 +322,19 @@ func (r *Reader) readMeta(b *box) (err error) {
 			err = r.readIloc(&inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Object("box", inner).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
 			}
 		}
 		if err != nil {
 			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
 			}
 			return err
 		}
 
 		if err = inner.close(); err != nil {
 			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
 			}
 			return err
 		}
@@ -337,22 +360,22 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 		case typeUUID:
 			err = r.readUUIDBox(&inner)
 		case typeTrak:
-			_, err = readCrxTrakBox(&inner)
+			err = readCrxTrakBox(&inner)
 		//case typeMvhd:
 		default:
 			if logLevelInfo() {
-				logInfo().Object("box", inner).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
 			}
 		}
 		if err != nil {
 			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
 			}
 			return err
 		}
 		if err = inner.close(); err != nil {
 			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
 			}
 			return err
 		}

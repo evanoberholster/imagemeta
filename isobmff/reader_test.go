@@ -339,9 +339,10 @@ func TestReadIlocUnsupportedFieldSizeReturnsError(t *testing.T) {
 
 func TestMetadataImageTypeFromMajorBrand(t *testing.T) {
 	tests := []struct {
-		name      string
-		major     Brand
-		wantImage imagetype.ImageType
+		name       string
+		major      Brand
+		compatible []Brand
+		wantImage  imagetype.ImageType
 	}{
 		{name: "jxl", major: brandJxl, wantImage: imagetype.ImageJXL},
 		{name: "avif", major: brandAvif, wantImage: imagetype.ImageAVIF},
@@ -349,14 +350,18 @@ func TestMetadataImageTypeFromMajorBrand(t *testing.T) {
 		{name: "heic", major: brandHeic, wantImage: imagetype.ImageHEIC},
 		{name: "heif", major: brandHeif, wantImage: imagetype.ImageHEIF},
 		{name: "cr3", major: brandCrx, wantImage: imagetype.ImageCR3},
+		{name: "compatible-fallback-avif", major: brandUnknown, compatible: []Brand{brandUnknown, brandAvif}, wantImage: imagetype.ImageAVIF},
 		{name: "unknown-fallback", major: brandUnknown, wantImage: imagetype.ImageHEIF},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var compatible [maxBrandCount]Brand
+			copy(compatible[:], tt.compatible)
 			r := Reader{
 				ftyp: FileTypeBox{
 					MajorBrand: tt.major,
+					Compatible: compatible,
 				},
 			}
 			if got := r.metadataImageType(); got != tt.wantImage {

@@ -57,10 +57,6 @@ func (r *Reader) readIloc(b *box) (err error) {
 		return err
 	}
 
-	if optionSpeed == 0 {
-		ilb.items = make([]ilocEntry, 0, int(ilb.count))
-	}
-
 	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
 		switch b.flags.version() {
@@ -123,9 +119,6 @@ func (r *Reader) readIloc(b *box) (err error) {
 					length: extentLength,
 				}
 			}
-		}
-		if optionSpeed == 0 {
-			ilb.items = append(ilb.items, ent)
 		}
 		if logLevelDebug() {
 			logDebug().Object("entry", ent).Send()
