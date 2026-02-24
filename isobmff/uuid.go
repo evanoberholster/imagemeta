@@ -1,8 +1,9 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 
 func (r *Reader) readUUIDBox(b *box) error {
 	if !b.isType(typeUUID) {
-		return errors.Wrapf(ErrWrongBoxType, "Box %s", b.boxType)
+		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	uuid, err := b.readUUID()
 	if err != nil {
@@ -29,14 +30,14 @@ func (r *Reader) readUUIDBox(b *box) error {
 	}
 	switch uuid {
 	case cr3XPacketUUID:
-		if r.XMPReader != nil {
-			if err = r.XMPReader(b); err != nil {
+		if r.xmpReader != nil {
+			if err = r.xmpReader(b); err != nil {
 				b.close()
 				return err
 			}
 		}
 	case cr3MetaBoxUUID:
-		if _, err = readCrxMoovBox(b, r.ExifReader); err != nil {
+		if _, err = readCrxMoovBox(b, r.exifReader); err != nil {
 			return err
 		}
 	case cr3PreviewUUID:
