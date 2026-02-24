@@ -17,12 +17,21 @@ func readIprp(b *box) (err error) {
 				logInfoBox(&inner).Send()
 			}
 		}
-		if err != nil && logLevelError() {
-			logError().Object("box", inner).Err(err).Send()
+		if err != nil {
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
-		if err = inner.close(); err != nil && logLevelError() {
-			logError().Object("box", inner).Err(err).Send()
+		if err = inner.close(); err != nil {
+			if logLevelError() {
+				logError().Object("box", inner).Err(err).Send()
+			}
+			return err
 		}
+	}
+	if err != nil {
+		return err
 	}
 	return b.close()
 }

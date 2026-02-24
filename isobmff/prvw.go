@@ -3,6 +3,7 @@ package isobmff
 import (
 	"fmt"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
@@ -24,10 +25,24 @@ func (r *Reader) readPreview(b *box) (err error) {
 	}
 
 	if r.previewImageReader != nil {
-		if err = r.previewImageReader(&inner, meta.PreviewHeader(r.prvw)); err != nil {
-			if logLevelError() {
-				logError().Object("box", inner).Err(err).Send()
+		header := meta.PreviewHeader{
+			Size:      r.prvw.Size,
+			Width:     r.prvw.Width,
+			Height:    r.prvw.Height,
+			ImageType: imagetype.ImageJPEG,
+			Source:    meta.PreviewSourcePRVW,
+		}
+		previewBytes := int(r.prvw.Size)
+		if previewBytes > inner.remain {
+			previewBytes = inner.remain
+		}
+		callbackErr := r.previewImageReader(newLimitedReader(&inner, previewBytes), header)
+		if callbackErr != nil {
+			if err = handleCallbackError(&inner, callbackErr); err != nil {
+				return err
 			}
+		} else {
+			r.havePRVW = true
 		}
 	}
 
@@ -35,11 +50,24 @@ func (r *Reader) readPreview(b *box) (err error) {
 }
 
 func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
-	_, err = b.Discard(8)
-	if err != nil {
-		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
+	inner, err = buildPRVWInnerBox(b)
+	if err == nil {
+		return inner, nil
+	}
+	if err != ErrWrongBoxType {
+		return inner, err
 	}
 
+	if b.remain < 16 {
+		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
+	}
+	if _, err = b.Discard(8); err != nil {
+		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
+	}
+	return buildPRVWInnerBox(b)
+}
+
+func buildPRVWInnerBox(b *box) (inner box, err error) {
 	buf, err := b.Peek(8)
 	if err != nil {
 		return inner, fmt.Errorf("readPRVWBoxPeek: %w", ErrBufLength)
@@ -51,6 +79,12 @@ func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	inner.size = int64(bmffEndian.Uint32(buf[:4]))
 	inner.remain = int(inner.size)
 	inner.boxType = boxTypeFromBuf(buf[4:8])
+	if inner.boxType != typePRVW {
+		return inner, ErrWrongBoxType
+	}
+	if inner.size < 8 || inner.remain > b.remain {
+		return inner, ErrBufLength
+	}
 
 	return inner, nil
 }
@@ -72,6 +106,9 @@ func parsePreviewBox(b *box) (prvw PRVWBox, err error) {
 	_, err = b.Discard(24)
 	if err != nil {
 		return prvw, fmt.Errorf("parsePreviewBoxDiscard: %w", ErrBufLength)
+	}
+	if prvw.Size > uint32(b.remain) {
+		return prvw, ErrRemainLengthInsufficient
 	}
 
 	return prvw, nil

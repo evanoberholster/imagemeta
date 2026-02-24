@@ -39,6 +39,19 @@ type Reader struct {
 	xmpReader          XMPReader
 	previewImageReader PreviewImageReader
 
+	goalExif bool
+	goalXMP  bool
+	goalTHMB bool
+	goalPRVW bool
+
+	haveExif bool
+	haveXMP  bool
+	haveTHMB bool
+	havePRVW bool
+
+	stopAfterMetadata bool
+	goalsInitialized  bool
+
 	offset int
 
 	source               io.Reader
@@ -48,22 +61,24 @@ type Reader struct {
 }
 
 // NewReader returns a new bmff.Reader
-func NewReader(r io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) Reader {
+func NewReader(r io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) *Reader {
+	reader := newReader(r)
+	reader.exifReader = exifReader
+	reader.xmpReader = xmpReader
+	reader.previewImageReader = previewImageReader
+	return &reader
+}
+
+func newReader(r io.Reader) Reader {
 	// Reuse caller-provided bufio.Reader when large enough to avoid stacking buffers.
 	if br, ok := r.(*bufio.Reader); ok && br.Size() >= bufReaderSize {
 		reader := newReaderWithBufio(br, r, nil)
-		reader.exifReader = exifReader
-		reader.xmpReader = xmpReader
-		reader.previewImageReader = previewImageReader
 		return reader
 	}
 
 	br := readerPool.Get().(*bufio.Reader)
 	br.Reset(r)
 	reader := newReaderWithBufio(br, r, &readerPool)
-	reader.exifReader = exifReader
-	reader.xmpReader = xmpReader
-	reader.previewImageReader = previewImageReader
 	return reader
 }
 
@@ -125,12 +140,57 @@ func (r *Reader) discardWithSeek(n int) (discarded int, err error) {
 	return discarded + skipped, err
 }
 
-func (r *Reader) reset(newReader io.Reader) {
+func (r *Reader) reset(newSource io.Reader) {
 	exifReader := r.exifReader
 	xmpReader := r.xmpReader
 	previewImageReader := r.previewImageReader
 	r.Close()
-	*r = NewReader(newReader, exifReader, xmpReader, previewImageReader)
+	*r = newReader(newSource)
+	r.exifReader = exifReader
+	r.xmpReader = xmpReader
+	r.previewImageReader = previewImageReader
+}
+
+func (r *Reader) initMetadataGoals() {
+	r.goalExif = r.exifReader != nil
+	r.goalXMP = r.xmpReader != nil
+	r.goalTHMB = false
+	r.goalPRVW = false
+	if r.previewImageReader != nil {
+		if r.ftyp.MajorBrand == brandCrx {
+			r.goalTHMB = true
+			r.goalPRVW = true
+		} else {
+			r.goalPRVW = true
+		}
+	}
+
+	r.haveExif = false
+	r.haveXMP = false
+	r.haveTHMB = false
+	r.havePRVW = false
+	r.stopAfterMetadata = false
+	r.goalsInitialized = true
+}
+
+func (r *Reader) metadataGoalsSatisfied() bool {
+	if r.goalExif && !r.haveExif {
+		return false
+	}
+	if r.goalXMP && !r.haveXMP {
+		return false
+	}
+	if r.goalTHMB && !r.haveTHMB {
+		return false
+	}
+	if r.goalPRVW && !r.havePRVW {
+		return false
+	}
+	return true
+}
+
+func (r *Reader) hasMetadataGoals() bool {
+	return r.goalExif || r.goalXMP || r.goalTHMB || r.goalPRVW
 }
 
 // Close the Reader. Returns the underlying bufio.Reader to the reader pool.
@@ -157,36 +217,30 @@ func (r *Reader) readBox() (b box, err error) {
 		return b, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
 
-	b.reader = r
-	b.size = int64(bmffEndian.Uint32(buf[:4]))
-	b.boxType = boxTypeFromBuf(buf[4:8])
-	b.offset = r.offset
-
+	size, boxType, err := parseBoxSizeAndType(buf)
+	if err != nil {
+		return b, err
+	}
 	headerSize := 8
-	if b.size == 1 {
+	if size == 1 {
 		buf, err = r.peek(16)
 		if err != nil {
 			return b, fmt.Errorf("readBox: %w", ErrBufLength)
 		}
-
-		// 1 means it's actually a 64-bit size, after the type.
-		b.size = int64(bmffEndian.Uint64(buf[8:16]))
-		if b.size < 0 {
-			// Go uses int64 for sizes typically, but BMFF uses uint64.
-			// We assume for now that nobody actually uses boxes larger
-			// than int64.
-			return b, fmt.Errorf("readBox '%s': %w", b.boxType, errLargeBox)
+		size, err = parseExtendedBoxSize(buf, boxType)
+		if err != nil {
+			return b, err
 		}
 		headerSize = 16
 	}
-	if b.size < int64(headerSize) {
-		return b, fmt.Errorf("readBox invalid size %d for '%s': %w", b.size, b.boxType, ErrBufLength)
+	if err = validateBoxSize(size, headerSize, boxType); err != nil {
+		return b, err
 	}
 
-	maxInt := int64(^uint(0) >> 1)
-	if b.size > maxInt {
-		return b, fmt.Errorf("readBox '%s': %w", b.boxType, errLargeBox)
-	}
+	b.reader = r
+	b.size = size
+	b.boxType = boxType
+	b.offset = r.offset
 
 	b.remain = int(b.size)
 	_, err = b.Discard(headerSize)
