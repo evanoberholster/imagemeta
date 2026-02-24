@@ -1,6 +1,7 @@
 package isobmff
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -80,7 +81,6 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
 	}
-	fmt.Println("Read Box", b.boxType)
 	buf, err := b.Peek(8)
 	if err != nil {
 		return inner, false, fmt.Errorf("readBox: %w", ErrBufLength)
@@ -132,6 +132,118 @@ func (b *box) readUint16() (uint16, error) {
 	}
 	_, err = b.Discard(2)
 	return bmffEndian.Uint16(buf[:2]), err
+}
+
+// readUint32 from box
+func (b *box) readUint32() (uint32, error) {
+	buf, err := b.Peek(4)
+	if err != nil {
+		return 0, fmt.Errorf("readUint32: %w", ErrBufLength)
+	}
+	_, err = b.Discard(4)
+	return bmffEndian.Uint32(buf[:4]), err
+}
+
+// readUintN reads a 0/1/2/4/8-byte unsigned integer from the box.
+func (b *box) readUintN(size uint8) (uint64, error) {
+	switch size {
+	case 0:
+		return 0, nil
+	case 1:
+		buf, err := b.Peek(1)
+		if err != nil {
+			return 0, fmt.Errorf("readUintN: %w", ErrBufLength)
+		}
+		_, err = b.Discard(1)
+		return uint64(buf[0]), err
+	case 2:
+		v, err := b.readUint16()
+		return uint64(v), err
+	case 4:
+		v, err := b.readUint32()
+		return uint64(v), err
+	case 8:
+		buf, err := b.Peek(8)
+		if err != nil {
+			return 0, fmt.Errorf("readUintN: %w", ErrBufLength)
+		}
+		_, err = b.Discard(8)
+		return bmffEndian.Uint64(buf[:8]), err
+	default:
+		return 0, ErrUnsupportedFieldSize
+	}
+}
+
+func (b *box) readFourCC() (uint32, error) {
+	return b.readUint32()
+}
+
+// discardCString discards bytes until a NUL terminator is reached.
+func (b *box) discardCString(maxLen int) error {
+	if maxLen <= 0 {
+		maxLen = maxBoxStringLength
+	}
+	discarded := 0
+	for {
+		if b.remain == 0 {
+			return ErrBufLength
+		}
+		chunk := b.remain
+		if chunk > boxStringReadChunk {
+			chunk = boxStringReadChunk
+		}
+		buf, err := b.Peek(chunk)
+		if err != nil {
+			return fmt.Errorf("discardCString: %w", ErrBufLength)
+		}
+		if idx := bytes.IndexByte(buf, 0); idx >= 0 {
+			_, err = b.Discard(idx + 1)
+			return err
+		}
+		discarded += chunk
+		if discarded > maxLen {
+			return ErrBoxStringTooLong
+		}
+		if _, err = b.Discard(chunk); err != nil {
+			return err
+		}
+	}
+}
+
+// readCString reads bytes until a NUL terminator is reached.
+func (b *box) readCString(maxLen int) (string, error) {
+	if maxLen <= 0 {
+		maxLen = maxBoxStringLength
+	}
+	out := make([]byte, 0, 32)
+	for {
+		if b.remain == 0 {
+			return "", ErrBufLength
+		}
+		chunk := b.remain
+		if chunk > boxStringReadChunk {
+			chunk = boxStringReadChunk
+		}
+		buf, err := b.Peek(chunk)
+		if err != nil {
+			return "", fmt.Errorf("readCString: %w", ErrBufLength)
+		}
+		if idx := bytes.IndexByte(buf, 0); idx >= 0 {
+			if len(out)+idx > maxLen {
+				return "", ErrBoxStringTooLong
+			}
+			out = append(out, buf[:idx]...)
+			_, err = b.Discard(idx + 1)
+			return string(out), err
+		}
+		if len(out)+chunk > maxLen {
+			return "", ErrBoxStringTooLong
+		}
+		out = append(out, buf[:chunk]...)
+		if _, err = b.Discard(chunk); err != nil {
+			return "", err
+		}
+	}
 }
 
 // readUUID reads a 16 byte UUID from the box.
@@ -189,8 +301,8 @@ func boxTypeFromBuf(buf []byte) boxType {
 	if b, ok := mapFourCCBoxType[fourCC]; ok {
 		return b
 	}
-	if logLevelError() {
-		logErrorMsg("BoxType", "error BoxType '%s' unknown", buf)
+	if logLevelDebug() {
+		logDebug().Str("boxType", string(buf[:4])).Msg("unknown box type")
 	}
 	return typeUnknown
 }
@@ -199,6 +311,11 @@ func boxTypeFromBuf(buf []byte) boxType {
 // 8 bits -> Version
 // 24 bits -> Flags
 type flags uint32
+
+const (
+	boxStringReadChunk = 4096
+	maxBoxStringLength = 64 * 1024
+)
 
 // readFlags reads the Flags from a FullBox header.
 func (b *box) readFlags() error {

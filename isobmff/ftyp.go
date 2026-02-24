@@ -91,8 +91,8 @@ func brandFromBuf(buf []byte) Brand {
 		return b
 	}
 
-	if logLevelError() {
-		logErrorMsg("Brand", "error Brand '%s' unknown", buf)
+	if logLevelDebug() {
+		logDebug().Str("brand", string(buf[:4])).Msg("unknown brand")
 	}
 	return brandUnknown
 }
