@@ -2,11 +2,13 @@ package isobmff
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"io"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 func TestReadBoxEightByteHeader(t *testing.T) {
@@ -30,6 +32,19 @@ func TestReadBoxEightByteHeader(t *testing.T) {
 	}
 	if b.remain != 0 {
 		t.Fatalf("remain = %d, want 0", b.remain)
+	}
+}
+
+func TestReadBoxShortHeaderReturnsErrBufLength(t *testing.T) {
+	r := NewReader(bytes.NewReader([]byte{0x00, 0x00, 0x00, 0x08}), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	_, err := r.readBox()
+	if !errors.Is(err, ErrBufLength) {
+		t.Fatalf("readBox() error = %v, want %v", err, ErrBufLength)
+	}
+	if errors.Is(err, io.EOF) {
+		t.Fatalf("readBox() error = %v, should not be treated as EOF", err)
 	}
 }
 
@@ -105,6 +120,51 @@ func TestResetPreservesBufferSize(t *testing.T) {
 	}
 }
 
+func TestBoxPeekNegativeReturnsError(t *testing.T) {
+	b := box{remain: 4}
+	if _, err := b.Peek(-1); !errors.Is(err, ErrBufLength) {
+		t.Fatalf("Peek(-1) error = %v, want %v", err, ErrBufLength)
+	}
+}
+
+func TestBoxDiscardNegativeReturnsError(t *testing.T) {
+	b := box{remain: 4}
+	if _, err := b.Discard(-1); !errors.Is(err, ErrBufLength) {
+		t.Fatalf("Discard(-1) error = %v, want %v", err, ErrBufLength)
+	}
+}
+
+func TestBoxPayloadOffsetUsesInt64Math(t *testing.T) {
+	b := box{
+		offset: 1 << 40,
+		size:   32,
+		remain: 8,
+	}
+	got := boxPayloadOffset(&b)
+	want := uint64((int64(1) << 40) + 24)
+	if got != want {
+		t.Fatalf("boxPayloadOffset = %d, want %d", got, want)
+	}
+}
+
+func TestInitMetadataGoalsPreviewCR3Only(t *testing.T) {
+	noopPreview := func(_ io.Reader, _ meta.PreviewHeader) error { return nil }
+	r := NewReader(bytes.NewReader(nil), nil, nil, noopPreview)
+	t.Cleanup(r.Close)
+
+	r.ftyp.MajorBrand = brandCrx
+	r.initMetadataGoals()
+	if r.hasGoal(metadataKindTHMB) || !r.hasGoal(metadataKindPRVW) {
+		t.Fatal("expected PRVW-only goal for CR3 preview")
+	}
+
+	r.ftyp.MajorBrand = brandHeic
+	r.initMetadataGoals()
+	if r.hasGoal(metadataKindTHMB) || r.hasGoal(metadataKindPRVW) {
+		t.Fatal("expected preview goals to be disabled for non-CR3")
+	}
+}
+
 func TestReadMetadataContinuesAfterJXLP(t *testing.T) {
 	data := []byte{
 		// ftyp
@@ -131,8 +191,72 @@ func TestReadMetadataContinuesAfterJXLP(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error = %v", err)
 	}
-	if r.offset != len(data) {
+	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
+func TestReadMetadataSkipsMultipleJXLBoxes(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// jxlp (to be skipped)
+		0x00, 0x00, 0x00, 0x0C,
+		'j', 'x', 'l', 'p',
+		0x00, 0x00, 0x00, 0x00,
+		// jxlc (to be skipped)
+		0x00, 0x00, 0x00, 0x0C,
+		'j', 'x', 'l', 'c',
+		0x00, 0x00, 0x00, 0x00,
+		// meta (empty full box, version+flags=0)
+		0x00, 0x00, 0x00, 0x0C,
+		'm', 'e', 't', 'a',
+		0x00, 0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() error = %v", err)
+	}
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+	if err := r.ReadMetadata(); !errors.Is(err, io.EOF) {
+		t.Fatalf("ReadMetadata() EOF error = %v, want %v", err, io.EOF)
+	}
+}
+
+func TestReadMetadataTruncatedTailReturnsErrBufLength(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// trailing truncated bytes (not a full box header)
+		0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	err := r.ReadMetadata()
+	if !errors.Is(err, ErrBufLength) {
+		t.Fatalf("ReadMetadata() error = %v, want %v", err, ErrBufLength)
+	}
+	if errors.Is(err, io.EOF) {
+		t.Fatalf("ReadMetadata() error = %v, should not be EOF for truncated tail", err)
 	}
 }
 
@@ -161,7 +285,7 @@ func TestReadMetadataReadsTopLevelExifBox(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error = %v", err)
 	}
-	if r.offset != len(data) {
+	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
 	}
 }
@@ -192,7 +316,7 @@ func TestReadMetadataReadsExifWithAPP1Prefix(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error = %v", err)
 	}
-	if r.offset != len(data) {
+	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
 	}
 }
@@ -223,7 +347,35 @@ func TestReadMetadataReadsExifWithTIFFOffsetPrefix(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error = %v", err)
 	}
-	if r.offset != len(data) {
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
+func TestReadMetadataReadsMinimalExifHeader(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// Exif box with only TIFF header (8 bytes)
+		0x00, 0x00, 0x00, 0x10,
+		'E', 'x', 'i', 'f',
+		'I', 'I', 0x2A, 0x00,
+		0x08, 0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() error = %v", err)
+	}
+	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
 	}
 }
@@ -257,7 +409,7 @@ func TestReadMetadataSkipsUnknownTopLevelBox(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() second call error = %v", err)
 	}
-	if r.offset != len(data) {
+	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
 	}
 }
@@ -289,6 +441,147 @@ func TestReadMetadataReturnsEOF(t *testing.T) {
 	}
 }
 
+func TestReadMetaSkipsNonExifItemGraphBoxesForHEIF(t *testing.T) {
+	// Malformed iprp/ipma payload that would fail if parsed.
+	badIPMA := makeReaderTestBox("ipma", []byte{
+		0x00, 0x00, 0x00, 0x00, // flags
+		0x00, 0x00, // truncated entry_count
+	})
+	metaPayload := append([]byte{
+		0x00, 0x00, 0x00, 0x00, // meta full box flags
+	}, makeReaderTestBox("iprp", badIPMA)...)
+
+	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
+	t.Cleanup(r.Close)
+	r.ftyp.MajorBrand = brandHeic
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readMeta(&b); err != nil {
+		t.Fatalf("readMeta() error = %v, want nil for HEIF skip path", err)
+	}
+}
+
+func TestReadMetaParsesItemGraphBoxesForCR3(t *testing.T) {
+	// Same malformed payload as above, but CR3 path should parse iprp/ipma and fail.
+	badIPMA := makeReaderTestBox("ipma", []byte{
+		0x00, 0x00, 0x00, 0x00, // flags
+		0x00, 0x00, // truncated entry_count
+	})
+	metaPayload := append([]byte{
+		0x00, 0x00, 0x00, 0x00, // meta full box flags
+	}, makeReaderTestBox("iprp", badIPMA)...)
+
+	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
+	t.Cleanup(r.Close)
+	r.ftyp.MajorBrand = brandCrx
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readMeta(&b); !errors.Is(err, ErrBufLength) {
+		t.Fatalf("readMeta() error = %v, want %v", err, ErrBufLength)
+	}
+}
+
+func TestReadInfeVersion3ParsesItemID(t *testing.T) {
+	payload := make([]byte, 0, 24)
+	payload = append(payload, 0x03, 0x00, 0x00, 0x00) // version=3
+	payload = binary.BigEndian.AppendUint32(payload, 0x1020)
+	payload = binary.BigEndian.AppendUint16(payload, 0) // protection index
+	payload = append(payload, 'E', 'x', 'i', 'f')       // item_type
+	payload = append(payload, 0x00)                     // item_name
+	data := makeReaderTestBox("infe", payload)          // no optional fields for Exif
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error: %v", err)
+	}
+	if err := r.readInfe(&b); err != nil {
+		t.Fatalf("readInfe() error: %v", err)
+	}
+	if r.heic.exif.id != itemID(0x1020) {
+		t.Fatalf("exif item ID = %d, want %d", r.heic.exif.id, 0x1020)
+	}
+}
+
+func TestReadIinfVersion1WithNoEntries(t *testing.T) {
+	payload := []byte{
+		0x01, 0x00, 0x00, 0x00, // version=1
+		0x00, 0x00, 0x00, 0x00, // entry_count=0
+	}
+	data := makeReaderTestBox("iinf", payload)
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error: %v", err)
+	}
+	if err := r.readIinf(&b); err != nil {
+		t.Fatalf("readIinf() error: %v", err)
+	}
+	if b.remain != 0 {
+		t.Fatalf("iinf remain = %d, want 0", b.remain)
+	}
+}
+
+func TestHdlrTypeString(t *testing.T) {
+	if got := hdlrPict.String(); got != "pict" {
+		t.Fatalf("hdlrPict.String() = %q, want %q", got, "pict")
+	}
+	if got := hdlrVide.String(); got != "vide" {
+		t.Fatalf("hdlrVide.String() = %q, want %q", got, "vide")
+	}
+	if got := hdlrMeta.String(); got != "meta" {
+		t.Fatalf("hdlrMeta.String() = %q, want %q", got, "meta")
+	}
+	if got := hdlrUnknown.String(); got != "nnnn" {
+		t.Fatalf("hdlrUnknown.String() = %q, want %q", got, "nnnn")
+	}
+}
+
+func TestParseExtendedBoxSizeMaxInt64(t *testing.T) {
+	buf := make([]byte, 16)
+	binary.BigEndian.PutUint32(buf[:4], 1)
+	copy(buf[4:8], []byte("mdat"))
+	binary.BigEndian.PutUint64(buf[8:16], uint64(maxInt64Value))
+
+	size, err := parseExtendedBoxSize(buf, typeMdat)
+	if err != nil {
+		t.Fatalf("parseExtendedBoxSize() error = %v", err)
+	}
+	if size != maxInt64Value {
+		t.Fatalf("size = %d, want %d", size, maxInt64Value)
+	}
+}
+
+func TestParseExtendedBoxSizeAboveInt64Fails(t *testing.T) {
+	buf := make([]byte, 16)
+	binary.BigEndian.PutUint32(buf[:4], 1)
+	copy(buf[4:8], []byte("mdat"))
+	binary.BigEndian.PutUint64(buf[8:16], uint64(maxInt64Value)+1)
+
+	_, err := parseExtendedBoxSize(buf, typeMdat)
+	if !errors.Is(err, errLargeBox) {
+		t.Fatalf("parseExtendedBoxSize() error = %v, want %v", err, errLargeBox)
+	}
+}
+
+func makeReaderTestBox(typ string, payload []byte) []byte {
+	out := make([]byte, 8+len(payload))
+	binary.BigEndian.PutUint32(out[:4], uint32(len(out)))
+	copy(out[4:8], []byte(typ))
+	copy(out[8:], payload)
+	return out
+}
+
 func TestReadInfeTruncatedReturnsError(t *testing.T) {
 	data := []byte{
 		0x00, 0x00, 0x00, 0x14, // size
@@ -308,6 +601,55 @@ func TestReadInfeTruncatedReturnsError(t *testing.T) {
 	}
 	if err := r.readInfe(&b); !errors.Is(err, ErrBufLength) {
 		t.Fatalf("readInfe() error = %v, want %v", err, ErrBufLength)
+	}
+}
+
+func TestReadInfeMimeContentTypeTooLongReturnsError(t *testing.T) {
+	mime := bytes.Repeat([]byte{'a'}, mimeContentTypeMaxLen+1)
+	payload := make([]byte, 0, 4+2+2+4+1+len(mime)+1)
+	payload = append(payload, 0x02, 0x00, 0x00, 0x00) // version=2
+	payload = append(payload, 0x12, 0x34)             // item_ID
+	payload = append(payload, 0x00, 0x00)             // protection_index
+	payload = append(payload, 'm', 'i', 'm', 'e')     // item_type
+	payload = append(payload, 0x00)                   // item_name
+	payload = append(payload, mime...)                // content_type
+	payload = append(payload, 0x00)                   // content_type terminator
+
+	r := NewReader(bytes.NewReader(makeReaderTestBox("infe", payload)), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readInfe(&b); !errors.Is(err, ErrBoxStringTooLong) {
+		t.Fatalf("readInfe() error = %v, want %v", err, ErrBoxStringTooLong)
+	}
+}
+
+func TestReadInfeMimeXMPContentTypeSetsXMPID(t *testing.T) {
+	payload := make([]byte, 0, 4+2+2+4+1+20)
+	payload = append(payload, 0x02, 0x00, 0x00, 0x00)           // version=2
+	payload = append(payload, 0x43, 0x21)                       // item_ID
+	payload = append(payload, 0x00, 0x00)                       // protection_index
+	payload = append(payload, 'm', 'i', 'm', 'e')               // item_type
+	payload = append(payload, 0x00)                             // item_name
+	payload = append(payload, []byte("application/rdf+xml")...) // content_type
+	payload = append(payload, 0x00)                             // content_type terminator
+
+	r := NewReader(bytes.NewReader(makeReaderTestBox("infe", payload)), nil, nil, nil)
+	t.Cleanup(r.Close)
+	r.setGoal(metadataKindXMP, true)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error = %v", err)
+	}
+	if err := r.readInfe(&b); err != nil {
+		t.Fatalf("readInfe() error = %v", err)
+	}
+	if r.heic.xml.id != itemID(0x4321) {
+		t.Fatalf("xmp item ID = %d, want %d", r.heic.xml.id, 0x4321)
 	}
 }
 

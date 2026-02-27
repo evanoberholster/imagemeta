@@ -13,13 +13,13 @@ import (
 // CR3 stores key metadata and preview payloads in UUID boxes rather than only
 // in generic HEIF item containers.
 var (
-	// cr3MetaBoxUUID is the uuid that corresponds with Canon CR3 Metadata.
+	// cr3MetaBoxUUID identifies Canon's CR3 metadata UUID payload.
 	cr3MetaBoxUUID = meta.UUIDFromString("85c0b687-820f-11e0-8111-f4ce462b6a48")
 
-	// cr3XPacketUUID is the uuid that corresponds with Canon CR3 xpacket data
+	// cr3XPacketUUID identifies Canon's CR3 XPacket/XMP UUID payload.
 	cr3XPacketUUID = meta.UUIDFromString("be7acfcb-97a9-42e8-9c71-999491e3afac")
 
-	// cr3PreviewUUID is the uuid that corresponds with Canon CR3 Preview Image.
+	// cr3PreviewUUID identifies Canon's CR3 PRVW UUID payload.
 	cr3PreviewUUID = meta.UUIDFromString("eaf42b5e-1c98-4b88-b9fb-b7dc406e4d16")
 )
 
@@ -53,15 +53,8 @@ func (r *Reader) readUUIDBox(b *box) error {
 				Uint32("xpacketLength", header.Length).
 				Send()
 		}
-		if r.xmpReader != nil {
-			callbackErr := r.xmpReader(newLimitedReader(b, b.remain), header)
-			if callbackErr != nil {
-				if err = handleCallbackError(b, callbackErr); err != nil {
-					return err
-				}
-			} else {
-				r.setHave(metadataKindXMP, true)
-			}
+		if err = r.callXMPReader(b, header); err != nil {
+			return err
 		}
 	case cr3MetaBoxUUID:
 		if err = r.readCrxMoovBox(b); err != nil {
@@ -83,37 +76,32 @@ func (r *Reader) readUUIDBox(b *box) error {
 // proprietary child boxes.
 func (r *Reader) readCrxMoovBox(b *box) (err error) {
 	sawTHMB := false
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
-
+	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeCCTP:
-			err = readCCTPBox(&inner)
+			return readCCTPBox(inner)
 		case typeCNCV:
-			err = readCNCVBox(&inner)
+			return readCNCVBox(inner)
 		case typeCTBO:
-			err = readCTBOBox(&inner)
+			return readCTBOBox(inner)
 		case typeCMT1:
-			err = r.readCMTBox(&inner, ifds.IFD0)
+			return r.readCMTBox(inner, ifds.IFD0)
 		case typeCMT2:
-			err = r.readCMTBox(&inner, ifds.ExifIFD)
+			return r.readCMTBox(inner, ifds.ExifIFD)
 		case typeCMT3:
-			err = r.readCMTBox(&inner, ifds.MknoteIFD)
+			return r.readCMTBox(inner, ifds.MknoteIFD)
 		case typeCMT4:
-			err = r.readCMTBox(&inner, ifds.GPSIFD)
+			return r.readCMTBox(inner, ifds.GPSIFD)
 		case typeTHMB, typeThmb:
 			sawTHMB = true
-			err = r.readTHMBBox(&inner)
+			return r.readTHMBBox(inner)
 		default:
 			if logLevelDebug() {
-				logDebug().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
+				logDebug().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
 			}
+			return nil
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
+	})
 	if err != nil {
 		return err
 	}
@@ -121,7 +109,7 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 		// Some CR3 variants do not include a THMB box.
 		r.setGoal(metadataKindTHMB, false)
 	}
-	return b.close()
+	return nil
 }
 
 // readCMTBox reads an ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3.
@@ -135,12 +123,7 @@ func (r *Reader) readCMTBox(b *box, ifdType ifds.IfdType) (err error) {
 	if err != nil {
 		return err
 	}
-	callbackErr := r.exifReader(newLimitedReader(b, b.remain), header)
-	if callbackErr != nil {
-		return handleCallbackError(b, callbackErr)
-	}
-	r.setHave(metadataKindExif, true)
-	return nil
+	return r.callExifReader(b, header)
 }
 
 // cncvBox is Canon's compressor/codec version payload.
@@ -158,7 +141,7 @@ func readCNCVBox(b *box) (err error) {
 		return nil
 	}
 	var cncv cncvBox
-	if b.remain < len(cncv.version) {
+	if b.remain < int64(len(cncv.version)) {
 		return ErrBufLength
 	}
 	buf, err := b.Peek(30)
@@ -200,13 +183,16 @@ func readCCTPBox(b *box) (err error) {
 	if cctp.count, err = b.readUint32(); err != nil {
 		return err
 	}
-	entryCount := int(cctp.count)
+	entryCount := int64(cctp.count)
 	maxEntries := b.remain / 24
 	if entryCount > maxEntries {
 		entryCount = maxEntries
 	}
-	cctp.entries = make([]cctpEntry, 0, entryCount)
-	for i := 0; i < entryCount; i++ {
+	if entryCount > int64(^uint(0)>>1) {
+		entryCount = int64(^uint(0) >> 1)
+	}
+	cctp.entries = make([]cctpEntry, 0, int(entryCount))
+	for i := int64(0); i < entryCount; i++ {
 		var ent cctpEntry
 		if ent.size, err = b.readUint32(); err != nil {
 			return err
@@ -242,13 +228,16 @@ func readCTBOBox(b *box) (err error) {
 	if ctbo.count, err = b.readUint32(); err != nil {
 		return err
 	}
-	itemCount := int(ctbo.count)
+	itemCount := int64(ctbo.count)
 	maxItems := b.remain / 20
 	if itemCount > maxItems {
 		itemCount = maxItems
 	}
-	ctbo.items = make([]offsetLength, 0, itemCount)
-	for i := 0; i < itemCount; i++ {
+	if itemCount > int64(^uint(0)>>1) {
+		itemCount = int64(^uint(0) >> 1)
+	}
+	ctbo.items = make([]offsetLength, 0, int(itemCount))
+	for i := int64(0); i < itemCount; i++ {
 		_, readErr := b.readUint32() // item index (1-based)
 		if readErr != nil {
 			return readErr
@@ -287,6 +276,9 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 	if !b.isType(typeTHMB) && !b.isType(typeThmb) {
 		return ErrWrongBoxType
 	}
+	if !r.hasGoal(metadataKindTHMB) {
+		return nil
+	}
 	if r.previewImageReader == nil {
 		return nil
 	}
@@ -295,38 +287,15 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 	if err != nil {
 		return err
 	}
-	if thmb.size > uint32(b.remain) {
-		return ErrRemainLengthInsufficient
+	header := meta.PreviewHeader{
+		Size:      thmb.size,
+		Width:     thmb.width,
+		Height:    thmb.height,
+		ImageType: imagetype.ImageJPEG,
+		Source:    meta.PreviewSourceTHMB,
 	}
-
-	if thmb.size > 0 {
-		payloadOffset := b.offset + int(b.size) - b.remain
-		payload := box{
-			reader:  b.reader,
-			outer:   b,
-			boxType: b.boxType,
-			offset:  payloadOffset,
-			size:    int64(thmb.size),
-			remain:  int(thmb.size),
-		}
-		header := meta.PreviewHeader{
-			Size:      thmb.size,
-			Width:     thmb.width,
-			Height:    thmb.height,
-			ImageType: imagetype.ImageJPEG,
-			Source:    meta.PreviewSourceTHMB,
-		}
-		callbackErr := r.previewImageReader(newLimitedReader(&payload, payload.remain), header)
-		if callbackErr != nil {
-			if err = handleCallbackError(&payload, callbackErr); err != nil {
-				return err
-			}
-		} else {
-			r.setHave(metadataKindTHMB, true)
-		}
-		if closeErr := payload.close(); closeErr != nil {
-			return closeErr
-		}
+	if err = r.emitPreviewPayload(b, thmb.size, header, metadataKindTHMB); err != nil {
+		return err
 	}
 
 	return nil

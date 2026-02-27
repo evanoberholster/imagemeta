@@ -15,23 +15,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const benchmarkSampleLimit = 5
-
-var benchmarkPriorityModelTokens = []struct {
-	model string
-	token string
-}{
-	{model: "EOS R", token: "Canon_EOS_R_"},
-	{model: "EOS R6", token: "Canon_EOS_R6_"},
-	{model: "EOS R7", token: "Canon_EOS_R7_"},
-}
-
 func init() {
 	Logger = log.Level(zerolog.PanicLevel)
 }
 
-func BenchmarkCR3Samples(b *testing.B) {
-	paths := benchmarkCR3SamplePaths(b, benchmarkSampleLimit)
+func BenchmarkISOBMFFSamples(b *testing.B) {
+	paths := benchmarkSamplePaths(b)
 
 	for i, path := range paths {
 		path := path
@@ -58,7 +47,7 @@ func BenchmarkCR3Samples(b *testing.B) {
 				if err = r.ReadFTYP(); err != nil {
 					b.Fatalf("ReadFTYP(%q): %v", path, err)
 				}
-				if err = readMetadataToEOF(r); err != nil {
+				if err = readMetadataToEOFOrBufLength(r); err != nil {
 					b.Fatalf("ReadMetadata(%q): %v", path, err)
 				}
 			}
@@ -66,7 +55,7 @@ func BenchmarkCR3Samples(b *testing.B) {
 	}
 }
 
-func benchmarkCR3SamplePaths(tb testing.TB, limit int) []string {
+func benchmarkSamplePaths(tb testing.TB) []string {
 	tb.Helper()
 
 	dir := benchmarkSamplesDir(tb)
@@ -80,60 +69,22 @@ func benchmarkCR3SamplePaths(tb testing.TB, limit int) []string {
 		if entry.IsDir() {
 			continue
 		}
-		if !strings.EqualFold(filepath.Ext(entry.Name()), ".cr3") {
-			continue
-		}
 		paths = append(paths, filepath.Join(dir, entry.Name()))
 	}
 	if len(paths) == 0 {
-		tb.Skipf("no .CR3 files found in %q", dir)
+		tb.Skipf("no sample files found in %q", dir)
 	}
 
 	slices.Sort(paths)
-
-	selected := make([]string, 0, len(paths))
-	selectedSet := make(map[string]struct{}, len(paths))
-	for _, priority := range benchmarkPriorityModelTokens {
-		path := firstMatchingSamplePath(paths, priority.token)
-		if path == "" {
-			tb.Logf("benchmark sample for %s not found (token %q)", priority.model, priority.token)
-			continue
-		}
-		selected = append(selected, path)
-		selectedSet[path] = struct{}{}
-	}
-
-	for _, path := range paths {
-		if limit > 0 && len(selected) >= limit {
-			break
-		}
-		if _, ok := selectedSet[path]; ok {
-			continue
-		}
-		selected = append(selected, path)
-	}
-
-	if len(selected) == 0 {
-		tb.Skipf("no benchmark samples selected from %q", dir)
-	}
-	return selected
-}
-
-func firstMatchingSamplePath(paths []string, token string) string {
-	for _, path := range paths {
-		if strings.Contains(filepath.Base(path), token) {
-			return path
-		}
-	}
-	return ""
+	return paths
 }
 
 func benchmarkSamplesDir(tb testing.TB) string {
 	tb.Helper()
 
 	candidates := []string{
-		"../cmd/samples",
-		"cmd/samples",
+		"samples",
+		"isobmff/samples",
 	}
 	for _, dir := range candidates {
 		info, err := os.Stat(dir)
@@ -142,7 +93,7 @@ func benchmarkSamplesDir(tb testing.TB) string {
 		}
 	}
 
-	tb.Skip("cmd/samples directory not found")
+	tb.Skip("isobmff/samples directory not found")
 	return ""
 }
 
@@ -221,5 +172,54 @@ func TestReadFTYPSkipsJXLSignatureBox(t *testing.T) {
 	}
 	if r.ftyp.MajorBrand != brandAvif {
 		t.Fatalf("MajorBrand = %v, want %v", r.ftyp.MajorBrand, brandAvif)
+	}
+}
+
+func TestReadFTYPErrorPrefix(t *testing.T) {
+	r := NewReader(bytes.NewReader(nil), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	err := r.ReadFTYP()
+	if err == nil {
+		t.Fatal("expected ReadFTYP error")
+	}
+	if !strings.Contains(err.Error(), "ReadFTYP:") {
+		t.Fatalf("ReadFTYP error = %q, want prefix %q", err.Error(), "ReadFTYP:")
+	}
+}
+
+func TestReadMetadataFromSamples(t *testing.T) {
+	paths := benchmarkSamplePaths(t)
+	for _, path := range paths {
+		path := path
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("ReadFile(%q): %v", path, err)
+			}
+
+			r := NewReader(bytes.NewReader(data), nil, nil, nil)
+			t.Cleanup(r.Close)
+
+			if err := r.ReadFTYP(); err != nil {
+				t.Fatalf("ReadFTYP(%q): %v", path, err)
+			}
+			if err := readMetadataToEOFOrBufLength(r); err != nil {
+				t.Fatalf("ReadMetadata(%q): %v", path, err)
+			}
+		})
+	}
+}
+
+func readMetadataToEOFOrBufLength(r *Reader) error {
+	for {
+		err := r.ReadMetadata()
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, io.EOF) || errors.Is(err, ErrBufLength) {
+			return nil
+		}
+		return err
 	}
 }
