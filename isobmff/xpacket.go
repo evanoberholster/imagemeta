@@ -11,6 +11,8 @@ var (
 	utf8BOM        = []byte{0xEF, 0xBB, 0xBF}
 )
 
+// evaluateXPacketHeader inspects a small prefix of the payload for common XMP markers.
+// It does not consume bytes from the source.
 func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
 	payloadOffset := b.offset + int(b.size) - b.remain
 	h.Offset = uint64(payloadOffset)
