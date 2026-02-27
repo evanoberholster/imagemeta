@@ -35,12 +35,12 @@ var (
 	ErrWrongBoxType             = errors.New("wrong box type")
 )
 
-// brandCount is the number of compatible brands supported.
-const maxBrandCount = 8
-
 const (
 	fourCCSize     = 4
 	ftypHeaderSize = 8
+
+	// maxBrandCount is the maximum number of compatible brands retained.
+	maxBrandCount = 8
 )
 
 // ReadFTYP reads an 'ftyp' box from a BMFF file.
@@ -49,17 +49,17 @@ const (
 func (r *Reader) ReadFTYP() (err error) {
 	b, err := r.readBox()
 	if err != nil {
-		return fmt.Errorf("ReadFTYPBox: %w", err)
+		return fmt.Errorf("ReadFTYP: %w", err)
 	}
 
 	// JPEG XL containers may start with a signature box ('JXL ') before 'ftyp'.
 	for b.isType(typeJXL) {
 		if err = b.close(); err != nil {
-			return fmt.Errorf("ReadFTYPBox: failed to skip JXL signature box: %w", err)
+			return fmt.Errorf("ReadFTYP: failed to skip JXL signature box: %w", err)
 		}
 		b, err = r.readBox()
 		if err != nil {
-			return fmt.Errorf("ReadFTYPBox: %w", err)
+			return fmt.Errorf("ReadFTYP: %w", err)
 		}
 	}
 
@@ -80,13 +80,12 @@ func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {
 		return ftyp, fmt.Errorf("parseFileTypeBox: %w", ErrBufLength)
 	}
 
-	peekLen := b.remain
-	maxFTYPPeek := ftypHeaderSize + (fourCCSize * maxBrandCount)
-	if peekLen > maxFTYPPeek {
-		peekLen = maxFTYPPeek
+	peekLen := int64(ftypHeaderSize + (fourCCSize * maxBrandCount))
+	if b.remain < peekLen {
+		peekLen = b.remain
 	}
 
-	buf, err := b.Peek(peekLen)
+	buf, err := b.Peek(int(peekLen))
 	if err != nil {
 		return ftyp, err
 	}

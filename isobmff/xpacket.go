@@ -14,9 +14,8 @@ var (
 // evaluateXPacketHeader inspects a small prefix of the payload for common XMP markers.
 // It does not consume bytes from the source.
 func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
-	payloadOffset := b.offset + int(b.size) - b.remain
-	h.Offset = uint64(payloadOffset)
-	if b.remain > int(^uint32(0)) {
+	h.Offset = boxPayloadOffset(b)
+	if b.remain > int64(^uint32(0)) {
 		h.Length = ^uint32(0)
 	} else {
 		h.Length = uint32(b.remain)
@@ -26,10 +25,10 @@ func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
 	}
 
 	probeLen := b.remain
-	if probeLen > xpacketProbeLength {
-		probeLen = xpacketProbeLength
+	if probeLen > int64(xpacketProbeLength) {
+		probeLen = int64(xpacketProbeLength)
 	}
-	buf, err := b.Peek(probeLen)
+	buf, err := b.Peek(int(probeLen))
 	if err != nil {
 		return h, err
 	}

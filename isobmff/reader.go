@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Constants
@@ -16,20 +18,17 @@ const (
 )
 
 var (
-	// bmffEndian ISOBMFF always uses BigEndian byteorder.
-	// Can use either byteorder for Exif Information inside the ISOBMFF file
+	// bmffEndian is the byte order for ISOBMFF box fields.
+	// Exif payloads inside BMFF may use a different byte order.
 	bmffEndian = binary.BigEndian
 )
 
 type heicMeta struct {
 	pitm itemID
-	idat idat
 	exif item
 	xml  item
 
 	idatData      offsetLength
-	items         []itemInfo
-	locations     []itemLocation
 	references    []itemReference
 	properties    []itemProperty
 	propertyLinks []itemPropertyLink
@@ -44,6 +43,7 @@ type item struct {
 type metadataKind uint8
 
 const (
+	// Goal bits occupy positions [0..3], have bits occupy [4..7].
 	metadataKindExif metadataKind = iota
 	metadataKindXMP
 	metadataKindTHMB
@@ -51,10 +51,12 @@ const (
 	metadataKindCount
 )
 
+// goalBit returns the bit index used for requested metadata kinds.
 func goalBit(kind metadataKind) uint8 {
 	return uint8(kind)
 }
 
+// haveBit returns the bit index used for completed metadata kinds.
 func haveBit(kind metadataKind) uint8 {
 	return uint8(kind) + 4
 }
@@ -75,7 +77,7 @@ var readerPool = sync.Pool{
 	New: func() any { return bufio.NewReaderSize(nil, bufReaderSize) },
 }
 
-// Reader is a ISO BMFF reader
+// Reader incrementally scans ISOBMFF containers and dispatches metadata payloads.
 type Reader struct {
 	source io.Reader
 	seeker io.Seeker
@@ -88,10 +90,8 @@ type Reader struct {
 	xmpReader            XMPReader
 	previewImageReader   PreviewImageReader
 	pooledBufio          bool
-	offset               int
+	offset               int64
 	discardSeekThreshold int
-
-	prvw prvwBox
 
 	metadataFlags uint8
 
@@ -99,7 +99,7 @@ type Reader struct {
 	goalsInitialized  bool
 }
 
-// NewReader returns a new bmff.Reader
+// NewReader returns a new Reader.
 func NewReader(r io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) *Reader {
 	reader := newReader(r)
 	reader.exifReader = exifReader
@@ -146,12 +146,12 @@ func (r *Reader) discard(n int) (int, error) {
 
 	if r.seeker != nil && n >= r.discardSeekThreshold {
 		discarded, err := r.discardWithSeek(n)
-		r.offset += discarded
+		r.offset += int64(discarded)
 		return discarded, err
 	}
 
 	discarded, err := r.br.Discard(n)
-	r.offset += discarded
+	r.offset += int64(discarded)
 	return discarded, err
 }
 
@@ -197,20 +197,14 @@ func (r *Reader) reset(newSource io.Reader) {
 func (r *Reader) initMetadataGoals() {
 	// Reset parsed metadata graph when starting a new file scan.
 	r.heic = heicMeta{}
-	r.prvw = prvwBox{}
 	r.metadataFlags = 0
 
 	r.setGoal(metadataKindExif, r.exifReader != nil)
 	r.setGoal(metadataKindXMP, r.xmpReader != nil)
 	r.setGoal(metadataKindTHMB, false)
 	r.setGoal(metadataKindPRVW, false)
-	if r.previewImageReader != nil {
-		if r.ftyp.MajorBrand == brandCrx {
-			r.setGoal(metadataKindTHMB, true)
-			r.setGoal(metadataKindPRVW, true)
-		} else {
-			r.setGoal(metadataKindPRVW, true)
-		}
+	if r.previewImageReader != nil && r.ftyp.MajorBrand == brandCrx {
+		r.setGoal(metadataKindPRVW, true)
 	}
 
 	r.stopAfterMetadata = false
@@ -278,8 +272,11 @@ func (r *Reader) readBox() (b box, err error) {
 	// Read box size and box type (8-byte header)
 	buf, err := r.peek(8)
 	if err != nil {
-		if err == io.EOF {
-			return b, io.EOF
+		if errors.Is(err, io.EOF) {
+			if len(buf) == 0 {
+				return b, io.EOF
+			}
+			return b, fmt.Errorf("readBox: failed to read header: %w", ErrBufLength)
 		}
 		return b, fmt.Errorf("readBox: failed to read header: %w", errors.Join(ErrBufLength, err))
 	}
@@ -292,6 +289,9 @@ func (r *Reader) readBox() (b box, err error) {
 	if size == 1 {
 		buf, err = r.peek(16)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return b, fmt.Errorf("readBox: failed to read extended header: %w", ErrBufLength)
+			}
 			return b, fmt.Errorf("readBox: failed to read extended header: %w", errors.Join(ErrBufLength, err))
 		}
 		size, err = parseExtendedBoxSize(buf, boxType)
@@ -309,7 +309,72 @@ func (r *Reader) readBox() (b box, err error) {
 	b.boxType = boxType
 	b.offset = r.offset
 
-	b.remain = int(b.size)
+	b.remain = b.size
 	_, err = b.Discard(headerSize)
 	return b, err
+}
+
+// readContainerBoxes iterates all child boxes of a container, delegates parsing
+// to parse, then finalizes each child (including close/skip of unread payload).
+func readContainerBoxes(container *box, parse func(inner *box) error) error {
+	var (
+		inner box
+		ok    bool
+		err   error
+	)
+	for inner, ok, err = container.readInnerBox(); err == nil && ok; inner, ok, err = container.readInnerBox() {
+		err = parse(&inner)
+		if err = finalizeInnerBox(&inner, err); err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+	return container.close()
+}
+
+// callExifReader dispatches Exif payload bytes to the configured callback.
+func (r *Reader) callExifReader(b *box, h meta.ExifHeader) error {
+	if r.exifReader == nil {
+		return nil
+	}
+	if err := r.exifReader(newLimitedReader(b, b.remain), h); err != nil {
+		return handleCallbackError(b, err)
+	}
+	r.setHave(metadataKindExif, true)
+	return nil
+}
+
+// callXMPReader dispatches XMP payload bytes to the configured callback.
+func (r *Reader) callXMPReader(b *box, h XPacketHeader) error {
+	if r.xmpReader == nil {
+		return nil
+	}
+	if err := r.xmpReader(newLimitedReader(b, b.remain), h); err != nil {
+		return handleCallbackError(b, err)
+	}
+	r.setHave(metadataKindXMP, true)
+	return nil
+}
+
+// callPreviewReader dispatches preview bytes to the configured callback.
+//
+// limit bounds bytes visible to the callback. Non-positive values are treated as
+// "up to b.remain". On success, the corresponding metadata kind is marked found.
+func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind, limit int64) error {
+	if r.previewImageReader == nil {
+		return nil
+	}
+	if r.hasHave(metadataKindPRVW) {
+		return nil
+	}
+	if limit <= 0 || limit > b.remain {
+		limit = b.remain
+	}
+	if err := r.previewImageReader(newLimitedReader(b, limit), h); err != nil {
+		return handleCallbackError(b, err)
+	}
+	r.setHave(kind, true)
+	return nil
 }

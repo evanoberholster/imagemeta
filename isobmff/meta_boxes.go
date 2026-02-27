@@ -2,8 +2,6 @@ package isobmff
 
 import (
 	"fmt"
-
-	"github.com/rs/zerolog"
 )
 
 // readHdlr reads an "hdlr" box
@@ -46,10 +44,16 @@ const (
 
 // String is a stringer interface for hdlrType
 func (ht hdlrType) String() string {
-	if str, ok := hdlrStringMap[ht]; ok {
-		return str
+	switch ht {
+	case hdlrPict:
+		return "pict"
+	case hdlrVide:
+		return "vide"
+	case hdlrMeta:
+		return "meta"
+	default:
+		return "nnnn"
 	}
-	return "nnnn"
 }
 
 var (
@@ -75,12 +79,6 @@ func hdlrFromBuf(buf []byte) hdlrType {
 	}
 }
 
-var hdlrStringMap = map[hdlrType]string{
-	hdlrPict: "pict",
-	hdlrVide: "vide",
-	hdlrMeta: "meta",
-}
-
 // pitmID is a "pitm" box.
 //
 // Primary Item Reference pitm allows setting one image as the primary item.
@@ -92,22 +90,17 @@ func readPitm(b *box) (id itemID, err error) {
 	}
 	switch b.flags.version() {
 	case 0:
-		v, readErr := b.readUint16()
-		if readErr != nil {
-			return invalidItemID, readErr
-		}
-		id = itemID(v)
+		id, err = readItemIDBySize(b, 2)
 	case 1:
-		v, readErr := b.readUint32()
-		if readErr != nil {
-			return invalidItemID, readErr
-		}
-		id = itemID(v)
+		id, err = readItemIDBySize(b, 4)
 	default:
 		return invalidItemID, fmt.Errorf("readPitm: unsupported version %d", b.flags.version())
 	}
+	if err != nil {
+		return invalidItemID, err
+	}
 	if logLevelInfo() {
-		logInfoBox(b).Uint32("ptim", uint32(id)).Send()
+		logInfoBox(b).Uint32("pitm", uint32(id)).Send()
 	}
 	return id, b.close()
 }
@@ -179,23 +172,18 @@ func (r *Reader) readIref(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Send()
 	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	err = readContainerBoxes(b, func(inner *box) error {
 		if isSupportedItemReferenceType(inner.boxType) {
-			err = r.readIrefEntry(&inner, itemIDSize)
+			if err := r.readIrefEntry(inner, itemIDSize); err != nil {
+				return err
+			}
 		}
 		if logLevelInfo() {
-			logInfoBox(&inner).Send()
+			logInfoBox(inner).Send()
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return b.close()
+		return nil
+	})
+	return err
 }
 
 func isSupportedItemReferenceType(bt boxType) bool {
@@ -218,6 +206,14 @@ func readItemIDBySize(b *box, size uint8) (itemID, error) {
 	default:
 		return invalidItemID, ErrUnsupportedFieldSize
 	}
+}
+
+func readUint16Or32(b *box, use32 bool) (uint32, error) {
+	if use32 {
+		return b.readUint32()
+	}
+	v, err := b.readUint16()
+	return uint32(v), err
 }
 
 func (r *Reader) readIrefEntry(b *box, itemIDSize uint8) error {
@@ -244,27 +240,20 @@ func (r *Reader) readIprp(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Send()
 	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeIpma:
-			err = r.readIpma(&inner)
+			return r.readIpma(inner)
 		case typeIpco:
-			err = r.readIpco(&inner)
+			return r.readIpco(inner)
 		default:
 			if logLevelInfo() {
-				logInfoBox(&inner).Send()
+				logInfoBox(inner).Send()
 			}
+			return nil
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return b.close()
+	})
+	return err
 }
 
 // readIpco reads item properties and stores property order/index metadata.
@@ -272,24 +261,20 @@ func (r *Reader) readIpco(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Send()
 	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	err = readContainerBoxes(b, func(inner *box) error {
 		prop := itemProperty{boxType: inner.boxType}
 		if inner.boxType == typeIspe {
-			prop.width, prop.height, err = readIspeProperty(&inner)
+			width, height, err := readIspeProperty(inner)
+			if err != nil {
+				return err
+			}
+			prop.width = width
+			prop.height = height
 		}
-		if err == nil {
-			r.addItemProperty(prop)
-		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return b.close()
+		r.addItemProperty(prop)
+		return nil
+	})
+	return err
 }
 
 func readIspeProperty(b *box) (width, height uint32, err error) {
@@ -319,20 +304,11 @@ func (r *Reader) readIpma(b *box) (err error) {
 		logInfoBox(b).Uint32("entries", count).Send()
 	}
 	for i := uint32(0); i < count; i++ {
-		var id itemID
-		if b.flags.version() < 1 {
-			v, readErr := b.readUint16()
-			if readErr != nil {
-				return readErr
-			}
-			id = itemID(v)
-		} else {
-			v, readErr := b.readUint32()
-			if readErr != nil {
-				return readErr
-			}
-			id = itemID(v)
+		id32, readErr := readUint16Or32(b, b.flags.version() >= 1)
+		if readErr != nil {
+			return readErr
 		}
+		id := itemID(id32)
 		v, readErr := b.readUintN(1)
 		if readErr != nil {
 			return readErr
@@ -374,32 +350,4 @@ func (r *Reader) readIpma(b *box) (err error) {
 		}
 	}
 	return nil
-}
-
-// readIdat reads width/height from Canon idat payload used by CR3 metadata tracks.
-func readIdat(b *box) (i idat, err error) {
-	buf, err := b.Peek(8)
-	if err != nil {
-		return
-	}
-	i = idat{
-		width:  bmffEndian.Uint16(buf[4:6]),
-		height: bmffEndian.Uint16(buf[6:8])}
-	if logLevelInfo() {
-		logInfoBox(b).Object("idat", i).Send()
-	}
-
-	return i, b.close()
-}
-
-// ItemData is an "idat" box
-
-// idat
-type idat struct {
-	width, height uint16
-}
-
-// MarshalZerologObject is a zerolog interface for logging
-func (i idat) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint16("width", i.width).Uint16("height", i.height)
 }

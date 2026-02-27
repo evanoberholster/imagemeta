@@ -28,37 +28,42 @@ func (r *Reader) ReadMetadata() (err error) {
 			}
 			return fmt.Errorf("ReadMetadata: %w", readErr)
 		}
-		switch b.boxType {
-		case typeMdat:
-			err = r.readMdat(&b)
-		case typeExif:
-			err = r.readExif(&b)
-		case typeMeta:
-			err = r.readMeta(&b)
-		case typeMoov:
-			err = r.readMoovBox(&b)
-		case typeUUID:
-			err = r.readUUIDBox(&b)
-		case typeJXL, typeJumb, typeJxlc, typeJxll, typeJxlp:
-			// JPEG XL container boxes can appear before metadata boxes.
-			// Skip and continue scanning.
-			err = b.close()
-			if err == nil {
-				continue
-			}
-		default:
-			if logLevelInfo() {
-				logInfo().Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size).Send()
-			}
-			err = b.close()
+		keepScanning, boxErr := r.readMetadataBox(&b)
+		if boxErr != nil && logLevelError() {
+			logError().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size).Err(boxErr).Send()
 		}
-		if err != nil && logLevelError() {
-			logError().Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size).Err(err).Send()
-		}
-		if err == nil && r.goalsInitialized && r.hasMetadataGoals() && r.metadataGoalsSatisfied() {
+		if boxErr == nil && r.goalsInitialized && r.hasMetadataGoals() && r.metadataGoalsSatisfied() {
 			r.stopAfterMetadata = true
 		}
-		return err
+		if keepScanning {
+			continue
+		}
+		return boxErr
+	}
+}
+
+func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
+	switch b.boxType {
+	case typeMdat:
+		return false, r.readMdat(b)
+	case typeExif:
+		return false, r.readExif(b)
+	case typeMeta:
+		return false, r.readMeta(b)
+	case typeMoov:
+		return false, r.readMoovBox(b)
+	case typeUUID:
+		return false, r.readUUIDBox(b)
+	case typeJXL, typeJumb, typeJxlc, typeJxll, typeJxlp:
+		// JPEG XL container boxes can appear before metadata boxes.
+		// Skip and continue scanning.
+		err = b.close()
+		return err == nil, err
+	default:
+		if logLevelInfo() {
+			logInfo().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size).Send()
+		}
+		return false, b.close()
 	}
 }
 
@@ -71,16 +76,14 @@ func (r *Reader) readMdat(b *box) (err error) {
 	const (
 		mdatItemExif mdatItemKind = iota + 1
 		mdatItemXMP
-		mdatItemPreview
 	)
 	type mdatItem struct {
-		kind          mdatItemKind
-		offset        offsetLength
-		itemType      boxType
-		previewHeader meta.PreviewHeader
+		kind     mdatItemKind
+		offset   offsetLength
+		itemType boxType
 	}
 
-	var items [3]mdatItem
+	var items [2]mdatItem
 	itemCount := 0
 	if r.hasGoal(metadataKindExif) && !r.hasHave(metadataKindExif) && r.heic.exif.ol.length > 0 {
 		items[itemCount] = mdatItem{
@@ -95,15 +98,6 @@ func (r *Reader) readMdat(b *box) (err error) {
 			kind:     mdatItemXMP,
 			offset:   r.heic.xml.ol,
 			itemType: typeUUID,
-		}
-		itemCount++
-	}
-	if header, ol, ok := r.selectMdatPreviewCandidate(); ok {
-		items[itemCount] = mdatItem{
-			kind:          mdatItemPreview,
-			offset:        ol,
-			itemType:      typeMdat,
-			previewHeader: header,
 		}
 		itemCount++
 	}
@@ -154,202 +148,30 @@ func (r *Reader) readMdat(b *box) (err error) {
 				}
 				continue
 			}
-			if r.exifReader != nil {
-				callbackErr := r.exifReader(newLimitedReader(&inner, inner.remain), header)
-				if callbackErr != nil {
-					if err = handleCallbackError(&inner, callbackErr); err != nil {
-						return err
-					}
-				} else {
-					r.setHave(metadataKindExif, true)
-				}
+			if err = r.callExifReader(&inner, header); err != nil {
+				return err
 			}
 		case mdatItemXMP:
-			if r.xmpReader != nil {
-				header, headerErr := evaluateXPacketHeader(&inner)
-				if headerErr != nil {
-					if closeErr := inner.close(); closeErr != nil {
-						return closeErr
-					}
-					return headerErr
+			header, headerErr := evaluateXPacketHeader(&inner)
+			if headerErr != nil {
+				if closeErr := inner.close(); closeErr != nil {
+					return closeErr
 				}
-				callbackErr := r.xmpReader(newLimitedReader(&inner, inner.remain), header)
-				if callbackErr != nil {
-					if err = handleCallbackError(&inner, callbackErr); err != nil {
-						return err
-					}
-				} else {
-					r.setHave(metadataKindXMP, true)
-				}
+				return headerErr
 			}
-		case mdatItemPreview:
-			if r.previewImageReader != nil {
-				callbackErr := r.previewImageReader(newLimitedReader(&inner, inner.remain), items[i].previewHeader)
-				if callbackErr != nil {
-					if err = handleCallbackError(&inner, callbackErr); err != nil {
-						return err
-					}
-				} else {
-					r.setHave(metadataKindPRVW, true)
-				}
+			if err = r.callXMPReader(&inner, header); err != nil {
+				return err
 			}
 		}
 
 		if logLevelInfo() {
-			logInfo().Object("box", inner).Int("remain", inner.remain).Send()
+			logInfo().Object("box", inner).Int64("remain", inner.remain).Send()
 		}
 		if closeErr := inner.close(); closeErr != nil {
 			return closeErr
 		}
 	}
 	return b.close()
-}
-
-func (r *Reader) selectMdatPreviewCandidate() (meta.PreviewHeader, offsetLength, bool) {
-	if r.ftyp.MajorBrand == brandCrx || !r.hasGoal(metadataKindPRVW) || r.hasHave(metadataKindPRVW) || r.previewImageReader == nil {
-		return meta.PreviewHeader{}, offsetLength{}, false
-	}
-
-	bestID := invalidItemID
-	bestRank := 99
-	bestLength := uint64(^uint64(0))
-	bestOffset := offsetLength{}
-
-	consider := func(id itemID, rank int) {
-		if id == invalidItemID || id == r.heic.exif.id || id == r.heic.xml.id {
-			return
-		}
-		ol, ok := r.lookupItemLocation(id)
-		if !ok || ol.length == 0 {
-			return
-		}
-		if !r.itemIsPreviewEligible(id) {
-			return
-		}
-		if rank > bestRank {
-			return
-		}
-		if rank == bestRank && ol.length >= bestLength {
-			return
-		}
-		bestID = id
-		bestRank = rank
-		bestLength = ol.length
-		bestOffset = ol
-	}
-
-	for i := range r.heic.references {
-		ref := r.heic.references[i]
-		if ref.referenceType == typeThmb && r.heic.pitm != invalidItemID && ref.toID == r.heic.pitm {
-			consider(ref.fromID, 0)
-		}
-	}
-	for i := range r.heic.references {
-		ref := r.heic.references[i]
-		if ref.referenceType == typeThmb {
-			consider(ref.fromID, 1)
-		}
-	}
-	for i := range r.heic.locations {
-		id := r.heic.locations[i].id
-		if r.heic.pitm != invalidItemID && id == r.heic.pitm {
-			continue
-		}
-		consider(id, 2)
-	}
-	if r.heic.pitm != invalidItemID {
-		consider(r.heic.pitm, 3)
-	}
-
-	if bestID == invalidItemID {
-		return meta.PreviewHeader{}, offsetLength{}, false
-	}
-
-	imageType := r.previewItemImageType(bestID)
-	width, height := r.itemPreviewDimensions(bestID)
-	size := uint32(bestOffset.length)
-	if bestOffset.length > uint64(^uint32(0)) {
-		size = ^uint32(0)
-	}
-	header := meta.PreviewHeader{
-		Size:      size,
-		Width:     width,
-		Height:    height,
-		ImageType: imageType,
-		Source:    meta.PreviewSourcePRVW,
-	}
-	return header, bestOffset, true
-}
-
-func (r *Reader) itemIsPreviewEligible(id itemID) bool {
-	info, ok := r.lookupItemInfo(id)
-	if !ok {
-		return true
-	}
-	switch info.itemType {
-	case itemTypeExif, itemTypeURI:
-		return false
-	case itemTypeMime:
-		if info.mimeType == "" || isXMPMIMEType(info.mimeType) {
-			return false
-		}
-		return asciiContainsFold(info.mimeType, "image/")
-	case itemTypeHvc1, itemTypeAv01:
-		return true
-	default:
-		return false
-	}
-}
-
-func (r *Reader) previewItemImageType(id itemID) imagetype.ImageType {
-	info, ok := r.lookupItemInfo(id)
-	if !ok {
-		return r.metadataImageType()
-	}
-	switch info.itemType {
-	case itemTypeHvc1:
-		return imagetype.ImageHEIC
-	case itemTypeAv01:
-		return imagetype.ImageAVIF
-	case itemTypeMime:
-		if asciiContainsFold(info.mimeType, "jpeg") || asciiContainsFold(info.mimeType, "jpg") {
-			return imagetype.ImageJPEG
-		}
-		if asciiContainsFold(info.mimeType, "avif") {
-			return imagetype.ImageAVIF
-		}
-		if asciiContainsFold(info.mimeType, "heic") || asciiContainsFold(info.mimeType, "heif") {
-			return imagetype.ImageHEIC
-		}
-	}
-	return r.metadataImageType()
-}
-
-func (r *Reader) itemPreviewDimensions(id itemID) (uint16, uint16) {
-	for i := range r.heic.propertyLinks {
-		link := r.heic.propertyLinks[i]
-		if link.itemID != id || link.propertyIndex == 0 {
-			continue
-		}
-		idx := int(link.propertyIndex - 1)
-		if idx < 0 || idx >= len(r.heic.properties) {
-			continue
-		}
-		prop := r.heic.properties[idx]
-		if prop.boxType != typeIspe {
-			continue
-		}
-		w := prop.width
-		h := prop.height
-		if w > uint32(^uint16(0)) {
-			w = uint32(^uint16(0))
-		}
-		if h > uint32(^uint16(0)) {
-			h = uint32(^uint16(0))
-		}
-		return uint16(w), uint16(h)
-	}
-	return 0, 0
 }
 
 // readExif parses a top-level Exif box payload and streams it to the Exif callback.
@@ -367,15 +189,8 @@ func (r *Reader) readExif(b *box) (err error) {
 		return fmt.Errorf("readExif: %w", err)
 	}
 
-	if r.exifReader != nil {
-		callbackErr := r.exifReader(newLimitedReader(b, b.remain), header)
-		if callbackErr != nil {
-			if err = handleCallbackError(b, callbackErr); err != nil {
-				return err
-			}
-		} else {
-			r.setHave(metadataKindExif, true)
-		}
+	if err = r.callExifReader(b, header); err != nil {
+		return err
 	}
 
 	return b.close()
@@ -387,7 +202,11 @@ func (r *Reader) newExifBox(b *box) (inner box, err error) {
 }
 
 func boxPayloadOffset(b *box) uint64 {
-	return uint64(b.offset + int(b.size) - b.remain)
+	payloadOffset := b.offset + b.size - b.remain
+	if payloadOffset <= 0 {
+		return 0
+	}
+	return uint64(payloadOffset)
 }
 
 func resolveMdatExtentOffset(payloadStart, rawOffset uint64) (uint64, error) {
@@ -417,34 +236,37 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 	if discardBytes > uint64(b.remain) {
 		return inner, ErrRemainLengthInsufficient
 	}
-	if _, err = b.Discard(int(discardBytes)); err != nil {
+	if err = discardBoxBytes(b, int64(discardBytes)); err != nil {
 		return inner, err
 	}
 
 	if ol.length > uint64(b.remain) {
 		return inner, ErrRemainLengthInsufficient
 	}
-	maxInt := int64(^uint(0) >> 1)
-	if ol.length > uint64(maxInt) {
+	if ol.length > uint64(maxInt64Value) {
 		return inner, errLargeBox
 	}
 
 	size := int64(ol.length)
+	targetOffset64, err := uint64ToInt64(targetOffset)
+	if err != nil {
+		return inner, err
+	}
 
 	inner = box{
 		reader:  b.reader,
 		outer:   b,
 		boxType: innerType,
-		offset:  int(targetOffset),
+		offset:  targetOffset64,
 		size:    size,
-		remain:  int(size),
+		remain:  size,
 	}
 	return inner, nil
 }
 
 // readExifHeader parses byte-order and IFD0 offset from the TIFF header prefix.
 func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
-	buf, err := b.Peek(16)
+	buf, err := b.Peek(8)
 	if err != nil {
 		err = fmt.Errorf("readExifHeader: %w", err)
 		return
@@ -453,7 +275,7 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 	if endian == utils.UnknownEndian {
 		return header, ErrBufLength
 	}
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, uint32(b.remain), it)
+	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampInt64ToUint32(b.remain), it)
 	header.FirstIfd = firstIfd
 	if logLevelInfo() {
 		logInfo().Object("box", b).Object("header", header).Send()
@@ -484,7 +306,7 @@ func seekExifTIFFHeader(b *box) error {
 		// Some payloads are wrapped in a local Exif box header.
 		if hasEmbeddedExifBoxHeader(buf) {
 			boxSize := bmffEndian.Uint32(buf[:4])
-			if boxSize < 8 || int(boxSize) > b.remain {
+			if boxSize < 8 || int64(boxSize) > b.remain {
 				return ErrBufLength
 			}
 			if _, err = b.Discard(8); err != nil {
@@ -498,12 +320,11 @@ func seekExifTIFFHeader(b *box) error {
 		}
 
 		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
-		offset := int(bmffEndian.Uint32(buf[:4]))
-		if offset < 0 || offset > b.remain-8 {
+		offset := int64(bmffEndian.Uint32(buf[:4]))
+		if offset > b.remain-8 {
 			return nil
 		}
-		_, err = b.Discard(4 + offset)
-		return err
+		return discardBoxBytes(b, 4+offset)
 	}
 }
 
@@ -560,8 +381,8 @@ func imageTypeFromBrand(brand brand) (imagetype.ImageType, bool) {
 	}
 }
 
-// readMeta parses HEIF/JXL metadata containers and records item references
-// needed to locate Exif/XMP payloads in mdat.
+// readMeta parses HEIF/JXL/CR3 metadata containers and records the item
+// metadata needed to locate Exif/XMP payloads in mdat.
 func (r *Reader) readMeta(b *box) (err error) {
 	if !b.isType(typeMeta) {
 		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
@@ -569,48 +390,54 @@ func (r *Reader) readMeta(b *box) (err error) {
 	if err = b.readFlags(); err != nil {
 		return err
 	}
+	parseCR3ItemGraph := r.ftyp.MajorBrand == brandCrx
 	if logLevelInfo() {
 		logInfo().Object("box", b).Send()
 	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeUUID:
-			err = r.readUUIDBox(&inner)
+			return r.readUUIDBox(inner)
 		case typeHdlr:
-			_, err = readHdlr(&inner)
+			if parseCR3ItemGraph {
+				_, err = readHdlr(inner)
+				return err
+			}
+			return nil
 		case typePitm:
-			r.heic.pitm, err = readPitm(&inner)
+			if parseCR3ItemGraph {
+				r.heic.pitm, err = readPitm(inner)
+				return err
+			}
+			return nil
 		case typeIinf:
-			err = r.readIinf(&inner)
+			return r.readIinf(inner)
 		case typeIref:
-			err = r.readIref(&inner)
+			if parseCR3ItemGraph {
+				return r.readIref(inner)
+			}
+			return nil
 		case typeIprp:
-			err = r.readIprp(&inner)
+			if parseCR3ItemGraph {
+				return r.readIprp(inner)
+			}
+			return nil
 		case typeIdat:
 			r.heic.idatData = offsetLength{
-				offset: boxPayloadOffset(&inner),
+				offset: boxPayloadOffset(inner),
 				length: uint64(inner.remain),
 			}
-			if r.ftyp.MajorBrand == brandCrx {
-				r.heic.idat, err = readIdat(&inner)
-			}
+			return nil
 		case typeIloc:
-			err = r.readIloc(&inner)
+			return r.readIloc(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
 			}
+			return nil
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return b.close()
+	})
+	return err
 }
 
 // readMoovBox reads an 'moov' box from a BMFF file.
@@ -621,27 +448,20 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 	if logLevelInfo() {
 		logInfo().Object("box", b).Send()
 	}
-	var inner box
-	var ok bool
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeUUID:
-			err = r.readUUIDBox(&inner)
+			return r.readUUIDBox(inner)
 		case typeTrak:
-			err = readCrxTrakBox(&inner)
+			return readCrxTrakBox(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
 			}
+			return nil
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return b.close()
+	})
+	return err
 }
 
 // finalizeInnerBox applies common child-box lifecycle handling:
@@ -649,7 +469,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 func finalizeInnerBox(inner *box, parseErr error) error {
 	if parseErr != nil {
 		if logLevelError() && inner != nil {
-			logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(parseErr).Send()
+			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Err(parseErr).Send()
 		}
 		return parseErr
 	}
@@ -658,18 +478,18 @@ func finalizeInnerBox(inner *box, parseErr error) error {
 	}
 	if err := inner.close(); err != nil {
 		if logLevelError() {
-			logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
+			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
 		}
 		return err
 	}
 	return nil
 }
 
-func newLimitedReader(r io.Reader, limit int) io.Reader {
+func newLimitedReader(r io.Reader, limit int64) io.Reader {
 	if limit <= 0 {
 		return io.LimitReader(r, 0)
 	}
-	return &io.LimitedReader{R: r, N: int64(limit)}
+	return &io.LimitedReader{R: r, N: limit}
 }
 
 func handleCallbackError(b *box, err error) error {
@@ -687,4 +507,21 @@ func handleCallbackError(b *box, err error) error {
 		}
 	}
 	return nil
+}
+
+func clampInt64ToUint32(v int64) uint32 {
+	if v <= 0 {
+		return 0
+	}
+	if v > int64(^uint32(0)) {
+		return ^uint32(0)
+	}
+	return uint32(v)
+}
+
+func uint64ToInt64(v uint64) (int64, error) {
+	if v > uint64(maxInt64Value) {
+		return 0, errLargeBox
+	}
+	return int64(v), nil
 }

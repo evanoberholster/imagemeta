@@ -46,7 +46,7 @@ func TestReadMetadataCR3XPacketCallback(t *testing.T) {
 	}
 }
 
-func TestReadMetadataCR3THMBPreviewCallback(t *testing.T) {
+func TestReadMetadataCR3THMBPreviewIgnored(t *testing.T) {
 	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xD9}
 	thmbPayload := make([]byte, 16+len(jpeg))
 	binary.BigEndian.PutUint16(thmbPayload[4:6], 160)
@@ -59,14 +59,12 @@ func TestReadMetadataCR3THMBPreviewCallback(t *testing.T) {
 	moov := makeBox("moov", makeBox("uuid", cr3Meta))
 	file := append(makeFTYP("crx "), moov...)
 
-	var gotHeader meta.PreviewHeader
-	var gotPreview []byte
+	var previewCalls int
 
 	r := NewReader(bytes.NewReader(file), nil, nil, func(rr io.Reader, h meta.PreviewHeader) error {
-		gotHeader = h
-		var err error
-		gotPreview, err = io.ReadAll(rr)
-		return err
+		previewCalls++
+		_, _ = rr, h
+		return nil
 	})
 	t.Cleanup(r.Close)
 
@@ -76,17 +74,8 @@ func TestReadMetadataCR3THMBPreviewCallback(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error: %v", err)
 	}
-	if !bytes.Equal(gotPreview, jpeg) {
-		t.Fatalf("preview payload mismatch: got=%x want=%x", gotPreview, jpeg)
-	}
-	if gotHeader.Source != meta.PreviewSourceTHMB {
-		t.Fatalf("preview source = %s, want %s", gotHeader.Source, meta.PreviewSourceTHMB)
-	}
-	if gotHeader.ImageType != imagetype.ImageJPEG {
-		t.Fatalf("preview image type = %v, want %v", gotHeader.ImageType, imagetype.ImageJPEG)
-	}
-	if gotHeader.Width != 160 || gotHeader.Height != 120 {
-		t.Fatalf("preview dimensions = %dx%d, want 160x120", gotHeader.Width, gotHeader.Height)
+	if previewCalls != 0 {
+		t.Fatalf("preview callback calls = %d, want 0 for THMB", previewCalls)
 	}
 }
 
@@ -181,7 +170,7 @@ func TestReadMetadataExifCallbackEOFFatal(t *testing.T) {
 	}
 }
 
-func TestReadMetadataPreviewCallbackUsesLimitedReader(t *testing.T) {
+func TestReadMetadataCR3THMBPreviewCallbackNotInvoked(t *testing.T) {
 	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xD9}
 	extra := []byte{0xAA, 0xBB, 0xCC, 0xDD}
 	thmbPayload := make([]byte, 16+len(jpeg)+len(extra))
@@ -196,11 +185,11 @@ func TestReadMetadataPreviewCallbackUsesLimitedReader(t *testing.T) {
 	moov := makeBox("moov", makeBox("uuid", cr3Meta))
 	file := append(makeFTYP("crx "), moov...)
 
-	var gotPreview []byte
+	var previewCalls int
 	r := NewReader(bytes.NewReader(file), nil, nil, func(rr io.Reader, _ meta.PreviewHeader) error {
-		var err error
-		gotPreview, err = io.ReadAll(rr)
-		return err
+		previewCalls++
+		_, _ = io.Copy(io.Discard, rr)
+		return nil
 	})
 	t.Cleanup(r.Close)
 
@@ -210,8 +199,8 @@ func TestReadMetadataPreviewCallbackUsesLimitedReader(t *testing.T) {
 	if err := r.ReadMetadata(); err != nil {
 		t.Fatalf("ReadMetadata() error: %v", err)
 	}
-	if !bytes.Equal(gotPreview, jpeg) {
-		t.Fatalf("preview payload mismatch: got=%x want=%x", gotPreview, jpeg)
+	if previewCalls != 0 {
+		t.Fatalf("preview callback calls = %d, want 0 for THMB", previewCalls)
 	}
 }
 
@@ -320,6 +309,37 @@ func TestReadIrefParsesThmbReference(t *testing.T) {
 	}
 }
 
+func TestReadIrefVersion1Parses32BitItemIDs(t *testing.T) {
+	refPayload := []byte{
+		0x00, 0x00, 0x01, 0x02, // from_item_id
+		0x00, 0x01, // reference_count
+		0x00, 0x00, 0x03, 0x04, // to_item_id
+	}
+	thmbRef := makeBox("thmb", refPayload)
+	irefPayload := make([]byte, 0, 4+len(thmbRef))
+	irefPayload = append(irefPayload, 0x01, 0x00, 0x00, 0x00) // version=1
+	irefPayload = append(irefPayload, thmbRef...)
+	data := makeBox("iref", irefPayload)
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error: %v", err)
+	}
+	if err := r.readIref(&b); err != nil {
+		t.Fatalf("readIref() error: %v", err)
+	}
+	if len(r.heic.references) != 1 {
+		t.Fatalf("reference count = %d, want 1", len(r.heic.references))
+	}
+	got := r.heic.references[0]
+	if got.fromID != itemID(0x0102) || got.toID != itemID(0x0304) {
+		t.Fatalf("unexpected reference ids: %+v", got)
+	}
+}
+
 func TestReadIprpParsesIspeAndIpma(t *testing.T) {
 	ispePayload := make([]byte, 0, 12)
 	ispePayload = append(ispePayload, 0x00, 0x00, 0x00, 0x00) // version=0
@@ -364,7 +384,180 @@ func TestReadIprpParsesIspeAndIpma(t *testing.T) {
 	}
 }
 
-func TestReadMetadataHEIFPreviewFromThmbAndIpma(t *testing.T) {
+func TestReadIpmaExtendedIndexParsesAssociation(t *testing.T) {
+	ipmaPayload := make([]byte, 0, 16)
+	ipmaPayload = append(ipmaPayload, 0x00, 0x00, 0x00, 0x01)   // version=0, flags=1 (extended index)
+	ipmaPayload = binary.BigEndian.AppendUint32(ipmaPayload, 1) // entry_count
+	ipmaPayload = append(ipmaPayload, 0x00, 0x09)               // item_ID
+	ipmaPayload = append(ipmaPayload, 0x01)                     // association_count
+	ipmaPayload = binary.BigEndian.AppendUint16(ipmaPayload, 0x8123)
+	data := makeBox("ipma", ipmaPayload)
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	b, err := r.readBox()
+	if err != nil {
+		t.Fatalf("readBox() error: %v", err)
+	}
+	if err := r.readIpma(&b); err != nil {
+		t.Fatalf("readIpma() error: %v", err)
+	}
+	if len(r.heic.propertyLinks) != 1 {
+		t.Fatalf("property link count = %d, want 1", len(r.heic.propertyLinks))
+	}
+	link := r.heic.propertyLinks[0]
+	if link.itemID != 9 || link.propertyIndex != 0x0123 || !link.essential {
+		t.Fatalf("unexpected property link: %+v", link)
+	}
+}
+
+func TestReadMetadataStopsAfterMetadataGoalsSatisfied(t *testing.T) {
+	xpacketPayload := []byte("<?xpacket begin='\\ufeff'?><x:xmpmeta></x:xmpmeta>")
+	file := append(makeFTYP("crx "), makeUUIDBox(cr3XPacketUUID, xpacketPayload)...)
+
+	r := NewReader(bytes.NewReader(file), nil, func(_ io.Reader, _ XPacketHeader) error {
+		return nil
+	}, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() error: %v", err)
+	}
+	if err := r.ReadMetadata(); !errors.Is(err, io.EOF) {
+		t.Fatalf("ReadMetadata() error = %v, want io.EOF", err)
+	}
+}
+
+func TestReadMetadataCR3StopsAfterExifXMPAndSinglePreview(t *testing.T) {
+	xpacketPayload := []byte("<?xpacket begin='\\ufeff'?><x:xmpmeta></x:xmpmeta>")
+	exifPayload := []byte{
+		'I', 'I', 0x2A, 0x00,
+		0x08, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+	}
+	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xD9}
+
+	thmbPayload := make([]byte, 16+len(jpeg))
+	binary.BigEndian.PutUint16(thmbPayload[4:6], 160)
+	binary.BigEndian.PutUint16(thmbPayload[6:8], 120)
+	binary.BigEndian.PutUint32(thmbPayload[8:12], uint32(len(jpeg)))
+	copy(thmbPayload[16:], jpeg)
+	thmb := makeBox("THMB", thmbPayload)
+	cr3Meta := append(cr3MetaBoxUUID.Bytes(), thmb...)
+	moov := makeBox("moov", makeBox("uuid", cr3Meta))
+
+	prvwPayload := make([]byte, 16+len(jpeg))
+	binary.BigEndian.PutUint32(prvwPayload[4:8], 0x00000140) // width=320 at bytes 6:8 in parse window
+	binary.BigEndian.PutUint16(prvwPayload[8:10], 240)
+	binary.BigEndian.PutUint16(prvwPayload[10:12], 2)
+	binary.BigEndian.PutUint32(prvwPayload[12:16], uint32(len(jpeg)))
+	copy(prvwPayload[16:], jpeg)
+	prvw := makeBox("PRVW", prvwPayload)
+	prvwUUIDPayload := append(cr3PreviewUUID.Bytes(), make([]byte, 8)...)
+	prvwUUIDPayload[23] = 1
+	prvwUUIDPayload = append(prvwUUIDPayload, prvw...)
+
+	file := append(makeFTYP("crx "), moov...)
+	file = append(file, makeUUIDBox(cr3XPacketUUID, xpacketPayload)...)
+	file = append(file, makeBox("Exif", exifPayload)...)
+	file = append(file, makeBox("uuid", prvwUUIDPayload)...)
+
+	var (
+		exifCalls    int
+		xmpCalls     int
+		previewCalls int
+	)
+	r := NewReader(bytes.NewReader(file),
+		func(rr io.Reader, _ meta.ExifHeader) error {
+			exifCalls++
+			_, _ = io.Copy(io.Discard, rr)
+			return nil
+		},
+		func(rr io.Reader, _ XPacketHeader) error {
+			xmpCalls++
+			_, _ = io.Copy(io.Discard, rr)
+			return nil
+		},
+		func(rr io.Reader, _ meta.PreviewHeader) error {
+			previewCalls++
+			_, _ = io.Copy(io.Discard, rr)
+			return nil
+		},
+	)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() first call error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() second call error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() third call error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() fourth call error: %v", err)
+	}
+	if err := r.ReadMetadata(); !errors.Is(err, io.EOF) {
+		t.Fatalf("ReadMetadata() fifth call error = %v, want io.EOF", err)
+	}
+
+	if exifCalls != 1 {
+		t.Fatalf("Exif callback calls = %d, want 1", exifCalls)
+	}
+	if xmpCalls != 1 {
+		t.Fatalf("XMP callback calls = %d, want 1", xmpCalls)
+	}
+	if previewCalls != 1 {
+		t.Fatalf("Preview callback calls = %d, want 1", previewCalls)
+	}
+}
+
+func TestReadMetadataCR3PRVWPreviewCallbackUsesLimitedReader(t *testing.T) {
+	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xD9}
+	extra := []byte{0xAA, 0xBB, 0xCC}
+	prvwPayload := make([]byte, 16+len(jpeg)+len(extra))
+	binary.BigEndian.PutUint32(prvwPayload[4:8], 0x00000140) // width=320 at bytes 6:8 in parse window
+	binary.BigEndian.PutUint16(prvwPayload[8:10], 240)
+	binary.BigEndian.PutUint16(prvwPayload[10:12], 2)
+	binary.BigEndian.PutUint32(prvwPayload[12:16], uint32(len(jpeg)))
+	copy(prvwPayload[16:], jpeg)
+	copy(prvwPayload[16+len(jpeg):], extra)
+	prvw := makeBox("PRVW", prvwPayload)
+
+	uuidPayload := append(cr3PreviewUUID.Bytes(), make([]byte, 8)...)
+	uuidPayload[23] = 1
+	uuidPayload = append(uuidPayload, prvw...)
+	file := append(makeFTYP("crx "), makeBox("uuid", uuidPayload)...)
+
+	var gotPreview []byte
+	r := NewReader(bytes.NewReader(file), nil, nil, func(rr io.Reader, _ meta.PreviewHeader) error {
+		var err error
+		gotPreview, err = io.ReadAll(rr)
+		return err
+	})
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error: %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() error: %v", err)
+	}
+	if !bytes.Equal(gotPreview, jpeg) {
+		t.Fatalf("preview payload mismatch: got=%x want=%x", gotPreview, jpeg)
+	}
+}
+
+func TestReadMetadataHEIFPreviewNotExtracted(t *testing.T) {
 	primaryData := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	thumbData := []byte{0xAA, 0xBB, 0xCC}
 
@@ -458,13 +651,11 @@ func TestReadMetadataHEIFPreviewFromThmbAndIpma(t *testing.T) {
 	file := append(makeFTYP("heic"), metaBox...)
 	file = append(file, makeBox("mdat", mdatPayload)...)
 
-	var gotHeader meta.PreviewHeader
-	var gotPreview []byte
+	var previewCalls int
 	r := NewReader(bytes.NewReader(file), nil, nil, func(rr io.Reader, h meta.PreviewHeader) error {
-		gotHeader = h
-		var err error
-		gotPreview, err = io.ReadAll(rr)
-		return err
+		previewCalls++
+		_, _ = rr, h
+		return nil
 	})
 	t.Cleanup(r.Close)
 
@@ -481,17 +672,8 @@ func TestReadMetadataHEIFPreviewFromThmbAndIpma(t *testing.T) {
 		}
 	}
 
-	if !bytes.Equal(gotPreview, thumbData) {
-		t.Fatalf("preview payload mismatch: got=%x want=%x", gotPreview, thumbData)
-	}
-	if gotHeader.Width != 200 || gotHeader.Height != 120 {
-		t.Fatalf("preview dimensions = %dx%d, want 200x120", gotHeader.Width, gotHeader.Height)
-	}
-	if gotHeader.ImageType != imagetype.ImageHEIC {
-		t.Fatalf("preview image type = %v, want %v", gotHeader.ImageType, imagetype.ImageHEIC)
-	}
-	if gotHeader.Source != meta.PreviewSourcePRVW {
-		t.Fatalf("preview source = %s, want %s", gotHeader.Source, meta.PreviewSourcePRVW)
+	if previewCalls != 0 {
+		t.Fatalf("preview callback calls = %d, want 0 for HEIF", previewCalls)
 	}
 }
 

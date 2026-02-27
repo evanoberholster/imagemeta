@@ -1,7 +1,6 @@
 package isobmff
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 
@@ -11,7 +10,6 @@ import (
 
 var (
 	// Logger is a zerolog logger
-
 	Logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
 )
 
@@ -33,10 +31,6 @@ func logLevelError() bool {
 // logLevelTrace
 func logLevelTrace() bool {
 	return Logger.GetLevel() == zerolog.TraceLevel
-}
-
-func logErrorMsg(key string, format string, args ...interface{}) {
-	Logger.Error().AnErr(key, fmt.Errorf(format, args...)).Send()
 }
 
 func logInfo() *zerolog.Event {
@@ -61,12 +55,11 @@ func logInfoBox(b *box) *zerolog.Event {
 	if b != nil {
 		b.log(ev)
 	}
-	logTraceFunction(ev)
 	return ev
 }
 
 func (b *box) log(ev *zerolog.Event) {
-	ev.Str("BoxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size)
+	ev.Str("BoxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size)
 	if b.flags != 0 {
 		ev.Object("flags", b.flags)
 	}
@@ -100,7 +93,7 @@ func (c cctpBox) MarshalZerologArray(a *zerolog.Array) {
 
 // MarshalZerologObject is a zerolog interface for logging
 func (b box) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size)
+	e.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size)
 	if b.flags != 0 {
 		e.Object("flags", b.flags)
 	}

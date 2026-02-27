@@ -4,10 +4,10 @@ import (
 	"fmt"
 )
 
-// BoxType is an ISOBMFF box
+// boxType identifies an ISOBMFF box by its FourCC.
 type boxType uint8
 
-// String is Stringer interface for boxType
+// String returns the canonical FourCC text for a box type.
 func (t boxType) String() string {
 	switch t {
 	case typeAuxC:
@@ -335,9 +335,8 @@ func boxTypeFromBuf(buf []byte) boxType {
 	return typeUnknown
 }
 
-// flags for a FullBox
-// 8 bits -> Version
-// 24 bits -> Flags
+// flags stores the 32-bit FullBox field:
+// upper 8 bits are version, lower 24 bits are flags.
 type flags uint32
 
 const (
@@ -345,7 +344,7 @@ const (
 	maxBoxStringLength = 64 * 1024
 )
 
-// readFlags reads the Flags from a FullBox header.
+// readFlags parses and consumes a FullBox version/flags field.
 func (b *box) readFlags() error {
 	buf, err := b.Peek(4)
 	if err != nil {
@@ -362,16 +361,12 @@ func (b *box) readFlagsFromBuf(buf []byte) {
 	b.flags = flags(bmffEndian.Uint32(buf[:4]))
 }
 
-// Flags returns underlying Flags after removing version.
-// Flags are 24 bits.
+// flags returns the lower 24-bit FullBox flags value.
 func (f flags) flags() uint32 {
-	// Left Shift
-	f = f << 8
-	// Right Shift
-	return uint32(f >> 8)
+	return uint32(f) & 0x00FFFFFF
 }
 
-// Version returns a uint8 version.
+// version returns the FullBox version byte.
 func (f flags) version() uint8 {
 	return uint8(f >> 24)
 }
@@ -414,7 +409,7 @@ const (
 	typeImir            // 'imir'
 	typeInfe            // 'infe'
 	typeIovl            // 'iovl'
-	typeIpco            // 'ipco
+	typeIpco            // 'ipco'
 	typeIpma            // 'ipma'
 	typeIprp            // 'iprp'
 	typeIref            // 'iref'
@@ -452,7 +447,7 @@ const (
 	typeTrak            // 'trak'
 	typeUUID            // 'uuid'
 	typeVmhd            // 'vmhd'
-	typeExif            // 'Exif
+	typeExif            // 'Exif'
 )
 
 var (

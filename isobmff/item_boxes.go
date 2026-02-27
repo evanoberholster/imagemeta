@@ -1,11 +1,13 @@
 package isobmff
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
 
 	"github.com/rs/zerolog"
 )
+
+const mimeContentTypeMaxLen = 64
 
 // readIinf parses the HEIF item info box and dispatches contained infe entries.
 func (r *Reader) readIinf(b *box) (err error) {
@@ -13,50 +15,39 @@ func (r *Reader) readIinf(b *box) (err error) {
 		return err
 	}
 
-	var count uint32
+	var use32 bool
 	switch b.flags.version() {
 	case 0:
-		c, readErr := b.readUint16()
-		if readErr != nil {
-			return readErr
-		}
-		count = uint32(c)
+		use32 = false
 	case 1:
-		c, readErr := b.readUint32()
-		if readErr != nil {
-			return readErr
-		}
-		count = c
+		use32 = true
 	default:
 		return fmt.Errorf("readIinf: unsupported version %d", b.flags.version())
+	}
+	count, err := readUint16Or32(b, use32)
+	if err != nil {
+		return err
 	}
 
 	if logLevelInfo() {
 		logInfo().Object("box", b).Uint32("count", count).Send()
 	}
 
-	var (
-		parsed uint32
-		inner  box
-		ok     bool
-	)
-	for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
+	var parsed uint32
+	err = readContainerBoxes(b, func(inner *box) error {
 		if inner.boxType == typeInfe {
 			parsed++
-			err = r.readInfe(&inner)
+			return r.readInfe(inner)
 		}
-		if err = finalizeInnerBox(&inner, err); err != nil {
-			return err
-		}
-	}
-
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 	if logLevelDebug() && parsed != count {
 		logDebug().Object("box", b).Uint32("declared", count).Uint32("parsed", parsed).Msg("iinf entry count mismatch")
 	}
-	return b.close()
+	return nil
 }
 
 // readInfe parses an item info entry and records IDs for Exif/XMP item payloads.
@@ -65,25 +56,24 @@ func (r *Reader) readInfe(b *box) (err error) {
 		return err
 	}
 
-	var id itemID
+	var (
+		id     itemID
+		idSize uint8
+	)
 	switch b.flags.version() {
 	case 2:
-		v, readErr := b.readUint16()
-		if readErr != nil {
-			return readErr
-		}
-		id = itemID(v)
+		idSize = 2
 	case 3:
-		v, readErr := b.readUint32()
-		if readErr != nil {
-			return readErr
-		}
-		id = itemID(v)
+		idSize = 4
 	default:
 		if logLevelDebug() {
 			logDebug().Object("box", b).Uint8("version", b.flags.version()).Msg("skipping unsupported infe version")
 		}
 		return nil
+	}
+	id, err = readItemIDBySize(b, idSize)
+	if err != nil {
+		return err
 	}
 
 	protectionIndex, err := b.readUint16()
@@ -106,16 +96,20 @@ func (r *Reader) readInfe(b *box) (err error) {
 	var contentType string
 	switch itemType {
 	case itemTypeMime:
-		needContentType := r.hasGoal(metadataKindXMP) || r.hasGoal(metadataKindPRVW) || logLevelDebug()
+		needContentType := r.hasGoal(metadataKindXMP) || logLevelDebug()
 		if needContentType {
-			contentType, err = b.readCString(maxBoxStringLength)
+			var contentTypeFixed [mimeContentTypeMaxLen]byte
+			buf, err := b.readCStringBytes(contentTypeFixed[:0], mimeContentTypeMaxLen)
 			if err != nil {
 				return err
 			}
-			if r.hasGoal(metadataKindXMP) && isXMPMIMEType(contentType) {
+			if r.hasGoal(metadataKindXMP) && isXMPMIMETypeBytes(buf) {
 				r.heic.xml.id = id
 			}
-		} else if err = b.discardCString(maxBoxStringLength); err != nil {
+			if logLevelDebug() {
+				contentType = string(buf)
+			}
+		} else if err = b.discardCString(mimeContentTypeMaxLen); err != nil {
 			return err
 		}
 	case itemTypeExif:
@@ -139,51 +133,50 @@ func (r *Reader) readInfe(b *box) (err error) {
 		}
 		ev.Send()
 	}
-	r.upsertItemInfo(id, itemType, contentType)
 	return nil
 }
 
-func isXMPMIMEType(contentType string) bool {
-	ct := strings.TrimSpace(contentType)
+func isXMPMIMETypeBytes(contentType []byte) bool {
+	ct := bytes.TrimSpace(contentType)
 	switch {
-	case strings.EqualFold(ct, "application/rdf+xml"),
-		strings.EqualFold(ct, "application/xml"),
-		strings.EqualFold(ct, "text/xml"):
+	case asciiEqualFoldBytes(ct, []byte("application/rdf+xml")),
+		asciiEqualFoldBytes(ct, []byte("application/xml")),
+		asciiEqualFoldBytes(ct, []byte("text/xml")):
 		return true
 	}
-	return asciiContainsFold(ct, "xmp") || asciiContainsFold(ct, "rdf+xml")
+	return asciiContainsFoldBytes(ct, []byte("xmp")) || asciiContainsFoldBytes(ct, []byte("rdf+xml"))
 }
 
-func asciiContainsFold(s, sub string) bool {
+func asciiContainsFoldBytes(s, sub []byte) bool {
 	if len(sub) == 0 {
 		return true
 	}
 	if len(s) < len(sub) {
 		return false
 	}
-	first := toASCIILower(sub[0])
+	first := toASCIILowerByte(sub[0])
 	end := len(s) - len(sub)
 	for i := 0; i <= end; i++ {
-		if toASCIILower(s[i]) != first {
+		if toASCIILowerByte(s[i]) != first {
 			continue
 		}
-		if asciiEqualFoldN(s[i:i+len(sub)], sub) {
+		if asciiEqualFoldBytes(s[i:i+len(sub)], sub) {
 			return true
 		}
 	}
 	return false
 }
 
-func asciiEqualFoldN(a, b string) bool {
+func asciiEqualFoldBytes(a, b []byte) bool {
 	for i := 0; i < len(b); i++ {
-		if toASCIILower(a[i]) != toASCIILower(b[i]) {
+		if toASCIILowerByte(a[i]) != toASCIILowerByte(b[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-func toASCIILower(c byte) byte {
+func toASCIILowerByte(c byte) byte {
 	if c >= 'A' && c <= 'Z' {
 		return c + ('a' - 'A')
 	}
@@ -243,21 +236,13 @@ func itemTypeFromBuf(buf []byte) itemType {
 
 // itemLocationBox is a "iloc" box
 type itemLocationBox struct {
-	items                                             []ilocEntry
 	count                                             uint32
 	offsetSize, lengthSize, baseOffsetSize, indexSize uint8 // actually uint4
 }
 
 // MarshalZerologObject is a zerolog interface for logging
 func (ilb itemLocationBox) MarshalZerologObject(e *zerolog.Event) {
-	e.Array("entries", ilb).Uint32("items", ilb.count).Uint8("offsetSize", ilb.offsetSize).Uint8("lengthSize", ilb.lengthSize).Uint8("baseOffsetSize", ilb.baseOffsetSize).Uint8("indexSize", ilb.indexSize)
-}
-
-// MarshalZerologArray is a zerolog interface for logging
-func (ilb itemLocationBox) MarshalZerologArray(a *zerolog.Array) {
-	for i := 0; i < len(ilb.items); i++ {
-		a.Object(ilb.items[i])
-	}
+	e.Uint32("items", ilb.count).Uint8("offsetSize", ilb.offsetSize).Uint8("lengthSize", ilb.lengthSize).Uint8("baseOffsetSize", ilb.baseOffsetSize).Uint8("indexSize", ilb.indexSize)
 }
 
 // ilocEntry is not a box
@@ -285,17 +270,6 @@ func (ol offsetLength) MarshalZerologObject(e *zerolog.Event) {
 	e.Uint64("length", ol.length).Uint64("offset", ol.offset)
 }
 
-type itemLocation struct {
-	id itemID
-	ol offsetLength
-}
-
-type itemInfo struct {
-	id       itemID
-	itemType itemType
-	mimeType string
-}
-
 // readIloc parses item location extents and stores first-extent offsets for
 // metadata items discovered in iinf/infe.
 func (r *Reader) readIloc(b *box) (err error) {
@@ -306,21 +280,18 @@ func (r *Reader) readIloc(b *box) (err error) {
 
 	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
+		var idSize uint8
 		switch b.flags.version() {
 		case 0, 1:
-			v, readErr := b.readUint16()
-			if readErr != nil {
-				return readErr
-			}
-			ent.id = itemID(v)
+			idSize = 2
 		case 2:
-			v, readErr := b.readUint32()
-			if readErr != nil {
-				return readErr
-			}
-			ent.id = itemID(v)
+			idSize = 4
 		default:
 			return fmt.Errorf("readIloc: unsupported version %d", b.flags.version())
+		}
+		ent.id, err = readItemIDBySize(b, idSize)
+		if err != nil {
+			return err
 		}
 
 		if b.flags.version() > 0 { // versions 1 and 2
@@ -393,9 +364,6 @@ func (r *Reader) readIloc(b *box) (err error) {
 				r.heic.xml.ol = ent.firstExtent
 			}
 		}
-		if firstExtentResolved {
-			r.upsertItemLocation(ent.id, ent.firstExtent)
-		}
 	}
 	return b.close()
 }
@@ -437,57 +405,6 @@ func (r *Reader) resolveIlocExtentOffset(ent ilocEntry, extentOffset uint64) (ui
 	}
 }
 
-func (r *Reader) upsertItemInfo(id itemID, typ itemType, mimeType string) {
-	for i := range r.heic.items {
-		if r.heic.items[i].id == id {
-			r.heic.items[i].itemType = typ
-			if mimeType != "" {
-				r.heic.items[i].mimeType = mimeType
-			}
-			return
-		}
-	}
-	if len(r.heic.items) >= maxStoredItemGraphEntries {
-		return
-	}
-	r.heic.items = append(r.heic.items, itemInfo{
-		id:       id,
-		itemType: typ,
-		mimeType: mimeType,
-	})
-}
-
-func (r *Reader) upsertItemLocation(id itemID, ol offsetLength) {
-	for i := range r.heic.locations {
-		if r.heic.locations[i].id == id {
-			r.heic.locations[i].ol = ol
-			return
-		}
-	}
-	if len(r.heic.locations) >= maxStoredItemGraphEntries {
-		return
-	}
-	r.heic.locations = append(r.heic.locations, itemLocation{id: id, ol: ol})
-}
-
-func (r *Reader) lookupItemLocation(id itemID) (offsetLength, bool) {
-	for i := range r.heic.locations {
-		if r.heic.locations[i].id == id {
-			return r.heic.locations[i].ol, true
-		}
-	}
-	return offsetLength{}, false
-}
-
-func (r *Reader) lookupItemInfo(id itemID) (itemInfo, bool) {
-	for i := range r.heic.items {
-		if r.heic.items[i].id == id {
-			return r.heic.items[i], true
-		}
-	}
-	return itemInfo{}, false
-}
-
 // readIlocHeader parses iloc version/flags and field-size descriptors.
 func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	if err = b.readFlags(); err != nil {
@@ -510,13 +427,12 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 
 	switch b.flags.version() {
 	case 0, 1:
-		c, readErr := b.readUint16()
-		if readErr != nil {
-			return ilb, readErr
+		ilb.count, err = readUint16Or32(b, false)
+		if err != nil {
+			return ilb, err
 		}
-		ilb.count = uint32(c)
 	case 2:
-		ilb.count, err = b.readUint32()
+		ilb.count, err = readUint16Or32(b, true)
 		if err != nil {
 			return ilb, err
 		}
