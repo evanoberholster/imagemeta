@@ -7,12 +7,13 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
-type PRVWBox struct {
+type prvwBox struct {
 	Size   uint32
 	Width  uint16
 	Height uint16
 }
 
+// readPreview parses Canon PRVW preview metadata and streams JPEG bytes via callback.
 func (r *Reader) readPreview(b *box) (err error) {
 	inner, err := r.createPRVWBox(b)
 	if err != nil {
@@ -42,13 +43,15 @@ func (r *Reader) readPreview(b *box) (err error) {
 				return err
 			}
 		} else {
-			r.havePRVW = true
+			r.setHave(metadataKindPRVW, true)
 		}
 	}
 
 	return inner.close()
 }
 
+// createPRVWBox creates an inner view over the PRVW box.
+// Some CR3 UUID payloads include an 8-byte prefix before the PRVW header.
 func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	inner, err = buildPRVWInnerBox(b)
 	if err == nil {
@@ -67,6 +70,7 @@ func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	return buildPRVWInnerBox(b)
 }
 
+// buildPRVWInnerBox validates the next box as PRVW and returns a bounded view.
 func buildPRVWInnerBox(b *box) (inner box, err error) {
 	buf, err := b.Peek(8)
 	if err != nil {
@@ -89,7 +93,8 @@ func buildPRVWInnerBox(b *box) (inner box, err error) {
 	return inner, nil
 }
 
-func parsePreviewBox(b *box) (prvw PRVWBox, err error) {
+// parsePreviewBox reads PRVW dimensions and encoded preview size fields.
+func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 	if !b.isType(typePRVW) {
 		return prvw, ErrWrongBoxType
 	}

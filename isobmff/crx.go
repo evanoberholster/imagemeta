@@ -1,12 +1,86 @@
 package isobmff
 
 import (
+	"fmt"
+
 	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/rs/zerolog"
 )
 
+// Canon CR3-specific UUID box identifiers.
+//
+// CR3 stores key metadata and preview payloads in UUID boxes rather than only
+// in generic HEIF item containers.
+var (
+	// cr3MetaBoxUUID is the uuid that corresponds with Canon CR3 Metadata.
+	cr3MetaBoxUUID = meta.UUIDFromString("85c0b687-820f-11e0-8111-f4ce462b6a48")
+
+	// cr3XPacketUUID is the uuid that corresponds with Canon CR3 xpacket data
+	cr3XPacketUUID = meta.UUIDFromString("be7acfcb-97a9-42e8-9c71-999491e3afac")
+
+	// cr3PreviewUUID is the uuid that corresponds with Canon CR3 Preview Image.
+	cr3PreviewUUID = meta.UUIDFromString("eaf42b5e-1c98-4b88-b9fb-b7dc406e4d16")
+)
+
+// readUUIDBox routes Canon UUID payloads to CR3-specific readers.
+//
+// This handles:
+// - XPacket/XMP payloads
+// - Canon metadata container (CMT*/CTBO/CCTP/THMB)
+// - PRVW JPEG preview payload
+func (r *Reader) readUUIDBox(b *box) error {
+	if !b.isType(typeUUID) {
+		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+	}
+	uuid, err := b.readUUID()
+	if err != nil {
+		return err
+	}
+	if logLevelInfo() {
+		logInfoBox(b).Str("uuid", uuid.String()).Send()
+	}
+	switch uuid {
+	case cr3XPacketUUID:
+		header, evalErr := evaluateXPacketHeader(b)
+		if evalErr != nil {
+			return evalErr
+		}
+		if logLevelInfo() {
+			logInfoBox(b).
+				Bool("hasXPacketPI", header.HasXPacketPI).
+				Bool("hasXMPMeta", header.HasXMPMeta).
+				Uint32("xpacketLength", header.Length).
+				Send()
+		}
+		if r.xmpReader != nil {
+			callbackErr := r.xmpReader(newLimitedReader(b, b.remain), header)
+			if callbackErr != nil {
+				if err = handleCallbackError(b, callbackErr); err != nil {
+					return err
+				}
+			} else {
+				r.setHave(metadataKindXMP, true)
+			}
+		}
+	case cr3MetaBoxUUID:
+		if err = r.readCrxMoovBox(b); err != nil {
+			return err
+		}
+	case cr3PreviewUUID:
+		if err = r.readPreview(b); err != nil {
+			return err
+		}
+	default:
+		if logLevelDebug() {
+			logDebug().Object("box", b).Send()
+		}
+	}
+	return b.close()
+}
+
+// readCrxMoovBox parses Canon's metadata UUID payload and dispatches its
+// proprietary child boxes.
 func (r *Reader) readCrxMoovBox(b *box) (err error) {
 	sawTHMB := false
 	var inner box
@@ -36,29 +110,23 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 				logDebug().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Send()
 			}
 		}
-		if err != nil {
-			if logLevelError() {
-				logError().Str("boxType", inner.boxType.String()).Int("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
-			}
-			return err
-		}
-		if err = inner.close(); err != nil {
+		if err = finalizeInnerBox(&inner, err); err != nil {
 			return err
 		}
 	}
 	if err != nil {
 		return err
 	}
-	if r.goalTHMB && !sawTHMB {
+	if r.hasGoal(metadataKindTHMB) && !sawTHMB {
 		// Some CR3 variants do not include a THMB box.
-		r.goalTHMB = false
+		r.setGoal(metadataKindTHMB, false)
 	}
 	return b.close()
 }
 
-// CMT Box
-
 // readCMTBox reads an ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3.
+//
+// Each CMT box contains TIFF/Exif-like IFD data for a specific IFD family.
 func (r *Reader) readCMTBox(b *box, ifdType ifds.IfdType) (err error) {
 	if r.exifReader == nil {
 		return nil
@@ -71,20 +139,17 @@ func (r *Reader) readCMTBox(b *box, ifdType ifds.IfdType) (err error) {
 	if callbackErr != nil {
 		return handleCallbackError(b, callbackErr)
 	}
-	r.haveExif = true
+	r.setHave(metadataKindExif, true)
 	return nil
 }
 
-// CNCV Box
-
-// CNCVBox is Canon Compressor Version box
-// CaNon Codec Version?
-type CNCVBox struct {
-	//format [9]byte
-	//version [6]uint8
+// cncvBox is Canon's compressor/codec version payload.
+type cncvBox struct {
 	version [30]byte
 }
 
+// readCNCVBox reads and logs Canon codec version bytes.
+// This box is informational and not required for Exif/XMP extraction.
 func readCNCVBox(b *box) (err error) {
 	if !b.isType(typeCNCV) {
 		return ErrWrongBoxType
@@ -92,7 +157,7 @@ func readCNCVBox(b *box) (err error) {
 	if !logLevelInfo() {
 		return nil
 	}
-	var cncv CNCVBox
+	var cncv cncvBox
 	if b.remain < len(cncv.version) {
 		return ErrBufLength
 	}
@@ -105,14 +170,14 @@ func readCNCVBox(b *box) (err error) {
 	return nil
 }
 
-// CCTP Box
-
-type CCTPBox struct {
+// cctpBox describes Canon track metadata entries.
+type cctpBox struct {
 	count   uint32
-	entries []CCTPEntry
+	entries []cctpEntry
 }
 
-type CCTPEntry struct {
+// cctpEntry is one CCTP track descriptor record.
+type cctpEntry struct {
 	size      uint32
 	trackType uint32
 	mediaType uint32
@@ -120,20 +185,7 @@ type CCTPEntry struct {
 	index     uint32
 }
 
-func (e CCTPEntry) MarshalZerologObject(ev *zerolog.Event) {
-	ev.Uint32("size", e.size).
-		Str("trackType", fourCCString(e.trackType)).
-		Uint32("mediaType", e.mediaType).
-		Uint32("unknown", e.unknown).
-		Uint32("index", e.index)
-}
-
-func (c CCTPBox) MarshalZerologArray(a *zerolog.Array) {
-	for i := range c.entries {
-		a.Object(c.entries[i])
-	}
-}
-
+// readCCTPBox reads Canon CCTP entries for diagnostics/logging.
 func readCCTPBox(b *box) (err error) {
 	if !b.isType(typeCCTP) {
 		return ErrWrongBoxType
@@ -141,7 +193,7 @@ func readCCTPBox(b *box) (err error) {
 	if !logLevelInfo() {
 		return nil
 	}
-	var cctp CCTPBox
+	var cctp cctpBox
 	if err = b.readFlags(); err != nil {
 		return err
 	}
@@ -153,9 +205,9 @@ func readCCTPBox(b *box) (err error) {
 	if entryCount > maxEntries {
 		entryCount = maxEntries
 	}
-	cctp.entries = make([]CCTPEntry, 0, entryCount)
+	cctp.entries = make([]cctpEntry, 0, entryCount)
 	for i := 0; i < entryCount; i++ {
-		var ent CCTPEntry
+		var ent cctpEntry
 		if ent.size, err = b.readUint32(); err != nil {
 			return err
 		}
@@ -177,8 +229,8 @@ func readCCTPBox(b *box) (err error) {
 	return nil
 }
 
-// CTBO Box
-
+// readCTBOBox reads Canon track base-offset records.
+// Offsets are used for Canon-internal metadata organization.
 func readCTBOBox(b *box) (err error) {
 	if !b.isType(typeCTBO) {
 		return ErrWrongBoxType
@@ -186,7 +238,7 @@ func readCTBOBox(b *box) (err error) {
 	if !logLevelInfo() {
 		return nil
 	}
-	var ctbo CTBOBox
+	var ctbo ctboBox
 	if ctbo.count, err = b.readUint32(); err != nil {
 		return err
 	}
@@ -217,27 +269,20 @@ func readCTBOBox(b *box) (err error) {
 	return nil
 }
 
-// CTBOBox is a Canon tracks base offsets box.
-type CTBOBox struct {
+// ctboBox is a Canon tracks base offsets box.
+type ctboBox struct {
 	items []offsetLength
 	count uint32
 }
 
-// MarshalZerologArray is a zerolog interface for logging.
-func (ctbo CTBOBox) MarshalZerologArray(a *zerolog.Array) {
-	for i := 0; i < len(ctbo.items); i++ {
-		a.Object(ctbo.items[i])
-	}
+// thmbBox is Canon thumbnail metadata (JPEG dimensions and payload size).
+type thmbBox struct {
+	width  uint16
+	height uint16
+	size   uint32
 }
 
-// THMB Box
-
-type THMBBox struct {
-	Width  uint16
-	Height uint16
-	Size   uint32
-}
-
+// readTHMBBox extracts the THMB JPEG payload and streams it to the preview callback.
 func (r *Reader) readTHMBBox(b *box) (err error) {
 	if !b.isType(typeTHMB) && !b.isType(typeThmb) {
 		return ErrWrongBoxType
@@ -245,29 +290,29 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 	if r.previewImageReader == nil {
 		return nil
 	}
-	var thmb THMBBox
+	var thmb thmbBox
 	thmb, err = parseTHMBBox(b)
 	if err != nil {
 		return err
 	}
-	if thmb.Size > uint32(b.remain) {
+	if thmb.size > uint32(b.remain) {
 		return ErrRemainLengthInsufficient
 	}
 
-	if thmb.Size > 0 {
+	if thmb.size > 0 {
 		payloadOffset := b.offset + int(b.size) - b.remain
 		payload := box{
 			reader:  b.reader,
 			outer:   b,
 			boxType: b.boxType,
 			offset:  payloadOffset,
-			size:    int64(thmb.Size),
-			remain:  int(thmb.Size),
+			size:    int64(thmb.size),
+			remain:  int(thmb.size),
 		}
 		header := meta.PreviewHeader{
-			Size:      thmb.Size,
-			Width:     thmb.Width,
-			Height:    thmb.Height,
+			Size:      thmb.size,
+			Width:     thmb.width,
+			Height:    thmb.height,
 			ImageType: imagetype.ImageJPEG,
 			Source:    meta.PreviewSourceTHMB,
 		}
@@ -277,7 +322,7 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 				return err
 			}
 		} else {
-			r.haveTHMB = true
+			r.setHave(metadataKindTHMB, true)
 		}
 		if closeErr := payload.close(); closeErr != nil {
 			return closeErr
@@ -287,7 +332,8 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 	return nil
 }
 
-func parseTHMBBox(b *box) (thmb THMBBox, err error) {
+// parseTHMBBox parses THMB header fields and advances to the payload.
+func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 	if b.remain < 16 {
 		return thmb, ErrBufLength
 	}
@@ -296,9 +342,9 @@ func parseTHMBBox(b *box) (thmb THMBBox, err error) {
 		return thmb, err
 	}
 
-	thmb.Width = bmffEndian.Uint16(buf[4:6])
-	thmb.Height = bmffEndian.Uint16(buf[6:8])
-	thmb.Size = bmffEndian.Uint32(buf[8:12])
+	thmb.width = bmffEndian.Uint16(buf[4:6])
+	thmb.height = bmffEndian.Uint16(buf[6:8])
+	thmb.size = bmffEndian.Uint32(buf[8:12])
 
 	if _, err = b.Discard(16); err != nil {
 		return thmb, err
@@ -306,6 +352,7 @@ func parseTHMBBox(b *box) (thmb THMBBox, err error) {
 	return thmb, nil
 }
 
+// fourCCFromUint32 converts a packed FourCC value to bytes.
 func fourCCFromUint32(v uint32) [4]byte {
 	return [4]byte{
 		byte(v >> 24),
@@ -315,12 +362,14 @@ func fourCCFromUint32(v uint32) [4]byte {
 	}
 }
 
+// fourCCString converts a packed FourCC to a string for logs/debugging.
 func fourCCString(v uint32) string {
 	buf := fourCCFromUint32(v)
 	return string(buf[:])
 }
 
-// Trak
+// readCrxTrakBox is a placeholder for optional CR3 /trak parsing.
+// The current metadata pipeline intentionally avoids track/sample-table parsing.
 func readCrxTrakBox(b *box) (err error) {
 	//var inner box
 	//var ok bool

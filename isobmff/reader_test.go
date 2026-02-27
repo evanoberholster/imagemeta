@@ -337,11 +337,36 @@ func TestReadIlocUnsupportedFieldSizeReturnsError(t *testing.T) {
 	}
 }
 
+func TestResolveIlocExtentOffsetConstructionMethod1UsesIDAT(t *testing.T) {
+	r := Reader{
+		heic: heicMeta{
+			idatData: offsetLength{
+				offset: 100,
+				length: 64,
+			},
+		},
+	}
+	ent := ilocEntry{
+		id:                 1,
+		baseOffset:         8,
+		dataReferenceIndex: 0,
+		constructionMethod: 1,
+	}
+
+	got, ok := r.resolveIlocExtentOffset(ent, 4)
+	if !ok {
+		t.Fatal("expected offset resolution to succeed")
+	}
+	if got != 112 {
+		t.Fatalf("resolved offset = %d, want 112", got)
+	}
+}
+
 func TestMetadataImageTypeFromMajorBrand(t *testing.T) {
 	tests := []struct {
 		name       string
-		major      Brand
-		compatible []Brand
+		major      brand
+		compatible []brand
 		wantImage  imagetype.ImageType
 	}{
 		{name: "jxl", major: brandJxl, wantImage: imagetype.ImageJXL},
@@ -350,16 +375,16 @@ func TestMetadataImageTypeFromMajorBrand(t *testing.T) {
 		{name: "heic", major: brandHeic, wantImage: imagetype.ImageHEIC},
 		{name: "heif", major: brandHeif, wantImage: imagetype.ImageHEIF},
 		{name: "cr3", major: brandCrx, wantImage: imagetype.ImageCR3},
-		{name: "compatible-fallback-avif", major: brandUnknown, compatible: []Brand{brandUnknown, brandAvif}, wantImage: imagetype.ImageAVIF},
+		{name: "compatible-fallback-avif", major: brandUnknown, compatible: []brand{brandUnknown, brandAvif}, wantImage: imagetype.ImageAVIF},
 		{name: "unknown-fallback", major: brandUnknown, wantImage: imagetype.ImageHEIF},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var compatible [maxBrandCount]Brand
+			var compatible [maxBrandCount]brand
 			copy(compatible[:], tt.compatible)
 			r := Reader{
-				ftyp: FileTypeBox{
+				ftyp: fileTypeBox{
 					MajorBrand: tt.major,
 					Compatible: compatible,
 				},

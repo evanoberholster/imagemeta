@@ -6,10 +6,10 @@ import (
 	"io"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/rs/zerolog"
 )
 
-// box is an ISOBMFF box
+// box is a bounded view over an ISOBMFF box payload.
+// Nested boxes share the same underlying Reader and enforce limits via remain.
 type box struct {
 	size    int64
 	remain  int
@@ -20,11 +20,11 @@ type box struct {
 	reader  *Reader
 }
 
-// isType returns the boxType
+// isType reports whether the box has the expected type.
 func (b box) isType(bt boxType) bool { return b.boxType == bt }
 
-// Peek returns []byte without advancing the reader. Is limited by the
-// constrains of the box.
+// Peek returns bytes without advancing the read position.
+// Access is constrained to the current box bounds.
 func (b *box) Peek(n int) ([]byte, error) {
 	if b.remain >= n {
 		if b.outer != nil {
@@ -35,8 +35,7 @@ func (b *box) Peek(n int) ([]byte, error) {
 	return nil, ErrRemainLengthInsufficient
 }
 
-// Discard advances the reader. Is limited by the
-// constrains of the box.
+// Discard advances by n bytes, bounded by the current box.
 func (b *box) Discard(n int) (int, error) {
 	if b.remain >= n {
 		b.remain -= n
@@ -48,8 +47,7 @@ func (b *box) Discard(n int) (int, error) {
 	return 0, ErrRemainLengthInsufficient
 }
 
-// Read the bytes from underlying reader. Is limited by the
-// constrains of the box
+// Read copies bytes from the underlying reader while respecting box bounds.
 func (b *box) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
@@ -81,6 +79,7 @@ func (b *box) adjust(n int) {
 	}
 }
 
+// close discards any unread bytes in the current box.
 func (b *box) close() error {
 	if b.remain == 0 {
 		return nil
@@ -89,6 +88,8 @@ func (b *box) close() error {
 	return err
 }
 
+// parseBoxSizeAndType parses the first 8 bytes of a BMFF box header:
+// 32-bit size followed by 32-bit type (FourCC).
 func parseBoxSizeAndType(buf []byte) (size int64, bt boxType, err error) {
 	if len(buf) < 8 {
 		return 0, typeUnknown, fmt.Errorf("readBox: %w", ErrBufLength)
@@ -98,6 +99,8 @@ func parseBoxSizeAndType(buf []byte) (size int64, bt boxType, err error) {
 	return size, bt, nil
 }
 
+// parseExtendedBoxSize parses a BMFF "largesize" header (size32 == 1),
+// where bytes 8..15 contain the 64-bit box size.
 func parseExtendedBoxSize(buf []byte, bt boxType) (int64, error) {
 	if len(buf) < 16 {
 		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
@@ -110,6 +113,8 @@ func parseExtendedBoxSize(buf []byte, bt boxType) (int64, error) {
 	return int64(size), nil
 }
 
+// validateBoxSize ensures the declared box size is sane for this parser:
+// it must include at least the header and fit in host int width.
 func validateBoxSize(size int64, headerSize int, bt boxType) error {
 	if size < int64(headerSize) {
 		return fmt.Errorf("readBox invalid size %d for '%s': %w", size, bt, ErrBufLength)
@@ -122,6 +127,8 @@ func validateBoxSize(size int64, headerSize int, bt boxType) error {
 	return nil
 }
 
+// readInnerBox reads the next child box header within the current container and
+// returns a child view constrained to that box's byte range.
 func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
@@ -252,7 +259,7 @@ func (b *box) readCString(maxLen int) (string, error) {
 	if maxLen <= 0 {
 		maxLen = maxBoxStringLength
 	}
-	out := make([]byte, 0, 32)
+	var out []byte
 	for {
 		if b.remain == 0 {
 			return "", ErrBufLength
@@ -269,12 +276,19 @@ func (b *box) readCString(maxLen int) (string, error) {
 			if len(out)+idx > maxLen {
 				return "", ErrBoxStringTooLong
 			}
+			if out == nil {
+				_, err = b.Discard(idx + 1)
+				return string(buf[:idx]), err
+			}
 			out = append(out, buf[:idx]...)
 			_, err = b.Discard(idx + 1)
 			return string(out), err
 		}
 		if len(out)+chunk > maxLen {
 			return "", ErrBoxStringTooLong
+		}
+		if out == nil {
+			out = make([]byte, 0, chunk*2)
 		}
 		out = append(out, buf[:chunk]...)
 		if _, err = b.Discard(chunk); err != nil {
@@ -294,339 +308,4 @@ func (b *box) readUUID() (u meta.UUID, err error) {
 	}
 	_, err = b.Discard(16)
 	return u, err
-}
-
-// MarshalZerologObject is a zerolog interface for logging
-func (b box) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("boxType", b.boxType.String()).Int("offset", b.offset).Int64("size", b.size)
-	if b.flags != 0 {
-		e.Object("flags", b.flags)
-	}
-}
-
-// BoxType is an ISOBMFF box
-type boxType uint8
-
-// String is Stringer interface for boxType
-func (t boxType) String() string {
-	str, ok := mapBoxTypeString[t]
-	if ok {
-		return str
-	}
-	return "nnnn"
-}
-
-func fourCCFromString(str string) uint32 {
-	if len(str) < 4 {
-		return 0
-	}
-	return uint32(str[0])<<24 | uint32(str[1])<<16 | uint32(str[2])<<8 | uint32(str[3])
-}
-
-var boxTypeInfeFourCC = fourCCFromString("infe")
-
-func boxTypeFromBuf(buf []byte) boxType {
-	if len(buf) < 4 {
-		return typeUnknown
-	}
-
-	fourCC := bmffEndian.Uint32(buf[:4])
-	if fourCC == boxTypeInfeFourCC { // initial check for performance reasons
-		return typeInfe
-	}
-
-	if b, ok := mapFourCCBoxType[fourCC]; ok {
-		return b
-	}
-	if logLevelDebug() {
-		logDebug().Str("boxType", string(buf[:4])).Msg("unknown box type")
-	}
-	return typeUnknown
-}
-
-// flags for a FullBox
-// 8 bits -> Version
-// 24 bits -> Flags
-type flags uint32
-
-const (
-	boxStringReadChunk = 4096
-	maxBoxStringLength = 64 * 1024
-)
-
-// readFlags reads the Flags from a FullBox header.
-func (b *box) readFlags() error {
-	buf, err := b.Peek(4)
-	if err != nil {
-		return fmt.Errorf("readFlags: %w", ErrBufLength)
-	}
-	b.readFlagsFromBuf(buf)
-	_, err = b.Discard(4)
-	return err
-}
-
-func (b *box) readFlagsFromBuf(buf []byte) {
-	b.flags = flags(bmffEndian.Uint32(buf[:4]))
-}
-
-// Flags returns underlying Flags after removing version.
-// Flags are 24 bits.
-func (f flags) flags() uint32 {
-	// Left Shift
-	f = f << 8
-	// Right Shift
-	return uint32(f >> 8)
-}
-
-// Version returns a uint8 version.
-func (f flags) version() uint8 {
-	return uint8(f >> 24)
-}
-
-// MarshalZerologObject is a zerolog interface for logging
-func (f flags) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint8("version", f.version()).Uint32("flags", f.flags())
-}
-
-// Common box types.
-const (
-	typeUnknown boxType = iota
-	typeAuxC            // 'auxC'
-	typeAuxl            // 'auxl'
-	typeAv01            // 'av01'
-	typeAv1C            // 'av1C'
-	typeAvcC            // 'avcC'
-	typeCCDT            // 'CCDT'
-	typeCCTP            // 'CCTP'
-	typeCdsc            // 'cdsc'
-	typeClap            // 'clap'
-	typeCMT1            // 'CMT1'
-	typeCMT2            // 'CMT2'
-	typeCMT3            // 'CMT3'
-	typeCMT4            // 'CMT4'
-	typeCNCV            // 'CNCV'
-	typeCo64            // 'co64'
-	typeColr            // 'colr'
-	typeCRAW            // 'CRAW'
-	typeCrtt            // 'crtt'
-	typeCTBO            // 'CTBO'
-	typeCTMD            // 'CTMD'
-	typeDimg            // 'dimg'
-	typeDinf            // 'dinf'
-	typeDref            // 'dref'
-	typeEtyp            // 'etyp'
-	typeFree            // 'free'
-	typeFtyp            // 'ftyp'
-	typeGrpl            // 'grpl'
-	typeHdlr            // 'hdlr'
-	typeHvcC            // 'hvcC'
-	typeIdat            // 'idat'
-	typeIinf            // 'iinf'
-	typeIloc            // 'iloc'
-	typeImir            // 'imir'
-	typeInfe            // 'infe'
-	typeIovl            // 'iovl'
-	typeIpco            // 'ipco
-	typeIpma            // 'ipma'
-	typeIprp            // 'iprp'
-	typeIref            // 'iref'
-	typeIrot            // 'irot'
-	typeIspe            // 'ispe'
-	typeJXL             // 'JXL '
-	typeJumb            // 'jumb'
-	typeJxlc            // 'jxlc'
-	typeJxll            // 'jxll'
-	typeJxlp            // 'jxlp'
-	typeLhvC            // 'lhvC'
-	typeMdat            // 'mdat'
-	typeMdft            // 'mdft'
-	typeMdhd            // 'mdhd'
-	typeMdia            // 'mdia'
-	typeMeta            // 'meta'
-	typeMinf            // 'minf'
-	typeMoov            // 'moov'
-	typeMvhd            // 'mvhd'
-	typeNmhd            // 'nmhd'
-	typeOinf            // 'oinf'
-	typePasp            // 'pasp'
-	typePitm            // 'pitm'
-	typePixi            // 'pixi'
-	typePRVW            // 'PRVW'
-	typeStbl            // 'stbl'
-	typeStsc            // 'stsc'
-	typeStsd            // 'stsd'
-	typeStsz            // 'stsz'
-	typeStts            // 'stts'
-	typeThmb            // 'thmb'
-	typeTHMB            // 'THMB'
-	typeTkhd            // 'tkhd'
-	typeTols            // 'tols'
-	typeTrak            // 'trak'
-	typeUUID            // 'uuid'
-	typeVmhd            // 'vmhd'
-	typeExif            // 'Exif
-)
-
-var mapStringBoxType = map[string]boxType{
-	"auxC": typeAuxC,
-	"auxl": typeAuxl,
-	"av01": typeAv01,
-	"av1C": typeAv1C,
-	"avcC": typeAvcC,
-	"CCDT": typeCCDT,
-	"CCTP": typeCCTP,
-	"cdsc": typeCdsc,
-	"clap": typeClap,
-	"CMT1": typeCMT1,
-	"CMT2": typeCMT2,
-	"CMT3": typeCMT3,
-	"CMT4": typeCMT4,
-	"CNCV": typeCNCV,
-	"co64": typeCo64,
-	"colr": typeColr,
-	"CRAW": typeCRAW,
-	"crtt": typeCrtt,
-	"CTBO": typeCTBO,
-	"CTMD": typeCTMD,
-	"dimg": typeDimg,
-	"dinf": typeDinf,
-	"dref": typeDref,
-	"etyp": typeEtyp,
-	"free": typeFree,
-	"ftyp": typeFtyp,
-	"grpl": typeGrpl,
-	"hdlr": typeHdlr,
-	"hvcC": typeHvcC,
-	"idat": typeIdat,
-	"iinf": typeIinf,
-	"iloc": typeIloc,
-	"imir": typeImir,
-	"infe": typeInfe,
-	"iovl": typeIovl,
-	"ipco": typeIpco,
-	"ipma": typeIpma,
-	"iprp": typeIprp,
-	"iref": typeIref,
-	"irot": typeIrot,
-	"ispe": typeIspe,
-	"JXL ": typeJXL,
-	"jumb": typeJumb,
-	"jxlc": typeJxlc,
-	"jxll": typeJxll,
-	"jxlp": typeJxlp,
-	"lhvC": typeLhvC,
-	"mdat": typeMdat,
-	"mdft": typeMdft,
-	"mdhd": typeMdhd,
-	"mdia": typeMdia,
-	"meta": typeMeta,
-	"minf": typeMinf,
-	"moov": typeMoov,
-	"mvhd": typeMvhd,
-	"nmhd": typeNmhd,
-	"oinf": typeOinf,
-	"pasp": typePasp,
-	"pitm": typePitm,
-	"pixi": typePixi,
-	"PRVW": typePRVW,
-	"stbl": typeStbl,
-	"stsc": typeStsc,
-	"stsd": typeStsd,
-	"stsz": typeStsz,
-	"stts": typeStts,
-	"thmb": typeThmb,
-	"THMB": typeTHMB,
-	"tkhd": typeTkhd,
-	"tols": typeTols,
-	"trak": typeTrak,
-	"uuid": typeUUID,
-	"vmhd": typeVmhd,
-	"Exif": typeExif,
-}
-
-var mapFourCCBoxType = func() map[uint32]boxType {
-	m := make(map[uint32]boxType, len(mapStringBoxType))
-	for k, v := range mapStringBoxType {
-		if len(k) == 4 {
-			m[fourCCFromString(k)] = v
-		}
-	}
-	return m
-}()
-
-var mapBoxTypeString = map[boxType]string{
-	typeAuxC: "auxC",
-	typeAuxl: "auxl",
-	typeAv01: "av01",
-	typeAv1C: "av1C",
-	typeAvcC: "avcC",
-	typeCCDT: "CCDT",
-	typeCCTP: "CCTP",
-	typeCdsc: "cdsc",
-	typeClap: "clap",
-	typeCMT1: "CMT1",
-	typeCMT2: "CMT2",
-	typeCMT3: "CMT3",
-	typeCMT4: "CMT4",
-	typeCNCV: "CNCV",
-	typeCo64: "co64",
-	typeColr: "colr",
-	typeCRAW: "CRAW",
-	typeCrtt: "crtt",
-	typeCTBO: "CTBO",
-	typeCTMD: "CTMD",
-	typeDimg: "dimg",
-	typeDinf: "dinf",
-	typeDref: "dref",
-	typeEtyp: "etyp",
-	typeFree: "free",
-	typeFtyp: "ftyp",
-	typeGrpl: "grpl",
-	typeHdlr: "hdlr",
-	typeHvcC: "hvcC",
-	typeIdat: "idat",
-	typeIinf: "iinf",
-	typeIloc: "iloc",
-	typeImir: "imir",
-	typeInfe: "infe",
-	typeIovl: "iovl",
-	typeIpco: "ipco",
-	typeIpma: "ipma",
-	typeIprp: "iprp",
-	typeIref: "iref",
-	typeIrot: "irot",
-	typeIspe: "ispe",
-	typeJXL:  "JXL ",
-	typeJumb: "jumb",
-	typeJxlc: "jxlc",
-	typeJxll: "jxll",
-	typeJxlp: "jxlp",
-	typeLhvC: "lhvC",
-	typeMdat: "mdat",
-	typeMdft: "mdft",
-	typeMdhd: "mdhd",
-	typeMdia: "mdia",
-	typeMeta: "meta",
-	typeMinf: "minf",
-	typeMoov: "moov",
-	typeMvhd: "mvhd",
-	typeNmhd: "nmhd",
-	typeOinf: "oinf",
-	typePasp: "pasp",
-	typePitm: "pitm",
-	typePixi: "pixi",
-	typePRVW: "PRVW",
-	typeStbl: "stbl",
-	typeStsc: "stsc",
-	typeStsd: "stsd",
-	typeStsz: "stsz",
-	typeStts: "stts",
-	typeThmb: "thmb",
-	typeTHMB: "THMB",
-	typeTkhd: "tkhd",
-	typeTols: "tols",
-	typeTrak: "trak",
-	typeUUID: "uuid",
-	typeVmhd: "vmhd",
-	typeExif: "Exif",
 }
