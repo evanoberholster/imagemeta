@@ -3,7 +3,7 @@ package xmp
 import (
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 // property is an XML property

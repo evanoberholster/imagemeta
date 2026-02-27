@@ -110,19 +110,6 @@ func benchmarkSampleLabel(index int, path string) string {
 	return fmt.Sprintf("%02d_%s", index+1, base)
 }
 
-func readMetadataToEOF(r *Reader) error {
-	for {
-		err := r.ReadMetadata()
-		if err == nil {
-			continue
-		}
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		return err
-	}
-}
-
 func TestBrandFromBufAdditionalBrands(t *testing.T) {
 	tests := []struct {
 		name string

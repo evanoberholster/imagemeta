@@ -21,7 +21,6 @@ type box struct {
 }
 
 const maxInt64Value = int64(^uint64(0) >> 1)
-const cstringInlineCapacity = 256
 
 // isType reports whether the box has the expected type.
 func (b box) isType(bt boxType) bool { return b.boxType == bt }
@@ -286,16 +285,6 @@ func (b *box) discardCString(maxLen int) error {
 			return err
 		}
 	}
-}
-
-// readCString reads bytes until a NUL terminator is reached.
-func (b *box) readCString(maxLen int) (string, error) {
-	var fixed [cstringInlineCapacity]byte
-	buf, err := b.readCStringBytes(fixed[:0], maxLen)
-	if err != nil {
-		return "", err
-	}
-	return string(buf), nil
 }
 
 // readCStringBytes reads bytes until a NUL terminator and appends into dst.

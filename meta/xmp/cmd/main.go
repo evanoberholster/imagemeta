@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/xmp"
+	"github.com/evanoberholster/imagemeta/meta/xmp"
 )
 
 const (

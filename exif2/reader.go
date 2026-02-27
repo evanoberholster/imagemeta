@@ -9,8 +9,8 @@ import (
 	"github.com/evanoberholster/imagemeta/exif2/tag"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/rs/zerolog"
 )
 

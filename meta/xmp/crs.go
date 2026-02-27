@@ -1,14 +1,16 @@
 package xmp
 
 import (
-	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 // Double represents 2 uint16 values
 type Double [2]uint16
 
 // CRS is Camera Raw Settings. Photoshop Camera Raw namespace tags.
-//	 xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+//
+//	xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+//
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#crs
 type CRS struct {
 	RawFileName string

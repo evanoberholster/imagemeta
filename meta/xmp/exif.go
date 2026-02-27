@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 // Flash represents exif:Flash

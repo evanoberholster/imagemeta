@@ -10,8 +10,8 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/rs/zerolog"
 )
 
