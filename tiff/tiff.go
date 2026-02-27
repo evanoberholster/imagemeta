@@ -33,7 +33,10 @@ func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader
 			return
 		}
 		if discarded == 0 {
-			it, _ = imagetype.Buf(buf)
+			// Keep the caller-supplied type unless we can positively detect a better one.
+			if detected, detectErr := imagetype.Buf(buf); detectErr == nil && !detected.IsUnknown() {
+				it = detected
+			}
 		}
 
 		byteOrder := utils.BinaryOrder(buf)

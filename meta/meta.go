@@ -120,7 +120,29 @@ func NewXMPHeader(offset, length uint32) XmpHeader {
 }
 
 type PreviewHeader struct {
-	Size   uint32
-	Width  uint16
-	Height uint16
+	Size      uint32
+	Width     uint16
+	Height    uint16
+	ImageType imagetype.ImageType
+	Source    PreviewSource
+}
+
+// PreviewSource identifies where preview image bytes were extracted from.
+type PreviewSource uint8
+
+const (
+	PreviewSourceUnknown PreviewSource = iota
+	PreviewSourceTHMB
+	PreviewSourcePRVW
+)
+
+func (s PreviewSource) String() string {
+	switch s {
+	case PreviewSourceTHMB:
+		return "THMB"
+	case PreviewSourcePRVW:
+		return "PRVW"
+	default:
+		return "unknown"
+	}
 }
