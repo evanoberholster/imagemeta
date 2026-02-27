@@ -3,8 +3,8 @@ package isobmff
 import "testing"
 
 var (
-	brandSink    Brand
-	fileTypeSink FileTypeBox
+	brandSink    brand
+	fileTypeSink fileTypeBox
 
 	benchmarkBrandInputsKnown = [][]byte{
 		[]byte("avci"),
@@ -82,7 +82,7 @@ const (
 	fourCCMsf1 = uint32('m')<<24 | uint32('s')<<16 | uint32('f')<<8 | uint32('1')
 )
 
-func brandFromBufSwitch(buf []byte) Brand {
+func brandFromBufSwitch(buf []byte) brand {
 	if len(buf) < 4 {
 		return brandUnknown
 	}
@@ -149,7 +149,7 @@ func brandFromBufSwitch(buf []byte) Brand {
 	}
 }
 
-func parseFTYPBrands(buf []byte, lookup func([]byte) Brand) (ftyp FileTypeBox) {
+func parseFTYPBrands(buf []byte, lookup func([]byte) brand) (ftyp fileTypeBox) {
 	ftyp.MajorBrand = lookup(buf[:4])
 	copy(ftyp.MinorVersion[:4], buf[4:8])
 	for i, compatibleBrand := 8, 0; i+4 <= len(buf) && compatibleBrand < maxBrandCount; compatibleBrand++ {
@@ -159,16 +159,16 @@ func parseFTYPBrands(buf []byte, lookup func([]byte) Brand) (ftyp FileTypeBox) {
 	return ftyp
 }
 
-func benchmarkBrandLookup(b *testing.B, inputs [][]byte, lookup func([]byte) Brand) {
-	var out Brand
+func benchmarkBrandLookup(b *testing.B, inputs [][]byte, lookup func([]byte) brand) {
+	var out brand
 	for i := 0; i < b.N; i++ {
 		out = lookup(inputs[i%len(inputs)])
 	}
 	brandSink = out
 }
 
-func benchmarkParseFTYPBrands(b *testing.B, lookup func([]byte) Brand) {
-	var out FileTypeBox
+func benchmarkParseFTYPBrands(b *testing.B, lookup func([]byte) brand) {
+	var out fileTypeBox
 	for i := 0; i < b.N; i++ {
 		out = parseFTYPBrands(benchmarkFTYPBuf, lookup)
 	}
@@ -198,3 +198,10 @@ func BenchmarkParseFTYPBrandsMap(b *testing.B) {
 func BenchmarkParseFTYPBrandsSwitch(b *testing.B) {
 	benchmarkParseFTYPBrands(b, brandFromBufSwitch)
 }
+
+//BenchmarkCR3Samples/01_EOS_R_EOS_R_CRAW_ISO_100-2         	  303460	      3776 ns/op	     384 B/op	       8 allocs/op
+//BenchmarkCR3Samples/02_EOS_R6_EOS_R6_CRAW_ISO_100_crop_nodual-2         	  300764	      3796 ns/op	     432 B/op	       9 allocs/op
+//BenchmarkCR3Samples/03_EOS_R7_443A0157-2                                	  319448	      3799 ns/op	     432 B/op	       9 allocs/op
+//BenchmarkCR3Samples/04_EOS_M200_MG_2231-2                               	  298084	      3729 ns/op	     384 B/op	       8 allocs/op
+//BenchmarkCR3Samples/05_EOS_M200_MG_2233-2                               	  310292	      3779 ns/op	     384 B/op	       8 allocs/op
+//PASS
