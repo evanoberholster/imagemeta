@@ -196,11 +196,6 @@ func (r *Reader) readExif(b *box) (err error) {
 	return b.close()
 }
 
-// newExifBox creates a bounded view into an mdat payload using iloc offsets.
-func (r *Reader) newExifBox(b *box) (inner box, err error) {
-	return newMdatExtentBox(b, boxPayloadOffset(b), r.heic.exif.ol, typeExif)
-}
-
 func boxPayloadOffset(b *box) uint64 {
 	payloadOffset := b.offset + b.size - b.remain
 	if payloadOffset <= 0 {

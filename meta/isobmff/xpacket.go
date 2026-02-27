@@ -34,9 +34,7 @@ func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
 	}
 
 	probe := bytes.TrimLeft(buf, "\x00\t\r\n ")
-	if bytes.HasPrefix(probe, utf8BOM) {
-		probe = probe[len(utf8BOM):]
-	}
+	probe = bytes.TrimPrefix(probe, utf8BOM)
 
 	h.HasXPacketPI = bytes.HasPrefix(probe, xpacketPIStart) || bytes.Contains(probe, xpacketPIStart)
 	h.HasXMPMeta = bytes.Contains(probe, xmpMetaStart) || bytes.Contains(probe, rdfStart)

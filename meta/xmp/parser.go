@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 func (xmp *XMP) parser(p property) (err error) {

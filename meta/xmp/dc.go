@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/xmp/xmpns"
+	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 var xmlLang = xmpns.NewProperty(xmpns.XMLNS, xmpns.Lang)

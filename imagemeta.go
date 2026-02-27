@@ -10,12 +10,12 @@ import (
 
 	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/png"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/jpeg"
+	"github.com/evanoberholster/imagemeta/meta/png"
+	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/evanoberholster/imagemeta/preview"
-	"github.com/evanoberholster/imagemeta/tiff"
 	"github.com/pkg/errors"
 )
 
