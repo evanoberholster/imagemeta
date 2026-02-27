@@ -59,18 +59,17 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
 		}
-	case imagetype.ImageCR3, imagetype.ImageAVIF:
-		bmr := isobmff.NewReader(rr)
+	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL:
+		bmr := isobmff.NewReader(rr, ir.DecodeIfd, nil, nil)
 		defer bmr.Close()
-		bmr.ExifReader = ir.DecodeIfd
 		if err := bmr.ReadFTYP(); err != nil {
 			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 		}
-		if err := bmr.ReadMetadata(); err != nil {
+		if err := readMetadataUntilDone(bmr); err != nil {
 			return ir.Exif, err
 		}
 
-	case imagetype.ImageHEIF:
+	case imagetype.ImageHEIF, imagetype.ImageHEIC:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif2.Exif{}, err
@@ -94,16 +93,12 @@ func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
 	ir := exif2.NewIfdReader(exif2.Logger)
 	defer ir.Close()
 
-	bmr := isobmff.NewReader(rr)
+	bmr := isobmff.NewReader(rr, ir.DecodeIfd, nil, nil)
 	defer bmr.Close()
-	bmr.ExifReader = ir.DecodeIfd
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
-	if err := bmr.ReadMetadata(); err != nil {
-		return ir.Exif, err
-	}
-	if err := bmr.ReadMetadata(); err != nil {
+	if err := readMetadataUntilDone(bmr); err != nil {
 		return ir.Exif, err
 	}
 	return ir.Exif, nil
@@ -193,28 +188,29 @@ func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
 
 	pr := preview.NewPreviewReader(preview.Logger)
 
-	bmr := isobmff.NewReader(rr)
-	bmr.PreviewImageReader = pr.RenderPreview
+	bmr := isobmff.NewReader(rr, nil, nil, pr.RenderPreview)
 	defer bmr.Close()
 
 	if err := bmr.ReadFTYP(); err != nil {
 		return nil, errors.Wrapf(err, "ReadFtypBox")
 	}
 
-	// moov
-	if err := bmr.ReadMetadata(); err != nil {
-		return nil, err
-	}
-
-	// uuid xpacket
-	if err := bmr.ReadMetadata(); err != nil {
-		return nil, err
-	}
-
-	// uuid preview
-	if err := bmr.ReadMetadata(); err != nil {
+	if err := readMetadataUntilDone(bmr); err != nil {
 		return nil, err
 	}
 
 	return pr.PreviewImage, nil
+}
+
+func readMetadataUntilDone(r *isobmff.Reader) error {
+	for {
+		err := r.ReadMetadata()
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
 }
