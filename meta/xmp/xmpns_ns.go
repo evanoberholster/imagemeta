@@ -1,18 +1,22 @@
-// Package xmpns provides XMP Namespace information
-package xmpns
-
-import "fmt"
+package xmp
 
 // Namespace is the Namespace portion of an XMP Property
 type Namespace uint8
 
 func (ns Namespace) String() string {
-	return fmt.Sprintf(mapNSString[ns])
+	if int(ns) < len(mapNSString) {
+		return mapNSString[ns]
+	}
+	return mapNSString[UnknownNS]
 }
 
 // IdentifyNamespace returns the (Namespace) XML Namespace correspondent to buf.
 // If NS was not identified returns UnknownNS.
 func IdentifyNamespace(buf []byte) (n Namespace) {
+	n = identifyNamespace(buf)
+	if n != UnknownNS {
+		return n
+	}
 	return mapStringNS[string(buf)]
 }
 
@@ -61,6 +65,32 @@ const (
 	XmpMMNS
 )
 
+var mapNSString = [...]string{
+	UnknownNS:   "Unknown",
+	AuxNS:       "aux",
+	CrsNS:       "crs",
+	DarktableNS: "darktable",
+	DcNS:        "dc",
+	ExifNS:      "exif",
+	ExifEXNS:    "exifEX",
+	LrNS:        "lr",
+	PhotoshopNS: "photoshop",
+	PmiNS:       "pmi",
+	RdfNS:       "rdf",
+	StDimNS:     "stDim",
+	StEvtNS:     "stEvt",
+	StRefNS:     "stRef",
+	TiffNS:      "tiff",
+	XNS:         "x",
+	XapNS:       "xap",
+	XapMMNS:     "xapMM",
+	XMLNS:       "xml",
+	XMLnsNS:     "xmlns",
+	XmpNS:       "xmp",
+	XmpDMNS:     "xmpDM",
+	XmpMMNS:     "xmpMM",
+}
+
 var mapStringNS = map[string]Namespace{
 	"Unknown":   UnknownNS,
 	"aux":       AuxNS,
@@ -85,30 +115,4 @@ var mapStringNS = map[string]Namespace{
 	"xmp":       XmpNS,
 	"xmpDM":     XmpDMNS,
 	"xmpMM":     XmpMMNS,
-}
-
-var mapNSString = map[Namespace]string{
-	UnknownNS:   "Unknown",
-	AuxNS:       "aux",
-	CrsNS:       "crs",
-	DarktableNS: "darktable",
-	DcNS:        "dc",
-	ExifNS:      "exif",
-	ExifEXNS:    "exifEX",
-	LrNS:        "lr",
-	PhotoshopNS: "photoshop",
-	PmiNS:       "pmi",
-	RdfNS:       "rdf",
-	StDimNS:     "stDim",
-	StEvtNS:     "stEvt",
-	StRefNS:     "stRef",
-	TiffNS:      "tiff",
-	XNS:         "x",
-	XapNS:       "xap",
-	XapMMNS:     "xapMM",
-	XMLNS:       "xml",
-	XMLnsNS:     "xmlns",
-	XmpNS:       "xmp",
-	XmpDMNS:     "xmpDM",
-	XmpMMNS:     "xmpMM",
 }

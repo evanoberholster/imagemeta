@@ -4,23 +4,29 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
+)
+
+var (
+	xmpMMDerivedFrom = NewProperty(XmpMMNS, DerivedFrom)
+	xapMMDerivedFrom = NewProperty(XapMMNS, DerivedFrom)
 )
 
 func (basic *Basic) parse(p property) (err error) {
 	switch p.Property().Name() {
-	case xmpns.CreateDate:
+	case CreateDate:
 		basic.CreateDate, err = parseDate(p.Value())
-	case xmpns.CreatorTool:
+	case CreatorTool:
 		basic.CreatorTool = parseString(p.Value())
-	case xmpns.Label:
+	case Label:
 		basic.Label = parseString(p.Value())
-	case xmpns.MetadataDate:
+	case MetadataDate:
 		basic.MetadataDate, err = parseDate(p.Value())
-	case xmpns.ModifyDate:
+	case ModifyDate:
 		basic.ModifyDate, err = parseDate(p.Value())
-	case xmpns.Rating:
+	case Rating:
 		basic.Rating = int8(parseUint8(p.Value()))
+	case XMPToolkit:
+		basic.Toolkit = parseString(p.Value())
 	default:
 		return ErrPropertyNotSet
 	}
@@ -29,24 +35,78 @@ func (basic *Basic) parse(p property) (err error) {
 
 func (mm *XMPMM) parse(p property) (err error) {
 	switch p.Property().Name() {
-	case xmpns.DocumentID:
+	case DocumentID:
+		if p.Namespace() == StRefNS && (p.Parent().Equals(xmpMMDerivedFrom) || p.Parent().Equals(xapMMDerivedFrom)) {
+			mm.DerivedFromDocumentID = parseUUID(p.Value())
+			return nil
+		}
 		mm.DocumentID = parseUUID(p.Value())
-	case xmpns.OriginalDocumentID:
+	case OriginalDocumentID:
+		if p.Namespace() == StRefNS && (p.Parent().Equals(xmpMMDerivedFrom) || p.Parent().Equals(xapMMDerivedFrom)) {
+			mm.DerivedFromOriginalDocumentID = parseUUID(p.Value())
+			return nil
+		}
 		mm.OriginalDocumentID = parseUUID(p.Value())
-	case xmpns.PreservedFileName:
+	case DerivedFromDocumentID:
+		mm.DerivedFromDocumentID = parseUUID(p.Value())
+	case DerivedFromOriginalDocumentID:
+		mm.DerivedFromOriginalDocumentID = parseUUID(p.Value())
+	case PreservedFileName:
 		mm.PreservedFileName = parseString(p.Value())
-	case xmpns.InstanceID:
+	case InstanceID:
 		mm.InstanceID = parseUUID(p.Value())
+	case HistoryTag:
+		return mm.parseHistory(p)
 	default:
 		return ErrPropertyNotSet
 	}
 	return
 }
 
+func (mm *XMPMM) parseHistory(p property) (err error) {
+	if p.Parent().Namespace() != StEvtNS {
+		return ErrPropertyNotSet
+	}
+
+	h := mm.ensureHistory()
+	switch p.Parent().Name() {
+	case Action:
+		h.Action = parseString(p.Value())
+		mm.HistoryAction = h.Action
+	case Changed:
+		h.Changed = parseString(p.Value())
+		mm.HistoryChanged = h.Changed
+	case InstanceID:
+		h.InstanceID = parseUUID(p.Value())
+		mm.HistoryInstanceID = h.InstanceID
+	case SoftwareAgent:
+		h.Software = parseString(p.Value())
+		mm.HistorySoftwareAgent = h.Software
+	case When:
+		h.Date, err = parseDate(p.Value())
+		mm.HistoryWhen = h.Date
+	case Parameters:
+		h.Parameters = parseString(p.Value())
+		mm.HistoryParameters = h.Parameters
+	default:
+		return ErrPropertyNotSet
+	}
+	return err
+}
+
+func (mm *XMPMM) ensureHistory() *History {
+	if len(mm.History) == 0 {
+		mm.History = append(mm.History, History{})
+	}
+	return &mm.History[0]
+}
+
 // Basic - the XMP basic namespace contains properties that provide basic descriptive information.
 // XMP spec Section 8.4
 // xmlns:xmp="http://ns.adobe.com/xap/1.0/"
 type Basic struct {
+	// Toolkit is x:xmptk from the XMP root element.
+	Toolkit string
 	// The date and time the resource was created. For a digital file, this need not match a
 	// file-system  creation time. For a freshly created resource, it should be close to that time,
 	// modulo the time taken to write the file. Later file transfer, copying, and so on, can make the
@@ -86,6 +146,19 @@ type XMPMM struct {
 
 	History []History
 
+	// DerivedFromDocumentID identifies the direct source resource document ID.
+	DerivedFromDocumentID meta.UUID
+	// DerivedFromOriginalDocumentID identifies the original source document ID.
+	DerivedFromOriginalDocumentID meta.UUID
+
+	// ExifTool-compatible flattened history values (first event).
+	HistoryAction        string
+	HistoryChanged       string
+	HistoryInstanceID    meta.UUID
+	HistoryWhen          time.Time
+	HistorySoftwareAgent string
+	HistoryParameters    string
+
 	PreservedFileName string
 }
 
@@ -96,4 +169,5 @@ type History struct {
 	InstanceID meta.UUID
 	Date       time.Time
 	Software   string // softwareAgent
+	Parameters string
 }
