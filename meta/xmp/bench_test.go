@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	dir = "test/jpeg.xmp"
+	benchPacket = "text/dng_embedded.xmp"
 )
 
 // BenchmarkXMPRead200 	   27654	     45272 ns/op	    6784 B/op	      16 allocs/op
@@ -22,7 +22,7 @@ var (
 
 // BenchmarkXMPRead 	   47311	     26398 ns/op	    2304 B/op	      44 allocs/op
 func BenchmarkXMPRead(b *testing.B) {
-	f, err := os.Open(dir) //+ "6D.xmp")
+	f, err := os.Open(benchPacket)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -48,3 +48,33 @@ func BenchmarkXMPRead(b *testing.B) {
 	}
 
 }
+
+func BenchmarkXMPParseAuto(b *testing.B) {
+	f, err := os.Open(benchPacket)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer f.Close()
+
+	a, _ := io.ReadAll(f)
+	r2 := bytes.NewReader(a)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		if _, err = r2.Seek(0, 0); err != nil {
+			b.Fatal(err)
+		}
+		b.StartTimer()
+
+		if _, err := Parse(r2); err != nil {
+			if err != io.EOF {
+				b.Fatal(err)
+			}
+		}
+	}
+}
+
+// BenchmarkXMPRead-2   	  119904	     10519 ns/op	    2416 B/op	      31 allocs/op
+// BenchmarkXMPRead-2   	  206520	      5486 ns/op	     333 B/op	      19 allocs/op

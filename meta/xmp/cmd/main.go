@@ -23,7 +23,7 @@ const (
 
 func main() {
 	xmp.DebugMode = true
-	f, err := os.Open(filename2)
+	f, err := os.Open(filename5)
 	if err != nil {
 		panic(err)
 	}
