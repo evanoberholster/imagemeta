@@ -2,40 +2,38 @@ package xmp
 
 import (
 	"fmt"
-
-	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
 // property is an XML property
 type property struct {
 	val    []byte
-	parent xmpns.Property
-	self   xmpns.Property
+	parent Property
+	self   Property
 	pt     pType
 }
 
 // Property returns the property's XMP Property
-func (p property) Property() xmpns.Property {
+func (p property) Property() Property {
 	return p.self
 }
 
 // SetParent sets the Property's parent
-func (p *property) SetParent(parent xmpns.Property) {
+func (p *property) SetParent(parent Property) {
 	p.parent = parent
 }
 
 // Parent returns the property's parent's XMP Property
-func (p property) Parent() xmpns.Property {
+func (p property) Parent() Property {
 	return p.parent
 }
 
 // Name returns the property's XMP Name
-func (p property) Name() xmpns.Name {
+func (p property) Name() Name {
 	return p.self.Name()
 }
 
 // Namespace returns the property's XMP Namespace
-func (p property) Namespace() xmpns.Namespace {
+func (p property) Namespace() Namespace {
 	return p.self.Namespace()
 }
 
@@ -45,7 +43,7 @@ func (p property) Value() []byte {
 }
 
 // Is
-func (p property) Is(p1 xmpns.Property) bool {
+func (p property) Is(p1 Property) bool {
 	return p.self.Equals(p1)
 }
 
@@ -71,23 +69,6 @@ type Attribute struct {
 func (attr Attribute) String() string {
 	return fmt.Sprintf("Attribute: (%s) %s=\"%s\"", attr.parent.String(), attr.self.String(), string(attr.val))
 }
-
-// Tags
-// ---------------------------------------------------
-
-func (t Tag) isStartTag() bool {
-	return t.t == startTag
-}
-
-func (t Tag) isRootStopTag() bool {
-	return t.self.Equals(xmpns.XMPRootProperty) && t.t == stopTag
-}
-
-func (t Tag) isEndTag(p xmpns.Property) bool {
-	return t.t == stopTag && t.self.Equals(p)
-}
-
-// ---------------------------------------------------
 
 // pType represents a property's type.
 type pType uint8

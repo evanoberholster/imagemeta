@@ -18,35 +18,43 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/meta/xmp/xmpns"
 )
 
-var xmlLang = xmpns.NewProperty(xmpns.XMLNS, xmpns.Lang)
+var xmlLang = NewProperty(XMLNS, Lang)
 
 func (dc *DublinCore) parse(p property) (err error) {
 	if len(p.Value()) == 0 {
 		return ErrPropertyNotSet
 	}
 	switch p.Name() {
-	case xmpns.Format:
+	case Format:
 		dc.Format = imagetype.FromString(string(p.Value()))
-	case xmpns.Creator:
+	case Creator:
 		dc.Creator = append(dc.Creator, parseString(p.Value()))
-	case xmpns.Subject:
+	case Subject:
 		dc.Subject = append(dc.Subject, parseString(p.Value()))
-	case xmpns.Rights:
+	case Rights:
 		if p.pt == tagPType {
-			dc.Rights = append(dc.Rights, parseString(p.Value()))
+			// ExifTool defaults to x-default (or first) language item for RDF Alt.
+			if len(dc.Rights) == 0 {
+				dc.Rights = append(dc.Rights, parseString(p.Value()))
+			}
 		}
-	case xmpns.Title:
+	case Title:
 		if p.pt == tagPType {
-			dc.Title = append(dc.Title, parseString(p.Value()))
+			// ExifTool defaults to x-default (or first) language item for RDF Alt.
+			if len(dc.Title) == 0 {
+				dc.Title = append(dc.Title, parseString(p.Value()))
+			}
 		}
 		if p.Parent() == xmlLang {
 			dc.TitleLang = append(dc.TitleLang, parseString(p.Value()))
 		}
-	case xmpns.Description:
-		dc.Description = append(dc.Description, parseString(p.Value()))
+	case Description:
+		// ExifTool defaults to x-default (or first) language item for RDF Alt.
+		if len(dc.Description) == 0 {
+			dc.Description = append(dc.Description, parseString(p.Value()))
+		}
 		// Subject
 		// Contributor
 		// Description

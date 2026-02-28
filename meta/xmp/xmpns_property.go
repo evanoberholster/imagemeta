@@ -1,6 +1,4 @@
-package xmpns
-
-import "fmt"
+package xmp
 
 var (
 	// XMPRootProperty is the root Property for an XMP file
@@ -46,5 +44,5 @@ func (p Property) Name() Name {
 }
 
 func (p Property) String() string {
-	return fmt.Sprintf("%s:%s", p.Namespace().String(), p.Name().String())
+	return p.Namespace().String() + ":" + p.Name().String()
 }
