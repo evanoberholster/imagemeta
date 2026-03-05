@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/evanoberholster/imagemeta/exif2"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/jpeg"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

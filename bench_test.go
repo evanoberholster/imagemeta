@@ -3,14 +3,15 @@ package imagemeta
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/rs/zerolog"
 )
 
@@ -228,15 +229,14 @@ func BenchmarkHeif(b *testing.B) {
 					}
 					ir := exif2.NewIfdReader(zerolog.Logger{})
 
-					br := isobmff.NewReader(r)
-					br.ExifReader = ir.DecodeIfd
+					br := isobmff.NewReader(r, ir.DecodeIfd, nil, nil)
 					if err := br.ReadFTYP(); err != nil {
 						panic(err)
 					}
-					if err := br.ReadMetadata(); err != nil {
+					if err := readMetadataAllowBenchmarkEOF(br); err != nil {
 						panic(err)
 					}
-					if err := br.ReadMetadata(); err != nil {
+					if err := readMetadataAllowBenchmarkEOF(br); err != nil {
 						panic(err)
 					}
 					ir.Close()
@@ -245,4 +245,12 @@ func BenchmarkHeif(b *testing.B) {
 			})
 		})
 	}
+}
+
+func readMetadataAllowBenchmarkEOF(r *isobmff.Reader) error {
+	err := r.ReadMetadata()
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	return err
 }
