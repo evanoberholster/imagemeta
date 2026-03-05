@@ -15,32 +15,42 @@ var (
 	RDFLi = NewProperty(RdfNS, Li)
 )
 
-// Property is an XMP Namespace with the associated Property Name
-type Property [2]uint8
+// Property is an XMP Namespace with the associated Name.
+type Property uint32
 
-// NewProperty returns the correspoding Property for the given Namespace and Name.
+// NewProperty returns the corresponding property for the given namespace and name.
 func NewProperty(ns Namespace, name Name) Property {
-	return Property{uint8(ns), uint8(name)}
+	return Property((uint32(ns) << 16) | uint32(name))
 }
 
 // Equals returns true if one property is equal to the other.
 func (p Property) Equals(p1 Property) bool {
-	return p[0] == p1[0] && p[1] == p1[1]
+	return p == p1
 }
 
 // IdentifyProperty returns a Property correspondent to the "space" and "name" byte values.
 func IdentifyProperty(space []byte, name []byte) Property {
-	return Property{uint8(IdentifyNamespace(space)), uint8(IdentifyName(name))}
+	return NewProperty(IdentifyNamespace(space), IdentifyName(name))
 }
 
-// Namespace returns the property's XMP Namespace
+// Namespace returns the property's XMP namespace.
 func (p Property) Namespace() Namespace {
-	return Namespace(p[0])
+	return Namespace((uint32(p) >> 16) & 0xFF)
 }
 
-// Name returns the property's name
+// Name returns the property's XMP local-name.
 func (p Property) Name() Name {
-	return Name(p[1])
+	return Name(uint32(p) & 0xFFFF)
+}
+
+// NameSpace is retained as a compatibility wrapper around Namespace.
+func (p Property) NameSpace() Namespace {
+	return p.Namespace()
+}
+
+// TagName is retained as a compatibility wrapper around Name.
+func (p Property) TagName() Name {
+	return p.Name()
 }
 
 func (p Property) String() string {

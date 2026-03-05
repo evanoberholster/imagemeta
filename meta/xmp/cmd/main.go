@@ -22,8 +22,7 @@ const (
 )
 
 func main() {
-	xmp.DebugMode = true
-	f, err := os.Open(filename5)
+	f, err := os.Open(filename2)
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +31,7 @@ func main() {
 		fmt.Println(f.Close())
 	}()
 
-	xmp, err := xmp.ParseXmp(f)
+	xmp, err := xmp.ParseXmpWithOptions(f, xmp.ParseOptions{Debug: true})
 	if err != nil {
 		fmt.Println(err)
 	}

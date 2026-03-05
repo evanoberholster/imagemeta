@@ -6,10 +6,11 @@ import (
 
 // property is an XML property
 type property struct {
-	val    []byte
-	parent Property
-	self   Property
-	pt     pType
+	val         []byte
+	parent      Property
+	self        Property
+	pt          pType
+	regionIndex int16
 }
 
 // Property returns the property's XMP Property
@@ -27,14 +28,30 @@ func (p property) Parent() Property {
 	return p.parent
 }
 
-// Name returns the property's XMP Name
+// RegionIndex returns the zero-based region item index for mwg-rs region-list
+// values. It returns -1 when the property is not inside a region-list item.
+func (p property) RegionIndex() int {
+	return int(p.regionIndex)
+}
+
+// Name returns the property's XMP local-name.
 func (p property) Name() Name {
 	return p.self.Name()
 }
 
-// Namespace returns the property's XMP Namespace
+// Namespace returns the property's XMP namespace prefix.
 func (p property) Namespace() Namespace {
 	return p.self.Namespace()
+}
+
+// TagName is retained as a compatibility wrapper around Name.
+func (p property) TagName() Name {
+	return p.Name()
+}
+
+// NameSpace is retained as a compatibility wrapper around Namespace.
+func (p property) NameSpace() Namespace {
+	return p.Namespace()
 }
 
 // Value returns the property's Value
@@ -93,10 +110,13 @@ const (
 )
 
 func (tt tagType) String() string {
-	return mapTagTypeString[tt]
+	if int(tt) < len(tagTypeStrings) {
+		return tagTypeStrings[tt]
+	}
+	return tagTypeStrings[noTag]
 }
 
-var mapTagTypeString = map[tagType]string{
+var tagTypeStrings = [...]string{
 	noTag:    "No Tag",
 	startTag: "Start Tag",
 	soloTag:  "Solo Tag",

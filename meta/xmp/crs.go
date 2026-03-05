@@ -128,7 +128,7 @@ func (p *Photoshop) parse(prop property) (err error) {
 	case LegacyIPTCDigest:
 		p.LegacyIPTCDigest = parseString(prop.Value())
 	case ColorMode:
-		p.ColorMode = uint16(parseUint(prop.Value()))
+		p.ColorMode = parseUint16(prop.Value())
 	case ICCProfile:
 		p.ICCProfile = parseString(prop.Value())
 	case HistoryTag:
