@@ -166,6 +166,27 @@ func TestImageType(t *testing.T) {
 
 }
 
+func TestFromBytes(t *testing.T) {
+	tests := map[string]FileType{
+		"image/jpeg":                ImageJPEG,
+		"image/jpeg; charset=utf-8": ImageJPEG,
+		"application/rdf+xml":       ImageXMP,
+		"image/heic":                ImageHEIC,
+		".jpg":                      ImageJPEG,
+		"jpg":                       ImageJPEG,
+		".dng":                      ImageDNG,
+		".xmp":                      ImageXMP,
+		" image/tiff ":              ImageTiff,
+		"unknown/value":             ImageUnknown,
+	}
+
+	for input, expected := range tests {
+		if got := FromBytes([]byte(input)); got != expected {
+			t.Errorf("FromBytes(%q) = %s, expected %s", input, got, expected)
+		}
+	}
+}
+
 func TestScanImageType(t *testing.T) {
 	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
