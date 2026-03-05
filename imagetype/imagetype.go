@@ -282,6 +282,73 @@ func FromString(str string) FileType {
 	return ImageUnknown
 }
 
+// FromBytes returns a FileType for content-type bytes, extensions, or filenames.
+//
+// It performs a fast path for common MIME and extension values, and falls back
+// to FromString for full compatibility.
+func FromBytes(buf []byte) FileType {
+	buf = bytes.TrimSpace(buf)
+	if len(buf) == 0 {
+		return ImageUnknown
+	}
+
+	if it, ok := fromBytesCommon(buf); ok {
+		return it
+	}
+
+	if idx := bytes.IndexByte(buf, ';'); idx > 0 {
+		if it, ok := fromBytesCommon(bytes.TrimSpace(buf[:idx])); ok {
+			return it
+		}
+	}
+
+	return FromString(string(buf))
+}
+
+func fromBytesCommon(buf []byte) (FileType, bool) {
+	toLowercaseBytes(buf)
+
+	switch string(buf) {
+	case "jpg", ".jpg", "jpeg", ".jpeg", "image/jpg", "image/jpeg":
+		return ImageJPEG, true
+	case "png", ".png", "image/png":
+		return ImagePNG, true
+	case "xmp", ".xmp", "application/rdf+xml":
+		return ImageXMP, true
+	case "dng", ".dng", "image/x-dng", "image/x-adobe-dng":
+		return ImageDNG, true
+	case "nef", ".nef", "image/x-nikon-nef":
+		return ImageNEF, true
+	case "cr2", ".cr2", "image/x-canon-cr2":
+		return ImageCR2, true
+	case "cr3", ".cr3", "image/x-canon-cr3":
+		return ImageCR3, true
+	case "psd", ".psd", "image/vnd.adobe.photoshop":
+		return ImagePSD, true
+	case "tif", ".tif", ".tiff", "image/tiff":
+		return ImageTiff, true
+	case "jxl", ".jxl", "image/jxl":
+		return ImageJXL, true
+	case "jp2", ".jp2", "image/jp2":
+		return ImageJP2K, true
+	case "heic", ".heic", "image/heic":
+		return ImageHEIC, true
+	case "heif", ".heif", "image/heif":
+		return ImageHEIF, true
+	case "avif", ".avif", "image/avif":
+		return ImageAVIF, true
+	}
+	return ImageUnknown, false
+}
+
+func toLowercaseBytes(buf []byte) {
+	for i := 0; i < len(buf); i++ {
+		if buf[i] >= 'A' && buf[i] <= 'Z' {
+			buf[i] |= 0x20
+		}
+	}
+}
+
 // Image file types Raw/Compressed/JPEG
 const (
 	ImageUnknown FileType = iota

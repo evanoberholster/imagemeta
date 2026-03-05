@@ -20,6 +20,10 @@
 # Coverage
 *.cov
 
+# Go temporary files
+.go*
+.cache*
+
 samples/*
 xml/test*
 testImages/gen.go
