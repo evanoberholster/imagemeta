@@ -27,41 +27,55 @@ func (dc *DublinCore) parse(p property) (err error) {
 		return ErrPropertyNotSet
 	}
 	switch p.Name() {
+	case Contributor:
+		dc.Contributor = append(dc.Contributor, parseString(p.Value()))
+	case Coverage:
+		dc.Coverage = parseString(p.Value())
 	case Format:
-		dc.Format = imagetype.FromString(string(p.Value()))
+		dc.Format = imagetype.FromBytes(p.Value())
 	case Creator:
 		dc.Creator = append(dc.Creator, parseString(p.Value()))
+	case Date:
+		// ExifTool-style flattening: keep the first valid dc:date value.
+		if dc.Date.IsZero() {
+			if t, ok := parseDateDublinCore(p.Value()); ok {
+				dc.Date = t
+			}
+		}
+	case Identifier:
+		dc.Identifier = parseString(p.Value())
+	case Language:
+		dc.Language = append(dc.Language, parseString(p.Value()))
+	case Publisher:
+		dc.Publisher = append(dc.Publisher, parseString(p.Value()))
+	case Relation:
+		dc.Relation = append(dc.Relation, parseString(p.Value()))
+	case Source:
+		dc.Source = parseString(p.Value())
 	case Subject:
 		dc.Subject = append(dc.Subject, parseString(p.Value()))
 	case Rights:
-		if p.pt == tagPType {
-			// ExifTool defaults to x-default (or first) language item for RDF Alt.
-			if len(dc.Rights) == 0 {
-				dc.Rights = append(dc.Rights, parseString(p.Value()))
-			}
-		}
+		parseDublinCoreAltProperty(&dc.Rights, &dc.RightsLang, p)
 	case Title:
-		if p.pt == tagPType {
-			// ExifTool defaults to x-default (or first) language item for RDF Alt.
-			if len(dc.Title) == 0 {
-				dc.Title = append(dc.Title, parseString(p.Value()))
-			}
-		}
-		if p.Parent() == xmlLang {
-			dc.TitleLang = append(dc.TitleLang, parseString(p.Value()))
-		}
+		parseDublinCoreAltProperty(&dc.Title, &dc.TitleLang, p)
 	case Description:
-		// ExifTool defaults to x-default (or first) language item for RDF Alt.
-		if len(dc.Description) == 0 {
-			dc.Description = append(dc.Description, parseString(p.Value()))
-		}
-		// Subject
-		// Contributor
-		// Description
+		parseDublinCoreAltProperty(&dc.Description, &dc.DescriptionLang, p)
+	case Type:
+		dc.Type = append(dc.Type, parseString(p.Value()))
 	default:
 		return ErrPropertyNotSet
 	}
 	return nil
+}
+
+func parseDublinCoreAltProperty(valueDst *[]string, langDst *[]string, p property) {
+	// ExifTool defaults to x-default (or first) language item for RDF Alt.
+	if p.pt == tagPType && len(*valueDst) == 0 {
+		*valueDst = append(*valueDst, parseString(p.Value()))
+	}
+	if p.Parent().Equals(xmlLang) {
+		*langDst = append(*langDst, parseString(p.Value()))
+	}
 }
 
 // DublinCore is the "dc:" namespace often seen in xmp meta.
@@ -87,6 +101,7 @@ type DublinCore struct {
 	// if such order is significant.
 	Creator []string `xml:"creator"`
 	// A point or period of time associated with an event in the life cycle of the resource.
+	// XMP usage is an ordered list of dates, flattened to the first valid value.
 	Date time.Time `xml:"date"`
 	// An account of the resource.
 	// XMP usage is a list of textual descriptions of the content of the resource, given in various languages.
@@ -97,27 +112,25 @@ type DublinCore struct {
 	Identifier string `xml:"identifier"`
 
 	// A language of the resource.
-	// XMP usage is a list of languages used in the content of the resource.
-	// TODO - RDFSeq is a guess
+	// XMP usage is a list (RDF Bag) of languages used in the resource.
 	Language []string `xml:"language"`
 	// An entity responsible for making the resource available
 	// Examples of a publisher include a person, an organization, or a
 	// service. Typically, the name of a publisher should be used to indicate the entity.
-	//  XMP usage is a list of publishers.
-	// TODO - RDFSeq is a guess
-	//Publisher RDFSeq `xml:"publisher"`
+	// XMP usage is a list (RDF Bag) of publishers.
+	Publisher []string `xml:"publisher"`
 	// A related resource.
 	// Recommended best practice is to identify the related resource
 	// by means of a string conforming to a formal identification system.
-	// XMP usage is a list of related resources.
-	// TODO - RDFSeq is a guess
-	//Relation RDFSeq `xml:"relation"`
+	// XMP usage is a list (RDF Bag) of related resources.
+	Relation []string `xml:"relation"`
 	// Information about rights held in and over the resource.
 	// typically, rights information includes a statement about various property
 	// rights associated with the resource, including intellectual property rights.
-	// XMP usage is a list of informal rights statements, given in various languages.
-	// TODO - RDFAlt is a guess
+	// XMP usage is a list (RDF Alt) of informal rights statements, given in various languages.
 	Rights []string `xml:"rights"`
+	// RightsLang stores xml:lang values for dc:rights alternatives.
+	RightsLang []string
 	// A related resource from which the described resource is derived.
 	// The described resource may be derived from the related resource in whole or in part.
 	// Recommended best practice is to identify the related resource by means of a string
@@ -139,5 +152,8 @@ type DublinCore struct {
 	// Vocabulary [DCMITYPE]. To describe the file format, physical medium, or dimensions of the
 	// resource, use the dc:format element.
 	// See the dc:format entry for clarification of the XMP usage of that element.
-	//Type RDFBag `xml:"type"`
+	Type []string `xml:"type"`
+
+	// DescriptionLang stores xml:lang values for dc:description alternatives.
+	DescriptionLang []string
 }

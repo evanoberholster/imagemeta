@@ -4,77 +4,68 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-var (
-	benchPacket = "text/dng_embedded.xmp"
-)
-
-// BenchmarkXMPRead200 	   27654	     45272 ns/op	    6784 B/op	      16 allocs/op
-// BenchmarkXMPRead200 	   28819	     42524 ns/op	    6368 B/op	       8 allocs/op
-// BenchmarkXMPRead200 	   28201	     42819 ns/op	    6240 B/op	       2 allocs/op
-// BenchmarkXMPRead200 	   33976	     34644 ns/op	    6240 B/op	       2 allocs/op
-
-// 7D MKII
-// BenchmarkXMPRead200 	   22694	     52323 ns/op	    7248 B/op	      29 allocs/op
-// BenchmarkXMPRead200 	   23542	     50447 ns/op	    7248 B/op	      29 allocs/op
-
-// BenchmarkXMPRead 	   47311	     26398 ns/op	    2304 B/op	      44 allocs/op
-func BenchmarkXMPRead(b *testing.B) {
-	f, err := os.Open(benchPacket)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer f.Close()
-
-	a, _ := io.ReadAll(f)
-	r2 := bytes.NewReader(a)
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		if _, err = r2.Seek(0, 0); err != nil {
-			b.Fatal(err)
-		}
-		b.StartTimer()
-
-		if _, err := ParseXmp(r2); err != nil {
-			if err != io.EOF {
-				b.Fatal(err)
-			}
-		}
-	}
-
+var benchmarkPackets = []string{
+	"test/acr_sidecar.xmp",
+	"test/dng_embedded.xmp",
+	"test/lightroom_sidecar.xmp",
 }
 
-func BenchmarkXMPParseAuto(b *testing.B) {
-	f, err := os.Open(benchPacket)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer f.Close()
+func benchmarkParseFromFile(b *testing.B, packet string, parseFn func(io.Reader) error) {
+	b.Helper()
 
-	a, _ := io.ReadAll(f)
-	r2 := bytes.NewReader(a)
+	data, err := os.ReadFile(packet)
+	if err != nil {
+		b.Fatalf("read %s: %v", packet, err)
+	}
+
+	r := bytes.NewReader(data)
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		if _, err = r2.Seek(0, 0); err != nil {
-			b.Fatal(err)
-		}
-		b.StartTimer()
 
-		if _, err := Parse(r2); err != nil {
-			if err != io.EOF {
-				b.Fatal(err)
-			}
+	for i := 0; i < b.N; i++ {
+		if _, err = r.Seek(0, io.SeekStart); err != nil {
+			b.Fatalf("seek %s: %v", packet, err)
+		}
+
+		if err := parseFn(r); err != nil && err != io.EOF {
+			b.Fatalf("parse %s: %v", packet, err)
 		}
 	}
 }
 
-// BenchmarkXMPRead-2   	  119904	     10519 ns/op	    2416 B/op	      31 allocs/op
-// BenchmarkXMPRead-2   	  206520	      5486 ns/op	     333 B/op	      19 allocs/op
+func BenchmarkParseXmp(b *testing.B) {
+	for _, packet := range benchmarkPackets {
+		packet := packet
+		b.Run(filepath.Base(packet), func(b *testing.B) {
+			benchmarkParseFromFile(b, packet, func(r io.Reader) error {
+				_, err := ParseXmp(r)
+				return err
+			})
+		})
+	}
+}
+
+func BenchmarkParseAuto(b *testing.B) {
+	for _, packet := range benchmarkPackets {
+		packet := packet
+		b.Run(filepath.Base(packet), func(b *testing.B) {
+			benchmarkParseFromFile(b, packet, func(r io.Reader) error {
+				_, err := Parse(r)
+				return err
+			})
+		})
+	}
+}
+
+// BenchmarkParseXmp/acr_sidecar.xmp-2         	  462160	      2317 ns/op	     112 B/op	       4 allocs/op
+// BenchmarkParseXmp/dng_embedded.xmp-2        	  249444	      4751 ns/op	     393 B/op	      20 allocs/op
+// BenchmarkParseXmp/lightroom_sidecar.xmp-2   	   44100	     25342 ns/op	    2577 B/op	      76 allocs/op
+
+// BenchmarkParseXmp/acr_sidecar.xmp-2         	  525514	      2291 ns/op	      88 B/op	       3 allocs/op
+// BenchmarkParseXmp/dng_embedded.xmp-2        	  271130	      4466 ns/op	     392 B/op	      19 allocs/op
+// BenchmarkParseXmp/lightroom_sidecar.xmp-2   	   49678	     25153 ns/op	    1720 B/op	      59 allocs/op
