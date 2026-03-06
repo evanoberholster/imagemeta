@@ -64,7 +64,7 @@ func TestParseXMPTextFixtures(t *testing.T) {
 				if x.MM == nil {
 					t.Fatal("MM is nil")
 				}
-				assertApproxFloat64(t, float64(x.Exif.ExposureTime), 0.004, 0.000001, "Exif.ExposureTime")
+				assertApproxFloat64(t, x.Exif.ExposureTime.Float64(), 0.004, 0.000001, "Exif.ExposureTime")
 				assertApproxFloat64(t, float64(x.Exif.Aperture), 3.2, 0.0001, "Exif.FNumber")
 				if x.MM.DocumentID.String() != "544d6a6b-e74b-dc11-9e68-d4e6c4c1b201" {
 					t.Fatalf("MM.DocumentID = %s", x.MM.DocumentID.String())
@@ -128,7 +128,7 @@ func TestParseXMPTextFixtures(t *testing.T) {
 				}
 				assertApproxFloat64(t, float64(x.Exif.ApertureValue), 16.0, 0.0001, "Exif.ApertureValue")
 				assertApproxFloat64(t, float64(x.Exif.MaxApertureValue), math.Sqrt2, 0.0001, "Exif.MaxApertureValue")
-				assertApproxFloat64(t, float64(x.Exif.ShutterSpeedValue), 1.30000033948, 0.0001, "Exif.ShutterSpeedValue")
+				assertApproxFloat64(t, x.Exif.ShutterSpeedValue.Float64(), -0.378512, 0.000001, "Exif.ShutterSpeedValue")
 				assertApproxFloat64(t, float64(x.Exif.GPS.Altitude.Signed()), 6.9, 0.0001, "Exif.GPS.Altitude")
 			},
 		},
