@@ -11,12 +11,12 @@ import (
 type Flash struct {
 	// Fired indicates whether the flash fired.
 	Fired bool
+	// Function indicates whether the flash function is present.
+	Function bool
 	// Mode is the EXIF flash mode code.
 	Mode uint8
 	// RedEyeMode indicates whether red-eye reduction was enabled.
 	RedEyeMode bool
-	// Function indicates whether the flash function is present.
-	Function bool
 	// Return is the EXIF flash return-detection code.
 	Return uint8
 }
@@ -28,13 +28,13 @@ type Flash struct {
 //
 // This implementation is based on https://exiftool.org/TagNames/XMP.html#exif.
 type Exif struct {
-	ExifVersion      string
+	ExifVersion      string // Often denfined as 0221 -> Exif 2.21
 	PixelXDimension  uint32
 	PixelYDimension  uint32
 	DateTime         time.Time
 	DateTimeOriginal time.Time
 	CreateDate       time.Time // Exif:DateTimeDigitized
-	ExposureTime     meta.ExposureTime
+	ExposureTime     meta.Rational32
 	ExposureProgram  meta.ExposureProgram
 	ExposureMode     meta.ExposureMode
 	ExposureBias     meta.ExposureBias
@@ -59,7 +59,7 @@ type Exif struct {
 	FileSource                   uint8
 	FlashpixVersion              string
 	FocalLengthIn35mmFilm        uint16
-	FocalPlaneResolutionUnit     uint16
+	FocalPlaneResolutionUnit     uint8
 	FocalPlaneXResolution        float64
 	FocalPlaneYResolution        float64
 	ExposureIndex                float64
@@ -102,36 +102,34 @@ type Exif struct {
 	MakerNote                    string
 	// MaxApertureValue is converted from EXIF APEX units to an f-number
 	// to match ExifTool output.
-	MaxApertureValue                meta.Aperture
-	NativeDigest                    string
-	OECF                            string
-	OECFColumns                     uint16
-	OECFNames                       string
-	OECFRows                        uint16
-	OECFValues                      string
-	PhotometricInterpretation       uint16
-	RecommendedExposureIndex        uint32
-	RelatedSoundFile                string
-	SamplesPerPixel                 uint16
-	SensingMethod                   uint16
-	Saturation                      uint8
-	Contrast                        uint8
-	SceneCaptureType                uint8
-	SceneType                       uint8
-	SensitivityType                 uint16
-	Sharpness                       uint8
-	SpatialFrequencyResponse        string
-	SpatialFrequencyResponseColumns uint16
-	SpatialFrequencyResponseNames   string
-	SpatialFrequencyResponseRows    uint16
-	SpatialFrequencyResponseValues  string
-	SpectralSensitivity             string
-	SubjectArea                     string
-	SubjectDistanceRange            uint16
-	SubjectLocation                 string
-	// ShutterSpeedValue is converted from EXIF APEX units to seconds
-	// to match ExifTool output.
-	ShutterSpeedValue                meta.ShutterSpeed
+	MaxApertureValue                 meta.Aperture
+	NativeDigest                     string
+	OECF                             string
+	OECFColumns                      uint16
+	OECFNames                        string
+	OECFRows                         uint16
+	OECFValues                       string
+	PhotometricInterpretation        uint16
+	RecommendedExposureIndex         uint32
+	RelatedSoundFile                 string
+	SamplesPerPixel                  uint16
+	SensingMethod                    uint16
+	Saturation                       uint8
+	Contrast                         uint8
+	SceneCaptureType                 uint8
+	SceneType                        uint8
+	SensitivityType                  uint16
+	Sharpness                        uint8
+	SpatialFrequencyResponse         string
+	SpatialFrequencyResponseColumns  uint16
+	SpatialFrequencyResponseNames    string
+	SpatialFrequencyResponseRows     uint16
+	SpatialFrequencyResponseValues   string
+	SpectralSensitivity              string
+	SubjectArea                      string
+	SubjectDistanceRange             uint16
+	SubjectLocation                  string
+	ShutterSpeedValue                meta.Rational32
 	CFAPattern                       string
 	CFAPatternColumns                uint16
 	CFAPatternRows                   uint16
@@ -169,8 +167,8 @@ func (exif *Exif) parse(p property) (err error) {
 	case ApertureValue:
 		exif.ApertureValue = meta.Aperture(parseApexAperture(p.Value()))
 	case ExposureTime:
-		n, d := parseRational(p.Value())
-		exif.ExposureTime = meta.ExposureTime(float32(n) / float32(d))
+		n, d := parseRational32(p.Value())
+		exif.ExposureTime = meta.NewRational32(n, d)
 	case ExposureProgram:
 		exif.ExposureProgram = meta.ExposureProgram(parseUint8(p.Value()))
 	case ExposureMode:
@@ -185,7 +183,7 @@ func (exif *Exif) parse(p property) (err error) {
 	case FocalLengthIn35mmFilm:
 		exif.FocalLengthIn35mmFilm = parseUint16(p.Value())
 	case FocalPlaneResolutionUnit:
-		exif.FocalPlaneResolutionUnit = parseUint16(p.Value())
+		exif.FocalPlaneResolutionUnit = parseUint8(p.Value())
 	case FocalPlaneXResolution:
 		exif.FocalPlaneXResolution = parseRationalFloat64(p.Value())
 	case FocalPlaneYResolution:
@@ -217,8 +215,8 @@ func (exif *Exif) parse(p property) (err error) {
 	case CameraElevationAngle:
 		exif.CameraElevationAngle = parseRationalFloat64(p.Value())
 	case SubjectDistance:
-		n, d := parseRational(p.Value())
-		exif.SubjectDistance = float32(float32(n) / float32(d))
+		n, d := parseRational32(p.Value())
+		exif.SubjectDistance = float32(n) / float32(d)
 	case MeteringMode:
 		exif.MeteringMode = meta.NewMeteringMode(uint16(parseUint8(p.Value())))
 	case FNumber:
@@ -391,7 +389,8 @@ func (exif *Exif) parse(p property) (err error) {
 	case SubjectLocation:
 		exif.SubjectLocation = parseString(p.Value())
 	case ShutterSpeedValue:
-		exif.ShutterSpeedValue = meta.ShutterSpeed(parseApexShutterSpeed(p.Value()))
+		n, d := parseRational32(p.Value())
+		exif.ShutterSpeedValue = meta.NewRational32(n, d)
 	case CFAPattern:
 		exif.CFAPattern = parseString(p.Value())
 	case CFAPatternColumns:

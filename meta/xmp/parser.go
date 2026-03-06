@@ -660,6 +660,22 @@ func parseRational(buf []byte) (n uint32, d uint32) {
 	return parseUint32(buf), 1
 }
 
+// parseRational32 parses a signed rational number formatted as
+// "numerator/denominator". Invalid values return 0/1.
+func parseRational32(buf []byte) (n int32, d int32) {
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == '/' {
+			n = parseInt32(buf[:i])
+			d = parseInt32(buf[i+1:])
+			if d == 0 {
+				return 0, 1
+			}
+			return n, d
+		}
+	}
+	return parseInt32(buf), 1
+}
+
 // parseRationalFloat64 parses either "n/d" or plain decimal numeric input.
 func parseRationalFloat64(buf []byte) float64 {
 	f, _ := parseRationalFloat64OK(buf)

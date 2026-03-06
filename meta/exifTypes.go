@@ -639,3 +639,44 @@ func (c Compression) String() string {
 		return "Unkown"
 	}
 }
+
+// Rational32 stores a signed rational value using 32-bit numerator/denominator.
+type Rational32 struct {
+	Numerator   int32
+	Denominator int32
+}
+
+// NewRational32 creates a Rational32 and normalizes zero denominator to 1.
+func NewRational32(n, d int32) Rational32 {
+	if d == 0 {
+		d = 1
+	}
+	return Rational32{Numerator: n, Denominator: d}
+}
+
+// Float32 returns the rational value as float32.
+func (r Rational32) Float32() float32 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float32(r.Numerator) / float32(r.Denominator)
+}
+
+// Float64 returns the rational value as float64.
+func (r Rational32) Float64() float64 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float64(r.Numerator) / float64(r.Denominator)
+}
+
+func (r Rational32) String() string {
+	if r.Denominator == 0 {
+		return "0/1"
+	}
+	buf := make([]byte, 0, 24)
+	buf = strconv.AppendInt(buf, int64(r.Numerator), 10)
+	buf = append(buf, '/')
+	buf = strconv.AppendInt(buf, int64(r.Denominator), 10)
+	return string(buf)
+}
