@@ -89,24 +89,26 @@ func TestParseFastDateXMPFractional(t *testing.T) {
 }
 
 func TestParseFastDateISOTimezoneAndFraction(t *testing.T) {
-	got, err := parseFastDate([]byte("2021-01-10T17:30:57.123456789+02:30"))
+	// from meta/xmp/test/canon_eos_r6_cr3_lightroom_blue_label_baseline.xmp
+	got, err := parseFastDate([]byte("2024-11-02T12:35:44.40-04:00"))
 	if err != nil {
 		t.Fatalf("parseFastDate returned error: %v", err)
 	}
 
-	want := time.Date(2021, time.January, 10, 17, 30, 57, 123456789, time.FixedZone("", 2*3600+30*60))
+	want := time.Date(2024, time.November, 2, 12, 35, 44, 400000000, time.FixedZone("", -4*3600))
 	if !got.Equal(want) {
 		t.Fatalf("parseFastDate = %s, want %s", got.Format(time.RFC3339Nano), want.Format(time.RFC3339Nano))
 	}
 }
 
-func TestParseFastDateExifTimezone(t *testing.T) {
-	got, err := parseFastDate([]byte("2021:01:10 17:30:57-05:00"))
+func TestParseFastDateTimezoneFromFixture(t *testing.T) {
+	// from meta/xmp/test/acr_sidecar.xmp
+	got, err := parseFastDate([]byte("2012-10-17T13:07:01+03:00"))
 	if err != nil {
 		t.Fatalf("parseFastDate returned error: %v", err)
 	}
 
-	want := time.Date(2021, time.January, 10, 17, 30, 57, 0, time.FixedZone("", -5*3600))
+	want := time.Date(2012, time.October, 17, 13, 7, 1, 0, time.FixedZone("", 3*3600))
 	if !got.Equal(want) {
 		t.Fatalf("parseFastDate = %s, want %s", got.Format(time.RFC3339Nano), want.Format(time.RFC3339Nano))
 	}
@@ -141,6 +143,11 @@ func TestParseFastDate_ISOWithoutFallback(t *testing.T) {
 			in:         "2021-02-03T17:34:04+08:00",
 			want:       time.Date(2021, time.February, 3, 17, 34, 4, 0, time.FixedZone("", 8*3600)),
 			wantOffset: 8 * 3600,
+		},
+		{
+			in:         "2026-02-27T16:53:33-08:00",
+			want:       time.Date(2026, time.February, 27, 16, 53, 33, 0, time.FixedZone("", -8*3600)),
+			wantOffset: -8 * 3600,
 		},
 	}
 
