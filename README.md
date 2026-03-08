@@ -39,6 +39,101 @@ Example usage:
 	fmt.Println(e)
 ```
 
+## XMP (meta/xmp) Examples
+
+### Parse an `.xmp` sidecar file
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/evanoberholster/imagemeta/meta/xmp"
+)
+
+func main() {
+	f, err := os.Open("image.xmp")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	data, err := xmp.ParseXmp(f)
+	if err != nil {
+		panic(err)
+	}
+
+	if data.IsParsed(xmp.ExifNS) {
+		fmt.Println("ExposureTime:", data.Exif.ExposureTime)
+	}
+	if data.IsParsed(xmp.CrsNS) {
+		fmt.Println("RawFileName:", data.CRS.RawFileName)
+	}
+}
+```
+
+### Parse XMP embedded in an image (JPEG/HEIC/CR3/AVIF/JXL)
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/evanoberholster/imagemeta/meta/xmp"
+)
+
+func main() {
+	f, err := os.Open("image.jpg")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	data, err := xmp.Parse(f)
+	if errors.Is(err, xmp.ErrNoXMP) {
+		fmt.Println("no XMP found")
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	if data.IsParsed(xmp.DcNS) {
+		fmt.Println("Title:", data.DC.Title)
+	}
+}
+```
+
+### Parse with debug warnings enabled
+
+```go
+package main
+
+import (
+	"os"
+
+	"github.com/evanoberholster/imagemeta/meta/xmp"
+)
+
+func main() {
+	f, err := os.Open("image.xmp")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = xmp.ParseXmpWithOptions(f, xmp.ParseOptions{Debug: true})
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
 ## Imagehash
  Zero allocation PerceptualHash algorithm (64Bit and 256Bit) [github.com/evanoberholster/imagemeta/imagehash](github.com/evanoberholster/imagemeta/imagehash). Adapted from [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
 
