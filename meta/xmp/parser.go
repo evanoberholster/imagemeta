@@ -36,69 +36,22 @@ func (xmp *XMP) parser(p property, debug bool) (err error) {
 	case TiffNS:
 		err = xmp.Tiff.parse(p)
 	case CrsNS:
-		if xmp.CRS == nil {
-			var crs CRS
-			err = crs.parse(p)
-			if err == nil {
-				xmp.CRS = &crs
-			}
-			break
-		}
 		err = xmp.CRS.parse(p)
 	case PhotoshopNS:
-		if xmp.Photoshop == nil {
-			var photoshop Photoshop
-			err = photoshop.parse(p)
-			if err == nil {
-				xmp.Photoshop = &photoshop
-			}
-			break
-		}
 		err = xmp.Photoshop.parse(p)
 	case XmpMMNS, XapMMNS, StEvtNS, StRefNS:
-		if xmp.MM == nil {
-			var mm XMPMM
-			err = mm.parse(p)
-			if err == nil {
-				xmp.MM = &mm
-			}
-			break
-		}
 		err = xmp.MM.parse(p)
 	case XmpDMNS:
-		if xmp.DynamicMedia == nil {
-			var dm DynamicMedia
-			err = dm.parse(p)
-			if err == nil {
-				xmp.DynamicMedia = &dm
-			}
-			break
-		}
 		err = xmp.DynamicMedia.parse(p)
 	case LrNS:
-		if xmp.Lightroom == nil {
-			var lr Lightroom
-			err = lr.parse(p)
-			if err == nil {
-				xmp.Lightroom = &lr
-			}
-			break
-		}
 		err = xmp.Lightroom.parse(p)
 	case MwgRSNS, StDimNS, StAreaNS, AppleFiNS:
-		if xmp.Regions == nil {
-			var regions RegionInfo
-			err = regions.parse(p)
-			if err == nil {
-				xmp.Regions = &regions
-			}
-			break
-		}
 		err = xmp.Regions.parse(p)
 	default:
 		//fmt.Println(p, ns)
 		return
 	}
+	xmp.markParsed(p.Namespace())
 	if err != nil {
 		// The decoder is intentionally permissive:
 		// unknown/unhandled properties must not fail packet parsing.

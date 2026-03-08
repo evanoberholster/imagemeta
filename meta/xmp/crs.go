@@ -40,8 +40,8 @@ func (crs *CRS) parse(p property) (err error) {
 		crs.Sharpness = parseInt16(p.Value())
 	case AlreadyApplied:
 		crs.AlreadyApplied = parseBool(p.Value())
-	// Accepted for compatibility but intentionally not materialized in CRS.
-	// Return ErrPropertyNotSet so parseNamespace doesn't allocate CRS for ignored-only payloads.
+		// Accepted for compatibility but intentionally not materialized in CRS.
+		// Return ErrPropertyNotSet so ignored-only payloads keep CRS zero-valued.
 	case HueAdjustmentRed, HueAdjustmentOrange, HueAdjustmentYellow, HueAdjustmentGreen, HueAdjustmentAqua, HueAdjustmentBlue, HueAdjustmentPurple, HueAdjustmentMagenta:
 		return ErrPropertyNotSet
 	case SaturationAdjustmentRed, SaturationAdjustmentOrange, SaturationAdjustmentYellow, SaturationAdjustmentGreen, SaturationAdjustmentAqua, SaturationAdjustmentBlue, SaturationAdjustmentPurple, SaturationAdjustmentMagenta:

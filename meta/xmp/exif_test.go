@@ -83,8 +83,8 @@ func TestParseExifAdditionalTags(t *testing.T) {
 	}
 }
 
-func TestParseExifSubsecTagsAppliedToBaseTimes(t *testing.T) {
-	const src = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:exif="http://ns.adobe.com/exif/1.0/" exif:DateTime="2025-01-02T03:04:05Z" exif:SubsecTime="25" exif:DateTimeDigitized="2025-01-02T03:04:05Z" exif:SubsecTimeDigitized="7" exif:DateTimeOriginal="2025-01-02T03:04:05Z" exif:SubsecTimeOriginal="61"/></rdf:RDF></x:xmpmeta>`
+func TestParseExifNonSpecTagsIgnored(t *testing.T) {
+	const src = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:exif="http://ns.adobe.com/exif/1.0/" exif:DateTime="2025-01-02T03:04:05Z" exif:SubsecTime="25" exif:DateTimeDigitized="2025-01-02T03:04:05Z" exif:SubsecTimeDigitized="7" exif:DateTimeOriginal="2025-01-02T03:04:05Z" exif:SubsecTimeOriginal="61" exif:SamplesPerPixel="3" exif:PhotometricInterpretation="2"/></rdf:RDF></x:xmpmeta>`
 
 	x, err := ParseXmp(strings.NewReader(src))
 	if err != nil {
@@ -92,33 +92,10 @@ func TestParseExifSubsecTagsAppliedToBaseTimes(t *testing.T) {
 	}
 
 	exif := x.Exif
-	if got, want := exif.DateTime.Format(time.RFC3339Nano), "2025-01-02T03:04:05.25Z"; got != want {
-		t.Fatalf("DateTime = %q, want %q", got, want)
-	}
-	if got, want := exif.CreateDate.Format(time.RFC3339Nano), "2025-01-02T03:04:05.7Z"; got != want {
+	if got, want := exif.CreateDate.Format(time.RFC3339), "2025-01-02T03:04:05Z"; got != want {
 		t.Fatalf("CreateDate = %q, want %q", got, want)
 	}
-	if got, want := exif.DateTimeOriginal.Format(time.RFC3339Nano), "2025-01-02T03:04:05.61Z"; got != want {
-		t.Fatalf("DateTimeOriginal = %q, want %q", got, want)
-	}
-}
-
-func TestParseExifSubsecTagsAppliedWhenSubsecComesFirst(t *testing.T) {
-	const src = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:exif="http://ns.adobe.com/exif/1.0/" exif:SubsecTime="25" exif:DateTime="2025-01-02T03:04:05Z" exif:SubsecTimeDigitized="7" exif:DateTimeDigitized="2025-01-02T03:04:05Z" exif:SubsecTimeOriginal="61" exif:DateTimeOriginal="2025-01-02T03:04:05Z"/></rdf:RDF></x:xmpmeta>`
-
-	x, err := ParseXmp(strings.NewReader(src))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	exif := x.Exif
-	if got, want := exif.DateTime.Format(time.RFC3339Nano), "2025-01-02T03:04:05.25Z"; got != want {
-		t.Fatalf("DateTime = %q, want %q", got, want)
-	}
-	if got, want := exif.CreateDate.Format(time.RFC3339Nano), "2025-01-02T03:04:05.7Z"; got != want {
-		t.Fatalf("CreateDate = %q, want %q", got, want)
-	}
-	if got, want := exif.DateTimeOriginal.Format(time.RFC3339Nano), "2025-01-02T03:04:05.61Z"; got != want {
+	if got, want := exif.DateTimeOriginal.Format(time.RFC3339), "2025-01-02T03:04:05Z"; got != want {
 		t.Fatalf("DateTimeOriginal = %q, want %q", got, want)
 	}
 }

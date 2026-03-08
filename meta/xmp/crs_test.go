@@ -12,8 +12,8 @@ func TestParseCRSColorTemperature(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if x.CRS == nil {
-		t.Fatal("CRS is nil")
+	if !x.IsParsed(CrsNS) {
+		t.Fatal("CRS namespace not parsed")
 	}
 	if x.CRS.ColorTemperature != 5400 {
 		t.Fatalf("ColorTemperature = %d, want 5400", x.CRS.ColorTemperature)
@@ -28,9 +28,12 @@ func TestParseCRSHSLNoOpCompatibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	// HSL tags are accepted but intentionally not materialized.
-	// Since there are no materialized CRS fields, CRS should remain nil.
-	if x.CRS != nil {
-		t.Fatalf("CRS = %+v, want nil", x.CRS)
+	// Since there are no materialized CRS fields, CRS should remain zero-valued.
+	if !x.IsParsed(CrsNS) {
+		t.Fatal("CRS namespace not marked as present")
+	}
+	if x.CRS != (CRS{}) {
+		t.Fatalf("CRS = %+v, want zero", x.CRS)
 	}
 }
 
@@ -41,8 +44,8 @@ func TestParseCRSNoOpWithMaterializedField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if x.CRS == nil {
-		t.Fatal("CRS is nil")
+	if !x.IsParsed(CrsNS) {
+		t.Fatal("CRS namespace not parsed")
 	}
 	if x.CRS.ColorTemperature != 5600 {
 		t.Fatalf("ColorTemperature = %d, want 5600", x.CRS.ColorTemperature)

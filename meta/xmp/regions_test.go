@@ -65,8 +65,8 @@ func TestParseMWGRegions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Regions == nil {
-		t.Fatal("Regions is nil")
+	if !got.IsParsed(MwgRSNS) {
+		t.Fatal("Regions namespace not parsed")
 	}
 
 	if got.Regions.AppliedToDimensions.H != 2320 || got.Regions.AppliedToDimensions.W != 3088 || got.Regions.AppliedToDimensions.Unit != "pixel" {
@@ -135,8 +135,8 @@ func TestParseMWGRegionPixelAreaScaling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Regions == nil {
-		t.Fatal("Regions is nil")
+	if !got.IsParsed(MwgRSNS) {
+		t.Fatal("Regions namespace not parsed")
 	}
 	if len(got.Regions.RegionList) != 1 {
 		t.Fatalf("len(RegionList) = %d", len(got.Regions.RegionList))
