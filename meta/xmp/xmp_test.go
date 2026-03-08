@@ -25,8 +25,8 @@ func TestParseXMPTextFixtures(t *testing.T) {
 			name: "acr sidecar",
 			file: "acr_sidecar.xmp",
 			assert: func(t *testing.T, x XMP) {
-				if x.CRS == nil {
-					t.Fatal("CRS is nil")
+				if !x.IsParsed(CrsNS) {
+					t.Fatal("CRS namespace not parsed")
 				}
 				if x.CRS.RawFileName != "IMG_9620.CR2" {
 					t.Fatalf("CRS.RawFileName = %q", x.CRS.RawFileName)
@@ -61,8 +61,8 @@ func TestParseXMPTextFixtures(t *testing.T) {
 				if len(x.DC.Title) == 0 {
 					t.Fatal("DC.Title empty")
 				}
-				if x.MM == nil {
-					t.Fatal("MM is nil")
+				if !x.IsParsed(XmpMMNS) {
+					t.Fatal("MM namespace not parsed")
 				}
 				assertApproxFloat64(t, x.Exif.ExposureTime.Float64(), 0.004, 0.000001, "Exif.ExposureTime")
 				assertApproxFloat64(t, float64(x.Exif.Aperture), 3.2, 0.0001, "Exif.FNumber")
@@ -81,8 +81,8 @@ func TestParseXMPTextFixtures(t *testing.T) {
 			name: "lightroom sidecar",
 			file: "lightroom_sidecar.xmp",
 			assert: func(t *testing.T, x XMP) {
-				if x.CRS == nil {
-					t.Fatal("CRS is nil")
+				if !x.IsParsed(CrsNS) {
+					t.Fatal("CRS namespace not parsed")
 				}
 				if x.CRS.RawFileName != "_MG_1563.CR2" {
 					t.Fatalf("CRS.RawFileName = %q", x.CRS.RawFileName)
@@ -105,8 +105,8 @@ func TestParseXMPTextFixtures(t *testing.T) {
 				if x.Basic.Toolkit == "" {
 					t.Fatal("Basic.Toolkit empty")
 				}
-				if x.Photoshop == nil {
-					t.Fatal("Photoshop is nil")
+				if !x.IsParsed(PhotoshopNS) {
+					t.Fatal("Photoshop namespace not parsed")
 				}
 				if x.Photoshop.DateCreated.IsZero() || x.Photoshop.SidecarForExtension != "CR2" || x.Photoshop.EmbeddedXMPDigest == "" {
 					t.Fatalf("Photoshop = %+v", x.Photoshop)
@@ -114,14 +114,14 @@ func TestParseXMPTextFixtures(t *testing.T) {
 				if x.CRS.WhiteBalance != "As Shot" || x.CRS.Sharpness != 40 || x.CRS.Saturation != 0 {
 					t.Fatalf("CRS = %+v", x.CRS)
 				}
-				if x.MM == nil {
-					t.Fatal("MM is nil")
+				if !x.IsParsed(XmpMMNS) {
+					t.Fatal("MM namespace not parsed")
 				}
 				if len(x.MM.History) == 0 || x.MM.HistoryAction != "saved" || x.MM.HistorySoftwareAgent == "" {
 					t.Fatalf("MM history = %+v", x.MM)
 				}
-				if x.Lightroom == nil {
-					t.Fatal("Lightroom is nil")
+				if !x.IsParsed(LrNS) {
+					t.Fatal("Lightroom namespace not parsed")
 				}
 				if len(x.Lightroom.HierarchicalSubject) == 0 {
 					t.Fatal("Lightroom.HierarchicalSubject empty")
@@ -163,8 +163,8 @@ func TestParseIntegratesJPEG(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if x.CRS == nil {
-		t.Fatal("CRS is nil")
+	if !x.IsParsed(CrsNS) {
+		t.Fatal("CRS namespace not parsed")
 	}
 	if x.CRS.RawFileName != "IMG_9620.CR2" {
 		t.Fatalf("CRS.RawFileName = %q", x.CRS.RawFileName)
@@ -194,8 +194,8 @@ func TestParseIntegratesISOBMFF(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if x.CRS == nil {
-				t.Fatal("CRS is nil")
+			if !x.IsParsed(CrsNS) {
+				t.Fatal("CRS namespace not parsed")
 			}
 			if x.CRS.RawFileName != "IMG_9620.CR2" {
 				t.Fatalf("CRS.RawFileName = %q", x.CRS.RawFileName)
@@ -263,12 +263,18 @@ func TestParseLeavesMissingNamespacesZero(t *testing.T) {
 		!reflect.DeepEqual(x.Aux, Aux{}) ||
 		!reflect.DeepEqual(x.Tiff, Tiff{}) ||
 		!reflect.DeepEqual(x.DC, DublinCore{}) ||
-		x.CRS != nil ||
-		x.MM != nil ||
-		x.Photoshop != nil ||
-		x.DynamicMedia != nil ||
-		x.Lightroom != nil ||
-		x.Regions != nil {
+		!reflect.DeepEqual(x.CRS, CRS{}) ||
+		!reflect.DeepEqual(x.MM, XMPMM{}) ||
+		!reflect.DeepEqual(x.Photoshop, Photoshop{}) ||
+		!reflect.DeepEqual(x.DynamicMedia, DynamicMedia{}) ||
+		!reflect.DeepEqual(x.Lightroom, Lightroom{}) ||
+		!reflect.DeepEqual(x.Regions, RegionInfo{}) ||
+		x.IsParsed(CrsNS) ||
+		x.IsParsed(XmpMMNS) ||
+		x.IsParsed(PhotoshopNS) ||
+		x.IsParsed(XmpDMNS) ||
+		x.IsParsed(LrNS) ||
+		x.IsParsed(MwgRSNS) {
 		t.Fatalf("unexpected non-zero namespaces: %+v", x)
 	}
 }
@@ -311,20 +317,20 @@ func TestParseHandlesXPacketAndDerivedFrom(t *testing.T) {
 	if x.Basic.Toolkit != "Adobe XMP Core 7.0-c000" {
 		t.Fatalf("Basic.Toolkit = %q", x.Basic.Toolkit)
 	}
-	if x.DynamicMedia == nil {
-		t.Fatal("DynamicMedia is nil")
+	if !x.IsParsed(XmpDMNS) {
+		t.Fatal("DynamicMedia namespace not parsed")
 	}
 	if x.DynamicMedia.Pick != 1 || !x.DynamicMedia.Good {
 		t.Fatalf("DynamicMedia = %+v", x.DynamicMedia)
 	}
-	if x.MM == nil {
-		t.Fatal("MM is nil")
+	if !x.IsParsed(XmpMMNS) {
+		t.Fatal("MM namespace not parsed")
 	}
 	if x.MM.DerivedFromDocumentID.String() == "" || x.MM.DerivedFromOriginalDocumentID.String() == "" {
 		t.Fatalf("DerivedFrom = %+v", x.MM)
 	}
-	if x.Lightroom == nil {
-		t.Fatal("Lightroom is nil")
+	if !x.IsParsed(LrNS) {
+		t.Fatal("Lightroom namespace not parsed")
 	}
 	if len(x.Lightroom.WeightedFlatSubject) != 1 || x.Lightroom.WeightedFlatSubject[0] != "Wedding" {
 		t.Fatalf("Lightroom.WeightedFlatSubject = %v", x.Lightroom.WeightedFlatSubject)

@@ -28,10 +28,9 @@ type Flash struct {
 //
 // This implementation is based on https://exiftool.org/TagNames/XMP.html#exif.
 type Exif struct {
-	ExifVersion      string // Often denfined as 0221 -> Exif 2.21
+	ExifVersion      string // Often defined as 0221 -> Exif 2.21
 	PixelXDimension  uint32
 	PixelYDimension  uint32
-	DateTime         time.Time
 	DateTimeOriginal time.Time
 	CreateDate       time.Time // Exif:DateTimeDigitized
 	ExposureTime     meta.Rational32
@@ -109,10 +108,8 @@ type Exif struct {
 	OECFNames                        string
 	OECFRows                         uint16
 	OECFValues                       string
-	PhotometricInterpretation        uint16
 	RecommendedExposureIndex         uint32
 	RelatedSoundFile                 string
-	SamplesPerPixel                  uint16
 	SensingMethod                    uint16
 	Saturation                       uint8
 	Contrast                         uint8
@@ -145,9 +142,6 @@ type Exif struct {
 	LensModel                        string
 	LensInfo                         string
 	LensSerialNumber                 string
-	SubsecTime                       string
-	SubsecTimeDigitized              string
-	SubsecTimeOriginal               string
 }
 
 func (exif *Exif) parse(p property) (err error) {
@@ -158,12 +152,10 @@ func (exif *Exif) parse(p property) (err error) {
 		exif.PixelXDimension = parseUint32(p.Value())
 	case PixelYDimension:
 		exif.PixelYDimension = parseUint32(p.Value())
-	case DateTime:
-		err = parseDateWithSubseconds(&exif.DateTime, p.Value(), exif.SubsecTime)
 	case DateTimeDigitized:
-		err = parseDateWithSubseconds(&exif.CreateDate, p.Value(), exif.SubsecTimeDigitized)
+		exif.CreateDate, err = parseDate(p.Value())
 	case DateTimeOriginal:
-		err = parseDateWithSubseconds(&exif.DateTimeOriginal, p.Value(), exif.SubsecTimeOriginal)
+		exif.DateTimeOriginal, err = parseDate(p.Value())
 	case ApertureValue:
 		exif.ApertureValue = meta.Aperture(parseApexAperture(p.Value()))
 	case ExposureTime:
@@ -348,14 +340,10 @@ func (exif *Exif) parse(p property) (err error) {
 		exif.OECFRows = parseUint16(p.Value())
 	case OECFValues:
 		exif.OECFValues = parseString(p.Value())
-	case PhotometricInterpretation:
-		exif.PhotometricInterpretation = parseUint16(p.Value())
 	case RecommendedExposureIndex:
 		exif.RecommendedExposureIndex = parseUint32(p.Value())
 	case RelatedSoundFile:
 		exif.RelatedSoundFile = parseString(p.Value())
-	case SamplesPerPixel:
-		exif.SamplesPerPixel = parseUint16(p.Value())
 	case SensingMethod:
 		exif.SensingMethod = parseUint16(p.Value())
 	case Saturation:
@@ -437,12 +425,6 @@ func (exif *Exif) parse(p property) (err error) {
 		exif.LensSerialNumber = parseString(p.Value())
 	case SerialNumber:
 		exif.BodySerialNumber = parseString(p.Value())
-	case SubsecTime:
-		parseSubsecondsField(&exif.SubsecTime, p.Value(), &exif.DateTime)
-	case SubsecTimeDigitized:
-		parseSubsecondsField(&exif.SubsecTimeDigitized, p.Value(), &exif.CreateDate)
-	case SubsecTimeOriginal:
-		parseSubsecondsField(&exif.SubsecTimeOriginal, p.Value(), &exif.DateTimeOriginal)
 	case Fired:
 		exif.Flash.Fired = parseBool(p.Value())
 	case Return:
@@ -592,64 +574,4 @@ func parseGPSRef(buf []byte, kind gpsRefKind) meta.GPSRef {
 		}
 	}
 	return meta.GPSRefUnknown
-}
-
-func parseDateWithSubseconds(target *time.Time, buf []byte, subsec string) error {
-	t, err := parseDate(buf)
-	if err != nil {
-		return err
-	}
-	*target = addSubseconds(t, subsec)
-	return nil
-}
-
-func parseSubsecondsField(subsec *string, buf []byte, target *time.Time) {
-	*subsec = parseString(buf)
-	*target = addSubseconds(*target, *subsec)
-}
-
-func addSubseconds(base time.Time, subsec string) time.Time {
-	if base.IsZero() || len(subsec) == 0 {
-		return base
-	}
-
-	ns, ok := parseSubsecondNanoseconds(subsec)
-	if !ok || ns == 0 {
-		return base
-	}
-
-	return base.Add(time.Duration(ns) * time.Nanosecond)
-}
-
-func parseSubsecondNanoseconds(subsec string) (int64, bool) {
-	var value int64
-	digits := 0
-
-	for i := 0; i < len(subsec); i++ {
-		c := subsec[i]
-		if c < '0' || c > '9' {
-			if digits > 0 {
-				break
-			}
-			continue
-		}
-
-		if digits < 9 {
-			value = (value * 10) + int64(c-'0')
-		}
-		digits++
-	}
-
-	if digits == 0 {
-		return 0, false
-	}
-	if digits > 9 {
-		digits = 9
-	}
-	for digits < 9 {
-		value *= 10
-		digits++
-	}
-
-	return value, true
 }
