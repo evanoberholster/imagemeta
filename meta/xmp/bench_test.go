@@ -66,6 +66,6 @@ func BenchmarkParseAuto(b *testing.B) {
 // BenchmarkParseXmp/dng_embedded.xmp-2        	  249444	      4751 ns/op	     393 B/op	      20 allocs/op
 // BenchmarkParseXmp/lightroom_sidecar.xmp-2   	   44100	     25342 ns/op	    2577 B/op	      76 allocs/op
 
-// BenchmarkParseXmp/acr_sidecar.xmp-2         	  525514	      2291 ns/op	      88 B/op	       3 allocs/op
-// BenchmarkParseXmp/dng_embedded.xmp-2        	  271130	      4466 ns/op	     392 B/op	      19 allocs/op
-// BenchmarkParseXmp/lightroom_sidecar.xmp-2   	   49678	     25153 ns/op	    1720 B/op	      59 allocs/op
+// BenchmarkParseAuto/acr_sidecar.xmp-2        	  445069	      2551 ns/op	      88 B/op	       3 allocs/op
+// BenchmarkParseAuto/dng_embedded.xmp-2       	  242296	      4633 ns/op	     393 B/op	      19 allocs/op
+// BenchmarkParseAuto/lightroom_sidecar.xmp-2      50900	     26083 ns/op	    1721 B/op	      59 allocs/op

@@ -101,26 +101,44 @@ func TestParseDublinCoreDateFormats(t *testing.T) {
 		{in: "2024-07", want: time.Date(2024, time.July, 1, 0, 0, 0, 0, time.UTC)},
 		{in: "2024-07-31", want: time.Date(2024, time.July, 31, 0, 0, 0, 0, time.UTC)},
 		{in: "2024-07-31T14:30", want: time.Date(2024, time.July, 31, 14, 30, 0, 0, time.UTC)},
-		{in: "2024-07-31 14:30:45", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.UTC)},
+		{in: "2024-07-31T14:30:45", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.UTC)},
 		{in: "2024-07-31T14:30:45.123", want: time.Date(2024, time.July, 31, 14, 30, 45, 123000000, time.UTC)},
-		// Exif-style date without explicit offset is interpreted in local time.
-		{in: "2024:07:31 14:30:45", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.Local)},
-		{in: "2024-07-31T14:30:45+02:00", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.FixedZone("", 2*3600))},
-		{in: "2024-07-31T14:30:45+0200", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.FixedZone("", 2*3600))},
-		{in: "2024-07-31 14:30:45-05:00", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.FixedZone("", -5*3600))},
-		{in: "2024-07-31T14:30:45.123456789Z", want: time.Date(2024, time.July, 31, 14, 30, 45, 123456789, time.UTC)},
-		{in: "  2024-07-31T14:30:45Z\t", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.UTC)},
-		{in: "\n2024:07:31 14:30:45  ", want: time.Date(2024, time.July, 31, 14, 30, 45, 0, time.Local)},
+		// Timezone-bearing inputs below are real values from meta/xmp/test fixtures.
+		{in: "2007-08-16T11:57:04+01:00", want: time.Date(2007, time.August, 16, 11, 57, 4, 0, time.FixedZone("", 1*3600))},
+		{in: "2012-10-17T13:07:01+03:00", want: time.Date(2012, time.October, 17, 13, 7, 1, 0, time.FixedZone("", 3*3600))},
+		{in: "2021-02-03T17:34:04+08:00", want: time.Date(2021, time.February, 3, 17, 34, 4, 0, time.FixedZone("", 8*3600))},
+		{in: "2024-11-02T12:35:44.40-04:00", want: time.Date(2024, time.November, 2, 12, 35, 44, 400000000, time.FixedZone("", -4*3600))},
+		{in: "2026-02-27T16:53:33-08:00", want: time.Date(2026, time.February, 27, 16, 53, 33, 0, time.FixedZone("", -8*3600))},
+		{in: "2021-01-10T09:30:34.576Z", want: time.Date(2021, time.January, 10, 9, 30, 34, 576000000, time.UTC)},
+		{in: "  2003-02-04T08:06:56Z\t", want: time.Date(2003, time.February, 4, 8, 6, 56, 0, time.UTC)},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			got, ok := parseDateDublinCore([]byte(tt.in))
-			if !ok {
-				t.Fatalf("parseDateDublinCore(%q) failed", tt.in)
+			got, err := parseDate([]byte(tt.in))
+			if err != nil {
+				t.Fatalf("parseDate(%q) failed: %v", tt.in, err)
 			}
 			if !got.Equal(tt.want) {
-				t.Fatalf("parseDateDublinCore(%q) = %s, want %s", tt.in, got.Format(time.RFC3339Nano), tt.want.Format(time.RFC3339Nano))
+				t.Fatalf("parseDate(%q) = %s, want %s", tt.in, got.Format(time.RFC3339Nano), tt.want.Format(time.RFC3339Nano))
+			}
+		})
+	}
+}
+
+func TestParseDateRejectsNonCIPAFormats(t *testing.T) {
+	tests := []string{
+		"2024:07:31 14:30:45",       // Exif-style separators
+		"2024-07-31 14:30:45",       // space instead of T
+		"2024-07-31T14:30:45+0200",  // offset must be +hh:mm
+		"2024-07-31T14:30:45+02",    // missing minute component
+		"2024-07-31T14:30:45.123Z0", // trailing data
+	}
+
+	for _, in := range tests {
+		t.Run(in, func(t *testing.T) {
+			if _, err := parseDate([]byte(in)); err == nil {
+				t.Fatalf("parseDate(%q) unexpectedly succeeded", in)
 			}
 		})
 	}

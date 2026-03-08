@@ -38,7 +38,7 @@ func (dc *DublinCore) parse(p property) (err error) {
 	case Date:
 		// ExifTool-style flattening: keep the first valid dc:date value.
 		if dc.Date.IsZero() {
-			if t, ok := parseDateDublinCore(p.Value()); ok {
+			if t, err := parseDate(p.Value()); err == nil {
 				dc.Date = t
 			}
 		}
