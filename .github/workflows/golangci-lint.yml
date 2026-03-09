@@ -1,64 +1,58 @@
-name: golangci
+name: golangci-lint
+
 on:
   push:
-    tags:
-      - v*
     branches:
       - master
+      - main
+    tags:
+      - v*
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - converted_to_draft
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: golangci-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  golangci:
-    name: lint
+  lint:
+    name: Lint and Security
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go:
-          - '1.x'
-          - '1.18'
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/setup-go@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          go-version: ${{ matrix.go }}
-      - uses: actions/checkout@v3
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: latest
+          go-version-file: go.mod
+          cache: true
 
-      - run: "go test ./... -coverprofile=covprofile.cov ./..."
+      - name: Download modules
+        run: go mod download
 
-      - name: Send coverage
-        uses: shogo82148/actions-goveralls@v1
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
-          path-to-profile: covprofile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
+          version: v1.64.8
+          only-new-issues: ${{ github.event_name == 'pull_request' }}
+          args: --config=golangci.yml --timeout=5m
 
-          # Optional: working directory, useful for monorepos
-          # working-directory: somedir
-
-          # Optional: golangci-lint command line arguments.
-          # args: --issues-exit-code=0
-
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          # skip-cache: true
-
-          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
-          # skip-pkg-cache: true
-
-          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
-          # skip-build-cache: true
- # notifies that all test jobs are finished.
-  finish:
-    needs: golangci
-    runs-on: ubuntu-latest
-    steps:
-      - uses: shogo82148/actions-goveralls@v1
-        with:
-          parallel-finished: true
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
