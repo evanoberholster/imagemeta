@@ -33,8 +33,19 @@ var readerPool = sync.Pool{
 	New: func() interface{} { return bufio.NewReaderSize(nil, 4*1024) },
 }
 
+func getPooledReader() (*bufio.Reader, error) {
+	rr, ok := readerPool.Get().(*bufio.Reader)
+	if !ok || rr == nil {
+		return nil, errors.New("readerPool returned non-*bufio.Reader")
+	}
+	return rr, nil
+}
+
 func Decode(r io.ReadSeeker) (exif2.Exif, error) {
-	rr := readerPool.Get().(*bufio.Reader)
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif2.Exif{}, err
+	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
@@ -86,7 +97,10 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 
 // DecodeCR3 decodes a CR3 file from an io.Reader returning Exif or an error.
 func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
-	rr := readerPool.Get().(*bufio.Reader)
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif2.Exif{}, err
+	}
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
@@ -106,7 +120,10 @@ func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
 
 // DecodeTiff decodes a Tiff/DNG file from an io.Reader returning Exif or an error.
 func DecodeTiff(r io.ReadSeeker) (exif2.Exif, error) {
-	rr := readerPool.Get().(*bufio.Reader)
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif2.Exif{}, err
+	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
@@ -141,7 +158,10 @@ func DecodeHeif(r io.ReadSeeker) (exif2.Exif, error) {
 
 // DecodeJPEG decodes a JPEG file from an io.Reader returning Exif or an error.
 func DecodeJPEG(r io.ReadSeeker) (exif2.Exif, error) {
-	rr := readerPool.Get().(*bufio.Reader)
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif2.Exif{}, err
+	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
@@ -182,7 +202,10 @@ func DecodePng(r io.ReadSeeker) (exif2.Exif, error) {
 
 // PreviewCR3 previews a CR3 file from an io.Reader returning preview image binary or an error.
 func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
-	rr := readerPool.Get().(*bufio.Reader)
+	rr, err := getPooledReader()
+	if err != nil {
+		return nil, err
+	}
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
