@@ -262,12 +262,13 @@ func (ie ilocEntry) MarshalZerologObject(e *zerolog.Event) {
 
 // offsetLength contains an offset and length
 type offsetLength struct {
-	offset, length uint64
+	offset uint64
+	length int
 }
 
 // MarshalZerologObject is a zerolog interface for logging
 func (ol offsetLength) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint64("length", ol.length).Uint64("offset", ol.offset)
+	e.Int("length", ol.length).Uint64("offset", ol.offset)
 }
 
 // readIloc parses item location extents and stores first-extent offsets for
@@ -299,6 +300,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 			if readErr != nil {
 				return readErr
 			}
+			//nolint:gosec // G115: construction_method is the low 4 bits per ISO BMFF iloc format.
 			ent.constructionMethod = uint8(cmeth & 0x0f)
 		}
 		ent.dataReferenceIndex, err = b.readUint16()
@@ -335,9 +337,13 @@ func (r *Reader) readIloc(b *box) (err error) {
 			if j == 0 {
 				offset, ok := r.resolveIlocExtentOffset(ent, extentOffset)
 				if ok {
+					length, convErr := uint64ToInt(extentLength)
+					if convErr != nil {
+						return convErr
+					}
 					ent.firstExtent = offsetLength{
 						offset: offset,
-						length: extentLength,
+						length: length,
 					}
 					firstExtentResolved = true
 				}
@@ -347,7 +353,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 			logDebug().
 				Uint32("itemID", uint32(ent.id)).
 				Uint64("offset", ent.firstExtent.offset).
-				Uint64("length", ent.firstExtent.length).
+				Int("length", ent.firstExtent.length).
 				Uint16("count", ent.count).
 				Uint16("dri", ent.dataReferenceIndex).
 				Uint8("cmeth", ent.constructionMethod).
@@ -390,7 +396,11 @@ func (r *Reader) resolveIlocExtentOffset(ent ilocEntry, extentOffset uint64) (ui
 			}
 			return 0, false
 		}
-		if rel > r.heic.idatData.length {
+		relInt, err := uint64ToInt(rel)
+		if err != nil {
+			return 0, false
+		}
+		if relInt > r.heic.idatData.length {
 			return 0, false
 		}
 		if r.heic.idatData.offset > ^uint64(0)-rel {

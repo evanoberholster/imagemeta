@@ -59,7 +59,7 @@ func logInfoBox(b *box) *zerolog.Event {
 }
 
 func (b *box) log(ev *zerolog.Event) {
-	ev.Str("BoxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size)
+	ev.Str("BoxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
 	if b.flags != 0 {
 		ev.Object("flags", b.flags)
 	}
@@ -93,7 +93,7 @@ func (c cctpBox) MarshalZerologArray(a *zerolog.Array) {
 
 // MarshalZerologObject is a zerolog interface for logging
 func (b box) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size)
+	e.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
 	if b.flags != 0 {
 		e.Object("flags", b.flags)
 	}
