@@ -24,7 +24,7 @@ func (basic *Basic) parse(p property) (err error) {
 	case ModifyDate:
 		basic.ModifyDate, err = parseDate(p.Value())
 	case Rating:
-		basic.Rating = int8(parseUint8(p.Value()))
+		basic.Rating = parseInt8(p.Value())
 	case XMPToolkit:
 		basic.Toolkit = parseString(p.Value())
 	default:

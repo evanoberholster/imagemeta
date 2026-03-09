@@ -23,7 +23,7 @@ func (r *Reader) ReadMetadata() (err error) {
 	for {
 		b, readErr := r.readBox()
 		if readErr != nil {
-			if readErr == io.EOF {
+			if errors.Is(readErr, io.EOF) {
 				return io.EOF
 			}
 			return fmt.Errorf("ReadMetadata: %w", readErr)

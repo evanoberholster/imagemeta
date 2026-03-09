@@ -16,7 +16,7 @@ const (
 )
 
 // NewFocalLength returns a new FocalLength by dividing
-// "n" numerator and "d" demoninator
+// "n" numerator and "d" denominator
 func NewFocalLength(n, d uint32) FocalLength {
 	return FocalLength(float32(n) / float32(d))
 }
@@ -55,7 +55,7 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 type Aperture float32
 
 // NewAperture returns a new Aperture by dividing the
-// "n" numerator over the "d" demoninator
+// "n" numerator over the "d" denominator
 func NewAperture(n uint32, d uint32) Aperture {
 	return Aperture(float32(n) / float32(d))
 }
@@ -636,7 +636,7 @@ func (c Compression) String() string {
 	case 65535:
 		return "Pentax PEF Compressecase: "
 	default:
-		return "Unkown"
+		return "Unknown"
 	}
 }
 

@@ -42,10 +42,13 @@ func TestParseFastDateUTCOffsetUsesTimeUTC(t *testing.T) {
 
 func TestParseFastDateWithFallbackHook(t *testing.T) {
 	calls := 0
-	_, _ = parseFastDateWithFallback([]byte("not-a-date"), func(string) (time.Time, error) {
+	_, err := parseFastDateWithFallback([]byte("not-a-date"), func(string) (time.Time, error) {
 		calls++
 		return time.Time{}, nil
 	})
+	if err != nil {
+		t.Fatalf("parseFastDateWithFallback returned error: %v", err)
+	}
 
 	if calls != 1 {
 		t.Fatalf("fallback called %d times, want 1", calls)

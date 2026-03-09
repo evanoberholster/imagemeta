@@ -35,11 +35,13 @@ func IdentifyProperty(space []byte, name []byte) Property {
 
 // Namespace returns the property's XMP namespace.
 func (p Property) Namespace() Namespace {
+	//nolint:gosec // upper 8 bits are masked before narrowing.
 	return Namespace((uint32(p) >> 16) & 0xFF)
 }
 
 // Name returns the property's XMP local-name.
 func (p Property) Name() Name {
+	//nolint:gosec // lower 16 bits are masked before narrowing.
 	return Name(uint32(p) & 0xFFFF)
 }
 

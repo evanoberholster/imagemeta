@@ -81,7 +81,7 @@ func parseDublinCoreAltProperty(valueDst *[]string, langDst *[]string, p propert
 // DublinCore is the "dc:" namespace often seen in xmp meta.
 // https://en.wikipedia.org/wiki/Dublin_Core
 // http://dublincore.org
-// For the XMP flavour, see XMP section 8.3
+// For the XMP flavor, see XMP section 8.3.
 //
 // xmlns:dc="http://purl.org/dc/elements/1.1/"
 type DublinCore struct {

@@ -174,8 +174,9 @@ func (r *Reader) readIref(b *box) (err error) {
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		if isSupportedItemReferenceType(inner.boxType) {
-			if err := r.readIrefEntry(inner, itemIDSize); err != nil {
-				return err
+			entryErr := r.readIrefEntry(inner, itemIDSize)
+			if entryErr != nil {
+				return entryErr
 			}
 		}
 		if logLevelInfo() {
@@ -264,9 +265,9 @@ func (r *Reader) readIpco(b *box) (err error) {
 	err = readContainerBoxes(b, func(inner *box) error {
 		prop := itemProperty{boxType: inner.boxType}
 		if inner.boxType == typeIspe {
-			width, height, err := readIspeProperty(inner)
-			if err != nil {
-				return err
+			width, height, propErr := readIspeProperty(inner)
+			if propErr != nil {
+				return propErr
 			}
 			prop.width = width
 			prop.height = height
@@ -330,8 +331,8 @@ func (r *Reader) readIpma(b *box) (err error) {
 				raw = uint16(v8)
 			}
 
-			essential := false
-			propertyIndex := uint16(0)
+			var essential bool
+			var propertyIndex uint16
 			if extendedIndex {
 				essential = raw&0x8000 != 0
 				propertyIndex = raw & 0x7fff

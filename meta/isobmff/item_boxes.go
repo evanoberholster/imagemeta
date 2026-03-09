@@ -99,9 +99,9 @@ func (r *Reader) readInfe(b *box) (err error) {
 		needContentType := r.hasGoal(metadataKindXMP) || logLevelDebug()
 		if needContentType {
 			var contentTypeFixed [mimeContentTypeMaxLen]byte
-			buf, err := b.readCStringBytes(contentTypeFixed[:0], mimeContentTypeMaxLen)
-			if err != nil {
-				return err
+			buf, readErr := b.readCStringBytes(contentTypeFixed[:0], mimeContentTypeMaxLen)
+			if readErr != nil {
+				return readErr
 			}
 			if r.hasGoal(metadataKindXMP) && isXMPMIMETypeBytes(buf) {
 				r.heic.xml.id = id

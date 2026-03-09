@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ func benchmarkParseFromFile(b *testing.B, packet string, parseFn func(io.Reader)
 			b.Fatalf("seek %s: %v", packet, err)
 		}
 
-		if err := parseFn(r); err != nil && err != io.EOF {
+		if err := parseFn(r); err != nil && !errors.Is(err, io.EOF) {
 			b.Fatalf("parse %s: %v", packet, err)
 		}
 	}
@@ -40,7 +41,6 @@ func benchmarkParseFromFile(b *testing.B, packet string, parseFn func(io.Reader)
 
 func BenchmarkParseXmp(b *testing.B) {
 	for _, packet := range benchmarkPackets {
-		packet := packet
 		b.Run(filepath.Base(packet), func(b *testing.B) {
 			benchmarkParseFromFile(b, packet, func(r io.Reader) error {
 				_, err := ParseXmp(r)
@@ -52,7 +52,6 @@ func BenchmarkParseXmp(b *testing.B) {
 
 func BenchmarkParseAuto(b *testing.B) {
 	for _, packet := range benchmarkPackets {
-		packet := packet
 		b.Run(filepath.Base(packet), func(b *testing.B) {
 			benchmarkParseFromFile(b, packet, func(r io.Reader) error {
 				_, err := Parse(r)

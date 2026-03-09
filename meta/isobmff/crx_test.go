@@ -165,7 +165,7 @@ func TestReadMetadataExifCallbackEOFFatal(t *testing.T) {
 	if err := r.ReadFTYP(); err != nil {
 		t.Fatalf("ReadFTYP() error: %v", err)
 	}
-	if err := r.ReadMetadata(); err != io.EOF {
+	if err := r.ReadMetadata(); !errors.Is(err, io.EOF) {
 		t.Fatalf("ReadMetadata() error: %v, want io.EOF", err)
 	}
 }
@@ -188,8 +188,8 @@ func TestReadMetadataCR3THMBPreviewCallbackNotInvoked(t *testing.T) {
 	var previewCalls int
 	r := NewReader(bytes.NewReader(file), nil, nil, func(rr io.Reader, _ meta.PreviewHeader) error {
 		previewCalls++
-		_, _ = io.Copy(io.Discard, rr)
-		return nil
+		_, err := io.Copy(io.Discard, rr)
+		return err
 	})
 	t.Cleanup(r.Close)
 
@@ -259,7 +259,7 @@ func TestReadMetadataHEIFXMPFromMdatCallback(t *testing.T) {
 	}
 	for {
 		err := r.ReadMetadata()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -475,18 +475,18 @@ func TestReadMetadataCR3StopsAfterExifXMPAndSinglePreview(t *testing.T) {
 	r := NewReader(bytes.NewReader(file),
 		func(rr io.Reader, _ meta.ExifHeader) error {
 			exifCalls++
-			_, _ = io.Copy(io.Discard, rr)
-			return nil
+			_, err := io.Copy(io.Discard, rr)
+			return err
 		},
 		func(rr io.Reader, _ XPacketHeader) error {
 			xmpCalls++
-			_, _ = io.Copy(io.Discard, rr)
-			return nil
+			_, err := io.Copy(io.Discard, rr)
+			return err
 		},
 		func(rr io.Reader, _ meta.PreviewHeader) error {
 			previewCalls++
-			_, _ = io.Copy(io.Discard, rr)
-			return nil
+			_, err := io.Copy(io.Discard, rr)
+			return err
 		},
 	)
 	t.Cleanup(r.Close)
@@ -664,7 +664,7 @@ func TestReadMetadataHEIFPreviewNotExtracted(t *testing.T) {
 	}
 	for {
 		err := r.ReadMetadata()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

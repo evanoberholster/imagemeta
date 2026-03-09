@@ -77,6 +77,14 @@ var readerPool = sync.Pool{
 	New: func() any { return bufio.NewReaderSize(nil, bufReaderSize) },
 }
 
+func getPooledBufioReader() *bufio.Reader {
+	br, ok := readerPool.Get().(*bufio.Reader)
+	if !ok || br == nil {
+		return bufio.NewReaderSize(nil, bufReaderSize)
+	}
+	return br
+}
+
 // Reader incrementally scans ISOBMFF containers and dispatches metadata payloads.
 type Reader struct {
 	source io.Reader
@@ -114,7 +122,7 @@ func newReader(r io.Reader) Reader {
 		return newReaderWithBufio(br, r, false)
 	}
 
-	br := readerPool.Get().(*bufio.Reader)
+	br := getPooledBufioReader()
 	br.Reset(r)
 	return newReaderWithBufio(br, r, true)
 }
