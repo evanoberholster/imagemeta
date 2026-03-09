@@ -317,10 +317,8 @@ func seekExifTIFFHeader(b *box) error {
 		}
 
 		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
-		offset, convErr := uint64ToInt(uint64(bmffEndian.Uint32(buf[:4])))
-		if convErr != nil {
-			return nil
-		}
+		offset := int(bmffEndian.Uint32(buf[:4]))
+
 		if offset > b.remain-8 {
 			return nil
 		}
