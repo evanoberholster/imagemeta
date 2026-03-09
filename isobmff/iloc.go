@@ -136,6 +136,8 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 
 func uintN(size uint8, buf []byte) uint64 {
 	switch size {
+	case 0:
+		return 0
 	case 1:
 		return uint64(buf[0])
 	case 2:
