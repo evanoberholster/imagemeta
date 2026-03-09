@@ -71,8 +71,11 @@ func buildPRVWInnerBox(b *box) (inner box, err error) {
 
 	inner.reader = b.reader
 	inner.outer = b
-	inner.offset = b.offset + b.size - b.remain
-	inner.size = int64(bmffEndian.Uint32(buf[:4]))
+	inner.offset = b.offset + int64(b.size-b.remain)
+	inner.size, err = uint64ToInt(uint64(bmffEndian.Uint32(buf[:4])))
+	if err != nil {
+		return inner, err
+	}
 	inner.remain = inner.size
 	inner.boxType = boxTypeFromBuf(buf[4:8])
 	if inner.boxType != typePRVW {
@@ -104,7 +107,7 @@ func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 	if err != nil {
 		return prvw, fmt.Errorf("parsePreviewBoxDiscard: %w", ErrBufLength)
 	}
-	if uint64(prvw.Size) > uint64(b.remain) {
+	if int(prvw.Size) > b.remain {
 		return prvw, ErrRemainLengthInsufficient
 	}
 
@@ -115,16 +118,19 @@ func (r *Reader) emitPreviewPayload(b *box, size uint32, header meta.PreviewHead
 	if size == 0 {
 		return nil
 	}
-	if uint64(size) > uint64(b.remain) {
+	if int(size) > b.remain {
 		return ErrRemainLengthInsufficient
 	}
 
-	payloadSize := int64(size)
+	payloadSize, err := uint64ToInt(uint64(size))
+	if err != nil {
+		return err
+	}
 	payload := box{
 		reader:  b.reader,
 		outer:   b,
 		boxType: b.boxType,
-		offset:  b.offset + b.size - b.remain,
+		offset:  b.offset + int64(b.size-b.remain),
 		size:    payloadSize,
 		remain:  payloadSize,
 	}

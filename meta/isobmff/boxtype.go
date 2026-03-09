@@ -368,6 +368,7 @@ func (f flags) flags() uint32 {
 
 // version returns the FullBox version byte.
 func (f flags) version() uint8 {
+	//nolint:gosec // G115: version is encoded in the top 8 bits of a 32-bit FullBox field.
 	return uint8(f >> 24)
 }
 

@@ -50,7 +50,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 			logInfoBox(b).
 				Bool("hasXPacketPI", header.HasXPacketPI).
 				Bool("hasXMPMeta", header.HasXMPMeta).
-				Uint32("xpacketLength", header.Length).
+				Int("xpacketLength", header.Length).
 				Send()
 		}
 		if err = r.callXMPReader(b, header); err != nil {
@@ -97,7 +97,7 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 			return r.readTHMBBox(inner)
 		default:
 			if logLevelDebug() {
-				logDebug().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
+				logDebug().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
 			}
 			return nil
 		}
@@ -141,7 +141,7 @@ func readCNCVBox(b *box) (err error) {
 		return nil
 	}
 	var cncv cncvBox
-	if b.remain < int64(len(cncv.version)) {
+	if b.remain < len(cncv.version) {
 		return ErrBufLength
 	}
 	buf, err := b.Peek(30)
@@ -183,16 +183,16 @@ func readCCTPBox(b *box) (err error) {
 	if cctp.count, err = b.readUint32(); err != nil {
 		return err
 	}
-	entryCount := int64(cctp.count)
+	entryCount, err := uint64ToInt(uint64(cctp.count))
+	if err != nil {
+		return err
+	}
 	maxEntries := b.remain / 24
 	if entryCount > maxEntries {
 		entryCount = maxEntries
 	}
-	if entryCount > int64(^uint(0)>>1) {
-		entryCount = int64(^uint(0) >> 1)
-	}
-	cctp.entries = make([]cctpEntry, 0, int(entryCount))
-	for i := int64(0); i < entryCount; i++ {
+	cctp.entries = make([]cctpEntry, 0, entryCount)
+	for i := 0; i < entryCount; i++ {
 		var ent cctpEntry
 		if ent.size, err = b.readUint32(); err != nil {
 			return err
@@ -228,16 +228,16 @@ func readCTBOBox(b *box) (err error) {
 	if ctbo.count, err = b.readUint32(); err != nil {
 		return err
 	}
-	itemCount := int64(ctbo.count)
+	itemCount, err := uint64ToInt(uint64(ctbo.count))
+	if err != nil {
+		return err
+	}
 	maxItems := b.remain / 20
 	if itemCount > maxItems {
 		itemCount = maxItems
 	}
-	if itemCount > int64(^uint(0)>>1) {
-		itemCount = int64(^uint(0) >> 1)
-	}
-	ctbo.items = make([]offsetLength, 0, int(itemCount))
-	for i := int64(0); i < itemCount; i++ {
+	ctbo.items = make([]offsetLength, 0, itemCount)
+	for i := 0; i < itemCount; i++ {
 		_, readErr := b.readUint32() // item index (1-based)
 		if readErr != nil {
 			return readErr
@@ -246,7 +246,12 @@ func readCTBOBox(b *box) (err error) {
 		if ent.offset, err = b.readUintN(8); err != nil {
 			return err
 		}
-		if ent.length, err = b.readUintN(8); err != nil {
+		length, readErr := b.readUintN(8)
+		if readErr != nil {
+			return readErr
+		}
+		ent.length, err = uint64ToInt(length)
+		if err != nil {
 			return err
 		}
 		ctbo.items = append(ctbo.items, ent)

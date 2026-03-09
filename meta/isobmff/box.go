@@ -11,8 +11,8 @@ import (
 // box is a bounded view over an ISOBMFF box payload.
 // Nested boxes share the same underlying Reader and enforce limits via remain.
 type box struct {
-	size    int64
-	remain  int64
+	size    int
+	remain  int
 	offset  int64
 	flags   flags
 	boxType boxType
@@ -20,7 +20,7 @@ type box struct {
 	reader  *Reader
 }
 
-const maxInt64Value = int64(^uint64(0) >> 1)
+const maxIntValue = int(^uint(0) >> 1)
 
 // isType reports whether the box has the expected type.
 func (b box) isType(bt boxType) bool { return b.boxType == bt }
@@ -31,7 +31,7 @@ func (b *box) Peek(n int) ([]byte, error) {
 	if n < 0 {
 		return nil, ErrBufLength
 	}
-	if b.remain >= int64(n) {
+	if b.remain >= n {
 		if b.outer != nil {
 			return b.outer.Peek(n)
 		}
@@ -48,7 +48,7 @@ func (b *box) Discard(n int) (int, error) {
 	if n == 0 {
 		return 0, nil
 	}
-	if b.remain >= int64(n) {
+	if b.remain >= n {
 		var (
 			discarded int
 			err       error
@@ -58,7 +58,7 @@ func (b *box) Discard(n int) (int, error) {
 		} else {
 			discarded, err = b.reader.discard(n)
 		}
-		b.remain -= int64(discarded)
+		b.remain -= discarded
 		if b.remain < 0 {
 			b.remain = 0
 		}
@@ -77,19 +77,19 @@ func (b *box) Read(p []byte) (n int, err error) {
 	}
 
 	readLen := len(p)
-	if int64(readLen) > b.remain {
-		readLen = int(b.remain)
+	if readLen > b.remain {
+		readLen = b.remain
 	}
 
 	n, err = b.reader.br.Read(p[:readLen])
-	b.adjust(int64(n))
+	b.adjust(n)
 	if n == 0 && err == nil {
 		return 0, io.EOF
 	}
 	return n, err
 }
 
-func (b *box) adjust(n int64) {
+func (b *box) adjust(n int) {
 	if n > b.remain {
 		n = b.remain
 	}
@@ -106,17 +106,21 @@ func (b *box) close() error {
 
 // parseBoxSizeAndType parses the first 8 bytes of a BMFF box header:
 // 32-bit size followed by 32-bit type (FourCC).
-func parseBoxSizeAndType(buf []byte) (size int64, bt boxType, err error) {
+func parseBoxSizeAndType(buf []byte) (size int, bt boxType, err error) {
 	if len(buf) < 8 {
 		return 0, typeUnknown, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
-	size = int64(bmffEndian.Uint32(buf[:4]))
+	size32 := bmffEndian.Uint32(buf[:4])
+	if uint64(size32) > uint64(maxIntValue) {
+		return 0, typeUnknown, errLargeBox
+	}
+	size = int(size32)
 	bt = boxTypeFromBuf(buf[4:8])
 	return size, bt, nil
 }
 
 // parseBoxSizeAndType reads and parses the next 8 bytes as a BMFF box header.
-func (b *box) parseBoxSizeAndType() (size int64, bt boxType, err error) {
+func (b *box) parseBoxSizeAndType() (size int, bt boxType, err error) {
 	buf, err := b.Peek(8)
 	if err != nil {
 		return 0, typeUnknown, fmt.Errorf("readBox: %w", ErrBufLength)
@@ -126,19 +130,19 @@ func (b *box) parseBoxSizeAndType() (size int64, bt boxType, err error) {
 
 // parseExtendedBoxSize parses a BMFF "largesize" header (size32 == 1),
 // where bytes 8..15 contain the 64-bit box size.
-func parseExtendedBoxSize(buf []byte, bt boxType) (int64, error) {
+func parseExtendedBoxSize(buf []byte, bt boxType) (int, error) {
 	if len(buf) < 16 {
 		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
 	size := bmffEndian.Uint64(buf[8:16])
-	if size > uint64(maxInt64Value) {
+	if size > uint64(maxIntValue) {
 		return 0, fmt.Errorf("readBox '%s': %w", bt, errLargeBox)
 	}
-	return int64(size), nil
+	return int(size), nil
 }
 
 // parseExtendedBoxSize reads and parses a 16-byte BMFF extended-size header.
-func (b *box) parseExtendedBoxSize(bt boxType) (int64, error) {
+func (b *box) parseExtendedBoxSize(bt boxType) (int, error) {
 	buf, err := b.Peek(16)
 	if err != nil {
 		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
@@ -148,13 +152,9 @@ func (b *box) parseExtendedBoxSize(bt boxType) (int64, error) {
 
 // validateBoxSize ensures the declared box size is sane for this parser:
 // it must include at least the header and fit in host int width.
-func validateBoxSize(size int64, headerSize int, bt boxType) error {
-	if size < int64(headerSize) {
+func validateBoxSize(size int, headerSize int, bt boxType) error {
+	if size < headerSize {
 		return fmt.Errorf("readBox invalid size %d for '%s': %w", size, bt, ErrBufLength)
-	}
-
-	if size > maxInt64Value {
-		return fmt.Errorf("readBox '%s': %w", bt, errLargeBox)
 	}
 	return nil
 }
@@ -184,7 +184,7 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	inner = box{
 		reader:  b.reader,
 		outer:   b,
-		offset:  b.offset + b.size - b.remain,
+		offset:  b.offset + int64(b.size-b.remain),
 		size:    size,
 		boxType: bt,
 		remain:  size,
@@ -263,10 +263,10 @@ func (b *box) discardCString(maxLen int) error {
 			return ErrBufLength
 		}
 		chunk := b.remain
-		if chunk > int64(boxStringReadChunk) {
-			chunk = int64(boxStringReadChunk)
+		if chunk > boxStringReadChunk {
+			chunk = boxStringReadChunk
 		}
-		buf, err := b.Peek(int(chunk))
+		buf, err := b.Peek(chunk)
 		if err != nil {
 			return fmt.Errorf("discardCString: %w", ErrBufLength)
 		}
@@ -277,11 +277,11 @@ func (b *box) discardCString(maxLen int) error {
 			_, err = b.Discard(idx + 1)
 			return err
 		}
-		discarded += int(chunk)
+		discarded += chunk
 		if discarded > maxLen {
 			return ErrBoxStringTooLong
 		}
-		if _, err = b.Discard(int(chunk)); err != nil {
+		if _, err = b.Discard(chunk); err != nil {
 			return err
 		}
 	}
@@ -299,10 +299,10 @@ func (b *box) readCStringBytes(dst []byte, maxLen int) ([]byte, error) {
 			return dst, ErrBufLength
 		}
 		chunk := b.remain
-		if chunk > int64(boxStringReadChunk) {
-			chunk = int64(boxStringReadChunk)
+		if chunk > boxStringReadChunk {
+			chunk = boxStringReadChunk
 		}
-		buf, err := b.Peek(int(chunk))
+		buf, err := b.Peek(chunk)
 		if err != nil {
 			return dst, fmt.Errorf("readCString: %w", ErrBufLength)
 		}
@@ -314,11 +314,11 @@ func (b *box) readCStringBytes(dst []byte, maxLen int) ([]byte, error) {
 			_, err = b.Discard(idx + 1)
 			return dst, err
 		}
-		if len(dst)+int(chunk) > maxLen {
+		if len(dst)+chunk > maxLen {
 			return dst, ErrBoxStringTooLong
 		}
-		dst = append(dst, buf[:int(chunk)]...)
-		if _, err = b.Discard(int(chunk)); err != nil {
+		dst = append(dst, buf[:chunk]...)
+		if _, err = b.Discard(chunk); err != nil {
 			return dst, err
 		}
 	}
@@ -337,14 +337,11 @@ func (b *box) readUUID() (u meta.UUID, err error) {
 	return u, err
 }
 
-func discardBoxBytes(b *box, n int64) error {
+func discardBoxBytes(b *box, n int) error {
 	for n > 0 {
 		chunk := n
-		if chunk > int64(^uint(0)>>1) {
-			chunk = int64(^uint(0) >> 1)
-		}
-		discarded, err := b.Discard(int(chunk))
-		n -= int64(discarded)
+		discarded, err := b.Discard(chunk)
+		n -= discarded
 		if err != nil {
 			return err
 		}

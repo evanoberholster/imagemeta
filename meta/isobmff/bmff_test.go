@@ -23,7 +23,6 @@ func BenchmarkISOBMFFSamples(b *testing.B) {
 	paths := benchmarkSamplePaths(b)
 
 	for i, path := range paths {
-		path := path
 		label := benchmarkSampleLabel(i, path)
 		b.Run(label, func(b *testing.B) {
 			data, err := os.ReadFile(path)
@@ -178,7 +177,6 @@ func TestReadFTYPErrorPrefix(t *testing.T) {
 func TestReadMetadataFromSamples(t *testing.T) {
 	paths := benchmarkSamplePaths(t)
 	for _, path := range paths {
-		path := path
 		t.Run(filepath.Base(path), func(t *testing.T) {
 			data, err := os.ReadFile(path)
 			if err != nil {

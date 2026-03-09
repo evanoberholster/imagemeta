@@ -370,7 +370,7 @@ func (r *Reader) callXMPReader(b *box, h XPacketHeader) error {
 //
 // limit bounds bytes visible to the callback. Non-positive values are treated as
 // "up to b.remain". On success, the corresponding metadata kind is marked found.
-func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind, limit int64) error {
+func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind, limit int) error {
 	if r.previewImageReader == nil {
 		return nil
 	}

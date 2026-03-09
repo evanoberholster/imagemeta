@@ -314,6 +314,7 @@ func (r *Reader) readIpma(b *box) (err error) {
 		if readErr != nil {
 			return readErr
 		}
+		//nolint:gosec // G115: association_count was read from a 1-byte field, so range is 0..255.
 		associationCount := int(v)
 
 		for j := 0; j < associationCount; j++ {
@@ -328,6 +329,7 @@ func (r *Reader) readIpma(b *box) (err error) {
 				if readErr != nil {
 					return readErr
 				}
+				//nolint:gosec // G115: non-extended property index is encoded in one byte.
 				raw = uint16(v8)
 			}
 
