@@ -22,6 +22,7 @@ func IdentifyNamespace(buf []byte) (n Namespace) {
 	for i := 1; i < len(mapNSString); i++ {
 		s := mapNSString[i]
 		if s != "" && eqString(buf, s) {
+			//nolint:gosec // i iterates over mapNSString bounds and Namespace is uint8-backed.
 			return Namespace(i)
 		}
 	}

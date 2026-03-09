@@ -165,19 +165,19 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
 	}
-	size, boxType, err := b.parseBoxSizeAndType()
+	size, bt, err := b.parseBoxSizeAndType()
 	if err != nil {
 		return inner, false, err
 	}
 	headerSize := 8
 	if size == 1 {
-		size, err = b.parseExtendedBoxSize(boxType)
+		size, err = b.parseExtendedBoxSize(bt)
 		if err != nil {
 			return inner, false, err
 		}
 		headerSize = 16
 	}
-	if err = validateBoxSize(size, headerSize, boxType); err != nil {
+	if err = validateBoxSize(size, headerSize, bt); err != nil {
 		return inner, false, err
 	}
 
@@ -186,7 +186,7 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 		outer:   b,
 		offset:  b.offset + b.size - b.remain,
 		size:    size,
-		boxType: boxType,
+		boxType: bt,
 		remain:  size,
 	}
 	_, err = inner.Discard(headerSize)

@@ -70,7 +70,7 @@ type DynamicMedia struct {
 func (dm *DynamicMedia) parse(prop property) error {
 	switch prop.Name() {
 	case Pick:
-		dm.Pick = int8(parseInt16(prop.Value()))
+		dm.Pick = parseInt8(prop.Value())
 	case Good:
 		dm.Good = parseBool(prop.Value())
 	default:

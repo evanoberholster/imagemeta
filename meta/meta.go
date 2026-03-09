@@ -48,7 +48,7 @@ type Metadata struct {
 	XmpFn     DecodeFn
 	XmpHeader XmpHeader
 
-	// Dimenions of primary Image
+	// Dimensions of primary Image
 	Dim Dimensions
 
 	// Image Type

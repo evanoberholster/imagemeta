@@ -3,6 +3,7 @@ package tiff
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"os"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestTiff(t *testing.T) {
 	// Error No Tiff Header
 	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	_, err := ScanTiffHeader(bytes.NewReader(buf), imagetype.ImageTiff)
-	if err != meta.ErrNoExif {
+	if !errors.Is(err, meta.ErrNoExif) {
 		t.Errorf("Incorrect err wanted %s got %s ", meta.ErrNoExif, err)
 	}
 }
