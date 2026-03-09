@@ -15,20 +15,16 @@ var (
 // It does not consume bytes from the source.
 func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
 	h.Offset = boxPayloadOffset(b)
-	if b.remain > int64(^uint32(0)) {
-		h.Length = ^uint32(0)
-	} else {
-		h.Length = uint32(b.remain)
-	}
+	h.Length = b.remain
 	if b.remain == 0 {
 		return h, nil
 	}
 
 	probeLen := b.remain
-	if probeLen > int64(xpacketProbeLength) {
-		probeLen = int64(xpacketProbeLength)
+	if probeLen > xpacketProbeLength {
+		probeLen = xpacketProbeLength
 	}
-	buf, err := b.Peek(int(probeLen))
+	buf, err := b.Peek(probeLen)
 	if err != nil {
 		return h, err
 	}

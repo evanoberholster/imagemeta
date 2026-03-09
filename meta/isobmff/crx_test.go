@@ -41,7 +41,7 @@ func TestReadMetadataCR3XPacketCallback(t *testing.T) {
 	if !gotHeader.HasXMPMeta {
 		t.Fatal("expected HasXMPMeta=true")
 	}
-	if gotHeader.Length != uint32(len(xpacketPayload)) {
+	if gotHeader.Length != len(xpacketPayload) {
 		t.Fatalf("xpacket length = %d, want %d", gotHeader.Length, len(xpacketPayload))
 	}
 }
@@ -270,7 +270,7 @@ func TestReadMetadataHEIFXMPFromMdatCallback(t *testing.T) {
 	if !bytes.Equal(gotPayload, xmpPayload) {
 		t.Fatalf("xmp payload mismatch: got=%q want=%q", gotPayload, xmpPayload)
 	}
-	if gotHeader.Length != uint32(len(xmpPayload)) {
+	if gotHeader.Length != len(xmpPayload) {
 		t.Fatalf("xmp length = %d, want %d", gotHeader.Length, len(xmpPayload))
 	}
 	if !r.hasHave(metadataKindXMP) {

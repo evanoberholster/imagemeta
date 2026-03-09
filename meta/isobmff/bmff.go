@@ -20,7 +20,7 @@ type PreviewImageReader func(r io.Reader, h meta.PreviewHeader) error
 // XPacketHeader describes discovered XPacket payload metadata.
 type XPacketHeader struct {
 	Offset       uint64
-	Length       uint32
+	Length       int
 	HasXPacketPI bool
 	HasXMPMeta   bool
 }
@@ -80,12 +80,12 @@ func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {
 		return ftyp, fmt.Errorf("parseFileTypeBox: %w", ErrBufLength)
 	}
 
-	peekLen := int64(ftypHeaderSize + (fourCCSize * maxBrandCount))
+	peekLen := ftypHeaderSize + (fourCCSize * maxBrandCount)
 	if b.remain < peekLen {
 		peekLen = b.remain
 	}
 
-	buf, err := b.Peek(int(peekLen))
+	buf, err := b.Peek(peekLen)
 	if err != nil {
 		return ftyp, err
 	}

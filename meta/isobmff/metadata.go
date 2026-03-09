@@ -30,7 +30,7 @@ func (r *Reader) ReadMetadata() (err error) {
 		}
 		keepScanning, boxErr := r.readMetadataBox(&b)
 		if boxErr != nil && logLevelError() {
-			logError().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size).Err(boxErr).Send()
+			logError().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size).Err(boxErr).Send()
 		}
 		if boxErr == nil && r.goalsInitialized && r.hasMetadataGoals() && r.metadataGoalsSatisfied() {
 			r.stopAfterMetadata = true
@@ -61,7 +61,7 @@ func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
 		return err == nil, err
 	default:
 		if logLevelInfo() {
-			logInfo().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int64("size", b.size).Send()
+			logInfo().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size).Send()
 		}
 		return false, b.close()
 	}
@@ -121,7 +121,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 		inner, openErr := newMdatExtentBox(b, payloadStart, items[i].offset, items[i].itemType)
 		if openErr != nil {
 			if logLevelDebug() {
-				logDebug().Object("box", b).Err(openErr).Uint64("offset", items[i].offset.offset).Uint64("length", items[i].offset.length).Msg("skip unresolved mdat extent")
+				logDebug().Object("box", b).Err(openErr).Uint64("offset", items[i].offset.offset).Int("length", items[i].offset.length).Msg("skip unresolved mdat extent")
 			}
 			continue
 		}
@@ -165,7 +165,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 		}
 
 		if logLevelInfo() {
-			logInfo().Object("box", inner).Int64("remain", inner.remain).Send()
+			logInfo().Object("box", inner).Int("remain", inner.remain).Send()
 		}
 		if closeErr := inner.close(); closeErr != nil {
 			return closeErr
@@ -197,7 +197,7 @@ func (r *Reader) readExif(b *box) (err error) {
 }
 
 func boxPayloadOffset(b *box) uint64 {
-	payloadOffset := b.offset + b.size - b.remain
+	payloadOffset := b.offset + int64(b.size-b.remain)
 	if payloadOffset <= 0 {
 		return 0
 	}
@@ -227,22 +227,20 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 	if targetOffset < currentOffset {
 		return inner, ErrRemainLengthInsufficient
 	}
-	discardBytes := targetOffset - currentOffset
-	if discardBytes > uint64(b.remain) {
+	discardBytes, err := uint64ToInt(targetOffset - currentOffset)
+	if err != nil {
+		return inner, err
+	}
+	if discardBytes > b.remain {
 		return inner, ErrRemainLengthInsufficient
 	}
-	if err = discardBoxBytes(b, int64(discardBytes)); err != nil {
+	if err = discardBoxBytes(b, discardBytes); err != nil {
 		return inner, err
 	}
 
-	if ol.length > uint64(b.remain) {
+	if ol.length > b.remain {
 		return inner, ErrRemainLengthInsufficient
 	}
-	if ol.length > uint64(maxInt64Value) {
-		return inner, errLargeBox
-	}
-
-	size := int64(ol.length)
 	targetOffset64, err := uint64ToInt64(targetOffset)
 	if err != nil {
 		return inner, err
@@ -253,8 +251,8 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 		outer:   b,
 		boxType: innerType,
 		offset:  targetOffset64,
-		size:    size,
-		remain:  size,
+		size:    ol.length,
+		remain:  ol.length,
 	}
 	return inner, nil
 }
@@ -270,7 +268,7 @@ func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (head
 	if endian == utils.UnknownEndian {
 		return header, ErrBufLength
 	}
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampInt64ToUint32(b.remain), it)
+	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampIntToUint32(b.remain), it)
 	header.FirstIfd = firstIfd
 	if logLevelInfo() {
 		logInfo().Object("box", b).Object("header", header).Send()
@@ -301,7 +299,11 @@ func seekExifTIFFHeader(b *box) error {
 		// Some payloads are wrapped in a local Exif box header.
 		if hasEmbeddedExifBoxHeader(buf) {
 			boxSize := bmffEndian.Uint32(buf[:4])
-			if boxSize < 8 || int64(boxSize) > b.remain {
+			if boxSize < 8 {
+				return ErrBufLength
+			}
+			boxSizeInt, convErr := uint64ToInt(uint64(boxSize))
+			if convErr != nil || boxSizeInt > b.remain {
 				return ErrBufLength
 			}
 			if _, err = b.Discard(8); err != nil {
@@ -315,7 +317,10 @@ func seekExifTIFFHeader(b *box) error {
 		}
 
 		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
-		offset := int64(bmffEndian.Uint32(buf[:4]))
+		offset, convErr := uint64ToInt(uint64(bmffEndian.Uint32(buf[:4])))
+		if convErr != nil {
+			return nil
+		}
 		if offset > b.remain-8 {
 			return nil
 		}
@@ -420,14 +425,14 @@ func (r *Reader) readMeta(b *box) (err error) {
 		case typeIdat:
 			r.heic.idatData = offsetLength{
 				offset: boxPayloadOffset(inner),
-				length: uint64(inner.remain),
+				length: inner.remain,
 			}
 			return nil
 		case typeIloc:
 			return r.readIloc(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
 			}
 			return nil
 		}
@@ -451,7 +456,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 			return readCrxTrakBox(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Send()
+				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
 			}
 			return nil
 		}
@@ -464,7 +469,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 func finalizeInnerBox(inner *box, parseErr error) error {
 	if parseErr != nil {
 		if logLevelError() && inner != nil {
-			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Err(parseErr).Send()
+			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Err(parseErr).Send()
 		}
 		return parseErr
 	}
@@ -473,18 +478,18 @@ func finalizeInnerBox(inner *box, parseErr error) error {
 	}
 	if err := inner.close(); err != nil {
 		if logLevelError() {
-			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int64("size", inner.size).Err(err).Send()
+			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Err(err).Send()
 		}
 		return err
 	}
 	return nil
 }
 
-func newLimitedReader(r io.Reader, limit int64) io.Reader {
+func newLimitedReader(r io.Reader, limit int) io.Reader {
 	if limit <= 0 {
 		return io.LimitReader(r, 0)
 	}
-	return &io.LimitedReader{R: r, N: limit}
+	return &io.LimitedReader{R: r, N: int64(limit)}
 }
 
 func handleCallbackError(b *box, err error) error {
@@ -504,19 +509,27 @@ func handleCallbackError(b *box, err error) error {
 	return nil
 }
 
-func clampInt64ToUint32(v int64) uint32 {
+func clampIntToUint32(v int) uint32 {
 	if v <= 0 {
 		return 0
 	}
-	if v > int64(^uint32(0)) {
+	if uint64(v) > uint64(^uint32(0)) {
 		return ^uint32(0)
 	}
+	//nolint:gosec // G115: value is clamped to uint32 bounds above.
 	return uint32(v)
 }
 
 func uint64ToInt64(v uint64) (int64, error) {
-	if v > uint64(maxInt64Value) {
+	if v > uint64(maxIntValue) {
 		return 0, errLargeBox
 	}
 	return int64(v), nil
+}
+
+func uint64ToInt(v uint64) (int, error) {
+	if v > uint64(maxIntValue) {
+		return 0, errLargeBox
+	}
+	return int(v), nil
 }
