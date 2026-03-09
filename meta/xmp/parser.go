@@ -71,12 +71,14 @@ func parseUUID(buf []byte) (uuid meta.UUID) {
 	if _, b := readUntil(buf, ':'); len(b) > 0 {
 		buf = b
 	}
-	_ = uuid.UnmarshalText(buf)
+	if err := uuid.UnmarshalText(buf); err != nil {
+		return meta.UUID{}
+	}
 	return
 }
 
 // parseUintWithLimit parses an unsigned decimal integer with overflow bounds.
-func parseUintWithLimit(buf []byte, max uint64) (uint64, bool) {
+func parseUintWithLimit(buf []byte, maxValue uint64) (uint64, bool) {
 	if len(buf) == 0 {
 		return 0, false
 	}
@@ -87,7 +89,7 @@ func parseUintWithLimit(buf []byte, max uint64) (uint64, bool) {
 			return 0, false
 		}
 		d := uint64(c - '0')
-		if u > (max-d)/10 {
+		if u > (maxValue-d)/10 {
 			return 0, false
 		}
 		u = u*10 + d
@@ -112,6 +114,7 @@ func parseUint32(buf []byte) uint32 {
 	if !ok {
 		return 0
 	}
+	//nolint:gosec // u is bounded to MaxUint32 by parseUintWithLimit.
 	return uint32(u)
 }
 
@@ -122,6 +125,7 @@ func parseUint16(buf []byte) uint16 {
 	if !ok {
 		return 0
 	}
+	//nolint:gosec // u is bounded to MaxUint16 by parseUintWithLimit.
 	return uint16(u)
 }
 
@@ -132,11 +136,12 @@ func parseUint8(buf []byte) uint8 {
 	if !ok {
 		return 0
 	}
+	//nolint:gosec // u is bounded to MaxUint8 by parseUintWithLimit.
 	return uint8(u)
 }
 
 // parseIntWithLimit parses a signed decimal integer constrained to [min, max].
-func parseIntWithLimit(buf []byte, min, max int64) (int64, bool) {
+func parseIntWithLimit(buf []byte, minValue, maxValue int64) (int64, bool) {
 	if len(buf) == 0 {
 		return 0, false
 	}
@@ -154,10 +159,10 @@ func parseIntWithLimit(buf []byte, min, max int64) (int64, bool) {
 		return 0, false
 	}
 
-	absLimit := max
-	absMin := -min
+	absLimit := maxValue
+	absMin := -minValue
 	// math.MinInt64 cannot be negated safely; clamp for bound checks.
-	if min == math.MinInt64 {
+	if minValue == math.MinInt64 {
 		absMin = math.MaxInt64
 	}
 	if absMin > absLimit {
@@ -178,7 +183,7 @@ func parseIntWithLimit(buf []byte, min, max int64) (int64, bool) {
 	}
 
 	n *= sign
-	if n < min || n > max {
+	if n < minValue || n > maxValue {
 		return 0, false
 	}
 	return n, true
@@ -191,7 +196,19 @@ func parseInt32(buf []byte) int32 {
 	if !ok {
 		return 0
 	}
+	//nolint:gosec // n is bounded to [MinInt32, MaxInt32] by parseIntWithLimit.
 	return int32(n)
+}
+
+// parseInt8 parses a []byte string representation of an int8 value.
+// If the value is invalid or out of range it returns 0.
+func parseInt8(buf []byte) int8 {
+	n, ok := parseIntWithLimit(buf, math.MinInt8, math.MaxInt8)
+	if !ok {
+		return 0
+	}
+	//nolint:gosec // n is bounded to [MinInt8, MaxInt8] by parseIntWithLimit.
+	return int8(n)
 }
 
 // parseInt16 parses a []byte string representation of an int16 value.
@@ -201,6 +218,7 @@ func parseInt16(buf []byte) int16 {
 	if !ok {
 		return 0
 	}
+	//nolint:gosec // n is bounded to [MinInt16, MaxInt16] by parseIntWithLimit.
 	return int16(n)
 }
 

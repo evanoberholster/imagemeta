@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"sync"
 
@@ -32,6 +33,22 @@ var scanReaderPool = sync.Pool{
 	New: func() interface{} {
 		return bufio.NewReaderSize(pooledReaderReset{}, scanBufferSize)
 	},
+}
+
+func getPooledScanReader() *bufio.Reader {
+	br, ok := scanReaderPool.Get().(*bufio.Reader)
+	if !ok || br == nil {
+		return bufio.NewReaderSize(pooledReaderReset{}, scanBufferSize)
+	}
+	return br
+}
+
+func getPooledSAXReader() *gosax.Reader {
+	r, ok := saxReaderPool.Get().(*gosax.Reader)
+	if !ok || r == nil {
+		return gosax.NewReaderSize(nil, parserBufferSize)
+	}
+	return r
 }
 
 type pooledReaderReset struct{}
@@ -130,7 +147,7 @@ func parseISOBMFF(r io.Reader, opts ParseOptions) (XMP, error) {
 		if err == nil {
 			continue
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		return XMP{}, err
@@ -149,7 +166,7 @@ func asBufferedReader(r io.Reader) (*bufio.Reader, bool) {
 		}
 	}
 
-	br := scanReaderPool.Get().(*bufio.Reader)
+	br := getPooledScanReader()
 	br.Reset(r)
 	return br, true
 }
@@ -173,7 +190,7 @@ func parseXMPStream(r io.Reader, opts ParseOptions) (x XMP, err error) {
 		return XMP{}, ErrNoXMP
 	}
 
-	sax := saxReaderPool.Get().(*gosax.Reader)
+	sax := getPooledSAXReader()
 	sax.Reset(br)
 	sax.EmitSelfClosingTag = true
 	defer saxReaderPool.Put(sax)
@@ -354,7 +371,9 @@ func (p *xmpStreamParser) emitProperty(pt pType, parent Property, self Property,
 		val:         value,
 		regionIndex: p.currentRegionIndex(),
 	}
-	_ = p.xmp.parser(prop, p.debug)
+	if err := p.xmp.parser(prop, p.debug); err != nil {
+		return
+	}
 }
 
 func (p *xmpStreamParser) isMWGRegionListItem(prop Property) bool {

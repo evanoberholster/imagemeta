@@ -80,13 +80,13 @@ func TestParseMWGRegions(t *testing.T) {
 	if first.Type != RegionType("Face") {
 		t.Fatalf("first.Type = %q", first.Type)
 	}
-	if !approxFloat32(first.Area.X, 0.3005, 0.0001) ||
-		!approxFloat32(first.Area.Y, 0.1810, 0.0001) ||
-		!approxFloat32(first.Area.W, 0.1070, 0.0001) ||
-		!approxFloat32(first.Area.H, 0.1420, 0.0001) {
+	if !approxFloat32(first.Area.X, 0.3005) ||
+		!approxFloat32(first.Area.Y, 0.1810) ||
+		!approxFloat32(first.Area.W, 0.1070) ||
+		!approxFloat32(first.Area.H, 0.1420) {
 		t.Fatalf("first.Area = %#v", first.Area)
 	}
-	if first.Extensions.FaceID != "1" || !approxFloat32(first.Extensions.ConfidenceLevel, 366, 0.0001) {
+	if first.Extensions.FaceID != "1" || !approxFloat32(first.Extensions.ConfidenceLevel, 366) {
 		t.Fatalf("first.Extensions = %+v", first.Extensions)
 	}
 
@@ -94,13 +94,13 @@ func TestParseMWGRegions(t *testing.T) {
 	if second.Type != RegionType("Face") {
 		t.Fatalf("second.Type = %q", second.Type)
 	}
-	if !approxFloat32(second.Area.X, 0.0865, 0.0001) ||
-		!approxFloat32(second.Area.Y, 0.3360, 0.0001) ||
-		!approxFloat32(second.Area.W, 0.1250, 0.0001) ||
-		!approxFloat32(second.Area.H, 0.1660, 0.0001) {
+	if !approxFloat32(second.Area.X, 0.0865) ||
+		!approxFloat32(second.Area.Y, 0.3360) ||
+		!approxFloat32(second.Area.W, 0.1250) ||
+		!approxFloat32(second.Area.H, 0.1660) {
 		t.Fatalf("second.Area = %#v", second.Area)
 	}
-	if !approxFloat32(second.Extensions.AngleInfoYaw, 315, 0.0001) || second.Extensions.FaceID != "2" {
+	if !approxFloat32(second.Extensions.AngleInfoYaw, 315) || second.Extensions.FaceID != "2" {
 		t.Fatalf("second.Extensions = %+v", second.Extensions)
 	}
 }
@@ -141,14 +141,15 @@ func TestParseMWGRegionPixelAreaScaling(t *testing.T) {
 	if len(got.Regions.RegionList) != 1 {
 		t.Fatalf("len(RegionList) = %d", len(got.Regions.RegionList))
 	}
-	if !approxFloat32(got.Regions.RegionList[0].Area.X, 120, 0.0001) ||
-		!approxFloat32(got.Regions.RegionList[0].Area.Y, 250, 0.0001) ||
-		!approxFloat32(got.Regions.RegionList[0].Area.W, 80, 0.0001) ||
-		!approxFloat32(got.Regions.RegionList[0].Area.H, 45, 0.0001) {
+	if !approxFloat32(got.Regions.RegionList[0].Area.X, 120) ||
+		!approxFloat32(got.Regions.RegionList[0].Area.Y, 250) ||
+		!approxFloat32(got.Regions.RegionList[0].Area.W, 80) ||
+		!approxFloat32(got.Regions.RegionList[0].Area.H, 45) {
 		t.Fatalf("Area = %#v", got.Regions.RegionList[0].Area)
 	}
 }
 
-func approxFloat32(got, want, epsilon float32) bool {
+func approxFloat32(got, want float32) bool {
+	const epsilon = float32(0.0001)
 	return float32(math.Abs(float64(got-want))) <= epsilon
 }

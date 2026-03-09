@@ -30,7 +30,7 @@ testImages/gen.go
 testImages/*.html
 test/*
 meta/cmd/*
-xmp/test/samples/*
+meta/xmp/coverage*
 
 *.CR3
 *.CR2

@@ -67,7 +67,7 @@ func (t *Tiff) parse(p property) error {
 	case NativeDigest:
 		t.NativeDigest = parseString(p.Value())
 	case Orientation:
-		t.Orientation = meta.Orientation(parseUint(p.Value()))
+		t.Orientation = meta.Orientation(parseUint16(p.Value()))
 	case Compression:
 		t.Compression = parseUint16(p.Value())
 	case PhotometricInterpretation:

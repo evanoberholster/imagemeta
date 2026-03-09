@@ -45,8 +45,8 @@ func parseFastDateWithFallback(data []byte, fallback func(string) (time.Time, er
 		return fallback(string(data))
 	}
 
-	year, month, day, hour, min, sec, ok := parseDateClockParts(data)
-	if !ok || !isValidDateTime(year, month, day, hour, min, sec) {
+	year, month, day, hour, minute, sec, ok := parseDateClockParts(data)
+	if !ok || !isValidDateTime(year, month, day, hour, minute, sec) {
 		return fallback(string(data))
 	}
 
@@ -79,7 +79,7 @@ func parseFastDateWithFallback(data []byte, fallback func(string) (time.Time, er
 		return fallback(string(data))
 	}
 
-	return time.Date(year, time.Month(month), day, hour, min, sec, nsec, loc), nil
+	return time.Date(year, time.Month(month), day, hour, minute, sec, nsec, loc), nil
 }
 
 // parseDateString parses date strings using common XMP layouts, from most
@@ -120,7 +120,7 @@ func identifyDateLayout(data []byte) (isISO bool, ok bool) {
 	return false, false
 }
 
-func parseDateClockParts(data []byte) (year, month, day, hour, min, sec int, ok bool) {
+func parseDateClockParts(data []byte) (year, month, day, hour, minute, sec int, ok bool) {
 	year, ok = parse4Digits(data[0], data[1], data[2], data[3])
 	if !ok {
 		return 0, 0, 0, 0, 0, 0, false
@@ -141,7 +141,7 @@ func parseDateClockParts(data []byte) (year, month, day, hour, min, sec int, ok 
 		return 0, 0, 0, 0, 0, 0, false
 	}
 
-	min, ok = parse2Digits(data[14], data[15])
+	minute, ok = parse2Digits(data[14], data[15])
 	if !ok {
 		return 0, 0, 0, 0, 0, 0, false
 	}
@@ -151,11 +151,11 @@ func parseDateClockParts(data []byte) (year, month, day, hour, min, sec int, ok 
 		return 0, 0, 0, 0, 0, 0, false
 	}
 
-	return year, month, day, hour, min, sec, true
+	return year, month, day, hour, minute, sec, true
 }
 
-func isValidDateTime(year, month, day, hour, min, sec int) bool {
-	if month < 1 || month > 12 || day < 1 || hour > 23 || min > 59 || sec > 59 {
+func isValidDateTime(year, month, day, hour, minute, sec int) bool {
+	if month < 1 || month > 12 || day < 1 || hour > 23 || minute > 59 || sec > 59 {
 		return false
 	}
 	return day <= daysInMonth(year, month)

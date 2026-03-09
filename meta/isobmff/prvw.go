@@ -1,6 +1,7 @@
 package isobmff
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -48,7 +49,7 @@ func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	if err == nil {
 		return inner, nil
 	}
-	if err != ErrWrongBoxType {
+	if !errors.Is(err, ErrWrongBoxType) {
 		return inner, err
 	}
 
