@@ -296,6 +296,17 @@ func seekExifTIFFHeader(b *box) error {
 			continue
 		}
 
+		if hasTIFFHeader(buf[:4]) {
+			return nil
+		}
+
+		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
+		if ok, offsetErr := discardTIFFOffsetPrefix(b, bmffEndian.Uint32(buf[:4])); offsetErr != nil {
+			return offsetErr
+		} else if ok {
+			return nil
+		}
+
 		// Some payloads are wrapped in a local Exif box header.
 		if hasEmbeddedExifBoxHeader(buf) {
 			boxSize := bmffEndian.Uint32(buf[:4])
@@ -312,18 +323,70 @@ func seekExifTIFFHeader(b *box) error {
 			continue
 		}
 
-		if hasTIFFHeader(buf[:4]) {
+		if ok, scanErr := seekTIFFHeaderByScan(b, 64); scanErr != nil {
+			return scanErr
+		} else if ok {
 			return nil
 		}
-
-		// HEIF/JXL style Exif payloads can start with a 4-byte TIFF header offset.
-		offset := int(bmffEndian.Uint32(buf[:4]))
-
-		if offset > b.remain-8 {
-			return nil
-		}
-		return discardBoxBytes(b, 4+offset)
+		return ErrBufLength
 	}
+}
+
+func discardTIFFOffsetPrefix(b *box, offset uint32) (bool, error) {
+	skip := uint64(4) + uint64(offset)
+	need := skip + 4
+	if need > uint64(b.remain) {
+		return false, nil
+	}
+	needInt, err := uint64ToInt(need)
+	if err != nil {
+		return false, nil
+	}
+	skipInt, err := uint64ToInt(skip)
+	if err != nil {
+		return false, nil
+	}
+	buf, err := b.Peek(needInt)
+	if err != nil {
+		return false, err
+	}
+	if !hasTIFFHeader(buf[skipInt : skipInt+4]) {
+		return false, nil
+	}
+	_, err = b.Discard(skipInt)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func seekTIFFHeaderByScan(b *box, maxScan int) (bool, error) {
+	if b.remain < 4 || maxScan <= 0 {
+		return false, nil
+	}
+	limit := maxScan
+	if limit > b.remain-4 {
+		limit = b.remain - 4
+	}
+	if limit <= 0 {
+		return false, nil
+	}
+
+	buf, err := b.Peek(limit + 4)
+	if err != nil {
+		return false, err
+	}
+	for i := 1; i <= limit; i++ {
+		if !hasTIFFHeader(buf[i : i+4]) {
+			continue
+		}
+		_, err = b.Discard(i)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func hasEmbeddedExifBoxHeader(buf []byte) bool {
