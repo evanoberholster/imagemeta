@@ -9,6 +9,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 func TestReadBoxEightByteHeader(t *testing.T) {
@@ -349,6 +350,60 @@ func TestReadMetadataReadsExifWithTIFFOffsetPrefix(t *testing.T) {
 	}
 	if r.offset != int64(len(data)) {
 		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
+func TestReadMetadataReadsExifWithHEIFOffsetAndPreamble(t *testing.T) {
+	var (
+		called   bool
+		gotHdr   meta.ExifHeader
+		ifdCount [2]byte
+	)
+
+	cb := func(r io.Reader, h meta.ExifHeader) error {
+		called = true
+		gotHdr = h
+		_, err := io.ReadFull(r, ifdCount[:])
+		return err
+	}
+
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'a', 'v', 'i', 'f',
+		'0', '0', '0', '1',
+		// Exif box with HEIF 4-byte offset prefix + Exif\0\0 preamble
+		0x00, 0x00, 0x00, 0x20,
+		'E', 'x', 'i', 'f',
+		0x00, 0x00, 0x00, 0x06, // offset to TIFF from byte 4 in payload
+		'E', 'x', 'i', 'f', 0x00, 0x00,
+		'I', 'I', 0x2A, 0x00,
+		0x08, 0x00, 0x00, 0x00, // first IFD offset
+		0x00, 0x00, // IFD0 tag count
+		0x00, 0x00, 0x00, 0x00, // next IFD offset
+	}
+
+	r := NewReader(bytes.NewReader(data), cb, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadata(); err != nil {
+		t.Fatalf("ReadMetadata() error = %v", err)
+	}
+	if !called {
+		t.Fatal("exif callback not invoked")
+	}
+	if gotHdr.ByteOrder != utils.LittleEndian {
+		t.Fatalf("header byte order = %T, want little-endian", gotHdr.ByteOrder)
+	}
+	if gotHdr.FirstIfdOffset != 8 {
+		t.Fatalf("header first IFD offset = %d, want 8", gotHdr.FirstIfdOffset)
+	}
+	if ifdCount != [2]byte{0x00, 0x00} {
+		t.Fatalf("ifd count bytes = %x, want 0000", ifdCount)
 	}
 }
 

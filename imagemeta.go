@@ -8,9 +8,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta/png"
@@ -41,37 +41,37 @@ func getPooledReader() (*bufio.Reader, error) {
 	return rr, nil
 }
 
-func Decode(r io.ReadSeeker) (exif2.Exif, error) {
+func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	rr, err := getPooledReader()
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif2.NewIfdReader(exif2.Logger)
+	ir := exif.NewReader(exif.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	ir.Exif.ImageType = it
 	switch it {
 	case imagetype.ImageJPEG:
 		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
-			return exif2.Exif{}, err
+			return exif.Exif{}, err
 		}
 	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG:
 		header, err := tiff.ScanTiffHeader(rr, it)
 		if err != nil {
-			return exif2.Exif{}, err
+			return exif.Exif{}, err
 		}
 		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
 		}
-	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL:
-		bmr := isobmff.NewReader(rr, ir.DecodeIfd, nil, nil)
+	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL, imagetype.ImageHEIF, imagetype.ImageHEIC:
+		bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
 		defer bmr.Close()
 		if err := bmr.ReadFTYP(); err != nil {
 			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
@@ -79,35 +79,37 @@ func Decode(r io.ReadSeeker) (exif2.Exif, error) {
 		if err := readMetadataUntilDone(bmr); err != nil {
 			return ir.Exif, err
 		}
-
-	case imagetype.ImageHEIF, imagetype.ImageHEIC:
-		header, err := tiff.ScanTiffHeader(rr, it)
-		if err != nil {
-			return exif2.Exif{}, err
+	case imagetype.ImagePNG:
+		if _, err = r.Seek(0, io.SeekStart); err != nil {
+			return exif.Exif{}, err
 		}
-		if err := ir.DecodeTiff(rr, header); err != nil {
+		header, err := png.ScanPngHeader(r)
+		if err != nil {
+			return exif.Exif{}, err
+		}
+		if err := ir.DecodeTiff(r, header); err != nil {
 			return ir.Exif, err
 		}
 	default:
-		return exif2.Exif{}, ErrMetadataNotSupported
+		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
 	return ir.Exif, nil
 }
 
 // DecodeCR3 decodes a CR3 file from an io.Reader returning Exif or an error.
-func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
+func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	rr, err := getPooledReader()
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
-	ir := exif2.NewIfdReader(exif2.Logger)
+	ir := exif.NewReader(exif.Logger)
 	defer ir.Close()
 
-	bmr := isobmff.NewReader(rr, ir.DecodeIfd, nil, nil)
+	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
@@ -119,23 +121,23 @@ func DecodeCR3(r io.ReadSeeker) (exif2.Exif, error) {
 }
 
 // DecodeTiff decodes a Tiff/DNG file from an io.Reader returning Exif or an error.
-func DecodeTiff(r io.ReadSeeker) (exif2.Exif, error) {
+func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 	rr, err := getPooledReader()
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	header, err := tiff.ScanTiffHeader(rr, it)
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
-	ir := exif2.NewIfdReader(exif2.Logger)
+	ir := exif.NewReader(exif.Logger)
 	defer ir.Close()
 
 	if err := ir.DecodeTiff(rr, header); err != nil {
@@ -146,51 +148,77 @@ func DecodeTiff(r io.ReadSeeker) (exif2.Exif, error) {
 }
 
 // DecodeCR2 decodes a CR2 file from an io.Reader returning Exif or an error.
-func DecodeCR2(r io.ReadSeeker) (exif2.Exif, error) {
+func DecodeCR2(r io.ReadSeeker) (exif.Exif, error) {
 	return DecodeTiff(r)
 }
 
 // DecodeHeif decodes a Heif file from an io.Reader returning Exif or an error.
 // Needs improvement
-func DecodeHeif(r io.ReadSeeker) (exif2.Exif, error) {
-	return DecodeTiff(r)
+func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif.Exif{}, err
+	}
+	defer readerPool.Put(rr)
+	rr.Reset(r)
+
+	it, err := imagetype.ScanBuf(rr)
+	if err != nil {
+		return exif.Exif{}, err
+	}
+	if it != imagetype.ImageHEIC && it != imagetype.ImageHEIF {
+		return exif.Exif{}, ErrMetadataNotSupported
+	}
+
+	ir := exif.NewReader(exif.Logger)
+	defer ir.Close()
+
+	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
+	defer bmr.Close()
+	if err := bmr.ReadFTYP(); err != nil {
+		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
+	}
+	if err := readMetadataUntilDone(bmr); err != nil {
+		return ir.Exif, err
+	}
+	return ir.Exif, nil
 }
 
 // DecodeJPEG decodes a JPEG file from an io.Reader returning Exif or an error.
-func DecodeJPEG(r io.ReadSeeker) (exif2.Exif, error) {
+func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 	rr, err := getPooledReader()
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif2.NewIfdReader(exif2.Logger)
+	ir := exif.NewReader(exif.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	if it != imagetype.ImageJPEG {
-		return exif2.Exif{}, ErrMetadataNotSupported
+		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
 	if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 	ir.Exif.ImageType = it
 	return ir.Exif, nil
 }
 
 // DecodePng decodes a PNG file from an io.Reader returning Exif or an error.
-func DecodePng(r io.ReadSeeker) (exif2.Exif, error) {
+func DecodePng(r io.ReadSeeker) (exif.Exif, error) {
 	header, err := png.ScanPngHeader(r)
 	if err != nil {
-		return exif2.Exif{}, err
+		return exif.Exif{}, err
 	}
 
-	ir := exif2.NewIfdReader(exif2.Logger)
+	ir := exif.NewReader(exif.Logger)
 	defer ir.Close()
 
 	if err := ir.DecodeTiff(r, header); err != nil {

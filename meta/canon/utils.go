@@ -36,6 +36,10 @@ func TempConv(val uint16) int16 {
 
 // PointsInFocus returns AFPoints that are in focus and AFPoints that are selected
 func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
+	if len(af) < 4 {
+		return nil, nil, fmt.Errorf("canon: af data too short: got %d words, need at least 4", len(af))
+	}
+
 	validPoints := int(af[3])
 	var count int
 	// NumAFPoints may be 7, 9, 11, 19, 31, 45 or 61, depending on the camera model.
@@ -55,9 +59,20 @@ func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
 	case 1053:
 		count = 66
 	default:
-		panic(fmt.Errorf("error parsing AFPoints from Canon Makernote. Expected 7, 9, 11, 19, 31, 45 or 61 got %d", validPoints))
+		return nil, nil, fmt.Errorf(
+			"canon: unexpected NumAFPoints %d (expected 7, 9, 11, 19, 31, 45, 61, 65, or 1053)",
+			validPoints,
+		)
 	}
 	off := 8 + (validPoints * 4)
+	end := off + (2 * count)
+	if off < 0 || end < off || end > len(af) {
+		return nil, nil, fmt.Errorf(
+			"canon: af data too short for points-in-focus: got %d words, need %d",
+			len(af),
+			end,
+		)
+	}
 	inFocus = decodeBits(af[off:off+count], 16)
 	selected = decodeBits(af[off+count:off+count+count], 16)
 	return
@@ -83,7 +98,21 @@ func decodeBits(vals []uint16, bits int) (list []int) {
 
 // ParseAFPoints returns []AFPoint
 func ParseAFPoints(af []uint16) (afPoints []AFPoint) {
+	if len(af) < 6 {
+		return nil
+	}
+
 	validPoints := int(af[3])
+	if validPoints <= 0 {
+		return nil
+	}
+
+	// Requires width/height/x/y blocks of NumAFPoints each, starting at offset 8.
+	required := 8 + (validPoints * 4)
+	if required < 8 || required > len(af) {
+		return nil
+	}
+
 	// AFPoints
 	afPoints = make([]AFPoint, validPoints)
 	xAdjust := int16(af[4] / 2) // Adjust x-axis
