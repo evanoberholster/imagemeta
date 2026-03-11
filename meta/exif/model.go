@@ -207,10 +207,6 @@ type DNGTags struct {
 type PanasonicRawTags struct {
 	Version [4]byte // 0x0001 PanasonicRawVersion
 
-	NoiseReductionParams [16]uint16 // 0x001b NoiseReductionParams
-	WBInfo2              [64]byte   // 0x0027 WBInfo2
-	DistortionInfo       [64]byte   // 0x0119 DistortionInfo
-
 	RawDataOffset    uint32 // 0x0118 RawDataOffset
 	JpgFromRawOffset uint32 // 0x002e JpgFromRaw (offset only)
 	JpgFromRawLength uint32 // 0x002e JpgFromRaw (length only)
@@ -229,8 +225,6 @@ type PanasonicRawTags struct {
 	CropLeft      uint16 // 0x0122 CropLeft
 	CropBottom    uint16 // 0x0123 CropBottom
 	CropRight     uint16 // 0x0124 CropRight
-
-	VersionCount uint8
 }
 
 // ImageIFD stores the core image-bearing tags from non-primary root IFDs.
@@ -261,37 +255,36 @@ type LensInfo [8]uint32
 
 // GPSInfo stores parsed GPS fields.
 type GPSInfo struct {
-	latitude          float64
-	longitude         float64
 	date              time.Time
-	altitude          float32
-	dop               tag.RationalU
-	versionID         [4]byte
-	versionIDCount    uint8
-	differential      uint16
 	satellites        string
 	status            string
 	measureMode       string
-	speedRef          tag.GPSRef
-	speed             tag.RationalU
-	trackRef          tag.GPSRef
-	track             tag.RationalU
-	imgDirectionRef   tag.GPSRef
-	imgDirection      tag.RationalU
+	mapDatum          string
+	latitude          float64
+	longitude         float64
 	destLatitude      float64
 	destLongitude     float64
+	ifdBitset         uint64
+	dop               tag.RationalU
+	speed             tag.RationalU
+	track             tag.RationalU
+	imgDirection      tag.RationalU
+	destBearing       tag.RationalU
+	destDistance      tag.RationalU
+	hPositioningError tag.RationalU
+	altitude          float32
+	versionID         [4]byte
+	differential      uint16
+	speedRef          tag.GPSRef
+	trackRef          tag.GPSRef
+	imgDirectionRef   tag.GPSRef
 	destLatitudeRef   tag.GPSRef
 	destLongitudeRef  tag.GPSRef
 	destBearingRef    tag.GPSRef
-	destBearing       tag.RationalU
 	destDistanceRef   tag.GPSRef
-	destDistance      tag.RationalU
-	hPositioningError tag.RationalU
-	mapDatum          string
 	latitudeRef       tag.GPSRef
 	longitudeRef      tag.GPSRef
 	altitudeRef       tag.GPSRef
-	ifdBitset         uint64
 }
 
 // Date returns the combined GPS timestamp.
@@ -389,11 +382,6 @@ func (g GPSInfo) Altitude() float32 {
 // VersionID returns the GPSVersionID tuple.
 func (g GPSInfo) VersionID() [4]byte {
 	return g.versionID
-}
-
-// VersionIDCount returns the number of parsed GPSVersionID bytes.
-func (g GPSInfo) VersionIDCount() uint8 {
-	return g.versionIDCount
 }
 
 // Satellites returns the GPSSatellites field.

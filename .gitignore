@@ -22,6 +22,7 @@
 
 # Go temporary files
 .go*
+.bin
 .cache*
 
 samples/*
@@ -31,6 +32,8 @@ testImages/*.html
 test/*
 meta/cmd/*
 meta/xmp/coverage*
+
+cmd/exifcache
 
 *.CR3
 *.CR2

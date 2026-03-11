@@ -212,6 +212,11 @@ func (ft FileType) IsRAW() bool {
 	}
 }
 
+// IsISOBMFF returns true when the file type is based on the ISO Base Media File Format.
+func (ft FileType) IsISOBMFF() bool {
+	return ft.BaseType() == BaseTypeISOBMFF
+}
+
 // FromString returns a FileType for the given content-type string, extension,
 // or filename.
 func FromString(str string) FileType {
