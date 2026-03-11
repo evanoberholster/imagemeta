@@ -62,6 +62,96 @@ func BenchmarkParseFormats(b *testing.B) {
 	}
 }
 
+// BenchmarkParseFormatsAFInfoBitsetsOnly benchmarks CR2/CR3 parsing while only
+// decoding Canon AFInfo in-focus/selected bitsets.
+func BenchmarkParseFormatsAFInfoBitsetsOnly(b *testing.B) {
+	benchDir := os.Getenv("IMAGEMETA_BENCH_IMAGE_DIR")
+	if benchDir == "" {
+		benchDir = defaultBenchImageDir
+	}
+
+	samples := []benchSample{
+		{name: "CR2", glob: "*.CR2"},
+		{name: "CR3", glob: "*.CR3"},
+	}
+	opts := WithAFInfoDecodeOptions(AFInfoDecodeInFocus | AFInfoDecodeSelected)
+
+	for _, sample := range samples {
+		sample := sample
+		b.Run(sample.name, func(b *testing.B) {
+			path, err := firstMatch(filepath.Join(benchDir, sample.glob))
+			if err != nil {
+				b.Fatalf("glob %q: %v", sample.glob, err)
+			}
+			if path == "" {
+				b.Skipf("no sample found for %s in %s", sample.glob, benchDir)
+			}
+
+			data, err := os.ReadFile(path)
+			if err != nil {
+				b.Fatalf("read %s: %v", path, err)
+			}
+
+			b.ReportAllocs()
+			b.SetBytes(int64(len(data)))
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				_, err = ParseWithReaderOptions(bytes.NewReader(data), opts)
+				if err != nil {
+					b.Fatalf("parse %s: %v", path, err)
+				}
+			}
+		})
+	}
+}
+
+// BenchmarkParseFormatsAFInfoBitsetsOnlyPerCallOption benchmarks CR2/CR3 parsing
+// while constructing the AFInfo reader option per iteration.
+func BenchmarkParseFormatsAFInfoBitsetsOnlyPerCallOption(b *testing.B) {
+	benchDir := os.Getenv("IMAGEMETA_BENCH_IMAGE_DIR")
+	if benchDir == "" {
+		benchDir = defaultBenchImageDir
+	}
+
+	samples := []benchSample{
+		{name: "CR2", glob: "*.CR2"},
+		{name: "CR3", glob: "*.CR3"},
+	}
+
+	for _, sample := range samples {
+		sample := sample
+		b.Run(sample.name, func(b *testing.B) {
+			path, err := firstMatch(filepath.Join(benchDir, sample.glob))
+			if err != nil {
+				b.Fatalf("glob %q: %v", sample.glob, err)
+			}
+			if path == "" {
+				b.Skipf("no sample found for %s in %s", sample.glob, benchDir)
+			}
+
+			data, err := os.ReadFile(path)
+			if err != nil {
+				b.Fatalf("read %s: %v", path, err)
+			}
+
+			b.ReportAllocs()
+			b.SetBytes(int64(len(data)))
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				_, err = ParseWithReaderOptions(
+					bytes.NewReader(data),
+					WithAFInfoDecodeOptions(AFInfoDecodeInFocus|AFInfoDecodeSelected),
+				)
+				if err != nil {
+					b.Fatalf("parse %s: %v", path, err)
+				}
+			}
+		})
+	}
+}
+
 // firstMatch returns the first path that matches the provided glob.
 func firstMatch(pattern string) (string, error) {
 	paths, err := filepath.Glob(pattern)
@@ -107,3 +197,11 @@ func firstMatch(pattern string) (string, error) {
 //BBenchmarkParseFormats/JPG-2         	 1237856	       935.5 ns/op	1292134.63 MB/s	      88 B/op	       5 allocs/op
 //BBenchmarkParseFormats/JXL-2         	  478900	      2525 ns/op	151257.30 MB/s	     216 B/op	      11 allocs/op
 //BBenchmarkParseFormats/HEI-2         	   21470	     54171 ns/op	10618.33 MB/s	     144 B/op	      10 allocs/op
+
+//BenchmarkParseFormats/CR2-2         	  134436	      8881 ns/op	2409993.95 MB/s	     760 B/op	      26 allocs/op
+//BenchmarkParseFormats/CR3-2         	   90738	     11177 ns/op	2833626.94 MB/s	    3346 B/op	      33 allocs/op
+//BenchmarkParseFormats/GPR-2         	  225366	      5001 ns/op	891201.76 MB/s	     192 B/op	       9 allocs/op
+//BenchmarkParseFormats/NEF-2         	  167149	      7127 ns/op	1919249.87 MB/s	     192 B/op	       9 allocs/op
+//BenchmarkParseFormats/JPG-2         	  566251	      2054 ns/op	588364.65 MB/s	      88 B/op	       5 allocs/op
+//BenchmarkParseFormats/JXL-2         	  331006	      3655 ns/op	104511.16 MB/s	     216 B/op	      11 allocs/op
+//BenchmarkParseFormats/HEI-2         	   21280	     55786 ns/op	10310.88 MB/s	     145 B/op	      10 allocs/op

@@ -9,7 +9,7 @@ import (
 
 // parseMakerNoteTag parses vendor-specific maker-note tags.
 func (r *Reader) parseMakerNoteTag(t tag.Entry) bool {
-	switch r.makerNoteInfo().Make {
+	switch r.ensureMakerNoteMake() {
 	case makernote.CameraMakeCanon:
 		return r.parseCanonMakerNoteTag(t)
 	case makernote.CameraMakeNikon:
@@ -23,9 +23,7 @@ func (r *Reader) parseMakerNoteTag(t tag.Entry) bool {
 
 // parseCanonMakerNoteTag parses selected Canon maker-note tags.
 func (r *Reader) parseCanonMakerNoteTag(t tag.Entry) bool {
-	info := r.makerNoteInfo()
-	dec := readerCanonValueDecoder{r: r}
-	return makernote.ParseCanonTag(&info.Canon, t, dec)
+	return r.parseCanonTag(t)
 }
 
 // parseNikonMakerNoteTag parses selected Nikon maker-note tags.
@@ -100,42 +98,4 @@ func (r *Reader) parseNikonISOSetting(t tag.Entry) uint32 {
 		return uint32(iso[0])
 	}
 	return r.parseUint32(t)
-}
-
-type readerCanonValueDecoder struct {
-	r *Reader
-}
-
-func (d readerCanonValueDecoder) String(t tag.Entry) string {
-	return d.r.parseStringAllowUndefined(t)
-}
-
-func (d readerCanonValueDecoder) Uint32(t tag.Entry) uint32 {
-	return d.r.parseUint32(t)
-}
-
-func (d readerCanonValueDecoder) Uint16List(t tag.Entry, dst []uint16) int {
-	if n := d.r.parseUint16List(t, dst); n > 0 {
-		return n
-	}
-	return d.r.parseUndefinedUint16List(t, dst)
-}
-
-func (d readerCanonValueDecoder) Int16List(t tag.Entry, dst []int16) int {
-	if n := d.r.parseInt16List(t, dst); n > 0 {
-		return n
-	}
-	if !t.IsType(tag.TypeUndefined) || len(dst) == 0 {
-		return 0
-	}
-	var raw [2048]uint16
-	n := len(dst)
-	if n > len(raw) {
-		n = len(raw)
-	}
-	n = d.r.parseUndefinedUint16List(t, raw[:n])
-	for i := 0; i < n; i++ {
-		dst[i] = int16(raw[i])
-	}
-	return n
 }

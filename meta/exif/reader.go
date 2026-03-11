@@ -70,22 +70,27 @@ type Reader struct {
 
 	Exif Exif
 
+	afInfoDecodeOptions AFInfoDecodeOptions
+
 	po             uint32
 	exifLength     uint32
 	firstIFDOffset uint32
 }
 
 // NewReader creates an EXIF reader. Call Close when done.
-func NewReader(l zerolog.Logger) *Reader {
+func NewReader(l zerolog.Logger, opts ...ReaderOption) *Reader {
 	s, ok := statePool.Get().(*state)
 	if !ok || s == nil {
 		s = new(state)
 	}
 	s.reset()
-	return &Reader{
-		loggerMixin: newLoggerMixin(l),
-		state:       s,
+	r := &Reader{
+		loggerMixin:         newLoggerMixin(l),
+		state:               s,
+		afInfoDecodeOptions: AFInfoDecodeAll,
 	}
+	applyReaderOptions(r, opts)
+	return r
 }
 
 func acquirePooledReader(l zerolog.Logger) *Reader {
@@ -104,6 +109,7 @@ func acquirePooledReader(l zerolog.Logger) *Reader {
 	r.state.reset()
 	r.reader = nil
 	r.Exif = Exif{}
+	r.afInfoDecodeOptions = AFInfoDecodeAll
 	r.po = 0
 	r.exifLength = 0
 	r.firstIFDOffset = 0
@@ -121,6 +127,7 @@ func releasePooledReader(r *Reader) {
 	}
 	r.reader = nil
 	r.Exif = Exif{}
+	r.afInfoDecodeOptions = AFInfoDecodeAll
 	r.po = 0
 	r.exifLength = 0
 	r.firstIFDOffset = 0
@@ -165,69 +172,90 @@ func (r *Reader) Reset(reader io.Reader) {
 
 // Parse scans a TIFF header and parses EXIF into Exif.
 func Parse(rs io.ReadSeeker) (Exif, error) {
-	if it := scanImageType(rs); it == imagetype.ImageCR3 {
-		return parseCR3(rs)
+	return ParseWithReaderOptions(rs)
+}
+
+// ParseWithReaderOptions scans a TIFF header and parses EXIF into Exif
+// with optional reader-specific parse options.
+func ParseWithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error) {
+	br := acquirePooledBufioReader(&tiffBufioReaderPool, rs, parseTiffReaderSize)
+	defer releasePooledBufioReader(&tiffBufioReaderPool, br)
+
+	probe := scanParseProbe(br)
+	if probe.imageType.IsISOBMFF() {
+		return parseCR3FromReader(br, opts...)
 	}
 
 	reader := acquirePooledReader(Logger)
 	defer releasePooledReader(reader)
+	applyReaderOptions(reader, opts)
 
-	var panExif Exif
-	var hasPanExif bool
-	if panHeader, ok := scanPanasonicRawHeader(rs); ok {
-		if _, seekErr := rs.Seek(0, io.SeekStart); seekErr == nil {
-			if err := reader.DecodeTiff(rs, panHeader); err == nil {
-				panExif = reader.Exif
-				hasPanExif = true
-			}
+	header := probe.panHeader
+	if probe.hasPanasonicHeader {
+		// Panasonic RW2 uses an alternate TIFF signature at byte 0.
+		// Use the probe-derived header directly and decode in a single pass.
+	} else {
+		var err error
+		header, err = tiff.ScanTiffHeader(br, probe.imageType)
+		if err != nil {
+			return Exif{}, err
 		}
 	}
 
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return Exif{}, err
-	}
-	br := acquirePooledBufioReader(&tiffBufioReaderPool, rs, parseTiffReaderSize)
-	header, err := tiff.ScanTiffHeader(br, imagetype.ImageUnknown)
-	releasePooledBufioReader(&tiffBufioReaderPool, br)
-	if err != nil {
-		return Exif{}, err
-	}
-	if _, err = rs.Seek(int64(header.TiffHeaderOffset), io.SeekStart); err != nil {
-		return Exif{}, err
-	}
-	err = reader.DecodeTiff(rs, header)
-	out := reader.Exif
-	if hasPanExif {
-		mergeIFD0CoreFields(&out, panExif)
-	}
-	return out, err
+	return reader.Exif, reader.DecodeTiff(br, header)
 }
 
-// scanImageType scans input bytes to detect EXIF-related metadata.
-func scanImageType(rs io.ReadSeeker) imagetype.ImageType {
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return imagetype.ImageUnknown
-	}
-	br := acquirePooledBufioReader(&probeBufioReaderPool, rs, parseProbeReaderSize)
-	it, err := imagetype.ScanBuf(br)
-	releasePooledBufioReader(&probeBufioReaderPool, br)
-	_, _ = rs.Seek(0, io.SeekStart)
-	if err != nil {
-		return imagetype.ImageUnknown
-	}
-	return it
+type parseProbeInfo struct {
+	imageType          imagetype.ImageType
+	panHeader          meta.ExifHeader
+	hasPanasonicHeader bool
 }
 
-// parseCR3 parses the requested value from EXIF metadata.
-func parseCR3(rs io.ReadSeeker) (Exif, error) {
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return Exif{}, err
+// scanParseProbe scans input bytes once to detect the image type and optional
+// Panasonic RW2 alternate TIFF header.
+func scanParseProbe(br *bufio.Reader) parseProbeInfo {
+	var out parseProbeInfo
+
+	buf, err := br.Peek(parseProbeReaderSize)
+	if err != nil && len(buf) == 0 {
+		return out
 	}
 
-	br := acquirePooledBufioReader(&cr3BufioReaderPool, rs, parseCR3ReaderSize)
+	if it, detectErr := imagetype.Buf(buf); detectErr == nil {
+		out.imageType = it
+	}
+
+	if len(buf) < 8 {
+		return out
+	}
+
+	switch {
+	case buf[0] == 'I' && buf[1] == 'I' && buf[2] == 0x55 && buf[3] == 0x00:
+		offset := utils.LittleEndian.Uint32(buf[4:8])
+		if offset >= 8 {
+			out.panHeader = meta.NewExifHeader(utils.LittleEndian, offset, 0, 0, imagetype.ImagePanaRAW)
+			out.hasPanasonicHeader = true
+		}
+	case buf[0] == 'M' && buf[1] == 'M' && buf[2] == 0x00 && buf[3] == 0x55:
+		offset := utils.BigEndian.Uint32(buf[4:8])
+		if offset >= 8 {
+			out.panHeader = meta.NewExifHeader(utils.BigEndian, offset, 0, 0, imagetype.ImagePanaRAW)
+			out.hasPanasonicHeader = true
+		}
+	}
+	return out
+}
+
+func parseCR3WithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error) {
+	return parseCR3FromReader(rs, opts...)
+}
+
+func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
+	br := acquirePooledBufioReader(&cr3BufioReaderPool, src, parseCR3ReaderSize)
 	defer releasePooledBufioReader(&cr3BufioReaderPool, br)
 	reader := acquirePooledReader(Logger)
 	defer releasePooledReader(reader)
+	applyReaderOptions(reader, opts)
 
 	bmr := isobmff.NewReader(br, reader.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
@@ -248,31 +276,9 @@ func parseCR3(rs io.ReadSeeker) (Exif, error) {
 	return reader.Exif, nil
 }
 
-// scanPanasonicRawHeader scans input bytes to detect EXIF-related metadata.
-func scanPanasonicRawHeader(rs io.ReadSeeker) (meta.ExifHeader, bool) {
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return meta.ExifHeader{}, false
-	}
-	var buf [8]byte
-	if _, err := io.ReadFull(rs, buf[:]); err != nil {
-		return meta.ExifHeader{}, false
-	}
-
-	switch {
-	case buf[0] == 'I' && buf[1] == 'I' && buf[2] == 0x55 && buf[3] == 0x00:
-		offset := utils.LittleEndian.Uint32(buf[4:8])
-		if offset < 8 {
-			return meta.ExifHeader{}, false
-		}
-		return meta.NewExifHeader(utils.LittleEndian, offset, 0, 0, imagetype.ImagePanaRAW), true
-	case buf[0] == 'M' && buf[1] == 'M' && buf[2] == 0x00 && buf[3] == 0x55:
-		offset := utils.BigEndian.Uint32(buf[4:8])
-		if offset < 8 {
-			return meta.ExifHeader{}, false
-		}
-		return meta.NewExifHeader(utils.BigEndian, offset, 0, 0, imagetype.ImagePanaRAW), true
-	}
-	return meta.ExifHeader{}, false
+// parseCR3 parses the requested value from EXIF metadata.
+func parseCR3(rs io.ReadSeeker) (Exif, error) {
+	return parseCR3WithReaderOptions(rs)
 }
 
 // mergeIFD0CoreFields merges parsed values into the destination EXIF model.
@@ -311,9 +317,7 @@ func mergeIFD0CoreFields(dst *Exif, src Exif) {
 		dst.IFD0.TileByteCounts = src.IFD0.TileByteCounts
 	}
 
-	if dst.PanasonicRaw.VersionCount == 0 && src.PanasonicRaw.VersionCount > 0 {
-		dst.PanasonicRaw = src.PanasonicRaw
-	}
+	dst.PanasonicRaw = src.PanasonicRaw
 
 	for i := range dst.ifdBitset {
 		dst.ifdBitset[i] |= src.ifdBitset[i]
@@ -325,6 +329,7 @@ func mergeIFD0CoreFields(dst *Exif, src Exif) {
 	for i := 0; i < n; i++ {
 		dst.markTagParsed(src.highTagIDs[i])
 	}
+	dst.MakerNote.MergeParsedTags(src.MakerNote)
 }
 
 // mapIfdType maps one metadata representation to another.

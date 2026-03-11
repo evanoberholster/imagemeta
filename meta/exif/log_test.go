@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func TestLoggerMixinEnabledMask(t *testing.T) {
+func TestLoggerMixinEnabledChecks(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -100,8 +100,14 @@ func TestLoggerMixinEnabledMask(t *testing.T) {
 			if got := m.debugEnabled(); got != tt.debug {
 				t.Fatalf("debugEnabled() = %v, want %v", got, tt.debug)
 			}
+			if got := m.logLevelDebug(); got != tt.debug {
+				t.Fatalf("logLevelDebug() = %v, want %v", got, tt.debug)
+			}
 			if got := m.warnEnabled(); got != tt.warn {
 				t.Fatalf("warnEnabled() = %v, want %v", got, tt.warn)
+			}
+			if got := m.logLevelWarn(); got != tt.warn {
+				t.Fatalf("logLevelWarn() = %v, want %v", got, tt.warn)
 			}
 			if got := m.errorEnabled(); got != tt.errorable {
 				t.Fatalf("errorEnabled() = %v, want %v", got, tt.errorable)
@@ -113,7 +119,7 @@ func TestLoggerMixinEnabledMask(t *testing.T) {
 	}
 }
 
-func TestLoggerMixinSetLoggerRefreshesMask(t *testing.T) {
+func TestLoggerMixinSetLoggerRefreshesChecks(t *testing.T) {
 	t.Parallel()
 
 	m := newLoggerMixin(zerolog.New(io.Discard).Level(zerolog.ErrorLevel))
@@ -123,6 +129,6 @@ func TestLoggerMixinSetLoggerRefreshesMask(t *testing.T) {
 
 	m.setLogger(zerolog.New(io.Discard).Level(zerolog.DebugLevel))
 	if !m.debugEnabled() || !m.warnEnabled() || !m.errorEnabled() {
-		t.Fatalf("setLogger did not refresh mask: debug=%v warn=%v error=%v", m.debugEnabled(), m.warnEnabled(), m.errorEnabled())
+		t.Fatalf("setLogger did not refresh checks: debug=%v warn=%v error=%v", m.debugEnabled(), m.warnEnabled(), m.errorEnabled())
 	}
 }

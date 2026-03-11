@@ -16,9 +16,10 @@ func Ev(val int16) int16 {
 	frac := val & 0x1f
 	val -= frac
 	// Convert 1/3 and 2/3 codes
-	if frac == 0x0c {
+	switch frac {
+	case 0x0c:
 		frac = 0x20 / 3
-	} else if frac == 0x14 {
+	case 0x14:
 		frac = 0x40 / 3
 	}
 	return sign * (val + frac) / 0x20
@@ -40,32 +41,30 @@ func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
 		return nil, nil, fmt.Errorf("canon: af data too short: got %d words, need at least 4", len(af))
 	}
 
+	// AFInfo2 layout (0x0026/0x003c): NumAFPoints is sequence index 2, stored at af[3].
 	validPoints := int(af[3])
-	var count int
-	// NumAFPoints may be 7, 9, 11, 19, 31, 45 or 61, depending on the camera model.
-	switch validPoints {
-	case 7:
-		count = 1 // 1
-	case 9, 11:
-		count = 1 // 1
-	case 19, 31:
-		count = 2 // 2
-	case 45:
-		count = 3 // 3
-	case 61:
-		count = 4 // 4
-	case 65:
-		count = 5 // 5
-	case 1053:
-		count = 66
-	default:
-		return nil, nil, fmt.Errorf(
-			"canon: unexpected NumAFPoints %d (expected 7, 9, 11, 19, 31, 45, 61, 65, or 1053)",
-			validPoints,
-		)
+	if validPoints > 0 {
+		count := (validPoints + 15) / 16
+		off := 8 + (validPoints * 4)
+		end := off + count
+		if off >= 0 && end >= off && end <= len(af) {
+			inFocus = decodeBits(af[off:end], 16)
+			// AFPointsSelected is EOS-only in ExifTool, but decode if present to preserve API behavior.
+			if end+count <= len(af) {
+				selected = decodeBits(af[end:end+count], 16)
+			}
+			return
+		}
 	}
-	off := 8 + (validPoints * 4)
-	end := off + (2 * count)
+
+	// AFInfo layout (0x0012): NumAFPoints is sequence index 0, stored at af[0].
+	validPoints = int(af[0])
+	if validPoints <= 0 {
+		return nil, nil, fmt.Errorf("canon: unexpected NumAFPoints %d", validPoints)
+	}
+	count := (validPoints + 15) / 16
+	off := 8 + (validPoints * 2)
+	end := off + count
 	if off < 0 || end < off || end > len(af) {
 		return nil, nil, fmt.Errorf(
 			"canon: af data too short for points-in-focus: got %d words, need %d",
@@ -73,8 +72,7 @@ func PointsInFocus(af []uint16) (inFocus []int, selected []int, err error) {
 			end,
 		)
 	}
-	inFocus = decodeBits(af[off:off+count], 16)
-	selected = decodeBits(af[off+count:off+count+count], 16)
+	inFocus = decodeBits(af[off:end], 16)
 	return
 }
 

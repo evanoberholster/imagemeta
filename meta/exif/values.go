@@ -1,6 +1,7 @@
 package exif
 
 import (
+	"bytes"
 	"math"
 	"math/bits"
 	"strings"
@@ -61,26 +62,40 @@ func getLocation(offset int32, label []byte) *time.Location {
 	return loc
 }
 
-// parseString parses the requested value from EXIF metadata.
-func (r *Reader) parseString(t tag.Entry) string {
+// parseASCIIValueBytes parses ASCII-ish tag payload into a trimmed byte slice.
+// Returned bytes reference parser buffers and are only valid until next read.
+func (r *Reader) parseASCIIValueBytes(t tag.Entry) []byte {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(r.state.buf[:4])
-		return string(trimNULBuffer(r.state.buf[:t.Size()]))
+		return trimNULBuffer(r.state.buf[:t.Size()])
 	}
-	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
-		buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
-		if err != nil {
-			return ""
-		}
-		return string(trimNULBuffer(buf))
+	if !(t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul)) {
+		return nil
 	}
-	return ""
+	buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
+	if err != nil {
+		return nil
+	}
+	return trimNULBuffer(buf)
+}
+
+// parseString parses the requested value from EXIF metadata.
+func (r *Reader) parseString(t tag.Entry) string {
+	buf := r.parseASCIIValueBytes(t)
+	if len(buf) == 0 {
+		return ""
+	}
+	return string(buf)
 }
 
 // parseStringAllowUndefined parses the requested value from EXIF metadata.
 func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 	if t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul) {
-		return strings.TrimSpace(r.parseString(t))
+		buf := bytes.TrimSpace(r.parseASCIIValueBytes(t))
+		if len(buf) == 0 {
+			return ""
+		}
+		return string(buf)
 	}
 	if !t.IsType(tag.TypeUndefined) {
 		return ""
@@ -105,7 +120,11 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 			}
 			out[i] = '.'
 		}
-		return strings.TrimSpace(string(out[:len(trimmed)]))
+		sanitized := bytes.TrimSpace(out[:len(trimmed)])
+		if len(sanitized) == 0 {
+			return ""
+		}
+		return string(sanitized)
 	}
 	out := make([]byte, len(trimmed))
 	for i := 0; i < len(trimmed); i++ {
@@ -116,7 +135,11 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 		}
 		out[i] = '.'
 	}
-	return strings.TrimSpace(string(out))
+	out = bytes.TrimSpace(out)
+	if len(out) == 0 {
+		return ""
+	}
+	return string(out)
 }
 
 // parseDisplayString keeps a printable representation that is close to exiftool
@@ -271,7 +294,7 @@ func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 	if len(dst) == 0 {
 		return 0
 	}
-	if !t.IsType(tag.TypeShort) {
+	if !t.IsType(tag.TypeShort) && !t.IsType(tag.TypeSignedShort) {
 		return 0
 	}
 	if t.UnitCount == 0 {
@@ -340,43 +363,6 @@ func (r *Reader) parseUndefinedUint16List(t tag.Entry, dst []uint16) int {
 	for i := 0; i < n; i++ {
 		start := i * 2
 		dst[i] = t.ByteOrder.Uint16(buf[start : start+2])
-	}
-	return n
-}
-
-// parseInt16List parses the requested value from EXIF metadata.
-func (r *Reader) parseInt16List(t tag.Entry, dst []int16) int {
-	if len(dst) == 0 {
-		return 0
-	}
-	if !t.IsType(tag.TypeSignedShort) || t.UnitCount == 0 {
-		return 0
-	}
-	n := int(t.UnitCount)
-	if n > len(dst) {
-		n = len(dst)
-	}
-	if t.IsEmbedded() {
-		var shorts [2]uint16
-		m := t.EmbeddedShorts(shorts[:])
-		if m > n {
-			m = n
-		}
-		for i := 0; i < m; i++ {
-			dst[i] = int16(shorts[i])
-		}
-		return m
-	}
-	buf, _, err := r.readTagBytes(t, uint32(n*2))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 2; got < n {
-		n = got
-	}
-	for i := 0; i < n; i++ {
-		start := i * 2
-		dst[i] = int16(t.ByteOrder.Uint16(buf[start : start+2]))
 	}
 	return n
 }
@@ -511,39 +497,6 @@ func (r *Reader) parseByteList(t tag.Entry, dst []byte) int {
 	return n
 }
 
-// parseRationalUList parses the requested value from EXIF metadata.
-func (r *Reader) parseRationalUList(t tag.Entry, dst []uint32) int {
-	if len(dst) < 2 {
-		return 0
-	}
-	if !(t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
-		return 0
-	}
-	if t.UnitCount == 0 {
-		return 0
-	}
-	n := int(t.UnitCount)
-	if n > len(dst)/2 {
-		n = len(dst) / 2
-	}
-	if n == 0 {
-		return 0
-	}
-	buf, _, err := r.readTagBytes(t, uint32(n*8))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 8; got < n {
-		n = got
-	}
-	for i := 0; i < n; i++ {
-		start := i * 8
-		dst[i*2] = t.ByteOrder.Uint32(buf[start : start+4])
-		dst[i*2+1] = t.ByteOrder.Uint32(buf[start+4 : start+8])
-	}
-	return n
-}
-
 // parseRationalSList parses the requested value from EXIF metadata.
 func (r *Reader) parseRationalSList(t tag.Entry, dst []int32) int {
 	if len(dst) < 2 {
@@ -573,58 +526,6 @@ func (r *Reader) parseRationalSList(t tag.Entry, dst []int32) int {
 		start := i * 8
 		dst[i*2] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
 		dst[i*2+1] = int32(t.ByteOrder.Uint32(buf[start+4 : start+8]))
-	}
-	return n
-}
-
-// parseFloat64List parses the requested value from EXIF metadata.
-func (r *Reader) parseFloat64List(t tag.Entry, dst []float64) int {
-	if len(dst) == 0 {
-		return 0
-	}
-	if !t.IsType(tag.TypeDouble) || t.UnitCount == 0 {
-		return 0
-	}
-	n := int(t.UnitCount)
-	if n > len(dst) {
-		n = len(dst)
-	}
-	buf, _, err := r.readTagBytes(t, uint32(n*8))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 8; got < n {
-		n = got
-	}
-	for i := 0; i < n; i++ {
-		start := i * 8
-		dst[i] = math.Float64frombits(t.ByteOrder.Uint64(buf[start : start+8]))
-	}
-	return n
-}
-
-// parseFloat32List parses the requested value from EXIF metadata.
-func (r *Reader) parseFloat32List(t tag.Entry, dst []float32) int {
-	if len(dst) == 0 {
-		return 0
-	}
-	if !t.IsType(tag.TypeFloat) || t.UnitCount == 0 {
-		return 0
-	}
-	n := int(t.UnitCount)
-	if n > len(dst) {
-		n = len(dst)
-	}
-	buf, _, err := r.readTagBytes(t, uint32(n*4))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 4; got < n {
-		n = got
-	}
-	for i := 0; i < n; i++ {
-		start := i * 4
-		dst[i] = math.Float32frombits(t.ByteOrder.Uint32(buf[start : start+4]))
 	}
 	return n
 }

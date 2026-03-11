@@ -184,11 +184,12 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 		if text[i] == '/' {
 			if i < len(text)+1 {
 				var n int16
-				if text[0] == '+' {
+				switch text[0] {
+				case '+':
 					n = int16(parseUint(text[1:i]))
-				} else if text[0] == '-' {
+				case '-':
 					n = int16(parseUint(text[1:i])) * -1
-				} else {
+				default:
 					n = int16(parseUint(text[:i]))
 				}
 				n = n << 8

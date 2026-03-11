@@ -52,17 +52,3 @@ func TestParseNikonHeader(t *testing.T) {
 		t.Fatalf("ifd offset = %d, want 8", off)
 	}
 }
-
-func TestMakerNoteBitset(t *testing.T) {
-	t.Parallel()
-
-	var mn Info
-	mn.MarkTagParsed(9)
-	mn.MarkTagParsed(9)
-	if !mn.HasTagParsed(9) {
-		t.Fatal("HasTagParsed(9) should be true")
-	}
-	if mn.HasTagParsed(10) {
-		t.Fatal("HasTagParsed(10) should be false")
-	}
-}

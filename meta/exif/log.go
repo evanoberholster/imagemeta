@@ -16,76 +16,56 @@ var (
 // loggerMixin provides common EXIF parser logging behavior and can be embedded
 // into parser types to avoid repeating level checks and trace-callsite logic.
 type loggerMixin struct {
-	logger      zerolog.Logger
-	enabledMask uint8
+	logger zerolog.Logger
 }
-
-const (
-	logMaskTrace uint8 = 1 << iota
-	logMaskInfo
-	logMaskDebug
-	logMaskWarn
-	logMaskError
-)
 
 // newLoggerMixin creates and initializes an internal helper value.
 func newLoggerMixin(l zerolog.Logger) loggerMixin {
-	m := loggerMixin{logger: l}
-	m.refreshEnabledMask()
-	return m
+	return loggerMixin{logger: l}
 }
 
 // setLogger sets the internal state value used during parsing.
 func (m *loggerMixin) setLogger(l zerolog.Logger) {
 	m.logger = l
-	m.refreshEnabledMask()
 }
 
-// refreshEnabledMask precomputes level checks into a compact bitmask.
-func (m *loggerMixin) refreshEnabledMask() {
-	level := m.logger.GetLevel()
-	var mask uint8
-	if level == zerolog.TraceLevel {
-		mask |= logMaskTrace
-	}
-	if level <= zerolog.InfoLevel {
-		mask |= logMaskInfo
-	}
-	if level <= zerolog.DebugLevel {
-		mask |= logMaskDebug
-	}
-	if level <= zerolog.WarnLevel {
-		mask |= logMaskWarn
-	}
-	if level <= zerolog.ErrorLevel {
-		mask |= logMaskError
-	}
-	m.enabledMask = mask
+func (m loggerMixin) logLevel() zerolog.Level {
+	return m.logger.GetLevel()
+}
+
+// logLevelDebug reports whether debug level logging is enabled.
+func (m loggerMixin) logLevelDebug() bool {
+	return m.logLevel() <= zerolog.DebugLevel
+}
+
+// logLevelWarn reports whether warn level logging is enabled.
+func (m loggerMixin) logLevelWarn() bool {
+	return m.logLevel() <= zerolog.WarnLevel
 }
 
 // traceEnabled reports whether trace logging is enabled.
 func (m loggerMixin) traceEnabled() bool {
-	return m.enabledMask&logMaskTrace != 0
+	return m.logLevel() == zerolog.TraceLevel
 }
 
 // infoEnabled reports whether info logging is enabled.
 func (m loggerMixin) infoEnabled() bool {
-	return m.enabledMask&logMaskInfo != 0
+	return m.logLevel() <= zerolog.InfoLevel
 }
 
 // debugEnabled reports whether debug logging is enabled.
 func (m loggerMixin) debugEnabled() bool {
-	return m.enabledMask&logMaskDebug != 0
+	return m.logLevelDebug()
 }
 
 // warnEnabled reports whether warn logging is enabled.
 func (m loggerMixin) warnEnabled() bool {
-	return m.enabledMask&logMaskWarn != 0
+	return m.logLevelWarn()
 }
 
 // errorEnabled reports whether error logging is enabled.
 func (m loggerMixin) errorEnabled() bool {
-	return m.enabledMask&logMaskError != 0
+	return m.logLevel() <= zerolog.ErrorLevel
 }
 
 // errEnabled reports whether error logging is enabled.
@@ -95,21 +75,21 @@ func (m loggerMixin) errEnabled() bool {
 
 // info builds an info-level log event with trace caller context when enabled.
 func (m loggerMixin) info() *zerolog.Event {
-	ev := m.logger.WithLevel(zerolog.InfoLevel)
+	ev := m.logger.Info()
 	m.traceCaller(ev, 3)
 	return ev
 }
 
 // debug builds a debug-level log event with trace caller context when enabled.
 func (m loggerMixin) debug() *zerolog.Event {
-	ev := m.logger.WithLevel(zerolog.DebugLevel)
+	ev := m.logger.Debug()
 	m.traceCaller(ev, 3)
 	return ev
 }
 
 // warn builds a warn-level log event with trace caller context when enabled.
 func (m loggerMixin) warn() *zerolog.Event {
-	ev := m.logger.WithLevel(zerolog.WarnLevel)
+	ev := m.logger.Warn()
 	m.traceCaller(ev, 3)
 	return ev
 }
