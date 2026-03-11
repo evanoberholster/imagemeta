@@ -198,10 +198,10 @@ func firstMatch(pattern string) (string, error) {
 //BBenchmarkParseFormats/JXL-2         	  478900	      2525 ns/op	151257.30 MB/s	     216 B/op	      11 allocs/op
 //BBenchmarkParseFormats/HEI-2         	   21470	     54171 ns/op	10618.33 MB/s	     144 B/op	      10 allocs/op
 
-//BenchmarkParseFormats/CR2-2         	  134436	      8881 ns/op	2409993.95 MB/s	     760 B/op	      26 allocs/op
-//BenchmarkParseFormats/CR3-2         	   90738	     11177 ns/op	2833626.94 MB/s	    3346 B/op	      33 allocs/op
-//BenchmarkParseFormats/GPR-2         	  225366	      5001 ns/op	891201.76 MB/s	     192 B/op	       9 allocs/op
-//BenchmarkParseFormats/NEF-2         	  167149	      7127 ns/op	1919249.87 MB/s	     192 B/op	       9 allocs/op
-//BenchmarkParseFormats/JPG-2         	  566251	      2054 ns/op	588364.65 MB/s	      88 B/op	       5 allocs/op
-//BenchmarkParseFormats/JXL-2         	  331006	      3655 ns/op	104511.16 MB/s	     216 B/op	      11 allocs/op
-//BenchmarkParseFormats/HEI-2         	   21280	     55786 ns/op	10310.88 MB/s	     145 B/op	      10 allocs/op
+//BenchmarkParseFormats/CR2-2         	  166699	      7284 ns/op	2938413.19 MB/s	     656 B/op	      20 allocs/op
+//BenchmarkParseFormats/CR3-2         	  117448	     10101 ns/op	3135535.26 MB/s	    3328 B/op	      28 allocs/op
+//BenchmarkParseFormats/GPR-2         	  309726	      3794 ns/op	1174937.90 MB/s	     184 B/op	       8 allocs/op
+//BenchmarkParseFormats/NEF-2         	  222475	      5440 ns/op	2514463.56 MB/s	     176 B/op	       8 allocs/op
+//BenchmarkParseFormats/JPG-2         	 1399842	       826.9 ns/op	1461741.90 MB/s	      80 B/op	       4 allocs/op
+//BenchmarkParseFormats/JXL-2         	  443000	      2563 ns/op	149056.92 MB/s	     200 B/op	      10 allocs/op
+//BenchmarkParseFormats/HEI-2         	   60080	     20304 ns/op	28330.03 MB/s	     705 B/op	      17 allocs/op

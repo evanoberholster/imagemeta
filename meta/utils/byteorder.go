@@ -73,17 +73,17 @@ func (bo ByteOrder) PutUint64(b []byte, v uint64) {
 // CIPA DC-008-2016; JEITA CP-3451D
 // -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
 func BinaryOrder(buf []byte) ByteOrder {
-	if isTiffBigEndian(buf) {
+	if IsTiffBigEndian(buf) {
 		return BigEndian
 	}
-	if isTiffLittleEndian(buf) {
+	if IsTiffLittleEndian(buf) {
 		return LittleEndian
 	}
 	return UnknownEndian
 }
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
-func isTiffLittleEndian(buf []byte) bool {
+func IsTiffLittleEndian(buf []byte) bool {
 	return string(buf[:4]) == "II*\000"
 	//return buf[0] == 0x49 &&
 	//	buf[1] == 0x49 &&
@@ -92,7 +92,7 @@ func isTiffLittleEndian(buf []byte) bool {
 }
 
 // IsTiffBigEndian checks the buf for the TiffBigEndianSignature
-func isTiffBigEndian(buf []byte) bool {
+func IsTiffBigEndian(buf []byte) bool {
 	return string(buf[:4]) == "MM\000*"
 	//return buf[0] == 0x4d &&
 	//	buf[1] == 0x4d &&

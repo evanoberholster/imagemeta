@@ -12,6 +12,7 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 const (
@@ -951,7 +952,7 @@ func (r *Reader) fastRead(n int) ([]byte, error) {
 	if r.exifLength > 0 && int(r.po)+n > int(r.exifLength) {
 		return nil, imagetype.ErrDataLength
 	}
-	if br, ok := r.reader.(BufferedReader); ok {
+	if br, ok := r.reader.(utils.BufferedReader); ok {
 		buf, err := br.Peek(n)
 		if err != nil {
 			return nil, err
@@ -979,7 +980,7 @@ func (r *Reader) discard(n int) error {
 	if n <= 0 {
 		return nil
 	}
-	if br, ok := r.reader.(BufferedReader); ok {
+	if br, ok := r.reader.(utils.BufferedReader); ok {
 		discarded, err := br.Discard(n)
 		r.po += uint32(discarded)
 		return err

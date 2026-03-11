@@ -38,11 +38,6 @@ var (
 			return &Reader{loggerMixin: newLoggerMixin(Logger)}
 		},
 	}
-	probeBufioReaderPool = sync.Pool{
-		New: func() any {
-			return bufio.NewReaderSize(pooledEOFReader, parseProbeReaderSize)
-		},
-	}
 	tiffBufioReaderPool = sync.Pool{
 		New: func() any {
 			return bufio.NewReaderSize(pooledEOFReader, parseTiffReaderSize)
@@ -54,13 +49,6 @@ var (
 		},
 	}
 )
-
-// BufferedReader is compatible with *bufio.Reader.
-type BufferedReader interface {
-	Peek(n int) ([]byte, error)
-	Discard(n int) (discarded int, err error)
-	Read(p []byte) (n int, err error)
-}
 
 // Reader reads and parses EXIF IFD trees.
 type Reader struct {
@@ -246,10 +234,6 @@ func scanParseProbe(br *bufio.Reader) parseProbeInfo {
 	return out
 }
 
-func parseCR3WithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error) {
-	return parseCR3FromReader(rs, opts...)
-}
-
 func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
 	br := acquirePooledBufioReader(&cr3BufioReaderPool, src, parseCR3ReaderSize)
 	defer releasePooledBufioReader(&cr3BufioReaderPool, br)
@@ -274,11 +258,6 @@ func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
 		return reader.Exif, err
 	}
 	return reader.Exif, nil
-}
-
-// parseCR3 parses the requested value from EXIF metadata.
-func parseCR3(rs io.ReadSeeker) (Exif, error) {
-	return parseCR3WithReaderOptions(rs)
 }
 
 // mergeIFD0CoreFields merges parsed values into the destination EXIF model.
@@ -663,25 +642,11 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory ifd.Directory, ta
 			ByteOrder:   byteOrder,
 		}
 
-		if entryIsEmbeddedFast(tagType, unitCount) {
+		if t.IsEmbedded() {
 			r.parseTag(t)
 			continue
 		}
 		r.addTag(t)
 	}
 	return nil
-}
-
-// entryIsEmbeddedFast checks inline-value eligibility for common TIFF/EXIF types.
-func entryIsEmbeddedFast(typ tag.Type, unitCount uint32) bool {
-	switch typ {
-	case tag.TypeByte, tag.TypeASCII, tag.TypeUndefined, tag.TypeASCIINoNul:
-		return unitCount <= 4
-	case tag.TypeShort, tag.TypeSignedShort:
-		return unitCount <= 2
-	case tag.TypeLong, tag.TypeSignedLong, tag.TypeFloat:
-		return unitCount <= 1
-	default:
-		return false
-	}
 }

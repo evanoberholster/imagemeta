@@ -8,21 +8,6 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
-func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
-	if !r.warnEnabled() {
-		return
-	}
-	r.warn().
-		Str("parser", parser).
-		Uint16("tagID", uint16(t.ID)).
-		Str("tagName", t.Name()).
-		Stringer("tagType", t.Type).
-		Uint32("unitCount", t.UnitCount).
-		Int("gotUnits", got).
-		Int("wantUnits", want).
-		Msg("canon maker-note payload too short")
-}
-
 func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	dst := &r.makerNoteInfo().Canon
 
@@ -174,24 +159,19 @@ func (r *Reader) parseCanonBlockPreview(t tag.Entry) metacanon.BlockPreview {
 	return dst
 }
 
-func (r *Reader) parseCanonFlashInfo(t tag.Entry) metacanon.FlashInfo {
-	return metacanon.FlashInfo{
-		Raw: r.parseCanonBlockPreview(t),
-	}
-}
-
 func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) metacanon.PreviewImageInfo {
-	block := r.parseCanonBlockPreview(t)
-	if block.PreviewCount < 24 {
-		r.warnCanonShortRead(t, "parseCanonPreviewImageInfo", int(block.PreviewCount)/4, 6)
+	var raw [8]int32
+	if n := r.parseCanonInt32List(t, raw[:]); n < 5 {
+		r.warnCanonShortRead(t, "parseCanonPreviewImageInfo", n, 5)
 		return metacanon.PreviewImageInfo{}
 	}
+
 	return metacanon.PreviewImageInfo{
-		PreviewQuality:     metacanon.Quality(int16(t.ByteOrder.Uint32(block.Preview[4:8]))),
-		PreviewImageLength: t.ByteOrder.Uint32(block.Preview[8:12]),
-		PreviewImageWidth:  t.ByteOrder.Uint32(block.Preview[12:16]),
-		PreviewImageHeight: t.ByteOrder.Uint32(block.Preview[16:20]),
-		PreviewImageStart:  t.ByteOrder.Uint32(block.Preview[20:24]),
+		PreviewQuality:     metacanon.Quality(int16(raw[0])),
+		PreviewImageLength: uint32(raw[1]),
+		PreviewImageWidth:  uint32(raw[2]),
+		PreviewImageHeight: uint32(raw[3]),
+		PreviewImageStart:  uint32(raw[4]),
 	}
 }
 
@@ -291,8 +271,7 @@ func (r *Reader) parseCanonAFConfig(t tag.Entry) metacanon.AFConfig {
 
 func (r *Reader) parseCanonRawBurstInfo(t tag.Entry) metacanon.RawBurstInfo {
 	var raw [3]uint32
-	n := r.parseUint32List(t, raw[:])
-	if n < 3 {
+	if n := r.parseUint32List(t, raw[:]); n < 3 {
 		r.warnCanonShortRead(t, "parseCanonRawBurstInfo", n, 3)
 		return metacanon.RawBurstInfo{}
 	}
@@ -305,16 +284,12 @@ func (r *Reader) parseCanonRawBurstInfo(t tag.Entry) metacanon.RawBurstInfo {
 func (r *Reader) parseCanonFaceDetect1(t tag.Entry) metacanon.FaceDetect1Info {
 	var raw [26]uint16
 	n := r.parseCanonUint16List(t, raw[:])
-	if n < 3 {
-		r.warnCanonShortRead(t, "parseCanonFaceDetect1", n, 3)
+	if n < 5 {
+		r.warnCanonShortRead(t, "parseCanonFaceDetect1", n, 5)
 		return metacanon.FaceDetect1Info{}
 	}
 	dst := metacanon.FaceDetect1Info{
 		FacesDetected: raw[2],
-	}
-	if n < 5 {
-		r.warnCanonShortRead(t, "parseCanonFaceDetect1", n, 5)
-		return dst
 	}
 	dst.FaceDetectFrameSize[0] = raw[3]
 	dst.FaceDetectFrameSize[1] = raw[4]
@@ -339,8 +314,7 @@ func (r *Reader) parseCanonFaceDetect1(t tag.Entry) metacanon.FaceDetect1Info {
 
 func (r *Reader) parseCanonFaceDetect2(t tag.Entry) metacanon.FaceDetect2Info {
 	var raw [8]byte
-	n := r.parseByteList(t, raw[:])
-	if n < 3 {
+	if n := r.parseByteList(t, raw[:]); n < 3 {
 		r.warnCanonShortRead(t, "parseCanonFaceDetect2", n, 3)
 		return metacanon.FaceDetect2Info{}
 	}
@@ -352,8 +326,7 @@ func (r *Reader) parseCanonFaceDetect2(t tag.Entry) metacanon.FaceDetect2Info {
 
 func (r *Reader) parseCanonFaceDetect3(t tag.Entry) metacanon.FaceDetect3Info {
 	var raw [8]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	if n < 4 {
+	if n := r.parseCanonUint16List(t, raw[:]); n < 4 {
 		r.warnCanonShortRead(t, "parseCanonFaceDetect3", n, 4)
 		return metacanon.FaceDetect3Info{}
 	}
@@ -418,21 +391,6 @@ func (r *Reader) parseCanonProcessingInfo(t tag.Entry) metacanon.ProcessingInfo 
 		UnsharpMaskThreshold: int16(raw[14]),
 	}
 
-}
-
-func (r *Reader) parseCanonPictureStyle3(dst *[3]uint16, count *uint8, t tag.Entry) {
-	var raw [3]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	*dst = [3]uint16{}
-	*count = 0
-	if n == 0 {
-		if t.UnitCount > 0 {
-			r.warnCanonShortRead(t, "parseCanonPictureStyle3", n, 1)
-		}
-		return
-	}
-	copy(dst[:], raw[:n])
-	*count = uint8(n)
 }
 
 // parseCanonAFMicroAdj parses tag 0x4013 (AFMicroAdj).
@@ -1047,10 +1005,25 @@ func canonHexBytes(b []byte) string {
 	const table = "0123456789abcdef"
 	var out strings.Builder
 	out.Grow(len(b) * 2)
-	for i := 0; i < len(b); i++ {
+	for i := range b {
 		v := b[i]
 		out.WriteByte(table[v>>4])
 		out.WriteByte(table[v&0x0f])
 	}
 	return out.String()
+}
+
+func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
+	if !r.warnEnabled() {
+		return
+	}
+	r.warn().
+		Str("parser", parser).
+		Uint16("tagID", uint16(t.ID)).
+		Str("tagName", t.Name()).
+		Stringer("tagType", t.Type).
+		Uint32("unitCount", t.UnitCount).
+		Int("gotUnits", got).
+		Int("wantUnits", want).
+		Msg("canon maker-note payload too short")
 }

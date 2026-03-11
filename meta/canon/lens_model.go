@@ -88,3 +88,6 @@ const (
 	CanonRFLensTypeRF714mmF2835LFisheyeSTM        CanonRFLensType = 331 // Canon RF 7-14mm F2.8-3.5 L FISHEYE STM
 	CanonRFLensTypeRF14mmF14LVCM                  CanonRFLensType = 332 // Canon RF 14mm F1.4 L VCM
 )
+
+// CanonLensType
+type CanonLensType uint16
