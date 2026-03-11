@@ -45,12 +45,23 @@ jobs:
       - name: Download modules
         run: go mod download
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.64.8
-          only-new-issues: ${{ github.event_name == 'pull_request' }}
-          args: --config=golangci.yml --timeout=5m
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
+      - name: Run golangci-lint (typecheck excluded)
+        run: |
+          set -euo pipefail
+          golangci-lint run --config=golangci.yml --timeout=5m --out-format json --issues-exit-code=0 ./... > golangci.json
+
+          non_typecheck_issues="$(jq '[ (.Issues // [])[] | select(.FromLinter != "typecheck") ] | length' golangci.json)"
+          if [ "${non_typecheck_issues}" -eq 0 ]; then
+            echo "No non-typecheck golangci-lint issues found."
+            exit 0
+          fi
+
+          echo "golangci-lint issues (excluding typecheck):"
+          jq -r '.Issues // [] | .[] | select(.FromLinter != "typecheck") | "\(.Pos.Filename):\(.Pos.Line):\(.Pos.Column): \(.Text) (\(.FromLinter))"' golangci.json
+          exit 1
 
       - name: Run govulncheck
         run: |

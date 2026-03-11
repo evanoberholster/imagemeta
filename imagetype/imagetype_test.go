@@ -98,7 +98,7 @@ func TestImageType(t *testing.T) {
 
 	itbuf, err := it.MarshalText()
 	if err != nil {
-		t.Errorf("Error Imagetype could not be marshalled")
+		t.Errorf("Error Imagetype could not be marshaled")
 	}
 
 	if !bytes.Equal(itbuf, []byte(str)) {
@@ -166,6 +166,27 @@ func TestImageType(t *testing.T) {
 
 }
 
+func TestFromBytes(t *testing.T) {
+	tests := map[string]FileType{
+		"image/jpeg":                ImageJPEG,
+		"image/jpeg; charset=utf-8": ImageJPEG,
+		"application/rdf+xml":       ImageXMP,
+		"image/heic":                ImageHEIC,
+		".jpg":                      ImageJPEG,
+		"jpg":                       ImageJPEG,
+		".dng":                      ImageDNG,
+		".xmp":                      ImageXMP,
+		" image/tiff ":              ImageTiff,
+		"unknown/value":             ImageUnknown,
+	}
+
+	for input, expected := range tests {
+		if got := FromBytes([]byte(input)); got != expected {
+			t.Errorf("FromBytes(%q) = %s, expected %s", input, got, expected)
+		}
+	}
+}
+
 func TestScanImageType(t *testing.T) {
 	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
@@ -210,13 +231,14 @@ func TestScanImageType(t *testing.T) {
 
 	for i, header := range headerTests {
 		t.Run(header.name, func(t *testing.T) {
-			if n, err := f.ReadAt(buf, int64(i*fileOffset)); n != fileOffset || err != nil {
-				t.Fatal(err)
+			n, readErr := f.ReadAt(buf, int64(i*fileOffset))
+			if n != fileOffset || readErr != nil {
+				t.Fatal(readErr)
 			}
 			// Search for Image Type
-			imageType, err := Scan(bytes.NewReader(buf))
-			if err != nil {
-				t.Fatal(err)
+			imageType, scanErr := Scan(bytes.NewReader(buf))
+			if scanErr != nil {
+				t.Fatal(scanErr)
 			}
 
 			if header.imageType != imageType.String() {
@@ -227,15 +249,17 @@ func TestScanImageType(t *testing.T) {
 
 	// Image Unknown
 	imageType, err := Scan(bytes.NewReader([]byte("abcdefghijklmnop1234567890abcdefghijklmnopqrs")))
-	if imageType != ImageUnknown && err != ErrImageTypeNotFound {
-		t.Errorf("Incorrect Error wanted %s got %s", ErrImageTypeNotFound.Error(), err.Error())
+	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
+	}
+	if !errors.Is(err, ErrImageTypeNotFound) && !errors.Is(err, io.EOF) {
+		t.Errorf("Incorrect Error wanted %s or EOF got %v", ErrImageTypeNotFound.Error(), err)
 	}
 
 	r := bytes.NewReader([]byte(""))
 	//  Image Unknown - Empty ByteSlice
 	imageType, err = Scan(r)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		t.Fatal(err)
 	}
 
@@ -244,16 +268,20 @@ func TestScanImageType(t *testing.T) {
 	}
 
 	imageType, err = ReadAt(r)
-	if imageType != ImageUnknown && err != ErrImageTypeNotFound {
-		t.Errorf("Incorrect Error wanted %s got %s", ErrImageTypeNotFound.Error(), err.Error())
+	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
+	}
+	if !errors.Is(err, ErrImageTypeNotFound) && !errors.Is(err, io.EOF) {
+		t.Errorf("Incorrect Error wanted %s or EOF got %v", ErrImageTypeNotFound.Error(), err)
 	}
 
 	buf = make([]byte, 10)
 	imageType, err = Buf(buf)
-	if imageType != ImageUnknown && err != ErrDataLength {
-		t.Errorf("Incorrect Error wanted %s got %s", ErrDataLength.Error(), err.Error())
+	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
+	}
+	if !errors.Is(err, ErrDataLength) {
+		t.Errorf("Incorrect Error wanted %s got %v", ErrDataLength.Error(), err)
 	}
 }
 
@@ -395,16 +423,21 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 }
 
 func TestMsgp(t *testing.T) {
-	var err error
 	it, it2 := ImageJPEG, ImageUnknown
-	b, _ := it.MarshalMsg(nil)
+	b, err := it.MarshalMsg(nil)
+	if err != nil {
+		t.Fatalf("MarshalMsg returned error: %v", err)
+	}
 
-	b, _ = it2.UnmarshalMsg(b)
+	b, err = it2.UnmarshalMsg(b)
+	if err != nil {
+		t.Fatalf("UnmarshalMsg returned error: %v", err)
+	}
 	if it != it2 {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", it, it2)
 	}
 
-	if _, err = it2.UnmarshalMsg(b); err != msgp.ErrShortBytes {
+	if _, err = it2.UnmarshalMsg(b); !errors.Is(err, msgp.ErrShortBytes) {
 		t.Error(err)
 	}
 
