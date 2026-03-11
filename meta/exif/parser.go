@@ -434,7 +434,7 @@ func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
 	}
 	switch t.ID {
 	case tag.TagPanasonicRawVersion:
-		r.Exif.PanasonicRaw.VersionCount = uint8(r.parseByteList(t, r.Exif.PanasonicRaw.Version[:]))
+		r.parseByteList(t, r.Exif.PanasonicRaw.Version[:])
 	case tag.TagPanasonicSensorWidth:
 		r.Exif.PanasonicRaw.SensorWidth = r.parseUint16(t)
 	case tag.TagPanasonicSensorHeight:
@@ -448,9 +448,9 @@ func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
 	case tag.TagPanasonicISOHighPrecision:
 		r.Exif.PanasonicRaw.ISO = r.parseUint32(t)
 	case tag.TagNoiseReductionParams:
-		r.parseUndefinedUint16List(t, r.Exif.PanasonicRaw.NoiseReductionParams[:])
+		// Not parsed
 	case tag.TagWBInfo2:
-		r.parseByteList(t, r.Exif.PanasonicRaw.WBInfo2[:])
+		// Not parsed
 	case tag.TagPanasonicRawFormat:
 		r.Exif.PanasonicRaw.RawFormat = r.parseUint16(t)
 	case tag.TagJpgFromRaw:
@@ -461,7 +461,7 @@ func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
 	case tag.TagPanasonicRawDataOffset:
 		r.Exif.PanasonicRaw.RawDataOffset = r.parseUint32(t)
 	case tag.TagPanasonicDistortionInfo:
-		r.parseByteList(t, r.Exif.PanasonicRaw.DistortionInfo[:])
+		// Not parsed
 	case tag.TagPanasonicCropTop:
 		r.Exif.PanasonicRaw.CropTop = r.parseUint16(t)
 	case tag.TagPanasonicCropLeft:
@@ -640,7 +640,7 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 func (r *Reader) parseGPSTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagGPSVersionID:
-		r.Exif.GPS.versionIDCount = uint8(r.parseByteList(t, r.Exif.GPS.versionID[:]))
+		r.parseByteList(t, r.Exif.GPS.versionID[:])
 	case tag.TagGPSDifferential:
 		r.Exif.GPS.differential = r.parseUint16(t)
 	case tag.TagGPSAltitudeRef:

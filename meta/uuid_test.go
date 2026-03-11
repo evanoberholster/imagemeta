@@ -27,7 +27,7 @@ func TestUUID(t *testing.T) {
 	}
 
 	_, err = UUIDFromBytes([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11})
-	if !(err != nil) {
+	if err == nil {
 		t.Errorf("Incorrect UUID error got: %s wanted: nil", err)
 	}
 

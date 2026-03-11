@@ -1,10 +1,5 @@
 package makernote
 
-const makerNoteBitsetMaxTagID uint16 = (8 * 64) - 1
-
-// Makernote is the generic maker-note payload container type.
-type Makernote any
-
 // Info contains parsed maker-note values for supported vendors.
 type Info struct {
 	Make  CameraMake
@@ -12,31 +7,51 @@ type Info struct {
 	Canon Canon
 	Nikon Nikon
 
-	ifdBitset [8]uint64
+	parsedTagCount uint8
+	parsedTagIDs   [128]uint16
 }
 
-// HasTagParsed reports whether a maker-note tag ID has been parsed.
-func (m Info) HasTagParsed(tagID uint16) bool {
-	if tagID > makerNoteBitsetMaxTagID {
-		return false
+// HasTagParsed reports whether a maker-note tag ID was parsed.
+func (i Info) HasTagParsed(tagID uint16) bool {
+	n := int(i.parsedTagCount)
+	if n > len(i.parsedTagIDs) {
+		n = len(i.parsedTagIDs)
 	}
-	word := tagID >> 6
-	mask := uint64(1) << (tagID & 63)
-	return (m.ifdBitset[word] & mask) != 0
+	for idx := 0; idx < n; idx++ {
+		if i.parsedTagIDs[idx] == tagID {
+			return true
+		}
+	}
+	return false
 }
 
-// TagParsedBitset returns the parsed-tag bitset for maker notes.
-func (m Info) TagParsedBitset() [8]uint64 {
-	return m.ifdBitset
-}
-
-// MarkTagParsed marks a maker-note tag ID as parsed.
-func (m *Info) MarkTagParsed(tagID uint16) {
-	if tagID > makerNoteBitsetMaxTagID {
+// MarkTagParsed records a maker-note tag ID as parsed.
+func (i *Info) MarkTagParsed(tagID uint16) {
+	n := int(i.parsedTagCount)
+	if n > len(i.parsedTagIDs) {
+		n = len(i.parsedTagIDs)
+	}
+	for idx := 0; idx < n; idx++ {
+		if i.parsedTagIDs[idx] == tagID {
+			return
+		}
+	}
+	if n >= len(i.parsedTagIDs) {
 		return
 	}
-	word := tagID >> 6
-	m.ifdBitset[word] |= uint64(1) << (tagID & 63)
+	i.parsedTagIDs[n] = tagID
+	i.parsedTagCount++
+}
+
+// MergeParsedTags merges parsed-tag markers from src into i.
+func (i *Info) MergeParsedTags(src Info) {
+	n := int(src.parsedTagCount)
+	if n > len(src.parsedTagIDs) {
+		n = len(src.parsedTagIDs)
+	}
+	for idx := 0; idx < n; idx++ {
+		i.MarkTagParsed(src.parsedTagIDs[idx])
+	}
 }
 
 // Nikon contains selected Nikon maker-note fields.
