@@ -21,18 +21,6 @@ type Entry struct {
 	ByteOrder   utils.ByteOrder
 }
 
-var embeddedMaxUnitsByType = [256]uint8{
-	TypeByte:        4,
-	TypeASCII:       4,
-	TypeUndefined:   4,
-	TypeShort:       2,
-	TypeSignedShort: 2,
-	TypeLong:        1,
-	TypeSignedLong:  1,
-	TypeFloat:       1,
-	TypeASCIINoNul:  4,
-}
-
 // NewEntry returns a new tag Entry.
 func NewEntry(id ID, typ Type, unitCount, valueOffset uint32, directoryType ifd.Type, ifdIndex int8, byteOrder utils.ByteOrder) Entry {
 	return Entry{
@@ -54,9 +42,18 @@ func (t Entry) Size() uint32 {
 	return uint32(t.Type.Size()) * t.UnitCount
 }
 
+// IsEmbedded checks inline-value eligibility for common TIFF/EXIF types.
 func (t Entry) IsEmbedded() bool {
-	maxUnits := embeddedMaxUnitsByType[uint8(t.Type)]
-	return maxUnits != 0 && t.UnitCount <= uint32(maxUnits)
+	switch t.Type {
+	case TypeByte, TypeASCII, TypeUndefined, TypeASCIINoNul:
+		return t.UnitCount <= 4
+	case TypeShort, TypeSignedShort:
+		return t.UnitCount <= 2
+	case TypeLong, TypeSignedLong, TypeFloat:
+		return t.UnitCount <= 1
+	default:
+		return false
+	}
 }
 
 func (t Entry) IsType(tt Type) bool {

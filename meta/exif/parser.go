@@ -19,7 +19,7 @@ func tagFromBuffer(directory ifd.Directory, buf []byte) (tag.Entry, error) {
 	tagType = tagTypeFor(directory.Type, tagID, tagType)
 
 	entry := tag.NewEntry(tagID, tagType, unitCount, valueOffset, directory.Type, directory.Index, directory.ByteOrder)
-	if !entry.IsValid() {
+	if !tagType.IsValid() {
 		return entry, tag.ErrTagTypeNotValid
 	}
 	return entry, nil
@@ -30,8 +30,7 @@ func tagTypeFor(directoryType ifd.Type, id tag.ID, typ tag.Type) tag.Type {
 	if typ.Is(tag.TypeLong) || typ.Is(tag.TypeUndefined) {
 		switch directoryType {
 		case ifd.IFD0:
-			switch id {
-			case tag.TagExifIFDPointer, tag.TagGPSIFDPointer:
+			if id == tag.TagExifIFDPointer || id == tag.TagGPSIFDPointer {
 				return tag.TypeIfd
 			}
 		case ifd.ExifIFD:
@@ -198,30 +197,26 @@ func (r *Reader) parseTag(t tag.Entry) {
 		}
 		r.makerNoteInfo().MarkTagParsed(uint16(t.ID))
 		return
+	case ifd.ExifIFD:
+		if !r.parseExifTag(t) {
+			return
+		}
 	default:
 		// SubIFD{0..7} tags are normalized through ExifIFD parsing semantics.
 		if t.IfdType != ifd.ExifIFD && !t.IfdType.IsSubIFD() {
-			return
-		}
-		if !r.parseExifTag(t) {
 			return
 		}
 	}
 	r.Exif.markTagParsed(uint16(t.ID))
 }
 
-// parseIFD0Tag parses the requested value from EXIF metadata.
-func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
-	return r.parseIFD0CoreTag(t) || r.parseIFD0PanasonicRawTag(t)
-}
-
-// parseIFD0CoreTag parses IFD0 tags into typed model fields.
+// parseIFD0Tag parses IFD0 tags into typed model fields.
 //
 // Non-parsed IFD0 tags are documented in the explicit "intentionally non-parsed"
 // case branch below. These tags are treated as handled for coverage/reporting
 // parity but are not mapped into the Exif model.
-func (r *Reader) parseIFD0CoreTag(t tag.Entry) bool {
-	if r.parseIFD0TimeTag(t) || r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0DNGTag(t) {
+func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
+	if r.parseIFD0TimeTag(t) || r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0DNGTag(t) || r.parseIFD0PanasonicRawTag(t) {
 		return true
 	}
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
@@ -293,7 +288,7 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
 	if !(t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul)) {
 		r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-		r.Exif.IFD0.Make = ""
+		r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
 		return
 	}
 
@@ -306,7 +301,7 @@ func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
 		buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
 		if err != nil {
 			r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-			r.Exif.IFD0.Make = ""
+			r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
 			return
 		}
 		raw = trimNULBuffer(buf)
@@ -314,7 +309,7 @@ func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
 
 	if len(raw) == 0 {
 		r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-		r.Exif.IFD0.Make = ""
+		r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
 		return
 	}
 
@@ -332,7 +327,7 @@ func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
 		r.Exif.IFD0.Make = string(raw)
 		return
 	}
-	r.Exif.IFD0.Make = ""
+	r.Exif.IFD0.Make = makeID.String()
 }
 
 // parseIFD0ImageTag parses IFD0 image geometry and layout tags.

@@ -73,13 +73,6 @@ func (m loggerMixin) errEnabled() bool {
 	return m.errorEnabled()
 }
 
-// info builds an info-level log event with trace caller context when enabled.
-func (m loggerMixin) info() *zerolog.Event {
-	ev := m.logger.Info()
-	m.traceCaller(ev, 3)
-	return ev
-}
-
 // debug builds a debug-level log event with trace caller context when enabled.
 func (m loggerMixin) debug() *zerolog.Event {
 	ev := m.logger.Debug()
@@ -90,13 +83,6 @@ func (m loggerMixin) debug() *zerolog.Event {
 // warn builds a warn-level log event with trace caller context when enabled.
 func (m loggerMixin) warn() *zerolog.Event {
 	ev := m.logger.Warn()
-	m.traceCaller(ev, 3)
-	return ev
-}
-
-// err builds an error-level log event with the provided error attached.
-func (m loggerMixin) err(err error) *zerolog.Event {
-	ev := m.logger.Err(err)
 	m.traceCaller(ev, 3)
 	return ev
 }
