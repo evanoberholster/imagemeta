@@ -6,7 +6,9 @@ import (
 )
 
 // Tiff attributes of an XMP Packet.
-//   xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+//
+//	xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+//
 // This implementation is incomplete and based on https://exiftool.org/TagNames/XMP.html#tiff
 type Tiff struct {
 	Make             string // Camera Make
