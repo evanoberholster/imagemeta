@@ -115,7 +115,7 @@ func TestForwardDC256(t *testing.T) {
 	forwardDCT256(arr2)
 
 	for i := 0; i < size; i++ {
-		if arr[i] != arr2[i] {
+		if float32(arr[i]) != float32(arr2[i]) {
 			t.Error(i, arr[i], "!=", arr2[i])
 		}
 	}

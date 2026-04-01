@@ -32,7 +32,7 @@ func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader
 			err = meta.ErrNoExif
 			return
 		}
-		if discarded == 0 {
+		if discarded == 0 && it == imagetype.ImageUnknown {
 			it, _ = imagetype.Buf(buf)
 		}
 
