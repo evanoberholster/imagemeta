@@ -5,8 +5,9 @@ import (
 	"os"
 
 	"github.com/evanoberholster/imagemeta/exif2"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/jpeg"
+	"github.com/evanoberholster/imagemeta/meta/exif"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -19,6 +20,7 @@ var (
 func SetLogger(w io.Writer, level zerolog.Level) {
 	logger = log.Output(w).Level(level)
 	jpeg.Logger = logger
+	exif.Logger = logger
 	exif2.Logger = logger
 	isobmff.Logger = logger
 }

@@ -16,7 +16,7 @@ const (
 )
 
 // NewFocalLength returns a new FocalLength by dividing
-// "n" numerator and "d" demoninator
+// "n" numerator and "d" denominator
 func NewFocalLength(n, d uint32) FocalLength {
 	return FocalLength(float32(n) / float32(d))
 }
@@ -55,7 +55,7 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 type Aperture float32
 
 // NewAperture returns a new Aperture by dividing the
-// "n" numerator over the "d" demoninator
+// "n" numerator over the "d" denominator
 func NewAperture(n uint32, d uint32) Aperture {
 	return Aperture(float32(n) / float32(d))
 }
@@ -71,11 +71,12 @@ func parseAperture(buf []byte) Aperture {
 	// TODO: Improve parsing functionality
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
-			if i < len(buf)+1 {
-				n := uint16(parseUint(buf[:i]))
-				d := uint16(parseUint(buf[i+1:]))
-				return Aperture(n / d)
+			n := uint16(parseUint(buf[:i]))
+			d := uint16(parseUint(buf[i+1:]))
+			if d == 0 {
+				return 0
 			}
+			return Aperture(float32(n) / float32(d))
 		}
 	}
 	return Aperture(0)
@@ -184,11 +185,12 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 		if text[i] == '/' {
 			if i < len(text)+1 {
 				var n int16
-				if text[0] == '+' {
+				switch text[0] {
+				case '+':
 					n = int16(parseUint(text[1:i]))
-				} else if text[0] == '-' {
+				case '-':
 					n = int16(parseUint(text[1:i])) * -1
-				} else {
+				default:
 					n = int16(parseUint(text[:i]))
 				}
 				n = n << 8
@@ -636,6 +638,47 @@ func (c Compression) String() string {
 	case 65535:
 		return "Pentax PEF Compressecase: "
 	default:
-		return "Unkown"
+		return "Unknown"
 	}
+}
+
+// Rational32 stores a signed rational value using 32-bit numerator/denominator.
+type Rational32 struct {
+	Numerator   int32
+	Denominator int32
+}
+
+// NewRational32 creates a Rational32 and normalizes zero denominator to 1.
+func NewRational32(n, d int32) Rational32 {
+	if d == 0 {
+		d = 1
+	}
+	return Rational32{Numerator: n, Denominator: d}
+}
+
+// Float32 returns the rational value as float32.
+func (r Rational32) Float32() float32 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float32(r.Numerator) / float32(r.Denominator)
+}
+
+// Float64 returns the rational value as float64.
+func (r Rational32) Float64() float64 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float64(r.Numerator) / float64(r.Denominator)
+}
+
+func (r Rational32) String() string {
+	if r.Denominator == 0 {
+		return "0/1"
+	}
+	buf := make([]byte, 0, 24)
+	buf = strconv.AppendInt(buf, int64(r.Numerator), 10)
+	buf = append(buf, '/')
+	buf = strconv.AppendInt(buf, int64(r.Denominator), 10)
+	return string(buf)
 }
