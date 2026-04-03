@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // Constants
@@ -73,17 +73,7 @@ func clearBit(flags *uint8, bit uint8) {
 	*flags &^= 1 << bit
 }
 
-var readerPool = sync.Pool{
-	New: func() any { return bufio.NewReaderSize(nil, bufReaderSize) },
-}
-
-func getPooledBufioReader() *bufio.Reader {
-	br, ok := readerPool.Get().(*bufio.Reader)
-	if !ok || br == nil {
-		return bufio.NewReaderSize(nil, bufReaderSize)
-	}
-	return br
-}
+var readerPool = utils.NewBufioReaderPool(bufReaderSize, nil)
 
 // Reader incrementally scans ISOBMFF containers and dispatches metadata payloads.
 type Reader struct {
@@ -122,8 +112,7 @@ func newReader(r io.Reader) Reader {
 		return newReaderWithBufio(br, r, false)
 	}
 
-	br := getPooledBufioReader()
-	br.Reset(r)
+	br := readerPool.Acquire(r)
 	return newReaderWithBufio(br, r, true)
 }
 
@@ -191,9 +180,11 @@ func (r *Reader) discardWithSeek(n int) (discarded int, err error) {
 
 // reset reinitializes reader state for a new source while preserving callbacks.
 func (r *Reader) reset(newSource io.Reader) {
-	exifReader := r.exifReader
-	xmpReader := r.xmpReader
-	previewImageReader := r.previewImageReader
+	r.Reset(newSource, r.exifReader, r.xmpReader, r.previewImageReader)
+}
+
+// Reset reinitializes reader state for a new source and callbacks.
+func (r *Reader) Reset(newSource io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) {
 	r.Close()
 	*r = newReader(newSource)
 	r.exifReader = exifReader
@@ -266,8 +257,7 @@ func (r *Reader) setHave(kind metadataKind, enabled bool) {
 func (r *Reader) Close() {
 	if r.pooledBufio && r.br != nil {
 		// Clear references to allow GC of the previous source quickly.
-		r.br.Reset(nil)
-		readerPool.Put(r.br)
+		readerPool.Release(r.br)
 	}
 	r.br = nil
 	r.source = nil
@@ -347,7 +337,7 @@ func (r *Reader) callExifReader(b *box, h meta.ExifHeader) error {
 	if r.exifReader == nil {
 		return nil
 	}
-	if err := r.exifReader(newLimitedReader(b, b.remain), h); err != nil {
+	if err := r.exifReader(b, h); err != nil {
 		return handleCallbackError(b, err)
 	}
 	r.setHave(metadataKindExif, true)
@@ -359,7 +349,7 @@ func (r *Reader) callXMPReader(b *box, h XPacketHeader) error {
 	if r.xmpReader == nil {
 		return nil
 	}
-	if err := r.xmpReader(newLimitedReader(b, b.remain), h); err != nil {
+	if err := r.xmpReader(b, h); err != nil {
 		return handleCallbackError(b, err)
 	}
 	r.setHave(metadataKindXMP, true)
@@ -367,20 +357,14 @@ func (r *Reader) callXMPReader(b *box, h XPacketHeader) error {
 }
 
 // callPreviewReader dispatches preview bytes to the configured callback.
-//
-// limit bounds bytes visible to the callback. Non-positive values are treated as
-// "up to b.remain". On success, the corresponding metadata kind is marked found.
-func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind, limit int) error {
+func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind) error {
 	if r.previewImageReader == nil {
 		return nil
 	}
 	if r.hasHave(metadataKindPRVW) {
 		return nil
 	}
-	if limit <= 0 || limit > b.remain {
-		limit = b.remain
-	}
-	if err := r.previewImageReader(newLimitedReader(b, limit), h); err != nil {
+	if err := r.previewImageReader(b, h); err != nil {
 		return handleCallbackError(b, err)
 	}
 	r.setHave(kind, true)

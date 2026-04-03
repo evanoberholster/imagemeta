@@ -134,7 +134,7 @@ func (r *Reader) emitPreviewPayload(b *box, size uint32, header meta.PreviewHead
 		size:    payloadSize,
 		remain:  payloadSize,
 	}
-	if err := r.callPreviewReader(&payload, header, kind, payload.remain); err != nil {
+	if err := r.callPreviewReader(&payload, header, kind); err != nil {
 		return err
 	}
 	return payload.close()

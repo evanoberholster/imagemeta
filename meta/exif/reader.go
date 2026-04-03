@@ -22,7 +22,6 @@ const (
 	maxTagCount          = 256
 	parseProbeReaderSize = 64
 	parseTiffReaderSize  = 4096
-	parseCR3ReaderSize   = 64 * 1024
 )
 
 type eofReader struct{}
@@ -38,23 +37,20 @@ var (
 			return &Reader{loggerMixin: newLoggerMixin(Logger)}
 		},
 	}
-	tiffBufioReaderPool = sync.Pool{
+	isobmffReaderPool = sync.Pool{
 		New: func() any {
-			return bufio.NewReaderSize(pooledEOFReader, parseTiffReaderSize)
+			return isobmff.NewReader(nil, nil, nil, nil)
 		},
 	}
-	cr3BufioReaderPool = sync.Pool{
-		New: func() any {
-			return bufio.NewReaderSize(pooledEOFReader, parseCR3ReaderSize)
-		},
-	}
+	tiffBufioReaderPool = utils.NewBufioReaderPool(parseTiffReaderSize, pooledEOFReader)
 )
 
 // Reader reads and parses EXIF IFD trees.
 type Reader struct {
 	loggerMixin
-	reader io.Reader
-	state  *state
+	reader      utils.BufferedReader
+	ownedReader *bufio.Reader
+	state       *state
 
 	Exif Exif
 
@@ -95,6 +91,7 @@ func acquirePooledReader(l zerolog.Logger) *Reader {
 		r.state = s
 	}
 	r.state.reset()
+	r.releaseOwnedReader()
 	r.reader = nil
 	r.Exif = Exif{}
 	r.afInfoDecodeOptions = AFInfoDecodeAll
@@ -113,6 +110,7 @@ func releasePooledReader(r *Reader) {
 		statePool.Put(r.state)
 		r.state = nil
 	}
+	r.releaseOwnedReader()
 	r.reader = nil
 	r.Exif = Exif{}
 	r.afInfoDecodeOptions = AFInfoDecodeAll
@@ -122,25 +120,26 @@ func releasePooledReader(r *Reader) {
 	parseReaderPool.Put(r)
 }
 
-func acquirePooledBufioReader(pool *sync.Pool, src io.Reader, size int) *bufio.Reader {
-	br, ok := pool.Get().(*bufio.Reader)
-	if !ok || br == nil {
-		return bufio.NewReaderSize(src, size)
+func acquirePooledISOBMFFReader(src io.Reader, exifReader isobmff.ExifReader) *isobmff.Reader {
+	r, ok := isobmffReaderPool.Get().(*isobmff.Reader)
+	if !ok || r == nil {
+		return isobmff.NewReader(src, exifReader, nil, nil)
 	}
-	br.Reset(src)
-	return br
+	r.Reset(src, exifReader, nil, nil)
+	return r
 }
 
-func releasePooledBufioReader(pool *sync.Pool, br *bufio.Reader) {
-	if br == nil {
+func releasePooledISOBMFFReader(r *isobmff.Reader) {
+	if r == nil {
 		return
 	}
-	br.Reset(pooledEOFReader)
-	pool.Put(br)
+	r.Close()
+	isobmffReaderPool.Put(r)
 }
 
 // Close returns parser state to the pool.
 func (r *Reader) Close() {
+	r.releaseOwnedReader()
 	if r.state != nil {
 		r.state.reset()
 		statePool.Put(r.state)
@@ -150,7 +149,7 @@ func (r *Reader) Close() {
 
 // Reset prepares the reader for a new decode operation.
 func (r *Reader) Reset(reader io.Reader) {
-	r.reader = reader
+	r.setReader(reader)
 	r.state.reset()
 	r.Exif = Exif{}
 	r.po = 0
@@ -166,8 +165,8 @@ func Parse(rs io.ReadSeeker) (Exif, error) {
 // ParseWithReaderOptions scans a TIFF header and parses EXIF into Exif
 // with optional reader-specific parse options.
 func ParseWithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error) {
-	br := acquirePooledBufioReader(&tiffBufioReaderPool, rs, parseTiffReaderSize)
-	defer releasePooledBufioReader(&tiffBufioReaderPool, br)
+	br := tiffBufioReaderPool.Acquire(rs)
+	defer tiffBufioReaderPool.Release(br)
 
 	probe := scanParseProbe(br)
 	if probe.imageType.IsISOBMFF() {
@@ -235,14 +234,12 @@ func scanParseProbe(br *bufio.Reader) parseProbeInfo {
 }
 
 func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
-	br := acquirePooledBufioReader(&cr3BufioReaderPool, src, parseCR3ReaderSize)
-	defer releasePooledBufioReader(&cr3BufioReaderPool, br)
 	reader := acquirePooledReader(Logger)
 	defer releasePooledReader(reader)
 	applyReaderOptions(reader, opts)
 
-	bmr := isobmff.NewReader(br, reader.DecodeIfdAppend, nil, nil)
-	defer bmr.Close()
+	bmr := acquirePooledISOBMFFReader(src, reader.DecodeIfdAppend)
+	defer releasePooledISOBMFFReader(bmr)
 
 	if err := bmr.ReadFTYP(); err != nil {
 		return Exif{}, err
@@ -355,7 +352,7 @@ func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif 
 	if resetExif {
 		r.Reset(reader)
 	} else {
-		r.reader = reader
+		r.setReader(reader)
 		r.state.reset()
 		r.po = 0
 		r.exifLength = 0
@@ -369,6 +366,29 @@ func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif 
 	} else {
 		r.exifLength = header.ExifLength
 	}
+}
+
+func (r *Reader) setReader(reader io.Reader) {
+	r.releaseOwnedReader()
+	if reader == nil {
+		r.reader = nil
+		return
+	}
+	if br, ok := reader.(utils.BufferedReader); ok {
+		r.reader = br
+		return
+	}
+	br := tiffBufioReaderPool.Acquire(reader)
+	r.ownedReader = br
+	r.reader = br
+}
+
+func (r *Reader) releaseOwnedReader() {
+	if r.ownedReader == nil {
+		return
+	}
+	tiffBufioReaderPool.Release(r.ownedReader)
+	r.ownedReader = nil
 }
 
 // rootDirectory resolves the root IFD for a header.

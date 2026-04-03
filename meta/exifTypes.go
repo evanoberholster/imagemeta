@@ -71,11 +71,12 @@ func parseAperture(buf []byte) Aperture {
 	// TODO: Improve parsing functionality
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
-			if i < len(buf)+1 {
-				n := uint16(parseUint(buf[:i]))
-				d := uint16(parseUint(buf[i+1:]))
-				return Aperture(n / d)
+			n := uint16(parseUint(buf[:i]))
+			d := uint16(parseUint(buf[i+1:]))
+			if d == 0 {
+				return 0
 			}
+			return Aperture(float32(n) / float32(d))
 		}
 	}
 	return Aperture(0)

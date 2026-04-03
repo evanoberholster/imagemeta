@@ -5,7 +5,7 @@ package exif
 type AFInfoDecodeOptions uint8
 
 const (
-	// AFInfoDecodeCoords decodes AFArea width/height/x/y coordinate lists.
+	// AFInfoDecodeCoords decodes AFArea width/height/x/y tuples.
 	AFInfoDecodeCoords AFInfoDecodeOptions = 1 << iota
 	// AFInfoDecodeInFocus decodes AFPointsInFocusBits/InFocus.
 	AFInfoDecodeInFocus

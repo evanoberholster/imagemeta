@@ -546,13 +546,6 @@ func finalizeInnerBox(inner *box, parseErr error) error {
 	return nil
 }
 
-func newLimitedReader(r io.Reader, limit int) io.Reader {
-	if limit <= 0 {
-		return io.LimitReader(r, 0)
-	}
-	return &io.LimitedReader{R: r, N: int64(limit)}
-}
-
 func handleCallbackError(b *box, err error) error {
 	if err == nil {
 		return nil
