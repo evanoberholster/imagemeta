@@ -84,7 +84,9 @@ func (r *Reader) warnTagQueueFull(t tag.Entry) {
 
 // parseSubIFDs parses the requested value from EXIF metadata.
 func (r *Reader) parseSubIFDs(t tag.Entry) {
-	if !t.IsType(tag.TypeLong) && !t.IsType(tag.TypeIfd) {
+	switch t.Type {
+	case tag.TypeLong, tag.TypeIfd:
+	default:
 		return
 	}
 	if r.state.len >= tagQueueMax {
@@ -286,7 +288,9 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 // When the make can be identified, only Exif.CameraMakeID is set to avoid
 // unnecessary Make string allocations on the hot path.
 func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
-	if !(t.IsType(tag.TypeASCII) || t.IsType(tag.TypeASCIINoNul)) {
+	switch t.Type {
+	case tag.TypeASCII, tag.TypeASCIINoNul:
+	default:
 		r.Exif.CameraMakeID = makernote.CameraMakeUnknown
 		r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
 		return
@@ -374,14 +378,15 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	case tag.TagOrientation:
 		r.Exif.IFD0.Orientation = meta.Orientation(r.parseUint16(t))
 	case tag.TagSR2Private:
-		if t.IsType(tag.TypeByte) || t.IsType(tag.TypeUndefined) {
+		switch t.Type {
+		case tag.TypeByte, tag.TypeUndefined:
 			var packed [4]byte
 			if r.parseByteList(t, packed[:]) > 0 {
 				r.Exif.IFD0.SR2Private = t.ByteOrder.Uint32(packed[:])
 			}
-			break
+		default:
+			r.Exif.IFD0.SR2Private = r.parseUint32(t)
 		}
-		r.Exif.IFD0.SR2Private = r.parseUint32(t)
 	default:
 		return false
 	}
@@ -748,7 +753,9 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 
 // parseSubSecTime parses the requested value from EXIF metadata.
 func (r *Reader) parseSubSecTime(t tag.Entry) uint16 {
-	if !t.IsType(tag.TypeASCII) && !t.IsType(tag.TypeASCIINoNul) {
+	switch t.Type {
+	case tag.TypeASCII, tag.TypeASCIINoNul:
+	default:
 		return 0
 	}
 	if t.IsEmbedded() {

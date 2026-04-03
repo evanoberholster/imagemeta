@@ -38,7 +38,7 @@ func (d Dimensions) AspectRatio() float32 {
 
 // Orientation -
 func (d Dimensions) Orientation() uint {
-	if d.AspectRatio() < 1 {
+	if d.Width < d.Height {
 		return 1
 	}
 	return 0

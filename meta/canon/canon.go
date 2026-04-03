@@ -1,7 +1,10 @@
 // Package canon provides data types and functions for representing Canon Camera Makernote values
 package canon
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 //go:generate msgp
 //go:generate stringer -type=MacroMode,Quality,CanonFlashMode,ContinuousDrive,FocusMode,RecordMode,CanonImageSize,EasyMode,DigitalZoom,CameraISO,MeteringMode,FocusRange,ExposureMode,FlashModel,FocusContinuous,AESetting,ImageStabilization,SpotMeteringMode,PhotoEffect,ManualFlashOutput,SRAWQuality,FocusBracketing,HDRPQ,BracketMode,OnOffAuto,FilterEffect,ToningEffect,ShutterMode,RawJpgQuality,RawJpgSize,TimeZoneCity,DaylightSavings,AFAreaMode -linecomment -output=canon_string.go
@@ -479,6 +482,103 @@ type FocusDistance [2]int16
 func NewFocusDistance(upper, lower uint16) FocusDistance {
 	return FocusDistance{int16(upper), int16(lower)}
 }
+
+// UpperRaw returns the raw upper focus-distance code as stored by Canon.
+func (fd FocusDistance) UpperRaw() uint16 {
+	return uint16(fd[0])
+}
+
+// LowerRaw returns the raw lower focus-distance code as stored by Canon.
+func (fd FocusDistance) LowerRaw() uint16 {
+	return uint16(fd[1])
+}
+
+// UpperMeters converts the upper focus-distance code into meters like ExifTool.
+func (fd FocusDistance) UpperMeters() float32 {
+	return focusDistanceMeters(fd.UpperRaw())
+}
+
+// LowerMeters converts the lower focus-distance code into meters like ExifTool.
+func (fd FocusDistance) LowerMeters() float32 {
+	return focusDistanceMeters(fd.LowerRaw())
+}
+
+func focusDistanceMeters(raw uint16) float32 {
+	switch raw {
+	case 0:
+		return 0
+	case 0xffff:
+		return float32(math.Inf(1))
+	default:
+		return float32(raw) / 100.0
+	}
+}
+
+// WhiteBalance is part of the CanonShotInfo field.
+type WhiteBalance int16
+
+const (
+	WhiteBalanceAuto                 WhiteBalance = 0  // Auto
+	WhiteBalanceDaylight             WhiteBalance = 1  // Daylight
+	WhiteBalanceCloudy               WhiteBalance = 2  // Cloudy
+	WhiteBalanceTungsten             WhiteBalance = 3  // Tungsten
+	WhiteBalanceFluorescent          WhiteBalance = 4  // Fluorescent
+	WhiteBalanceFlash                WhiteBalance = 5  // Flash
+	WhiteBalanceCustom               WhiteBalance = 6  // Custom
+	WhiteBalanceBlackAndWhite        WhiteBalance = 7  // B&W
+	WhiteBalanceShade                WhiteBalance = 8  // Shade
+	WhiteBalanceManualTemperature    WhiteBalance = 9  // Manual Temperature (Kelvin)
+	WhiteBalancePCSet1               WhiteBalance = 10 // PC Set 1
+	WhiteBalancePCSet2               WhiteBalance = 11 // PC Set 2
+	WhiteBalancePCSet3               WhiteBalance = 12 // PC Set 3
+	WhiteBalanceDaylightFluorescent  WhiteBalance = 14 // Daylight Fluorescent
+	WhiteBalanceCustom2              WhiteBalance = 15 // Custom 2
+	WhiteBalanceUnderwater           WhiteBalance = 16 // Underwater
+	WhiteBalanceCustom3              WhiteBalance = 18 // Custom 3
+	WhiteBalancePCSet4               WhiteBalance = 19 // PC Set 4
+	WhiteBalancePCSet5               WhiteBalance = 20 // PC Set 5
+	WhiteBalanceAutoAmbiencePriority WhiteBalance = 21 // Auto (ambience priority)
+	WhiteBalanceAutoWhitePriority    WhiteBalance = 23 // Auto (white priority)
+)
+
+// SlowShutter is part of the CanonShotInfo field.
+type SlowShutter int16
+
+const (
+	SlowShutterNA         SlowShutter = -1 // n/a
+	SlowShutterOff        SlowShutter = 0  // Off
+	SlowShutterNightScene SlowShutter = 1  // Night Scene
+	SlowShutterOn         SlowShutter = 2  // On
+	SlowShutterNone       SlowShutter = 3  // None
+)
+
+// CameraType is part of the CanonShotInfo field.
+type CameraType int16
+
+const (
+	CameraTypeEOSHighEnd CameraType = 248 // EOS High-end
+	CameraTypeCompact    CameraType = 250 // Compact
+	CameraTypeEOSMid     CameraType = 252 // EOS Mid-range
+	CameraTypeDV         CameraType = 255 // DV Camera
+)
+
+// AutoRotate is part of the CanonShotInfo field.
+type AutoRotate int16
+
+const (
+	AutoRotateNone        AutoRotate = 0 // None
+	AutoRotateRotate90CW  AutoRotate = 1 // Rotate 90 CW
+	AutoRotateRotate180   AutoRotate = 2 // Rotate 180
+	AutoRotateRotate270CW AutoRotate = 3 // Rotate 270 CW
+)
+
+// NDFilter is part of the CanonShotInfo field.
+type NDFilter int16
+
+const (
+	NDFilterOff NDFilter = 0 // Off
+	NDFilterOn  NDFilter = 1 // On
+)
 
 // BracketMode - Canon Makernote Backet Mode
 //

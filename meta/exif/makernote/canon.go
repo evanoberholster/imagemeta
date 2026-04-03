@@ -1,6 +1,9 @@
 package makernote
 
-import metacanon "github.com/evanoberholster/imagemeta/meta/canon"
+import (
+	"github.com/evanoberholster/imagemeta/meta"
+	metacanon "github.com/evanoberholster/imagemeta/meta/canon"
+)
 
 // Canon contains selected Canon maker-note fields.
 //
@@ -10,7 +13,7 @@ type Canon struct {
 	ImageType            string
 	FirmwareVersion      string
 	OwnerName            string
-	ImageUniqueID        string
+	ImageUniqueID        meta.UUID
 	LensModel            string
 	InternalSerialNumber string
 	BatteryType          string
@@ -23,7 +26,6 @@ type Canon struct {
 	// Structured Canon maker-note tables (ExifTool Canon.pm mappings).
 	CameraSettings             metacanon.CameraSettings
 	FocalLength                metacanon.FocalLengthInfo
-	FlashInfo                  metacanon.FlashInfo
 	ShotInfo                   metacanon.ShotInfo
 	FileInfo                   metacanon.FileInfo
 	TimeInfo                   metacanon.CanonTimeInfo
