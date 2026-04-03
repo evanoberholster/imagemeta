@@ -131,11 +131,10 @@ func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child ifd.Directo
 }
 
 func (r *Reader) peekMakerNotePrefix(n int) ([]byte, bool) {
-	br, ok := r.reader.(utils.BufferedReader)
-	if !ok {
+	if r.reader == nil {
 		return nil, false
 	}
-	buf, err := br.Peek(n)
+	buf, err := r.reader.Peek(n)
 	if err != nil || len(buf) < n {
 		return nil, false
 	}

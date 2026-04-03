@@ -1,5 +1,7 @@
 package canon
 
+import "github.com/evanoberholster/imagemeta/meta"
+
 // CameraSettings stores Canon CameraSettings values from MakerNote tag
 // 0x0001 (CanonCameraSettings).
 //
@@ -23,19 +25,19 @@ type CameraSettings struct {
 	FocusRange         FocusRange         // [18] FocusRange
 	AFPoint            uint16             // [19] AFPoint
 	CanonExposureMode  ExposureMode       // [20] CanonExposureMode
-	LensType           uint16             // [22] LensType
+	LensType           CanonLensType      // [22] LensType
 	MaxFocalLength     uint16             // [23] MaxFocalLength
 	MinFocalLength     uint16             // [24] MinFocalLength
 	FocalUnits         uint16             // [25] FocalUnits
-	MaxAperture        int16              // [26] MaxAperture
-	MinAperture        int16              // [27] MinAperture
+	MaxAperture        meta.Aperture      // [26] MaxAperture
+	MinAperture        meta.Aperture      // [27] MinAperture
 	FlashModel         FlashModel         // [28] FlashModel
 	FlashActivity      FlashModel         // [28] FlashActivity (backward-compatible alias)
 	FlashBits          uint16             // [29] FlashBits
 	FocusContinuous    FocusContinuous    // [32] FocusContinuous
 	AESetting          AESetting          // [33] AESetting
 	ImageStabilization ImageStabilization // [34] ImageStabilization
-	DisplayAperture    uint16             // [35] DisplayAperture (x10)
+	DisplayAperture    meta.Aperture      // [35] DisplayAperture (x10)
 	ZoomSourceWidth    uint16             // [36] ZoomSourceWidth
 	ZoomTargetWidth    uint16             // [37] ZoomTargetWidth
 	SpotMeteringMode   SpotMeteringMode   // [39] SpotMeteringMode
@@ -53,33 +55,42 @@ type CameraSettings struct {
 //
 // Field comments use ExifTool sequence indices for this table.
 type ShotInfo struct {
-	AutoISO                int16         // [1] AutoISO
-	BaseISO                int16         // [2] BaseISO
-	MeasuredEV             int16         // [3] MeasuredEV
-	TargetAperture         int16         // [4] TargetAperture
-	TargetExposureTime     int16         // [5] TargetExposureTime
-	ExposureCompensation   int16         // [6] ExposureCompensation
-	WhiteBalance           int16         // [7] WhiteBalance
-	SlowShutter            int16         // [8] SlowShutter
-	SequenceNumber         int16         // [9] SequenceNumber
-	OpticalZoomCode        int16         // [10] OpticalZoomCode
-	CameraTemperature      int16         // [12] CameraTemperature
-	FlashGuideNumber       int16         // [13] FlashGuideNumber
-	AFPointsInFocus        uint16        // [14] AFPointsInFocus bitset
-	FlashExposureComp      int16         // [15] FlashExposureCompensation
-	AutoExposureBracketing int16         // [16] AutoExposureBracketing
-	AEBBracketValue        int16         // [17] AEBBracketValue
-	ControlMode            int16         // [18] ControlMode
-	FocusDistance          FocusDistance // [19-20] FocusDistanceUpper/Lower
-	FNumber                int16         // [21] FNumber
-	ExposureTime           int16         // [22] ExposureTime
-	MeasuredEV2            int16         // [23] MeasuredEV2
-	BulbDuration           int16         // [24] BulbDuration (deci-seconds)
-	CameraType             int16         // [26] CameraType
-	AutoRotate             int16         // [27] AutoRotate
-	NDFilter               int16         // [28] NDFilter
-	SelfTimer2             int16         // [29] SelfTimer2 (deci-seconds)
-	FlashOutput            int16         // [33] FlashOutput
+	AutoISO                 int16             // [1] AutoISO raw code
+	AutoISOValue            float32           // [1] ExifTool-converted AutoISO
+	ActualISO               float32           // [1-2] ExifTool: BaseISO * AutoISO / 100
+	BaseISO                 int16             // [2] BaseISO raw code
+	BaseISOValue            float32           // [2] ExifTool-converted BaseISO
+	MeasuredEV              int16             // [3] MeasuredEV
+	TargetAperture          int16             // [4] TargetAperture
+	TargetApertureValue     meta.Aperture     // [4] ExifTool CanonEv-converted aperture
+	TargetExposureTime      int16             // [5] TargetExposureTime
+	TargetExposureTimeValue meta.ExposureTime // [5] ExifTool-converted exposure time
+	ExposureCompensation    int16             // [6] ExposureCompensation
+	WhiteBalance            WhiteBalance      // [7] WhiteBalance
+	SlowShutter             SlowShutter       // [8] SlowShutter
+	SequenceNumber          int16             // [9] SequenceNumber
+	OpticalZoomCode         int16             // [10] OpticalZoomCode
+	CameraTemperature       int16             // [12] CameraTemperature raw code
+	CameraTemperatureC      int16             // [12] ExifTool-converted Celsius
+	FlashGuideNumber        int16             // [13] FlashGuideNumber raw code
+	FlashGuideNumberMeters  float32           // [13] ExifTool-converted meters
+	AFPointsInFocus         uint16            // [14] AFPointsInFocus bitset
+	FlashExposureComp       int16             // [15] FlashExposureCompensation
+	AutoExposureBracketing  int16             // [16] AutoExposureBracketing
+	AEBBracketValue         int16             // [17] AEBBracketValue
+	ControlMode             int16             // [18] ControlMode
+	FocusDistance           FocusDistance     // [19-20] FocusDistanceUpper/Lower
+	FNumber                 int16             // [21] FNumber raw code
+	FNumberValue            meta.Aperture     // [21] ExifTool CanonEv-converted aperture
+	ExposureTime            int16             // [22] ExposureTime raw code
+	ExposureTimeValue       meta.ExposureTime // [22] ExifTool-converted exposure time
+	MeasuredEV2             int16             // [23] MeasuredEV2
+	BulbDuration            int16             // [24] BulbDuration (deci-seconds)
+	CameraType              CameraType        // [26] CameraType
+	AutoRotate              AutoRotate        // [27] AutoRotate
+	NDFilter                NDFilter          // [28] NDFilter
+	SelfTimer2              int16             // [29] SelfTimer2 (deci-seconds)
+	FlashOutput             int16             // [33] FlashOutput
 }
 
 // FileInfo stores selected Canon FileInfo values from MakerNote tag 0x0093
@@ -120,8 +131,10 @@ type CanonTimeInfo struct {
 }
 
 // AFInfo stores selected Canon autofocus record values from MakerNote tags
-// 0x0012 (AFInfo) and 0x0026 (AFInfo2).
+// 0x0012 (AFInfo), 0x0026 (AFInfo2), and 0x003c (AFInfo3).
 type AFInfo struct {
+	Source AFInfoSource // source Canon maker-note table
+
 	AFAreaMode       AFAreaMode // AFInfo2 [1]
 	NumAFPoints      uint16     // AFInfo [0] / AFInfo2 [2]
 	ValidAFPoints    uint16     // AFInfo [1] / AFInfo2 [3]
@@ -132,10 +145,7 @@ type AFInfo struct {
 	AFAreaWidth      uint16     // AFInfo [6]
 	AFAreaHeight     uint16     // AFInfo [7]
 
-	AFAreaWidths     []int16 // AFInfo2 [8]
-	AFAreaHeights    []int16 // AFInfo2 [9]
-	AFAreaXPositions []int16 // AFInfo [8] / AFInfo2 [10]
-	AFAreaYPositions []int16 // AFInfo [9] / AFInfo2 [11]
+	AFArea []AFPoint // AFInfo/AFInfo2 [width,height,x,y] tuples
 
 	AFPointsInFocusBits  []int  // AFInfo [10] / AFInfo2 [12]
 	AFPointsSelectedBits []int  // AFInfo2 [13]
@@ -143,6 +153,16 @@ type AFInfo struct {
 
 	AFPoints []AFPoint
 }
+
+// AFInfoSource identifies which Canon maker-note AF table produced AFInfo.
+type AFInfoSource uint8
+
+const (
+	AFInfoSourceUnknown AFInfoSource = iota
+	AFInfoSourceAFInfo
+	AFInfoSourceAFInfo2
+	AFInfoSourceAFInfo3
+)
 
 // FacePosition stores a face center point in FaceDetect frame coordinates.
 type FacePosition struct {
