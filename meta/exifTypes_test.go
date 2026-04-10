@@ -88,6 +88,53 @@ func TestExposureProgram(t *testing.T) {
 	}
 }
 
+func TestResolutionUnitString(t *testing.T) {
+	tests := []struct {
+		name string
+		got  ResolutionUnit
+		want string
+	}{
+		{"unknown", ResolutionUnitUnknown, "Unknown"},
+		{"none", ResolutionUnitNone, "None"},
+		{"inches", ResolutionUnitInches, "inches"},
+		{"cm", ResolutionUnitCentimeters, "cm"},
+		{"mm", ResolutionUnitMillimeters, "mm"},
+		{"um", ResolutionUnitMicrometers, "um"},
+		{"invalid", ResolutionUnit(99), "Unknown"},
+	}
+
+	for _, tc := range tests {
+		if got := tc.got.String(); got != tc.want {
+			t.Fatalf("%s: ResolutionUnit(%d).String() = %q, want %q", tc.name, uint16(tc.got), got, tc.want)
+		}
+	}
+}
+
+func TestSubfileType(t *testing.T) {
+	tests := []struct {
+		name string
+		got  SubfileType
+		want string
+	}{
+		{"full", SubfileTypeFullResolutionImage, "Full-resolution image"},
+		{"reduced", SubfileTypeReducedResolutionImage, "Reduced-resolution image"},
+		{"page", SubfileTypeSinglePageOfMultiPageImage, "Single page of multi-page image"},
+		{"depth", SubfileTypeDepthMap, "Depth map"},
+		{"enhanced", SubfileTypeEnhancedImageData, "Enhanced image data"},
+		{"alternate", SubfileTypeAlternateReducedResolutionImage, "Alternate reduced-resolution image"},
+		{"semantic", SubfileTypeSemanticMask, "Semantic Mask"},
+		{"invalid", SubfileTypeInvalid, "invalid"},
+		{"bitmask", SubfileType(0x00000011), "Reduced resolution, TIFF-FX mixed raster content"},
+		{"unknown", SubfileType(0x00010000), "Unknown"},
+	}
+
+	for _, tc := range tests {
+		if got := tc.got.String(); got != tc.want {
+			t.Fatalf("%s: SubfileType(%#x).String() = %q, want %q", tc.name, uint32(tc.got), got, tc.want)
+		}
+	}
+}
+
 func TestApertureMarshalJSON(t *testing.T) {
 	buf, err := json.Marshal(Aperture(5.656854))
 	if err != nil {

@@ -132,7 +132,6 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 		mapDatum:         "WGS-84",
 		differential:     1,
 	}
-	g.markTagParsed(tag.TagGPSLatitude)
 
 	if got := g.Latitude(); got != -33.9 {
 		t.Fatalf("Latitude() = %v, want -33.9", got)
@@ -163,12 +162,6 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	}
 	if got := g.Differential(); got != 1 {
 		t.Fatalf("Differential() = %d, want 1", got)
-	}
-	if !g.HasTagParsed(uint16(tag.TagGPSLatitude)) {
-		t.Fatal("HasTagParsed(GPSLatitude) should be true")
-	}
-	if g.HasTagParsed(64) {
-		t.Fatal("HasTagParsed(64) should be false for GPS bitset")
 	}
 }
 

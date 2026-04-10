@@ -16,6 +16,7 @@ func TestIdentifyCameraMakeString(t *testing.T) {
 	}{
 		{name: "canon", in: "Canon", want: CameraMakeCanon},
 		{name: "nikon", in: "NIKON CORPORATION", want: CameraMakeNikon},
+		{name: "nikon nul", in: "NIKON CORPORATION\x00", want: CameraMakeNikon},
 		{name: "apple", in: "Apple", want: CameraMakeApple},
 		{name: "panasonic", in: "Panasonic", want: CameraMakePanasonic},
 	}
@@ -27,6 +28,15 @@ func TestIdentifyCameraMakeString(t *testing.T) {
 				t.Fatalf("IdentifyCameraMakeString(%q) = %v, want %v", tt.in, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestIdentifyCameraMake(t *testing.T) {
+	t.Parallel()
+
+	raw := []byte("NIKON CORPORATION\x00")
+	if got := IdentifyCameraMake(raw); got != CameraMakeNikon {
+		t.Fatalf("IdentifyCameraMake(%q) = %v, want %v", raw, got, CameraMakeNikon)
 	}
 }
 

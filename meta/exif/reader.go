@@ -268,30 +268,6 @@ func mergeIFD0CoreFields(dst *Exif, src Exif) {
 	if dst.IFD0.ImageHeight == 0 && src.IFD0.ImageHeight != 0 {
 		dst.IFD0.ImageHeight = src.IFD0.ImageHeight
 	}
-	if dst.IFD0.StripOffsets == 0 && src.IFD0.StripOffsets != 0 {
-		dst.IFD0.StripOffsets = src.IFD0.StripOffsets
-	}
-	if dst.IFD0.RowsPerStrip == 0 && src.IFD0.RowsPerStrip != 0 {
-		dst.IFD0.RowsPerStrip = src.IFD0.RowsPerStrip
-	}
-	if dst.IFD0.StripByteCounts == 0 && src.IFD0.StripByteCounts != 0 {
-		dst.IFD0.StripByteCounts = src.IFD0.StripByteCounts
-	}
-	if dst.IFD0.TileWidth == 0 && src.IFD0.TileWidth != 0 {
-		dst.IFD0.TileWidth = src.IFD0.TileWidth
-	}
-	if dst.IFD0.TileLength == 0 && src.IFD0.TileLength != 0 {
-		dst.IFD0.TileLength = src.IFD0.TileLength
-	}
-	if dst.IFD0.TileOffsets == 0 && src.IFD0.TileOffsets != 0 {
-		dst.IFD0.TileOffsets = src.IFD0.TileOffsets
-	}
-	if dst.IFD0.TileByteCounts == 0 && src.IFD0.TileByteCounts != 0 {
-		dst.IFD0.TileByteCounts = src.IFD0.TileByteCounts
-	}
-
-	dst.PanasonicRaw = src.PanasonicRaw
-
 	for i := range dst.ifdBitset {
 		dst.ifdBitset[i] |= src.ifdBitset[i]
 	}
@@ -302,7 +278,6 @@ func mergeIFD0CoreFields(dst *Exif, src Exif) {
 	for i := 0; i < n; i++ {
 		dst.markTagParsed(src.highTagIDs[i])
 	}
-	dst.MakerNote.MergeParsedTags(src.MakerNote)
 }
 
 // initDecode initializes reader state for one decode operation.
@@ -439,10 +414,10 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			if t.IfdType == tag.IFD0 {
 				switch t.ID {
 				case tag.TagExifIFDPointer:
-					r.Exif.IFD0.ExifIFDPointer = t.ValueOffset
+					//r.Exif.IFD0.ExifIFDPointer = t.ValueOffset
 					r.Exif.markTagParsed(uint16(t.ID))
 				case tag.TagGPSIFDPointer:
-					r.Exif.IFD0.GPSIFDPointer = t.ValueOffset
+					//r.Exif.IFD0.GPSIFDPointer = t.ValueOffset
 					r.Exif.markTagParsed(uint16(t.ID))
 				}
 			}

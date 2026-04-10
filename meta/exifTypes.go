@@ -3,6 +3,7 @@ package meta
 import (
 	"math"
 	"strconv"
+	"strings"
 )
 
 //go:generate msgp
@@ -551,6 +552,37 @@ func (o Orientation) String() string {
 	return Orientation(0).String()
 }
 
+// ResolutionUnit is the EXIF/TIFF resolution unit.
+type ResolutionUnit uint16
+
+// ResolutionUnit values.
+const (
+	ResolutionUnitUnknown ResolutionUnit = iota
+	ResolutionUnitNone
+	ResolutionUnitInches
+	ResolutionUnitCentimeters
+	ResolutionUnitMillimeters
+	ResolutionUnitMicrometers
+)
+
+// String returns a ResolutionUnit as an ExifTool-style string.
+func (r ResolutionUnit) String() string {
+	switch r {
+	case ResolutionUnitNone:
+		return "None"
+	case ResolutionUnitInches:
+		return "inches"
+	case ResolutionUnitCentimeters:
+		return "cm"
+	case ResolutionUnitMillimeters:
+		return "mm"
+	case ResolutionUnitMicrometers:
+		return "um"
+	default:
+		return "Unknown"
+	}
+}
+
 // Compression is Exif Compression.
 type Compression uint16
 
@@ -658,6 +690,82 @@ func (c Compression) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// SubfileType is TIFF NewSubfileType (ExifTool: SubfileType).
+//
+// Source: Image::ExifTool::Exif.pm %subfileType.
+type SubfileType uint32
+
+const (
+	SubfileTypeFullResolutionImage                       SubfileType = 0x00000000
+	SubfileTypeReducedResolutionImage                    SubfileType = 0x00000001
+	SubfileTypeSinglePageOfMultiPageImage                SubfileType = 0x00000002
+	SubfileTypeSinglePageReducedResolutionMultiPageImage SubfileType = 0x00000003
+	SubfileTypeTransparencyMask                          SubfileType = 0x00000004
+	SubfileTypeTransparencyMaskReducedResolutionImage    SubfileType = 0x00000005
+	SubfileTypeTransparencyMaskMultiPageImage            SubfileType = 0x00000006
+	SubfileTypeTransparencyMaskReducedMultiPageImage     SubfileType = 0x00000007
+	SubfileTypeDepthMap                                  SubfileType = 0x00000008
+	SubfileTypeDepthMapReducedResolutionImage            SubfileType = 0x00000009
+	SubfileTypeEnhancedImageData                         SubfileType = 0x00000010
+	SubfileTypeAlternateReducedResolutionImage           SubfileType = 0x00010001
+	SubfileTypeSemanticMask                              SubfileType = 0x00010004
+	SubfileTypeInvalid                                   SubfileType = 0xffffffff
+)
+
+func (s SubfileType) String() string {
+	switch s {
+	case SubfileTypeFullResolutionImage:
+		return "Full-resolution image"
+	case SubfileTypeReducedResolutionImage:
+		return "Reduced-resolution image"
+	case SubfileTypeSinglePageOfMultiPageImage:
+		return "Single page of multi-page image"
+	case SubfileTypeSinglePageReducedResolutionMultiPageImage:
+		return "Single page of multi-page reduced-resolution image"
+	case SubfileTypeTransparencyMask:
+		return "Transparency mask"
+	case SubfileTypeTransparencyMaskReducedResolutionImage:
+		return "Transparency mask of reduced-resolution image"
+	case SubfileTypeTransparencyMaskMultiPageImage:
+		return "Transparency mask of multi-page image"
+	case SubfileTypeTransparencyMaskReducedMultiPageImage:
+		return "Transparency mask of reduced-resolution multi-page image"
+	case SubfileTypeDepthMap:
+		return "Depth map"
+	case SubfileTypeDepthMapReducedResolutionImage:
+		return "Depth map of reduced-resolution image"
+	case SubfileTypeEnhancedImageData:
+		return "Enhanced image data"
+	case SubfileTypeAlternateReducedResolutionImage:
+		return "Alternate reduced-resolution image"
+	case SubfileTypeSemanticMask:
+		return "Semantic Mask"
+	case SubfileTypeInvalid:
+		return "invalid"
+	}
+
+	var parts []string
+	if s&0x00000001 != 0 {
+		parts = append(parts, "Reduced resolution")
+	}
+	if s&0x00000002 != 0 {
+		parts = append(parts, "Single page")
+	}
+	if s&0x00000004 != 0 {
+		parts = append(parts, "Transparency mask")
+	}
+	if s&0x00000008 != 0 {
+		parts = append(parts, "TIFF/IT final page")
+	}
+	if s&0x00000010 != 0 {
+		parts = append(parts, "TIFF-FX mixed raster content")
+	}
+	if len(parts) == 0 {
+		return "Unknown"
+	}
+	return strings.Join(parts, ", ")
 }
 
 // Rational32 stores a signed rational value using 32-bit numerator/denominator.
