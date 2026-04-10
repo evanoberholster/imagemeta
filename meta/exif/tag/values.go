@@ -86,6 +86,20 @@ func invertValueMap(src map[uint32]string, aliases map[string]uint32) map[string
 	return dst
 }
 
+var resolutionUnitValueNames = map[uint32]string{
+	1: "None",
+	2: "inches",
+	3: "cm",
+}
+
+var focalPlaneResolutionUnitValueNames = map[uint32]string{
+	1: "None",
+	2: "inches",
+	3: "cm",
+	4: "mm",
+	5: "um",
+}
+
 var ifd0ValueNames = map[ID]map[uint32]string{
 	TagPhotometricInterpretation: {
 		0:     "WhiteIsZero",
@@ -113,11 +127,7 @@ var ifd0ValueNames = map[ID]map[uint32]string{
 		7: "Mirror horizontal and rotate 90 CW",
 		8: "Rotate 270 CW",
 	},
-	TagResolutionUnit: {
-		1: "None",
-		2: "inches",
-		3: "cm",
-	},
+	TagResolutionUnit: resolutionUnitValueNames,
 	TagCompression: {
 		1:     "Uncompressed",
 		2:     "CCITT 1D",
@@ -176,6 +186,7 @@ var ifd0ValueNames = map[ID]map[uint32]string{
 }
 
 var exifValueNames = map[ID]map[uint32]string{
+	TagFocalPlaneResolutionUnit: focalPlaneResolutionUnitValueNames,
 	TagExposureProgram: {
 		0: "Not Defined",
 		1: "Manual",
@@ -344,28 +355,29 @@ var ifd0ValueIDs = map[ID]map[string]uint32{
 	TagOrientation: invertValueMap(ifd0ValueNames[TagOrientation], map[string]uint32{
 		"Horizontal": 1,
 	}),
-	TagResolutionUnit: invertValueMap(ifd0ValueNames[TagResolutionUnit], nil),
+	TagResolutionUnit: invertValueMap(resolutionUnitValueNames, nil),
 	TagCompression:    invertValueMap(ifd0ValueNames[TagCompression], nil),
 }
 
 var exifValueIDs = map[ID]map[string]uint32{
-	TagExposureProgram:      invertValueMap(exifValueNames[TagExposureProgram], nil),
-	TagMeteringMode:         invertValueMap(exifValueNames[TagMeteringMode], nil),
-	TagLightSource:          invertValueMap(exifValueNames[TagLightSource], nil),
-	TagExposureMode:         invertValueMap(exifValueNames[TagExposureMode], nil),
-	TagColorSpace:           invertValueMap(exifValueNames[TagColorSpace], nil),
-	TagCustomRendered:       invertValueMap(exifValueNames[TagCustomRendered], nil),
-	TagWhiteBalance:         invertValueMap(exifValueNames[TagWhiteBalance], nil),
-	TagSceneCaptureType:     invertValueMap(exifValueNames[TagSceneCaptureType], nil),
-	TagGainControl:          invertValueMap(exifValueNames[TagGainControl], nil),
-	TagContrast:             invertValueMap(exifValueNames[TagContrast], nil),
-	TagSaturation:           invertValueMap(exifValueNames[TagSaturation], nil),
-	TagSharpness:            invertValueMap(exifValueNames[TagSharpness], nil),
-	TagSubjectDistanceRange: invertValueMap(exifValueNames[TagSubjectDistanceRange], nil),
-	TagSensingMethod:        invertValueMap(exifValueNames[TagSensingMethod], nil),
-	TagFileSource:           invertValueMap(exifValueNames[TagFileSource], nil),
-	TagSceneType:            invertValueMap(exifValueNames[TagSceneType], nil),
-	TagCompositeImage:       invertValueMap(exifValueNames[TagCompositeImage], nil),
-	TagSensitivityType:      invertValueMap(exifValueNames[TagSensitivityType], nil),
-	TagFlash:                invertValueMap(exifValueNames[TagFlash], nil),
+	TagFocalPlaneResolutionUnit: invertValueMap(focalPlaneResolutionUnitValueNames, nil),
+	TagExposureProgram:          invertValueMap(exifValueNames[TagExposureProgram], nil),
+	TagMeteringMode:             invertValueMap(exifValueNames[TagMeteringMode], nil),
+	TagLightSource:              invertValueMap(exifValueNames[TagLightSource], nil),
+	TagExposureMode:             invertValueMap(exifValueNames[TagExposureMode], nil),
+	TagColorSpace:               invertValueMap(exifValueNames[TagColorSpace], nil),
+	TagCustomRendered:           invertValueMap(exifValueNames[TagCustomRendered], nil),
+	TagWhiteBalance:             invertValueMap(exifValueNames[TagWhiteBalance], nil),
+	TagSceneCaptureType:         invertValueMap(exifValueNames[TagSceneCaptureType], nil),
+	TagGainControl:              invertValueMap(exifValueNames[TagGainControl], nil),
+	TagContrast:                 invertValueMap(exifValueNames[TagContrast], nil),
+	TagSaturation:               invertValueMap(exifValueNames[TagSaturation], nil),
+	TagSharpness:                invertValueMap(exifValueNames[TagSharpness], nil),
+	TagSubjectDistanceRange:     invertValueMap(exifValueNames[TagSubjectDistanceRange], nil),
+	TagSensingMethod:            invertValueMap(exifValueNames[TagSensingMethod], nil),
+	TagFileSource:               invertValueMap(exifValueNames[TagFileSource], nil),
+	TagSceneType:                invertValueMap(exifValueNames[TagSceneType], nil),
+	TagCompositeImage:           invertValueMap(exifValueNames[TagCompositeImage], nil),
+	TagSensitivityType:          invertValueMap(exifValueNames[TagSensitivityType], nil),
+	TagFlash:                    invertValueMap(exifValueNames[TagFlash], nil),
 }

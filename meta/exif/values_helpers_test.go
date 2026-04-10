@@ -41,6 +41,20 @@ func TestTrimNULBuffer(t *testing.T) {
 	}
 }
 
+func TestTrimTrailingNULBytes(t *testing.T) {
+	t.Parallel()
+
+	if got := trimTrailingNULBytes([]byte{'a', 'b', 0, 0}); string(got) != "ab" {
+		t.Fatalf("trimTrailingNULBytes() = %q, want %q", got, "ab")
+	}
+	if got := trimTrailingNULBytes([]byte{'a', 'b', ' ', 0}); string(got) != "ab " {
+		t.Fatalf("trimTrailingNULBytes() = %q, want %q", got, "ab ")
+	}
+	if got := trimTrailingNULBytes([]byte{0, 0}); got != nil {
+		t.Fatalf("trimTrailingNULBytes(all-nul) = %v, want nil", got)
+	}
+}
+
 func TestTrimRightSpaceNewline(t *testing.T) {
 	t.Parallel()
 

@@ -38,6 +38,12 @@ func TestValueNameFor(t *testing.T) {
 	if got, want := ValueNameFor(IFD0, TagOrientation, 1), "Horizontal (normal)"; got != want {
 		t.Fatalf("ValueNameFor() = %q, want %q", got, want)
 	}
+	if got, want := ValueNameFor(IFD0, TagResolutionUnit, 2), "inches"; got != want {
+		t.Fatalf("ValueNameFor() resolution unit = %q, want %q", got, want)
+	}
+	if got, want := ValueNameFor(ExifIFD, TagFocalPlaneResolutionUnit, 5), "um"; got != want {
+		t.Fatalf("ValueNameFor() focal plane resolution unit = %q, want %q", got, want)
+	}
 	if got, want := ValueNameFor(ExifIFD, TagExposureMode, 2), "Auto bracket"; got != want {
 		t.Fatalf("ValueNameFor() = %q, want %q", got, want)
 	}
@@ -95,6 +101,22 @@ func TestParseValueID(t *testing.T) {
 			tagID:   TagExposureProgram,
 			raw:     "Aperture-priority AE",
 			want:    3,
+			wantOK:  true,
+		},
+		{
+			name:    "ifd0 resolution unit name",
+			ifdType: IFD0,
+			tagID:   TagResolutionUnit,
+			raw:     "cm",
+			want:    3,
+			wantOK:  true,
+		},
+		{
+			name:    "exif focal plane resolution unit name",
+			ifdType: ExifIFD,
+			tagID:   TagFocalPlaneResolutionUnit,
+			raw:     "um",
+			want:    5,
 			wantOK:  true,
 		},
 		{

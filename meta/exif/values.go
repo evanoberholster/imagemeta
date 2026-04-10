@@ -332,6 +332,15 @@ func (r *Reader) parseUint32(t tag.Entry) uint32 {
 	}
 }
 
+// parseFirstUint32 parses the first uint32-compatible value from EXIF metadata.
+func (r *Reader) parseFirstUint32(t tag.Entry) uint32 {
+	var raw [1]uint32
+	if r.parseUint32List(t, raw[:]) == 0 {
+		return 0
+	}
+	return raw[0]
+}
+
 // parseRationalU parses the requested value from EXIF metadata.
 func (r *Reader) parseRationalU(t tag.Entry) [2]uint32 {
 	switch t.Type {

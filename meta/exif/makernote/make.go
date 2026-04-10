@@ -94,7 +94,7 @@ func IdentifyCameraMake(raw []byte) CameraMake {
 			b += 'a' - 'A'
 		}
 		switch b {
-		case ' ', '\t', '\n', '\r', '\f', '\v', ',', '.':
+		case 0, ' ', '\t', '\n', '\r', '\f', '\v', ',', '.':
 			continue
 		}
 		raw[n] = b
@@ -114,7 +114,7 @@ func IdentifyCameraMakeString(raw string) CameraMake {
 			b += 'a' - 'A'
 		}
 		switch b {
-		case ' ', '\t', '\n', '\r', '\f', '\v', ',', '.':
+		case 0, ' ', '\t', '\n', '\r', '\f', '\v', ',', '.':
 			continue
 		}
 		normalized[n] = b

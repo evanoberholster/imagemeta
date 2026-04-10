@@ -58,7 +58,7 @@ type Exif struct {
 	FileSource                   uint8
 	FlashpixVersion              string
 	FocalLengthIn35mmFilm        uint16
-	FocalPlaneResolutionUnit     uint8
+	FocalPlaneResolutionUnit     meta.ResolutionUnit
 	FocalPlaneXResolution        float64
 	FocalPlaneYResolution        float64
 	ExposureIndex                float64
@@ -175,7 +175,7 @@ func (exif *Exif) parse(p property) (err error) {
 	case FocalLengthIn35mmFilm:
 		exif.FocalLengthIn35mmFilm = parseUint16(p.Value())
 	case FocalPlaneResolutionUnit:
-		exif.FocalPlaneResolutionUnit = parseUint8(p.Value())
+		exif.FocalPlaneResolutionUnit = meta.ResolutionUnit(parseUint16(p.Value()))
 	case FocalPlaneXResolution:
 		exif.FocalPlaneXResolution = parseRationalFloat64(p.Value())
 	case FocalPlaneYResolution:

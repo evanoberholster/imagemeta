@@ -14,52 +14,6 @@ type Info struct {
 	Nikon     *nikon.Nikon
 	Panasonic *panasonic.Panasonic
 	Sony      *sony.Sony
-
-	parsedTagCount uint8
-	parsedTagIDs   [128]uint16
-}
-
-// HasTagParsed reports whether a maker-note tag ID was parsed.
-func (i Info) HasTagParsed(tagID uint16) bool {
-	n := int(i.parsedTagCount)
-	if n > len(i.parsedTagIDs) {
-		n = len(i.parsedTagIDs)
-	}
-	for idx := 0; idx < n; idx++ {
-		if i.parsedTagIDs[idx] == tagID {
-			return true
-		}
-	}
-	return false
-}
-
-// MarkTagParsed records a maker-note tag ID as parsed.
-func (i *Info) MarkTagParsed(tagID uint16) {
-	n := int(i.parsedTagCount)
-	if n > len(i.parsedTagIDs) {
-		n = len(i.parsedTagIDs)
-	}
-	for idx := 0; idx < n; idx++ {
-		if i.parsedTagIDs[idx] == tagID {
-			return
-		}
-	}
-	if n >= len(i.parsedTagIDs) {
-		return
-	}
-	i.parsedTagIDs[n] = tagID
-	i.parsedTagCount++
-}
-
-// MergeParsedTags merges parsed-tag markers from src into i.
-func (i *Info) MergeParsedTags(src Info) {
-	n := int(src.parsedTagCount)
-	if n > len(src.parsedTagIDs) {
-		n = len(src.parsedTagIDs)
-	}
-	for idx := 0; idx < n; idx++ {
-		i.MarkTagParsed(src.parsedTagIDs[idx])
-	}
 }
 
 // Apple contains selected Apple maker-note fields.

@@ -64,9 +64,6 @@ func (r *Reader) ensureMakerNoteMake() makernote.CameraMake {
 			// no image-type-only fallback
 		}
 	}
-	if r.Exif.CameraMakeID == makernote.CameraMakeUnknown && (r.Exif.PanasonicRaw.Version[0] != 0 || r.Exif.PanasonicRaw.SensorWidth != 0) {
-		r.Exif.CameraMakeID = makernote.CameraMakePanasonic
-	}
 
 	info.Make = r.Exif.CameraMakeID
 	return info.Make

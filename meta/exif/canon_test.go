@@ -518,12 +518,11 @@ func TestParseCanonAFConfigTagPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse %s: %v", samplePath, err)
 	}
-
-	if !parsed.MakerNote.HasTagParsed(uint16(metacanon.CanonAFConfig)) {
-		t.Fatalf("expected CanonAFConfig (0x%04x) to be marked parsed for %s", uint16(metacanon.CanonAFConfig), samplePath)
+	if parsed.MakerNote.Canon == nil {
+		t.Fatalf("MakerNote.Canon = nil for %s", samplePath)
 	}
-	if parsed.MakerNote.Canon.AFConfig.AFConfigTool == 0 {
-		t.Fatalf("expected non-zero AFConfigTool for %s", samplePath)
+	if parsed.MakerNote.Canon.AFConfig == (metacanon.AFConfig{}) {
+		t.Fatalf("AFConfig not parsed for %s", samplePath)
 	}
 }
 

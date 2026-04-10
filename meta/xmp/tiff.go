@@ -29,7 +29,7 @@ type Tiff struct {
 	PlanarConfiguration       uint16
 	PrimaryChromaticities     string
 	ReferenceBlackWhite       string
-	ResolutionUnit            uint16
+	ResolutionUnit            meta.ResolutionUnit
 	SamplesPerPixel           uint16
 	TransferFunction          string
 	WhitePoint                string
@@ -79,7 +79,7 @@ func (t *Tiff) parse(p property) error {
 	case ReferenceBlackWhite:
 		t.ReferenceBlackWhite = parseString(p.Value())
 	case ResolutionUnit:
-		t.ResolutionUnit = parseUint16(p.Value())
+		t.ResolutionUnit = meta.ResolutionUnit(parseUint16(p.Value()))
 	case SamplesPerPixel:
 		t.SamplesPerPixel = parseUint16(p.Value())
 	case TransferFunction:
