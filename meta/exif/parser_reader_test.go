@@ -11,36 +11,11 @@ import (
 
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
-
-func TestMergeIFD0CoreFields(t *testing.T) {
-	t.Parallel()
-
-	dst := Exif{}
-	dst.IFD0.ImageWidth = 100
-
-	src := Exif{}
-	src.IFD0.ImageWidth = 200
-	src.IFD0.ImageHeight = 300
-	src.IFD0.SubfileType = meta.SubfileTypeReducedResolutionImage
-
-	mergeIFD0CoreFields(&dst, src)
-
-	if dst.IFD0.ImageWidth != 100 {
-		t.Fatalf("ImageWidth overwritten: got %d, want 100", dst.IFD0.ImageWidth)
-	}
-	if dst.IFD0.ImageHeight != 300 {
-		t.Fatalf("ImageHeight not copied: got %d, want 300", dst.IFD0.ImageHeight)
-	}
-	if dst.IFD0.SubfileType != meta.SubfileTypeReducedResolutionImage {
-		t.Fatalf("SubfileType not copied: got %v", dst.IFD0.SubfileType)
-	}
-
-	mergeIFD0CoreFields(nil, src) // no panic
-}
 
 func TestTagTypeFor(t *testing.T) {
 	t.Parallel()
@@ -111,7 +86,7 @@ func TestTagFromBuffer(t *testing.T) {
 
 	dEmbedded := tag.NewDirectory(utils.LittleEndian, tag.MakerNoteIFD, 0, 0, 0x853a)
 	var embedded [12]byte
-	dEmbedded.ByteOrder.PutUint16(embedded[0:2], uint16(makernote.TagNikonMakerNoteVersion))
+	dEmbedded.ByteOrder.PutUint16(embedded[0:2], uint16(nikon.MakerNoteVersion))
 	dEmbedded.ByteOrder.PutUint16(embedded[2:4], uint16(tag.TypeUndefined))
 	dEmbedded.ByteOrder.PutUint32(embedded[4:8], 4)
 	copy(embedded[8:12], []byte("0211"))
@@ -196,7 +171,7 @@ func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 	t.Parallel()
 
 	var payload [12]byte
-	utils.LittleEndian.PutUint16(payload[0:2], uint16(makernote.TagNikonMakerNoteVersion))
+	utils.LittleEndian.PutUint16(payload[0:2], uint16(nikon.MakerNoteVersion))
 	utils.LittleEndian.PutUint16(payload[2:4], uint16(tag.TypeUndefined))
 	utils.LittleEndian.PutUint32(payload[4:8], 4)
 	copy(payload[8:12], []byte("0211"))
@@ -526,5 +501,71 @@ func TestParseExifTagUserCommentUnicode(t *testing.T) {
 	}
 	if got := r.Exif.ExifIFD.UserComment; got != "Hi!" {
 		t.Fatalf("UserComment = %q, want %q", got, "Hi!")
+	}
+}
+
+func TestParseExifTagUserCommentHeaderSpacePadded(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		header  []byte
+		payload []byte
+		bo      utils.ByteOrder
+		want    string
+	}{
+		{
+			name:    "ASCII",
+			header:  []byte{'A', 'S', 'C', 'I', 'I', ' ', ' ', 0},
+			payload: []byte("hello world\x00"),
+			bo:      utils.LittleEndian,
+			want:    "hello world",
+		},
+		{
+			name:   "Unicode",
+			header: []byte{'U', 'N', 'I', 'C', 'O', 'D', 'E', ' '},
+			payload: []byte{
+				'H', 0,
+				'i', 0,
+				'!', 0,
+				0, 0,
+			},
+			bo:   utils.LittleEndian,
+			want: "Hi!",
+		},
+		{
+			name:    "JIS",
+			header:  []byte{'J', 'I', 'S', ' ', 0, ' ', 0, 0},
+			payload: []byte("JIS text\x00"),
+			bo:      utils.LittleEndian,
+			want:    "JIS text",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewReader(zerolog.Nop())
+			defer r.Close()
+
+			data := append(append([]byte{}, tc.header...), tc.payload...)
+			r.Reset(bytes.NewReader(data))
+			tg := tag.NewEntry(
+				tag.TagUserComment,
+				tag.TypeUndefined,
+				uint32(len(data)),
+				0,
+				tag.ExifIFD,
+				0,
+				tc.bo,
+			)
+
+			if ok := r.parseExifTag(tg); !ok {
+				t.Fatal("parseExifTag(TagUserComment) = false, want true")
+			}
+			if got := r.Exif.ExifIFD.UserComment; got != tc.want {
+				t.Fatalf("UserComment = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }

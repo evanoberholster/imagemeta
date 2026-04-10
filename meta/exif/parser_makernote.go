@@ -1,6 +1,7 @@
 package exif
 
 import (
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
@@ -78,7 +79,8 @@ func (r *Reader) parseAppleMakerNoteTag(t tag.Entry) bool {
 	case makernote.TagAppleAFStable:
 		info.AFStable = r.parseUint32(t) != 0
 	case makernote.TagAppleBurstUUID:
-		info.BurstUUID = r.parseStringAllowUndefined(t)
+		uuid := r.parseStringAllowUndefined(t)
+		info.BurstUUID = meta.UUIDFromString(uuid)
 	case makernote.TagAppleAEStable:
 		info.AEStable = r.parseUint32(t) != 0
 	case makernote.TagAppleOISMode:
@@ -88,7 +90,8 @@ func (r *Reader) parseAppleMakerNoteTag(t tag.Entry) bool {
 	case makernote.TagAppleImageCaptureType:
 		info.ImageCaptureType = int32(r.parseUint32(t))
 	case makernote.TagAppleImageUniqueID:
-		info.ImageUniqueID = r.parseStringAllowUndefined(t)
+		uuid := r.parseStringAllowUndefined(t)
+		info.ImageUniqueID = meta.UUIDFromString(uuid)
 	default:
 		return false
 	}

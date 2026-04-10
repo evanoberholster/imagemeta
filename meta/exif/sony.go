@@ -3,44 +3,44 @@ package exif
 import (
 	"strings"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/sony"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
 func (r *Reader) parseSonyTag(t tag.Entry) bool {
 	dst := r.sonyMakerNote()
-	switch uint16(t.ID) {
-	case makernote.TagSonyRating:
+	switch t.ID {
+	case sony.Rating:
 		dst.Rating = r.parseSonyUint32(t)
-	case makernote.TagSonyContrast:
+	case sony.Contrast:
 		dst.Contrast = r.parseSonyInt32(t)
-	case makernote.TagSonySaturation:
+	case sony.Saturation:
 		dst.Saturation = r.parseSonyInt32(t)
-	case makernote.TagSonySharpness:
+	case sony.Sharpness:
 		dst.Sharpness = r.parseSonyInt32(t)
-	case makernote.TagSonyCreativeStyle:
+	case sony.CreativeStyle:
 		dst.CreativeStyle = r.parseSonyText(t)
-	case makernote.TagSonyDynamicRangeOptimizer:
+	case sony.DynamicRangeOptimizer:
 		dst.DynamicRangeOptimizer = r.parseSonyUint32(t)
-	case makernote.TagSonyImageStabilization:
+	case sony.ImageStabilization:
 		dst.ImageStabilization = r.parseSonyUint32(t)
-	case makernote.TagSonyColorMode:
+	case sony.ColorMode:
 		dst.ColorMode = r.parseSonyUint32(t)
-	case makernote.TagSonyQuality:
+	case sony.Quality:
 		dst.Quality = r.parseSonyUint32(t)
-	case makernote.TagSonyQuality2:
+	case sony.Quality2:
 		dst.Quality2 = r.parseSonyU16Pair(t)
-	case makernote.TagSonyWhiteBalance:
+	case sony.WhiteBalance:
 		dst.WhiteBalance = r.parseSonyUint32(t)
-	case makernote.TagSonyWhiteBalanceFineTune:
+	case sony.WhiteBalanceFineTune:
 		dst.WhiteBalanceFineTune = r.parseSonyInt32(t)
-	case makernote.TagSonyFlashExposureComp:
+	case sony.FlashExposureComp:
 		dst.FlashExposureComp = r.parseSonySignedRationalValue(t)
-	case makernote.TagSonyTeleconverter:
+	case sony.Teleconverter:
 		dst.Teleconverter = r.parseSonyUint32(t)
-	case makernote.TagSonyModelID:
+	case sony.SonyModelID:
 		dst.SonyModelID = uint16(r.parseSonyUint32(t))
-	case makernote.TagSonyLensType:
+	case sony.LensType:
 		dst.LensType = r.parseSonyUint32(t)
 	default:
 		return false
@@ -53,27 +53,7 @@ func (r *Reader) parseSonyText(t tag.Entry) string {
 }
 
 func (r *Reader) parseSonyUint32(t tag.Entry) uint32 {
-	if t.IsEmbedded() {
-		switch t.Type {
-		case tag.TypeLong, tag.TypeIfd:
-			return t.EmbeddedLong()
-		case tag.TypeShort:
-			return uint32(t.EmbeddedShort())
-		}
-	}
-	switch t.Type {
-	case tag.TypeLong, tag.TypeIfd, tag.TypeShort:
-		var dst [2]uint32
-		if n := r.parseUint32List(t, dst[:]); n > 0 {
-			return dst[0]
-		}
-	case tag.TypeByte, tag.TypeUndefined, tag.TypeASCII, tag.TypeASCIINoNul:
-		var dst [4]byte
-		if n := r.parseByteList(t, dst[:]); n > 0 {
-			return uint32(dst[0])
-		}
-	}
-	return 0
+	return r.parseMakerNoteUint32(t)
 }
 
 func (r *Reader) parseSonyInt32(t tag.Entry) int32 {
@@ -92,16 +72,7 @@ func (r *Reader) parseSonyInt32(t tag.Entry) int32 {
 }
 
 func (r *Reader) parseSonyInt16(t tag.Entry) int16 {
-	switch t.Type {
-	case tag.TypeSignedShort, tag.TypeShort:
-	default:
-		return 0
-	}
-	var raw [1]uint16
-	if r.parseUint16List(t, raw[:]) == 0 {
-		return 0
-	}
-	return int16(raw[0])
+	return r.parseMakerNoteInt16(t)
 }
 
 func (r *Reader) parseSonyU16Pair(t tag.Entry) [2]uint16 {

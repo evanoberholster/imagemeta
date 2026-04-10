@@ -4,10 +4,56 @@ package canon
 import (
 	"math"
 	"time"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 //go:generate msgp
 //go:generate stringer -type=MacroMode,Quality,CanonFlashMode,ContinuousDrive,FocusMode,RecordMode,CanonImageSize,EasyMode,DigitalZoom,CameraISO,MeteringMode,FocusRange,ExposureMode,FlashModel,FocusContinuous,AESetting,ImageStabilization,SpotMeteringMode,PhotoEffect,ManualFlashOutput,SRAWQuality,FocusBracketing,HDRPQ,BracketMode,OnOffAuto,FilterEffect,ToningEffect,ShutterMode,RawJpgQuality,RawJpgSize,TimeZoneCity,DaylightSavings,AFAreaMode -linecomment -output=canon_string.go
+
+// Canon contains selected Canon maker-note fields.
+//
+// Parsing lives in meta/exif/canon.go. This package keeps the parsed container
+// model shared by the Exif result.
+// Canon maker-note tag IDs from ExifTool Canon::Main are defined in
+// makernote_tags.go.
+type Canon struct {
+	ImageType            string    // 16 bytes
+	FirmwareVersion      string    // 16 bytes
+	OwnerName            string    // 16 bytes
+	ImageUniqueID        meta.UUID // 16 bytes
+	LensModel            string    // 16 bytes
+	InternalSerialNumber string    // 16 bytes
+	BatteryType          string    // 16 bytes
+
+	FileNumber   uint32 // 4 bytes
+	SerialNumber uint32 // 4 bytes
+	ModelID      uint32 // 4 bytes
+	ColorSpace   uint16 // 4 bytes in struct (2 data + 2 padding)
+
+	// Structured Canon maker-note tables (ExifTool Canon.pm mappings).
+	CanonCameraSettings        CameraSettings     // 88 bytes
+	CanonFocalLength           FocalLengthInfo    // 8 bytes
+	CanonShotInfo              ShotInfo           // 100 bytes
+	CanonFileInfo              FileInfo           // 48 bytes
+	TimeInfo                   CanonTimeInfo      // 12 bytes
+	AFInfo                     AFInfo             // 128 bytes
+	FaceDetect1                FaceDetect1Info    // 42 bytes
+	FaceDetect2                FaceDetect2Info    // 2 bytes
+	FaceDetect3                FaceDetect3Info    // 4 bytes in struct (2 data + 2 padding)
+	AspectInfo                 AspectInfo         // 20 bytes
+	ProcessingInfo             ProcessingInfo     // 36 bytes in struct (30 data + 6 padding)
+	CustomPictureStyleFileName string             // 16 bytes
+	AFMicroAdj                 AFMicroAdjInfo     // 16 bytes in struct (12 data + 4 padding)
+	LensInfo                   LensInfoForService // 24 bytes
+	MultiExp                   MultiExpInfo       // 12 bytes
+	HDRInfo                    HDRInfo            // 8 bytes
+	PreviewImageInfo           PreviewImageInfo   // 20 bytes
+	SensorInfo                 SensorInfo         // 20 bytes
+	AFConfig                   AFConfig           // 84 bytes
+	RawBurstModeRoll           RawBurstInfo       // 8 bytes
+	LightingOpt                LightingOptInfo    // 32 bytes in struct (28 data + 4 padding)
+}
 
 // ContinuousDrive is part of the CanonCameraSettings field
 //

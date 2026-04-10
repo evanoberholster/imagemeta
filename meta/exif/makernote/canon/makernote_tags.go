@@ -13,6 +13,7 @@ import "github.com/evanoberholster/imagemeta/meta/exif/tag"
 //
 // Unknown Canon_0xNNNN tags below are observed in the local CR2/CR3 corpus and
 // included so the Canon maker-note tag list is exhaustive for current samples.
+
 type MakerNoteTag tag.ID
 
 // Canon maker-note Main-table tag IDs.

@@ -4,72 +4,72 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
 func (r *Reader) parsePanasonicTag(t tag.Entry) bool {
 	dst := r.panasonicMakerNote()
-	switch uint16(t.ID) {
-	case makernote.TagPanasonicImageQuality:
+	switch panasonic.MakerNoteTag(t.ID) {
+	case panasonic.ImageQuality:
 		dst.ImageQuality = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicFirmwareVersion:
+	case panasonic.FirmwareVersion:
 		dst.FirmwareVersion = r.parsePanasonicVersionString(t)
-	case makernote.TagPanasonicWhiteBalance:
+	case panasonic.WhiteBalance:
 		dst.WhiteBalance = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicFocusMode:
+	case panasonic.FocusMode:
 		dst.FocusMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicAFAreaMode:
+	case panasonic.AFAreaMode:
 		dst.AFAreaMode = r.parsePanasonicAFAreaMode(t)
-	case makernote.TagPanasonicImageStabilization:
+	case panasonic.ImageStabilization:
 		dst.ImageStabilization = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicMacroMode:
+	case panasonic.MacroMode:
 		dst.MacroMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicShootingMode:
+	case panasonic.ShootingMode:
 		dst.ShootingMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicAudio:
+	case panasonic.Audio:
 		dst.Audio = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicWhiteBalanceBias:
+	case panasonic.WhiteBalanceBias:
 		dst.WhiteBalanceBias = r.parsePanasonicThirdStops(t)
-	case makernote.TagPanasonicFlashBias:
+	case panasonic.FlashBias:
 		dst.FlashBias = r.parsePanasonicThirdStops(t)
-	case makernote.TagPanasonicExifVersion:
+	case panasonic.PanasonicExifVersion:
 		dst.PanasonicExifVersion = r.parsePanasonicText(t)
-	case makernote.TagPanasonicColorEffect:
+	case panasonic.ColorEffect:
 		dst.ColorEffect = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicTimeSincePowerOn:
+	case panasonic.TimeSincePowerOn:
 		dst.TimeSincePowerOn = float64(r.parsePanasonicUint32(t)) / 100
-	case makernote.TagPanasonicBurstMode:
+	case panasonic.BurstMode:
 		dst.BurstMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicSequenceNumber:
+	case panasonic.SequenceNumber:
 		dst.SequenceNumber = r.parsePanasonicUint32(t)
-	case makernote.TagPanasonicContrastMode:
+	case panasonic.ContrastMode:
 		dst.ContrastMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicNoiseReduction:
+	case panasonic.NoiseReduction:
 		dst.NoiseReduction = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicSelfTimer:
+	case panasonic.SelfTimer:
 		dst.SelfTimer = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicRotation:
+	case panasonic.Rotation:
 		dst.Rotation = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicTravelDay:
+	case panasonic.TravelDay:
 		dst.TravelDay = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicBatteryLevel:
+	case panasonic.BatteryLevel:
 		dst.BatteryLevel = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicTextStamp, makernote.TagPanasonicTextStamp2, makernote.TagPanasonicTextStamp3:
+	case panasonic.TextStamp, panasonic.TextStamp2, panasonic.TextStamp3:
 		dst.TextStamp = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicImageWidth:
+	case panasonic.PanasonicImageWidth:
 		dst.PanasonicImageWidth = r.parsePanasonicUint32(t)
-	case makernote.TagPanasonicImageHeight:
+	case panasonic.PanasonicImageHeight:
 		dst.PanasonicImageHeight = r.parsePanasonicUint32(t)
-	case makernote.TagPanasonicMakerNoteVersion:
+	case panasonic.MakerNoteVersion:
 		dst.MakerNoteVersion = r.parsePanasonicText(t)
-	case makernote.TagPanasonicSceneMode:
+	case panasonic.SceneMode:
 		dst.SceneMode = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicWBRedLevel:
+	case panasonic.WBRedLevel:
 		dst.WBRedLevel = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicWBGreenLevel:
+	case panasonic.WBGreenLevel:
 		dst.WBGreenLevel = uint16(r.parsePanasonicUint32(t))
-	case makernote.TagPanasonicWBBlueLevel:
+	case panasonic.WBBlueLevel:
 		dst.WBBlueLevel = uint16(r.parsePanasonicUint32(t))
 	default:
 		return false
@@ -78,40 +78,11 @@ func (r *Reader) parsePanasonicTag(t tag.Entry) bool {
 }
 
 func (r *Reader) parsePanasonicUint32(t tag.Entry) uint32 {
-	if t.IsEmbedded() {
-		switch t.Type {
-		case tag.TypeLong, tag.TypeIfd:
-			return t.EmbeddedLong()
-		case tag.TypeShort:
-			return uint32(t.EmbeddedShort())
-		}
-	}
-	switch t.Type {
-	case tag.TypeLong, tag.TypeIfd, tag.TypeShort:
-		var dst [2]uint32
-		if n := r.parseUint32List(t, dst[:]); n > 0 {
-			return dst[0]
-		}
-	case tag.TypeByte, tag.TypeUndefined, tag.TypeASCII, tag.TypeASCIINoNul:
-		var dst [4]byte
-		if n := r.parseByteList(t, dst[:]); n > 0 {
-			return uint32(dst[0])
-		}
-	}
-	return 0
+	return r.parseMakerNoteUint32(t)
 }
 
 func (r *Reader) parsePanasonicInt16(t tag.Entry) int16 {
-	switch t.Type {
-	case tag.TypeSignedShort, tag.TypeShort:
-	default:
-		return 0
-	}
-	var dst [1]uint16
-	if r.parseUint16List(t, dst[:]) == 0 {
-		return 0
-	}
-	return int16(dst[0])
+	return r.parseMakerNoteInt16(t)
 }
 
 func (r *Reader) parsePanasonicThirdStops(t tag.Entry) float64 {

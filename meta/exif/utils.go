@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"bytes"
 	"encoding/binary"
 	"math"
 	"math/bits"
@@ -56,6 +55,31 @@ func trimNULBuffer(buf []byte) []byte {
 	return nil
 }
 
+func trimASCIIWhitespace(buf []byte) []byte {
+	start := 0
+	for start < len(buf) {
+		switch buf[start] {
+		case ' ', '\t', '\n', '\r', '\f', '\v':
+			start++
+		default:
+			goto trimRight
+		}
+	}
+	return nil
+
+trimRight:
+	end := len(buf)
+	for end > start {
+		switch buf[end-1] {
+		case ' ', '\t', '\n', '\r', '\f', '\v':
+			end--
+		default:
+			return buf[start:end]
+		}
+	}
+	return nil
+}
+
 // getLocation returns a cached fixed-zone location for an EXIF offset string.
 func getLocation(offset int32, label []byte) *time.Location {
 	timezoneCacheMu.RLock()
@@ -73,7 +97,7 @@ func getLocation(offset int32, label []byte) *time.Location {
 }
 
 func exifASCIIText(buf []byte) string {
-	trimmed := bytes.TrimSpace(trimNULBuffer(buf))
+	trimmed := trimASCIIWhitespace(trimNULBuffer(buf))
 	if len(trimmed) == 0 {
 		return ""
 	}

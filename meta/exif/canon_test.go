@@ -9,8 +9,7 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
-	metacanon "github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -19,12 +18,12 @@ func u16(v int16) uint16 {
 	return uint16(v)
 }
 
-func parseAFInfo2ForTest(t *testing.T, words []uint16, model string, isAFInfo3 bool, opts ...AFInfoDecodeOptions) metacanon.AFInfo {
+func parseAFInfo2ForTest(t *testing.T, words []uint16, model string, isAFInfo3 bool, opts ...AFInfoDecodeOptions) canon.AFInfo {
 	t.Helper()
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
-	tagID := metacanon.CanonAFInfo2
+	tagID := canon.CanonAFInfo2
 	if isAFInfo3 {
-		tagID = metacanon.AFInfo3
+		tagID = canon.AFInfo3
 	}
 	entry := tag.NewEntry(
 		tag.ID(tagID),
@@ -50,11 +49,11 @@ func parseAFInfo2ForTest(t *testing.T, words []uint16, model string, isAFInfo3 b
 	return r.parseCanonAFInfo2(entry)
 }
 
-func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits uint16) metacanon.ShotInfo {
+func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits uint16) canon.ShotInfo {
 	t.Helper()
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonShotInfo),
+		tag.ID(canon.CanonShotInfo),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -70,7 +69,7 @@ func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits
 	br.Reset(raw)
 	r.Reset(&br)
 	r.Exif.IFD0.Model = model
-	r.Exif.MakerNote.Canon = &makernote.Canon{}
+	r.Exif.MakerNote.Canon = &canon.Canon{}
 	r.Exif.MakerNote.Canon.CanonCameraSettings.FocalUnits = focalUnits
 	return r.parseCanonShotInfo(entry)
 }
@@ -96,13 +95,13 @@ func TestFillCanonAFInfoEOS(t *testing.T) {
 
 	words[18] = (1 << 0) | (1 << 4)
 
-	var got metacanon.AFInfo
+	var got canon.AFInfo
 	fillCanonAFInfo(&got, words, "Canon EOS 6D", len(words))
 
 	if got.PrimaryAFPoint != 0 {
 		t.Fatalf("PrimaryAFPoint = %d, want 0 for EOS", got.PrimaryAFPoint)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo {
+	if got.Source != canon.AFInfoSourceAFInfo {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo", got.Source)
 	}
 	if !reflect.DeepEqual(got.AFPointsInFocusBits, []int{0, 4}) {
@@ -131,13 +130,13 @@ func TestFillCanonAFInfoNonEOSCount36PrimaryOffset(t *testing.T) {
 	words[27] = 2 // should be ignored
 	words[35] = 6 // expected primary point
 
-	var got metacanon.AFInfo
+	var got canon.AFInfo
 	fillCanonAFInfo(&got, words, "PowerShot G1", 36)
 
 	if got.PrimaryAFPoint != 6 {
 		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo {
+	if got.Source != canon.AFInfoSourceAFInfo {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo", got.Source)
 	}
 	if !reflect.DeepEqual(got.AFPointsInFocusBits, []int{3}) {
@@ -160,7 +159,7 @@ func TestFillCanonAFInfoNonEOSPrimarySequence12(t *testing.T) {
 	words[19] = 2
 	words[20] = 6
 
-	var got metacanon.AFInfo
+	var got canon.AFInfo
 	fillCanonAFInfo(&got, words, "PowerShot G1", len(words))
 
 	if got.PrimaryAFPoint != 6 {
@@ -202,7 +201,7 @@ func TestFillCanonAFInfo2EOSSelectedBits(t *testing.T) {
 	if got.PrimaryAFPoint != 0 {
 		t.Fatalf("PrimaryAFPoint = %d, want 0 for EOS AFInfo2", got.PrimaryAFPoint)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo2 {
+	if got.Source != canon.AFInfoSourceAFInfo2 {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 }
@@ -223,7 +222,7 @@ func TestFillCanonAFInfo2NonEOSPrimaryOffset(t *testing.T) {
 	if got.PrimaryAFPoint != 6 {
 		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo2 {
+	if got.Source != canon.AFInfoSourceAFInfo2 {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 	if got.AFPointsSelectedBits != nil {
@@ -234,7 +233,7 @@ func TestFillCanonAFInfo2NonEOSPrimaryOffset(t *testing.T) {
 	if gotAFInfo3.PrimaryAFPoint != 0 {
 		t.Fatalf("PrimaryAFPoint(AFInfo3) = %d, want 0", gotAFInfo3.PrimaryAFPoint)
 	}
-	if gotAFInfo3.Source != metacanon.AFInfoSourceAFInfo3 {
+	if gotAFInfo3.Source != canon.AFInfoSourceAFInfo3 {
 		t.Fatalf("Source(AFInfo3) = %v, want AFInfoSourceAFInfo3", gotAFInfo3.Source)
 	}
 }
@@ -275,7 +274,7 @@ func TestParseCanonAFInfo2DecodeOptionsBitset(t *testing.T) {
 	if !reflect.DeepEqual(got.AFPointsSelectedBits, []int{2}) {
 		t.Fatalf("AFPointsSelectedBits = %v, want [2]", got.AFPointsSelectedBits)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo2 {
+	if got.Source != canon.AFInfoSourceAFInfo2 {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 }
@@ -302,7 +301,7 @@ func TestParseCanonAFInfo2DecodeOptionsNone(t *testing.T) {
 	if got.PrimaryAFPoint != 6 {
 		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
 	}
-	if got.Source != metacanon.AFInfoSourceAFInfo2 {
+	if got.Source != canon.AFInfoSourceAFInfo2 {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 }
@@ -345,7 +344,7 @@ func TestParseCanonBatteryType(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			entry := tag.NewEntry(
-				tag.ID(metacanon.BatteryType),
+				tag.ID(canon.BatteryType),
 				tag.TypeUndefined,
 				tc.unitCount,
 				0,
@@ -370,7 +369,7 @@ func TestParseCanonBatteryType(t *testing.T) {
 func TestParseCanonLensModelTerminatedAtNUL(t *testing.T) {
 	raw := []byte("EF70-200\x00TRAILING")
 	entry := tag.NewEntry(
-		tag.ID(metacanon.LensModel),
+		tag.ID(canon.LensModel),
 		tag.TypeASCII,
 		uint32(len(raw)),
 		0,
@@ -398,7 +397,7 @@ func TestParseCanonBatteryTypeTag(t *testing.T) {
 	raw := make([]byte, canonBatteryTypePayloadSize)
 	copy(raw[4:], []byte("LP-E6N\x00TRAILING"))
 	entry := tag.NewEntry(
-		tag.ID(metacanon.BatteryType),
+		tag.ID(canon.BatteryType),
 		tag.TypeUndefined,
 		uint32(len(raw)),
 		0,
@@ -428,7 +427,7 @@ func TestParseCanonImageUniqueIDFromByte(t *testing.T) {
 		0x97, 0x4d, 0xbf, 0x00, 0xe1, 0x7f, 0x61, 0x62,
 	}
 	entry := tag.NewEntry(
-		tag.ID(metacanon.ImageUniqueID),
+		tag.ID(canon.ImageUniqueID),
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
@@ -456,7 +455,7 @@ func TestParseCanonImageUniqueIDFromByte(t *testing.T) {
 func TestParseCanonImageUniqueIDAllZeroIsNilUUID(t *testing.T) {
 	raw := make([]byte, 16)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.ImageUniqueID),
+		tag.ID(canon.ImageUniqueID),
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
@@ -521,20 +520,20 @@ func TestParseCanonAFConfigTagPresent(t *testing.T) {
 	if parsed.MakerNote.Canon == nil {
 		t.Fatalf("MakerNote.Canon = nil for %s", samplePath)
 	}
-	if parsed.MakerNote.Canon.AFConfig == (metacanon.AFConfig{}) {
+	if parsed.MakerNote.Canon.AFConfig == (canon.AFConfig{}) {
 		t.Fatalf("AFConfig not parsed for %s", samplePath)
 	}
 }
 
 func TestCanonShouldReplaceAFInfoPrefersPopulated(t *testing.T) {
-	current := metacanon.AFInfo{
-		Source:        metacanon.AFInfoSourceAFInfo2,
+	current := canon.AFInfo{
+		Source:        canon.AFInfoSourceAFInfo2,
 		NumAFPoints:   1053,
 		ValidAFPoints: 651,
-		AFArea:        make([]metacanon.AFPoint, 32),
+		AFArea:        make([]canon.AFPoint, 32),
 	}
-	candidate := metacanon.AFInfo{
-		Source: metacanon.AFInfoSourceAFInfo2,
+	candidate := canon.AFInfo{
+		Source: canon.AFInfoSourceAFInfo2,
 	}
 
 	if canonShouldReplaceAFInfo(current, candidate) {
@@ -546,17 +545,17 @@ func TestCanonShouldReplaceAFInfoPrefersPopulated(t *testing.T) {
 }
 
 func TestCanonShouldReplaceAFInfoPrefersHigherQuality(t *testing.T) {
-	current := metacanon.AFInfo{
-		Source:        metacanon.AFInfoSourceAFInfo2,
+	current := canon.AFInfo{
+		Source:        canon.AFInfoSourceAFInfo2,
 		NumAFPoints:   11,
 		ValidAFPoints: 11,
-		AFArea:        make([]metacanon.AFPoint, 11),
+		AFArea:        make([]canon.AFPoint, 11),
 	}
-	candidate := metacanon.AFInfo{
-		Source:        metacanon.AFInfoSourceAFInfo2,
+	candidate := canon.AFInfo{
+		Source:        canon.AFInfoSourceAFInfo2,
 		NumAFPoints:   1053,
 		ValidAFPoints: 1053,
-		AFArea:        make([]metacanon.AFPoint, 1053),
+		AFArea:        make([]canon.AFPoint, 1053),
 	}
 
 	if !canonShouldReplaceAFInfo(current, candidate) {
@@ -565,8 +564,8 @@ func TestCanonShouldReplaceAFInfoPrefersHigherQuality(t *testing.T) {
 }
 
 func TestCanonShouldReplaceAFInfoSourceTieBreak(t *testing.T) {
-	current := metacanon.AFInfo{Source: metacanon.AFInfoSourceAFInfo3}
-	candidate := metacanon.AFInfo{Source: metacanon.AFInfoSourceAFInfo2}
+	current := canon.AFInfo{Source: canon.AFInfoSourceAFInfo3}
+	candidate := canon.AFInfo{Source: canon.AFInfoSourceAFInfo2}
 	if !canonShouldReplaceAFInfo(current, candidate) {
 		t.Fatal("expected AFInfo2 to win source-priority tie over AFInfo3")
 	}
@@ -609,7 +608,7 @@ func TestParseCanonAFInfo2LargePayload(t *testing.T) {
 	words[selectedStart+65] = 1 << 4
 
 	got := parseAFInfo2ForTest(t, words, "Canon EOS R3", false)
-	if got.Source != metacanon.AFInfoSourceAFInfo2 {
+	if got.Source != canon.AFInfoSourceAFInfo2 {
 		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 	if int(got.NumAFPoints) != numAFPoints {
@@ -621,11 +620,11 @@ func TestParseCanonAFInfo2LargePayload(t *testing.T) {
 	if len(got.AFPoints) != numAFPoints {
 		t.Fatalf("len(AFPoints) = %d, want %d", len(got.AFPoints), numAFPoints)
 	}
-	if got.AFArea[0] != metacanon.NewAFPoint(130, 131, 0, int16(numAFPoints-1)) {
+	if got.AFArea[0] != canon.NewAFPoint(130, 131, 0, int16(numAFPoints-1)) {
 		t.Fatalf("AFArea[0] = %v, unexpected", got.AFArea[0])
 	}
 	last := got.AFArea[numAFPoints-1]
-	if last != metacanon.NewAFPoint(130, 131, int16(numAFPoints-1), 0) {
+	if last != canon.NewAFPoint(130, 131, int16(numAFPoints-1), 0) {
 		t.Fatalf("AFArea[last] = %v, unexpected", last)
 	}
 	if !reflect.DeepEqual(got.AFPointsInFocusBits, []int{0, 161, 1044}) {
@@ -639,12 +638,12 @@ func TestParseCanonAFInfo2LargePayload(t *testing.T) {
 func TestParseCanonAFInfoLegacySamples(t *testing.T) {
 	tests := []struct {
 		file string
-		want metacanon.AFInfo
+		want canon.AFInfo
 	}{
 		{
 			file: filepath.Join(defaultBenchImageDir, "350D.CR2"),
-			want: metacanon.AFInfo{
-				Source:              metacanon.AFInfoSourceAFInfo,
+			want: canon.AFInfo{
+				Source:              canon.AFInfoSourceAFInfo,
 				NumAFPoints:         7,
 				ValidAFPoints:       7,
 				CanonImageWidth:     3456,
@@ -654,21 +653,21 @@ func TestParseCanonAFInfoLegacySamples(t *testing.T) {
 				AFAreaWidth:         189,
 				AFAreaHeight:        188,
 				AFPointsInFocusBits: []int{3},
-				AFArea: []metacanon.AFPoint{
-					metacanon.NewAFPoint(189, 188, 0, -617),
-					metacanon.NewAFPoint(189, 188, -1237, 0),
-					metacanon.NewAFPoint(189, 188, -742, 0),
-					metacanon.NewAFPoint(189, 188, 0, 0),
-					metacanon.NewAFPoint(189, 188, 742, 0),
-					metacanon.NewAFPoint(189, 188, 1237, 0),
-					metacanon.NewAFPoint(189, 188, 0, 617),
+				AFArea: []canon.AFPoint{
+					canon.NewAFPoint(189, 188, 0, -617),
+					canon.NewAFPoint(189, 188, -1237, 0),
+					canon.NewAFPoint(189, 188, -742, 0),
+					canon.NewAFPoint(189, 188, 0, 0),
+					canon.NewAFPoint(189, 188, 742, 0),
+					canon.NewAFPoint(189, 188, 1237, 0),
+					canon.NewAFPoint(189, 188, 0, 617),
 				},
 			},
 		},
 		{
 			file: filepath.Join(defaultBenchImageDir, "XT1.CR2"),
-			want: metacanon.AFInfo{
-				Source:              metacanon.AFInfoSourceAFInfo,
+			want: canon.AFInfo{
+				Source:              canon.AFInfoSourceAFInfo,
 				NumAFPoints:         7,
 				ValidAFPoints:       7,
 				CanonImageWidth:     3456,
@@ -678,14 +677,14 @@ func TestParseCanonAFInfoLegacySamples(t *testing.T) {
 				AFAreaWidth:         189,
 				AFAreaHeight:        188,
 				AFPointsInFocusBits: []int{3},
-				AFArea: []metacanon.AFPoint{
-					metacanon.NewAFPoint(189, 188, 0, -617),
-					metacanon.NewAFPoint(189, 188, -1237, 0),
-					metacanon.NewAFPoint(189, 188, -742, 0),
-					metacanon.NewAFPoint(189, 188, 0, 0),
-					metacanon.NewAFPoint(189, 188, 742, 0),
-					metacanon.NewAFPoint(189, 188, 1237, 0),
-					metacanon.NewAFPoint(189, 188, 0, 617),
+				AFArea: []canon.AFPoint{
+					canon.NewAFPoint(189, 188, 0, -617),
+					canon.NewAFPoint(189, 188, -1237, 0),
+					canon.NewAFPoint(189, 188, -742, 0),
+					canon.NewAFPoint(189, 188, 0, 0),
+					canon.NewAFPoint(189, 188, 742, 0),
+					canon.NewAFPoint(189, 188, 1237, 0),
+					canon.NewAFPoint(189, 188, 0, 617),
 				},
 			},
 		},
@@ -832,7 +831,7 @@ func TestParseCanonCameraSettingsIndexMapping(t *testing.T) {
 	copy(input[1:], unsigned[:52])
 	raw := canonUint16WordsToBytes(input, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonCameraSettings),
+		tag.ID(canon.CanonCameraSettings),
 		tag.TypeShort,
 		uint32(len(input)),
 		0,
@@ -849,35 +848,35 @@ func TestParseCanonCameraSettingsIndexMapping(t *testing.T) {
 
 	got := r.parseCanonCameraSettings(entry)
 
-	if got.MacroMode != metacanon.MacroMode(signed[0]) {
-		t.Fatalf("MacroMode = %d, want %d", got.MacroMode, metacanon.MacroMode(signed[0]))
+	if got.MacroMode != canon.MacroMode(signed[0]) {
+		t.Fatalf("MacroMode = %d, want %d", got.MacroMode, canon.MacroMode(signed[0]))
 	}
-	if got.FocusMode != metacanon.FocusMode(signed[6]) {
+	if got.FocusMode != canon.FocusMode(signed[6]) {
 		t.Fatalf("FocusMode = %d, want %d", got.FocusMode, signed[6])
 	}
 	if got.AFPoint != unsigned[18] {
 		t.Fatalf("AFPoint = %#x, want %#x", got.AFPoint, unsigned[18])
 	}
-	if got.CanonExposureMode != metacanon.ExposureMode(signed[19]) {
+	if got.CanonExposureMode != canon.ExposureMode(signed[19]) {
 		t.Fatalf("CanonExposureMode = %d, want %d", got.CanonExposureMode, signed[19])
 	}
-	if got.LensType != metacanon.CanonLensType(unsigned[21]) {
-		t.Fatalf("LensType = %#x, want %#x", got.LensType, metacanon.CanonLensType(unsigned[21]))
+	if got.LensType != canon.CanonLensType(unsigned[21]) {
+		t.Fatalf("LensType = %#x, want %#x", got.LensType, canon.CanonLensType(unsigned[21]))
 	}
 	if got.DisplayAperture != parseCanonDisplayAperture(unsigned[34]) {
 		t.Fatalf("DisplayAperture = %v, want %v", got.DisplayAperture, parseCanonDisplayAperture(unsigned[34]))
 	}
-	if got.SRAWQuality != metacanon.SRAWQuality(signed[45]) {
-		t.Fatalf("SRAWQuality = %d, want %d", got.SRAWQuality, metacanon.SRAWQuality(signed[45]))
+	if got.SRAWQuality != canon.SRAWQuality(signed[45]) {
+		t.Fatalf("SRAWQuality = %d, want %d", got.SRAWQuality, canon.SRAWQuality(signed[45]))
 	}
-	if got.FocusBracketing != metacanon.FocusBracketing(signed[49]) {
-		t.Fatalf("FocusBracketing = %d, want %d", got.FocusBracketing, metacanon.FocusBracketing(signed[49]))
+	if got.FocusBracketing != canon.FocusBracketing(signed[49]) {
+		t.Fatalf("FocusBracketing = %d, want %d", got.FocusBracketing, canon.FocusBracketing(signed[49]))
 	}
 	if got.Clarity != signed[50] {
 		t.Fatalf("Clarity = %d, want %d", got.Clarity, signed[50])
 	}
-	if got.HDRPQ != metacanon.HDRPQ(signed[51]) {
-		t.Fatalf("HDRPQ = %d, want %d", got.HDRPQ, metacanon.HDRPQ(signed[51]))
+	if got.HDRPQ != canon.HDRPQ(signed[51]) {
+		t.Fatalf("HDRPQ = %d, want %d", got.HDRPQ, canon.HDRPQ(signed[51]))
 	}
 }
 
@@ -887,7 +886,7 @@ func TestParseCanonCameraSettingsShortInputProgressive(t *testing.T) {
 	words := []uint16{8, 123, 456, 789}
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonCameraSettings),
+		tag.ID(canon.CanonCameraSettings),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -903,13 +902,13 @@ func TestParseCanonCameraSettingsShortInputProgressive(t *testing.T) {
 	r.Reset(&br)
 
 	got := r.parseCanonCameraSettings(entry)
-	if got.MacroMode != metacanon.MacroMode(123) {
+	if got.MacroMode != canon.MacroMode(123) {
 		t.Fatalf("MacroMode = %d, want 123", got.MacroMode)
 	}
 	if got.SelfTimer != 456 {
 		t.Fatalf("SelfTimer = %d, want 456", got.SelfTimer)
 	}
-	if got.Quality != metacanon.Quality(789) {
+	if got.Quality != canon.Quality(789) {
 		t.Fatalf("Quality = %d, want 789", got.Quality)
 	}
 	if got.HDRPQ != 0 {
@@ -927,7 +926,7 @@ func TestParseCanonCameraSettingsApertureConversions(t *testing.T) {
 
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonCameraSettings),
+		tag.ID(canon.CanonCameraSettings),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -958,7 +957,7 @@ func TestParseCanonCameraSettingsInvalidLengthReturnsZero(t *testing.T) {
 	words := []uint16{123, 456, 789}
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonCameraSettings),
+		tag.ID(canon.CanonCameraSettings),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -974,7 +973,7 @@ func TestParseCanonCameraSettingsInvalidLengthReturnsZero(t *testing.T) {
 	r.Reset(&br)
 
 	got := r.parseCanonCameraSettings(entry)
-	if got != (metacanon.CameraSettings{}) {
+	if got != (canon.CameraSettings{}) {
 		t.Fatalf("parseCanonCameraSettings(invalid length) = %+v, want zero value", got)
 	}
 }
@@ -988,8 +987,8 @@ func TestParseCanonShotInfo(t *testing.T) {
 	words[4] = 0x40                   // [4] TargetAperture
 	words[5] = 0x60                   // [5] TargetExposureTime
 	words[6] = 32                     // [6] ExposureCompensation
-	words[7] = uint16(metacanon.WhiteBalanceShade)
-	words[8] = uint16(metacanon.SlowShutterNightScene)
+	words[7] = uint16(canon.WhiteBalanceShade)
+	words[8] = uint16(canon.SlowShutterNightScene)
 	words[9] = 7
 	words[10] = 3
 	words[12] = 150
@@ -1005,9 +1004,9 @@ func TestParseCanonShotInfo(t *testing.T) {
 	words[22] = 0x60
 	words[23] = 64
 	words[24] = 9
-	words[26] = uint16(metacanon.CameraTypeEOSHighEnd)
-	words[27] = uint16(metacanon.AutoRotateRotate90CW)
-	words[28] = uint16(metacanon.NDFilterOn)
+	words[26] = uint16(canon.CameraTypeEOSHighEnd)
+	words[27] = uint16(canon.AutoRotateRotate90CW)
+	words[28] = uint16(canon.NDFilterOn)
 	words[29] = 15
 	words[33] = 12
 
@@ -1022,11 +1021,11 @@ func TestParseCanonShotInfo(t *testing.T) {
 	if math.Abs(float64(got.ActualISO-400.0)) > 1e-5 {
 		t.Fatalf("ActualISO = %.5f, want 400.0", got.ActualISO)
 	}
-	if got.WhiteBalance != metacanon.WhiteBalanceShade {
-		t.Fatalf("WhiteBalance = %d, want %d", got.WhiteBalance, metacanon.WhiteBalanceShade)
+	if got.WhiteBalance != canon.WhiteBalanceShade {
+		t.Fatalf("WhiteBalance = %d, want %d", got.WhiteBalance, canon.WhiteBalanceShade)
 	}
-	if got.SlowShutter != metacanon.SlowShutterNightScene {
-		t.Fatalf("SlowShutter = %d, want %d", got.SlowShutter, metacanon.SlowShutterNightScene)
+	if got.SlowShutter != canon.SlowShutterNightScene {
+		t.Fatalf("SlowShutter = %d, want %d", got.SlowShutter, canon.SlowShutterNightScene)
 	}
 	if got.TargetApertureValue != canonShotAperture(int16(words[4])) {
 		t.Fatalf("TargetApertureValue = %v, want %v", got.TargetApertureValue, canonShotAperture(int16(words[4])))
@@ -1046,17 +1045,17 @@ func TestParseCanonShotInfo(t *testing.T) {
 	if got.ExposureTimeValue != canonShotExposureTime(int16(words[22]), false) {
 		t.Fatalf("ExposureTimeValue = %v, want %v", got.ExposureTimeValue, canonShotExposureTime(int16(words[22]), false))
 	}
-	if got.CameraType != metacanon.CameraTypeEOSHighEnd {
-		t.Fatalf("CameraType = %d, want %d", got.CameraType, metacanon.CameraTypeEOSHighEnd)
+	if got.CameraType != canon.CameraTypeEOSHighEnd {
+		t.Fatalf("CameraType = %d, want %d", got.CameraType, canon.CameraTypeEOSHighEnd)
 	}
-	if got.AutoRotate != metacanon.AutoRotateRotate90CW {
-		t.Fatalf("AutoRotate = %d, want %d", got.AutoRotate, metacanon.AutoRotateRotate90CW)
+	if got.AutoRotate != canon.AutoRotateRotate90CW {
+		t.Fatalf("AutoRotate = %d, want %d", got.AutoRotate, canon.AutoRotateRotate90CW)
 	}
-	if got.NDFilter != metacanon.NDFilterOn {
-		t.Fatalf("NDFilter = %d, want %d", got.NDFilter, metacanon.NDFilterOn)
+	if got.NDFilter != canon.NDFilterOn {
+		t.Fatalf("NDFilter = %d, want %d", got.NDFilter, canon.NDFilterOn)
 	}
-	if got.FocusDistance != metacanon.NewFocusDistance(250, 400) {
-		t.Fatalf("FocusDistance = %v, want %v", got.FocusDistance, metacanon.NewFocusDistance(250, 400))
+	if got.FocusDistance != canon.NewFocusDistance(250, 400) {
+		t.Fatalf("FocusDistance = %v, want %v", got.FocusDistance, canon.NewFocusDistance(250, 400))
 	}
 	if math.Abs(float64(got.FocusDistance.UpperMeters()-2.5)) > 1e-6 {
 		t.Fatalf("FocusDistance.UpperMeters = %.6f, want 2.5", got.FocusDistance.UpperMeters())
@@ -1082,7 +1081,7 @@ func TestParseCanonShotInfoTruncated(t *testing.T) {
 	if got.WhiteBalance != 0 {
 		t.Fatalf("WhiteBalance = %d, want 0", got.WhiteBalance)
 	}
-	if got.FocusDistance != (metacanon.FocusDistance{}) {
+	if got.FocusDistance != (canon.FocusDistance{}) {
 		t.Fatalf("FocusDistance = %v, want zero", got.FocusDistance)
 	}
 	if got.FNumberValue != 0 {
@@ -1097,7 +1096,7 @@ func TestParseCanonShotInfoSkipsZeroFocusDistanceUpper(t *testing.T) {
 	words[20] = 400
 
 	got := parseShotInfoForTest(t, words, "Canon EOS R5", 10)
-	if got.FocusDistance != (metacanon.FocusDistance{}) {
+	if got.FocusDistance != (canon.FocusDistance{}) {
 		t.Fatalf("FocusDistance = %v, want zero", got.FocusDistance)
 	}
 }
@@ -1126,14 +1125,14 @@ func TestParseCanonTimeInfo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tz := int32(-300)
-			city := metacanon.TimeZoneCityNewYork
-			daylightSavings := metacanon.DaylightSavingsOn
+			city := canon.TimeZoneCityNewYork
+			daylightSavings := canon.DaylightSavingsOn
 
 			words := []uint32{16, uint32(tz), uint32(city), uint32(daylightSavings)}
 			raw := canonUint32WordsToBytes(words, tc.bo)
 
 			entry := tag.NewEntry(
-				tag.ID(metacanon.TimeInfo),
+				tag.ID(canon.TimeInfo),
 				tag.TypeLong,
 				uint32(len(words)),
 				0,
@@ -1168,29 +1167,29 @@ func TestParseCanonFileInfoIndexMapping(t *testing.T) {
 	words[0] = uint16(len(words) * 2)
 	words[1] = 0x1234
 	words[2] = 0x5678
-	words[3] = uint16(metacanon.BracketModeWB)
+	words[3] = uint16(canon.BracketModeWB)
 	words[4] = u16(-2)
 	words[5] = 3
-	words[6] = uint16(metacanon.RawJpgQualityCRAW)
-	words[7] = uint16(metacanon.RawJpgSizeMedium3)
-	words[8] = uint16(metacanon.OnOffAutoAuto)
+	words[6] = uint16(canon.RawJpgQualityCRAW)
+	words[7] = uint16(canon.RawJpgSizeMedium3)
+	words[8] = uint16(canon.OnOffAutoAuto)
 	words[9] = 2
 	words[12] = u16(-1)
 	words[13] = 4
-	words[14] = uint16(metacanon.FilterEffectRed)
+	words[14] = uint16(canon.FilterEffectRed)
 	words[15] = 0xffff
 	words[16] = 75
-	words[19] = uint16(metacanon.OnOffAutoOn)
+	words[19] = uint16(canon.OnOffAutoOn)
 	words[20] = 299
 	words[21] = 267
-	words[23] = uint16(metacanon.ShutterModeElectronic)
-	words[25] = uint16(metacanon.OnOffAutoOff)
-	words[32] = uint16(metacanon.OnOffAutoOff)
-	words[61] = uint16(metacanon.CanonRFLensType(258))
+	words[23] = uint16(canon.ShutterModeElectronic)
+	words[25] = uint16(canon.OnOffAutoOff)
+	words[32] = uint16(canon.OnOffAutoOff)
+	words[61] = uint16(canon.CanonRFLensType(258))
 
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonFileInfo),
+		tag.ID(canon.CanonFileInfo),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -1210,20 +1209,20 @@ func TestParseCanonFileInfoIndexMapping(t *testing.T) {
 	if got.FileNumber != 0x56781234 {
 		t.Fatalf("FileNumber = %#x, want %#x", got.FileNumber, uint32(0x56781234))
 	}
-	if got.BracketMode != metacanon.BracketModeWB {
-		t.Fatalf("BracketMode = %d, want %d", got.BracketMode, metacanon.BracketModeWB)
+	if got.BracketMode != canon.BracketModeWB {
+		t.Fatalf("BracketMode = %d, want %d", got.BracketMode, canon.BracketModeWB)
 	}
 	if got.BracketValue != -2 {
 		t.Fatalf("BracketValue = %d, want -2", got.BracketValue)
 	}
-	if got.RawJpgQuality != metacanon.RawJpgQualityCRAW {
-		t.Fatalf("RawJpgQuality = %d, want %d", got.RawJpgQuality, metacanon.RawJpgQualityCRAW)
+	if got.RawJpgQuality != canon.RawJpgQualityCRAW {
+		t.Fatalf("RawJpgQuality = %d, want %d", got.RawJpgQuality, canon.RawJpgQualityCRAW)
 	}
-	if got.RawJpgSize != metacanon.RawJpgSizeMedium3 {
-		t.Fatalf("RawJpgSize = %d, want %d", got.RawJpgSize, metacanon.RawJpgSizeMedium3)
+	if got.RawJpgSize != canon.RawJpgSizeMedium3 {
+		t.Fatalf("RawJpgSize = %d, want %d", got.RawJpgSize, canon.RawJpgSizeMedium3)
 	}
-	if got.LongExposureNoiseReduction2 != metacanon.OnOffAutoAuto {
-		t.Fatalf("LongExposureNoiseReduction2 = %d, want %d", got.LongExposureNoiseReduction2, metacanon.OnOffAutoAuto)
+	if got.LongExposureNoiseReduction2 != canon.OnOffAutoAuto {
+		t.Fatalf("LongExposureNoiseReduction2 = %d, want %d", got.LongExposureNoiseReduction2, canon.OnOffAutoAuto)
 	}
 	if got.WBBracketMode != 2 {
 		t.Fatalf("WBBracketMode = %d, want 2", got.WBBracketMode)
@@ -1234,28 +1233,28 @@ func TestParseCanonFileInfoIndexMapping(t *testing.T) {
 	if got.WBBracketValueGM != 4 {
 		t.Fatalf("WBBracketValueGM = %d, want 4", got.WBBracketValueGM)
 	}
-	if got.FilterEffect != metacanon.FilterEffectRed {
-		t.Fatalf("FilterEffect = %d, want %d", got.FilterEffect, metacanon.FilterEffectRed)
+	if got.FilterEffect != canon.FilterEffectRed {
+		t.Fatalf("FilterEffect = %d, want %d", got.FilterEffect, canon.FilterEffectRed)
 	}
-	if got.ToningEffect != metacanon.ToningEffect(0xffff) {
+	if got.ToningEffect != canon.ToningEffect(0xffff) {
 		t.Fatalf("ToningEffect = %#x, want %#x", got.ToningEffect, uint16(0xffff))
 	}
 	if got.MacroMagnification != 75 {
 		t.Fatalf("MacroMagnification = %d, want 75", got.MacroMagnification)
 	}
-	if got.LiveViewShooting != metacanon.OnOffAutoOn {
-		t.Fatalf("LiveViewShooting = %d, want %d", got.LiveViewShooting, metacanon.OnOffAutoOn)
+	if got.LiveViewShooting != canon.OnOffAutoOn {
+		t.Fatalf("LiveViewShooting = %d, want %d", got.LiveViewShooting, canon.OnOffAutoOn)
 	}
-	if got.FocusDistance != metacanon.NewFocusDistance(299, 267) {
-		t.Fatalf("FocusDistance = %v, want %v", got.FocusDistance, metacanon.NewFocusDistance(299, 267))
+	if got.FocusDistance != canon.NewFocusDistance(299, 267) {
+		t.Fatalf("FocusDistance = %v, want %v", got.FocusDistance, canon.NewFocusDistance(299, 267))
 	}
-	if got.ShutterMode != metacanon.ShutterModeElectronic {
-		t.Fatalf("ShutterMode = %d, want %d", got.ShutterMode, metacanon.ShutterModeElectronic)
+	if got.ShutterMode != canon.ShutterModeElectronic {
+		t.Fatalf("ShutterMode = %d, want %d", got.ShutterMode, canon.ShutterModeElectronic)
 	}
-	if got.AntiFlicker != metacanon.OnOffAutoOff {
-		t.Fatalf("AntiFlicker = %d, want %d", got.AntiFlicker, metacanon.OnOffAutoOff)
+	if got.AntiFlicker != canon.OnOffAutoOff {
+		t.Fatalf("AntiFlicker = %d, want %d", got.AntiFlicker, canon.OnOffAutoOff)
 	}
-	if got.RFLensType != metacanon.CanonRFLensType(258) {
+	if got.RFLensType != canon.CanonRFLensType(258) {
 		t.Fatalf("RFLensType = %d, want 258", got.RFLensType)
 	}
 }
@@ -1272,7 +1271,7 @@ func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.FaceDetect1),
+		tag.ID(canon.FaceDetect1),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -1295,10 +1294,10 @@ func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 	if got.FaceDetectFrameSize != [2]uint16{640, 480} {
 		t.Fatalf("FaceDetectFrameSize = %v, want [640 480]", got.FaceDetectFrameSize)
 	}
-	if got.FacePositions[0] != (metacanon.FacePosition{X: -10, Y: 20}) {
+	if got.FacePositions[0] != (canon.FacePosition{X: -10, Y: 20}) {
 		t.Fatalf("FacePositions[0] = %+v, want {-10, 20}", got.FacePositions[0])
 	}
-	if got.FacePositions[1] != (metacanon.FacePosition{X: 30, Y: -40}) {
+	if got.FacePositions[1] != (canon.FacePosition{X: 30, Y: -40}) {
 		t.Fatalf("FacePositions[1] = %+v, want {30, -40}", got.FacePositions[1])
 	}
 }
@@ -1306,7 +1305,7 @@ func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 func TestParseCanonFaceDetect2IndexMapping(t *testing.T) {
 	raw := []byte{0, 42, 3, 0, 0}
 	entry := tag.NewEntry(
-		tag.ID(metacanon.FaceDetect2),
+		tag.ID(canon.FaceDetect2),
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
@@ -1335,7 +1334,7 @@ func TestParseCanonFaceDetect3IndexMapping(t *testing.T) {
 	words := []uint16{0, 1, 1, 4}
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.FaceDetect3),
+		tag.ID(canon.FaceDetect3),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -1378,7 +1377,7 @@ func TestParseCanonLightingOptIndexMapping(t *testing.T) {
 
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonLightingOpt),
+		tag.ID(canon.CanonLightingOpt),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
@@ -1422,7 +1421,7 @@ func TestParseCanonLightingOptShortPayload(t *testing.T) {
 	words := []uint32{16, 1, 3, 1}
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonLightingOpt),
+		tag.ID(canon.CanonLightingOpt),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
@@ -1460,7 +1459,7 @@ func TestParseCanonMultiExpIndexMapping(t *testing.T) {
 	words := []uint32{16, 0, 3, 5}
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonMultiExp),
+		tag.ID(canon.CanonMultiExp),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
@@ -1492,7 +1491,7 @@ func TestParseCanonHDRInfoIndexMapping(t *testing.T) {
 	words := []uint32{12, 0, 2}
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonHDRInfo),
+		tag.ID(canon.CanonHDRInfo),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
@@ -1539,7 +1538,7 @@ func TestParseCanonProcessingInfoIndexMapping(t *testing.T) {
 
 	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonProcessingInfo),
+		tag.ID(canon.CanonProcessingInfo),
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
@@ -1589,7 +1588,7 @@ func TestParseCanonAFMicroAdjIndexMapping(t *testing.T) {
 
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonAFMicroAdj),
+		tag.ID(canon.CanonAFMicroAdj),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,

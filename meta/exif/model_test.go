@@ -55,35 +55,6 @@ func TestLensInfoStringAndJSON(t *testing.T) {
 	}
 }
 
-func TestExifTagParsedBitsetLowAndHigh(t *testing.T) {
-	t.Parallel()
-
-	var e Exif
-	e.markTagParsed(10)
-	e.markTagParsed(10) // duplicate
-	e.markTagParsed(700)
-	e.markTagParsed(700) // duplicate
-	e.markTagParsed(701)
-
-	if !e.HasTagParsed(10) {
-		t.Fatal("HasTagParsed(10) should be true")
-	}
-	if !e.HasTagParsed(700) || !e.HasTagParsed(701) {
-		t.Fatal("HasTagParsed() should be true for high IDs")
-	}
-	if e.HasTagParsed(11) {
-		t.Fatal("HasTagParsed(11) should be false")
-	}
-
-	bits := e.TagParsedBitset()
-	if bits[0]&(uint64(1)<<10) == 0 {
-		t.Fatal("TagParsedBitset() missing low tag bit")
-	}
-	if e.highTagCount != 2 {
-		t.Fatalf("highTagCount = %d, want 2", e.highTagCount)
-	}
-}
-
 func TestGPSInfoSetDateAndTimeOrder(t *testing.T) {
 	t.Parallel()
 

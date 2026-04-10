@@ -5,6 +5,8 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -60,6 +62,8 @@ func (r *Reader) ensureMakerNoteMake() makernote.CameraMake {
 		switch r.Exif.ImageType {
 		case imagetype.ImagePanaRAW:
 			r.Exif.CameraMakeID = makernote.CameraMakePanasonic
+		case imagetype.ImageARW, imagetype.ImageSR2, imagetype.ImageSRF:
+			r.Exif.CameraMakeID = makernote.CameraMakeSony
 		case imagetype.ImageJPEG, imagetype.ImageTiff:
 			// no image-type-only fallback
 		}
@@ -76,7 +80,7 @@ func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child tag.Directo
 		return err
 	}
 
-	byteOrder, ifdRelOffset, ok := makernote.ParseNikonHeader(header)
+	byteOrder, ifdRelOffset, ok := nikon.ParseNikonHeader(header)
 	if !ok {
 		// Nikon maker notes without the standard label are not parsed yet.
 		// TODO: support unlabeled Nikon maker-note variants.
@@ -180,19 +184,19 @@ func isCanonMakerNotePrefix(prefix []byte) bool {
 // readPanasonicMakerNoteDirectory parses Panasonic's fixed label prefix before
 // the maker-note IFD.
 func (r *Reader) readPanasonicMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
-	header, ok := r.peekMakerNotePrefix(makernote.PanasonicMakerNotePrefixLength)
-	if !ok || !makernote.HasPanasonicHeader(header) {
+	header, ok := r.peekMakerNotePrefix(panasonic.PanasonicMakerNotePrefixLength)
+	if !ok || !panasonic.HasPanasonicHeader(header) {
 		return r.readDirectory(child, false)
 	}
-	if err := r.discard(makernote.PanasonicMakerNotePrefixLength); err != nil {
+	if err := r.discard(panasonic.PanasonicMakerNotePrefixLength); err != nil {
 		return err
 	}
 	prefixed := tag.NewDirectory(
 		child.ByteOrder,
 		tag.MakerNoteIFD,
 		child.Index,
-		parent.ValueOffset+makernote.PanasonicMakerNotePrefixLength,
-		parent.ValueOffset+makernote.PanasonicMakerNotePrefixLength,
+		parent.ValueOffset+panasonic.PanasonicMakerNotePrefixLength,
+		parent.ValueOffset+panasonic.PanasonicMakerNotePrefixLength,
 	)
 	return r.readDirectory(prefixed, false)
 }
