@@ -7,94 +7,93 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
-	metanikon "github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 func (r *Reader) parseNikonTag(t tag.Entry) bool {
 	dst := r.nikonMakerNote()
-	switch uint16(t.ID) {
-	case makernote.TagNikonMakerNoteVersion:
+	switch nikon.MakerNoteTag(t.ID) {
+	case nikon.MakerNoteVersion:
 		dst.MakerNoteVersion = r.parseNikonVersion(t)
-	case makernote.TagNikonISO:
+	case nikon.ISO:
 		dst.ISO = r.parseNikonISOValue(t)
-	case makernote.TagNikonColorMode:
+	case nikon.ColorMode:
 		dst.ColorMode = r.parseNikonText(t)
-	case makernote.TagNikonQuality:
+	case nikon.Quality:
 		dst.Quality = r.parseNikonText(t)
-	case makernote.TagNikonWhiteBalance:
+	case nikon.WhiteBalance:
 		dst.WhiteBalance = r.parseNikonText(t)
-	case makernote.TagNikonSharpness:
+	case nikon.Sharpness:
 		dst.Sharpness = r.parseNikonText(t)
-	case makernote.TagNikonFocusMode:
+	case nikon.FocusMode:
 		dst.FocusMode = r.parseNikonText(t)
-	case makernote.TagNikonFlashSetting:
+	case nikon.FlashSetting:
 		dst.FlashSetting = r.parseNikonText(t)
-	case makernote.TagNikonFlashType:
+	case nikon.FlashType:
 		dst.FlashType = r.parseNikonText(t)
-	case makernote.TagNikonISOSelection:
+	case nikon.ISOSelection:
 		dst.ISOSelection = r.parseNikonText(t)
-	case makernote.TagNikonISOSetting:
+	case nikon.ISOSetting:
 		dst.ISOSetting = r.parseNikonISOValue(t)
-	case makernote.TagNikonSerialNumber:
+	case nikon.SerialNumber:
 		dst.SerialNumber = strings.TrimSpace(r.parseNikonText(t))
-	case makernote.TagNikonSerialNumber2:
+	case nikon.SerialNumber2:
 		if dst.SerialNumber == "" {
 			dst.SerialNumber = strings.TrimSpace(r.parseNikonText(t))
 		}
-	case makernote.TagNikonColorSpace:
+	case nikon.ColorSpace:
 		dst.ColorSpace = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonVRInfo:
+	case nikon.VRInfo:
 		dst.VRInfo = r.parseNikonVRInfo(t)
-	case makernote.TagNikonActiveDLighting:
+	case nikon.ActiveDLighting:
 		dst.ActiveDLighting = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonWorldTime:
+	case nikon.WorldTime:
 		dst.WorldTime = r.parseNikonWorldTime(t)
-	case makernote.TagNikonISOInfo:
+	case nikon.ISOInfo:
 		dst.ISOInfo = r.parseNikonISOInfo(t)
-	case makernote.TagNikonVignetteControl:
+	case nikon.VignetteControl:
 		dst.VignetteControl = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonShutterMode:
+	case nikon.ShutterMode:
 		dst.ShutterMode = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonMechanicalShutterCount:
+	case nikon.MechanicalShutterCount:
 		dst.MechanicalShutterCount = r.parseNikonUint32(t)
-	case makernote.TagNikonImageSizeRAW:
+	case nikon.ImageSizeRAW:
 		dst.ImageSizeRAW = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonColorTemperatureAuto:
+	case nikon.ColorTemperatureAuto:
 		dst.ColorTemperatureAuto = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonLensType:
+	case nikon.LensType:
 		dst.LensType = uint8(r.parseNikonUint32(t))
-	case makernote.TagNikonLens:
+	case nikon.Lens:
 		dst.Lens = r.parseNikonLens(t)
-	case makernote.TagNikonManualFocusDistance:
+	case nikon.ManualFocusDistance:
 		dst.ManualFocusDistance = r.parseRationalValue(t)
-	case makernote.TagNikonDigitalZoom:
+	case nikon.DigitalZoom:
 		dst.DigitalZoom = r.parseRationalValue(t)
-	case makernote.TagNikonFlashMode:
+	case nikon.FlashMode:
 		dst.FlashMode = uint8(r.parseNikonUint32(t))
-	case makernote.TagNikonAFInfo:
+	case nikon.AFInfo:
 		dst.AFInfo = r.parseNikonAFInfo(t)
-	case makernote.TagNikonShootingMode:
+	case nikon.ShootingMode:
 		dst.ShootingMode = uint16(r.parseNikonUint32(t))
-	case makernote.TagNikonLensFStops:
+	case nikon.LensFStops:
 		dst.LensFStops = r.parseNikonLensFStops(t)
-	case makernote.TagNikonImageCount:
+	case nikon.ImageCount:
 		dst.ImageCount = r.parseNikonUint32(t)
-	case makernote.TagNikonDeletedImageCount:
+	case nikon.DeletedImageCount:
 		dst.DeletedImageCount = r.parseNikonUint32(t)
-	case makernote.TagNikonShutterCount:
+	case nikon.ShutterCount:
 		dst.ShutterCount = r.parseNikonUint32(t)
-	case makernote.TagNikonPowerUpTime:
+	case nikon.PowerUpTime:
 		dst.PowerUpTime = r.parseNikonPowerUpTime(t)
-	case makernote.TagNikonAFInfo2:
+	case nikon.AFInfo2:
 		dst.AFInfo2 = r.parseNikonAFInfo2(t)
-	case makernote.TagNikonFileInfo:
+	case nikon.FileInfo:
 		dst.FileInfo = r.parseNikonFileInfo(t)
-	case makernote.TagNikonAFTune:
+	case nikon.AFTune:
 		dst.AFTune = r.parseNikonAFTune(t)
-	case makernote.TagNikonSilentPhotography:
+	case nikon.SilentPhotography:
 		dst.SilentPhotography = r.parseNikonUint32(t) != 0
 	default:
 		return false
@@ -174,12 +173,12 @@ func (r *Reader) parseNikonISOValue(t tag.Entry) uint32 {
 	return r.parseNikonUint32(t)
 }
 
-func (r *Reader) parseNikonVRInfo(t tag.Entry) metanikon.NikonVRInfo {
+func (r *Reader) parseNikonVRInfo(t tag.Entry) nikon.NikonVRInfo {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 16))
 	if len(raw) == 0 {
-		return metanikon.NikonVRInfo{}
+		return nikon.NikonVRInfo{}
 	}
-	var dst metanikon.NikonVRInfo
+	var dst nikon.NikonVRInfo
 	if len(raw) >= 4 {
 		dst.VRInfoVersion = nikonVersionString(raw[:4])
 	}
@@ -195,26 +194,26 @@ func (r *Reader) parseNikonVRInfo(t tag.Entry) metanikon.NikonVRInfo {
 	return dst
 }
 
-func (r *Reader) parseNikonWorldTime(t tag.Entry) metanikon.NikonWorldTime {
+func (r *Reader) parseNikonWorldTime(t tag.Entry) nikon.NikonWorldTime {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 8))
 	if len(raw) < 4 {
-		return metanikon.NikonWorldTime{}
+		return nikon.NikonWorldTime{}
 	}
 	bo := nikonWorldTimeByteOrder(raw, t.ByteOrder)
-	return metanikon.NikonWorldTime{
+	return nikon.NikonWorldTime{
 		TimeZone:          int16(bo.Uint16(raw[:2])),
 		DaylightSavings:   nikonByteAt(raw, 2),
 		DateDisplayFormat: nikonByteAt(raw, 3),
 	}
 }
 
-func (r *Reader) parseNikonISOInfo(t tag.Entry) metanikon.NikonISOInfo {
+func (r *Reader) parseNikonISOInfo(t tag.Entry) nikon.NikonISOInfo {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 16))
 	if len(raw) < 12 {
-		return metanikon.NikonISOInfo{}
+		return nikon.NikonISOInfo{}
 	}
 	bo := utils.BigEndian
-	dst := metanikon.NikonISOInfo{
+	dst := nikon.NikonISOInfo{
 		// ExifTool's Nikon::ISOInfo table defines ISO/ISO2 at offsets 0 and 6
 		// as the raw logarithmic Nikon ISO byte, not a uint16.
 		ISO:           nikonISOFromRaw(float64(nikonByteAt(raw, 0))),
@@ -223,7 +222,7 @@ func (r *Reader) parseNikonISOInfo(t tag.Entry) metanikon.NikonISOInfo {
 		ISOExpansion2: nikonU16At(raw, 10, bo),
 	}
 	if dst.ISO == 0 && dst.ISOExpansion == 0 && dst.ISO2 == 0 && dst.ISOExpansion2 == 0 {
-		return metanikon.NikonISOInfo{}
+		return nikon.NikonISOInfo{}
 	}
 	return dst
 }
@@ -277,14 +276,14 @@ func (r *Reader) parseNikonPowerUpTime(t tag.Entry) time.Time {
 	return time.Date(year, month, day, hour, minute, second, 0, time.UTC)
 }
 
-func (r *Reader) parseNikonAFInfo(t tag.Entry) metanikon.NikonAFInfo {
+func (r *Reader) parseNikonAFInfo(t tag.Entry) nikon.NikonAFInfo {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 16))
 	if len(raw) < 4 {
-		return metanikon.NikonAFInfo{}
+		return nikon.NikonAFInfo{}
 	}
 	bo := nikonAFInfoByteOrder(r.Exif.IFD0.Model)
 	mask := bo.Uint16(raw[2:4])
-	return metanikon.NikonAFInfo{
+	return nikon.NikonAFInfo{
 		AFAreaMode:          raw[0],
 		AFPoint:             raw[1],
 		AFPointsInFocusMask: mask,
@@ -292,13 +291,13 @@ func (r *Reader) parseNikonAFInfo(t tag.Entry) metanikon.NikonAFInfo {
 	}
 }
 
-func (r *Reader) parseNikonAFInfo2(t tag.Entry) metanikon.NikonAFInfo2 {
+func (r *Reader) parseNikonAFInfo2(t tag.Entry) nikon.NikonAFInfo2 {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 512))
 	if len(raw) < 8 {
-		return metanikon.NikonAFInfo2{}
+		return nikon.NikonAFInfo2{}
 	}
 	version := nikonVersionString(raw[:4])
-	dst := metanikon.NikonAFInfo2{
+	dst := nikon.NikonAFInfo2{
 		AFInfo2Version:    version,
 		AFDetectionMethod: raw[4],
 		AFAreaMode:        raw[5],
@@ -363,13 +362,13 @@ func (r *Reader) parseNikonAFInfo2(t tag.Entry) metanikon.NikonAFInfo2 {
 	return dst
 }
 
-func (r *Reader) parseNikonFileInfo(t tag.Entry) metanikon.NikonFileInfo {
+func (r *Reader) parseNikonFileInfo(t tag.Entry) nikon.NikonFileInfo {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 16))
 	if len(raw) < 10 {
-		return metanikon.NikonFileInfo{}
+		return nikon.NikonFileInfo{}
 	}
 	bo := nikonFileInfoByteOrder(raw, r.Exif.IFD0.Model)
-	return metanikon.NikonFileInfo{
+	return nikon.NikonFileInfo{
 		FileInfoVersion:  nikonVersionString(raw[:4]),
 		MemoryCardNumber: nikonU16At(raw, 4, bo),
 		DirectoryNumber:  nikonU16At(raw, 6, bo),
@@ -377,12 +376,12 @@ func (r *Reader) parseNikonFileInfo(t tag.Entry) metanikon.NikonFileInfo {
 	}
 }
 
-func (r *Reader) parseNikonAFTune(t tag.Entry) metanikon.NikonAFTune {
+func (r *Reader) parseNikonAFTune(t tag.Entry) nikon.NikonAFTune {
 	raw := r.parseOpaqueBytes(t, min(t.Size(), 8))
 	if len(raw) < 4 {
-		return metanikon.NikonAFTune{}
+		return nikon.NikonAFTune{}
 	}
-	return metanikon.NikonAFTune{
+	return nikon.NikonAFTune{
 		AFFineTune:        raw[0],
 		AFFineTuneIndex:   raw[1],
 		AFFineTuneAdj:     int8(raw[2]),

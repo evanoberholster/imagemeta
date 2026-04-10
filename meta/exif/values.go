@@ -58,7 +58,7 @@ func (r *Reader) parseStringTrimRightSpaceNewline(t tag.Entry) string {
 func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
-		buf := bytes.TrimSpace(r.parseASCIIValueBytes(t))
+		buf := trimASCIIWhitespace(r.parseASCIIValueBytes(t))
 		if len(buf) == 0 {
 			return ""
 		}
@@ -87,7 +87,7 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 			}
 			out[i] = '.'
 		}
-		sanitized := bytes.TrimSpace(out[:len(trimmed)])
+		sanitized := trimASCIIWhitespace(out[:len(trimmed)])
 		if len(sanitized) == 0 {
 			return ""
 		}
@@ -102,39 +102,51 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 		}
 		out[i] = '.'
 	}
-	out = bytes.TrimSpace(out)
+	out = trimASCIIWhitespace(out)
 	if len(out) == 0 {
 		return ""
 	}
 	return string(out)
 }
 
+type displayTrimMode uint8
+
+const (
+	displayTrimRightSpaces displayTrimMode = iota
+	displayTrimRightSpaceNewlineMode
+)
+
+type exifTextEncoding uint8
+
+const (
+	exifTextEncodingUnknown exifTextEncoding = iota
+	exifTextEncodingASCII
+	exifTextEncodingUnicode
+	exifTextEncodingJIS
+)
+
 // parseDisplayString keeps a printable representation that is close to exiftool
 // text dumps by converting non-printable bytes to '.' and preserving trailing dots.
 func (r *Reader) parseDisplayString(t tag.Entry, maxBytes uint32) string {
-	var buf []byte
-	switch {
-	case t.IsEmbedded():
-		if maxBytes == 0 {
-			return ""
-		}
-		n := t.Size()
-		if n > maxBytes {
-			n = maxBytes
-		}
-		t.EmbeddedValue(r.state.buf[:4])
-		buf = r.state.buf[:n]
-	case t.IsType(tag.TypeUndefined), t.IsType(tag.TypeByte), t.IsType(tag.TypeASCII), t.IsType(tag.TypeASCIINoNul):
-		if maxBytes == 0 {
-			return ""
-		}
-		var err error
-		buf, _, err = r.readTagBytes(t, maxBytes)
-		if err != nil || len(buf) == 0 {
-			return ""
-		}
-	default:
+	return r.parseDisplayStringWithMode(t, maxBytes, displayTrimRightSpaces)
+}
+
+// parseDisplayStringTrimRightSpaceNewline is like parseDisplayString but trims
+// trailing spaces and line breaks on the byte slice before converting to string.
+func (r *Reader) parseDisplayStringTrimRightSpaceNewline(t tag.Entry, maxBytes uint32) string {
+	return r.parseDisplayStringWithMode(t, maxBytes, displayTrimRightSpaceNewlineMode)
+}
+
+func (r *Reader) parseDisplayStringWithMode(t tag.Entry, maxBytes uint32, mode displayTrimMode) string {
+	buf := r.parseDisplayBytes(t, maxBytes)
+	if len(buf) == 0 {
 		return ""
+	}
+	if mode == displayTrimRightSpaceNewlineMode {
+		buf = trimRightSpaceNewline(buf)
+		if len(buf) == 0 {
+			return ""
+		}
 	}
 
 	allPrintable := true
@@ -145,6 +157,9 @@ func (r *Reader) parseDisplayString(t tag.Entry, maxBytes uint32) string {
 		}
 	}
 	if allPrintable {
+		if mode == displayTrimRightSpaceNewlineMode {
+			return string(buf)
+		}
 		return strings.TrimRight(string(buf), " \t\r\n")
 	}
 
@@ -158,6 +173,9 @@ func (r *Reader) parseDisplayString(t tag.Entry, maxBytes uint32) string {
 			}
 			out[i] = '.'
 		}
+		if mode == displayTrimRightSpaceNewlineMode {
+			return string(out[:len(buf)])
+		}
 		return strings.TrimRight(string(out[:len(buf)]), " \t\r\n")
 	}
 
@@ -170,84 +188,36 @@ func (r *Reader) parseDisplayString(t tag.Entry, maxBytes uint32) string {
 		}
 		out[i] = '.'
 	}
+	if mode == displayTrimRightSpaceNewlineMode {
+		return string(out)
+	}
 	return strings.TrimRight(string(out), " \t\r\n")
 }
 
-// parseDisplayStringTrimRightSpaceNewline is like parseDisplayString but trims
-// trailing spaces and line breaks on the byte slice before converting to string.
-func (r *Reader) parseDisplayStringTrimRightSpaceNewline(t tag.Entry, maxBytes uint32) string {
-	var buf []byte
+func (r *Reader) parseDisplayBytes(t tag.Entry, maxBytes uint32) []byte {
 	switch {
 	case t.IsEmbedded():
 		if maxBytes == 0 {
-			return ""
+			return nil
 		}
 		n := t.Size()
 		if n > maxBytes {
 			n = maxBytes
 		}
 		t.EmbeddedValue(r.state.buf[:4])
-		buf = r.state.buf[:n]
+		return r.state.buf[:n]
 	case t.IsType(tag.TypeUndefined), t.IsType(tag.TypeByte), t.IsType(tag.TypeASCII), t.IsType(tag.TypeASCIINoNul):
 		if maxBytes == 0 {
-			return ""
+			return nil
 		}
-		var err error
-		buf, _, err = r.readTagBytes(t, maxBytes)
+		buf, _, err := r.readTagBytes(t, maxBytes)
 		if err != nil || len(buf) == 0 {
-			return ""
+			return nil
 		}
+		return buf
 	default:
-		return ""
+		return nil
 	}
-
-	buf = trimRightSpaceNewline(buf)
-	if len(buf) == 0 {
-		return ""
-	}
-
-	allPrintable := true
-	for i := 0; i < len(buf); i++ {
-		if buf[i] < 0x20 || buf[i] > 0x7e {
-			allPrintable = false
-			break
-		}
-	}
-	if allPrintable {
-		return string(buf)
-	}
-
-	if len(buf) <= 512 {
-		var out [512]byte
-		for i := 0; i < len(buf); i++ {
-			b := buf[i]
-			if b >= 0x20 && b <= 0x7e {
-				out[i] = b
-				continue
-			}
-			out[i] = '.'
-		}
-		outBuf := trimRightSpaceNewline(out[:len(buf)])
-		if len(outBuf) == 0 {
-			return ""
-		}
-		return string(outBuf)
-	}
-
-	out := make([]byte, len(buf))
-	for i := 0; i < len(buf); i++ {
-		b := buf[i]
-		if b >= 0x20 && b <= 0x7e {
-			out[i] = b
-			continue
-		}
-		out[i] = '.'
-	}
-	out = trimRightSpaceNewline(out)
-	if len(out) == 0 {
-		return ""
-	}
-	return string(out)
 }
 
 func trimRightSpaceNewline(buf []byte) []byte {
@@ -330,6 +300,45 @@ func (r *Reader) parseUint32(t tag.Entry) uint32 {
 	default:
 		return 0
 	}
+}
+
+// parseMakerNoteUint32 parses a maker-note integer value from common numeric and
+// byte-like representations used by multiple vendors.
+func (r *Reader) parseMakerNoteUint32(t tag.Entry) uint32 {
+	if t.IsEmbedded() {
+		switch t.Type {
+		case tag.TypeLong, tag.TypeIfd:
+			return t.EmbeddedLong()
+		case tag.TypeShort:
+			return uint32(t.EmbeddedShort())
+		}
+	}
+	switch t.Type {
+	case tag.TypeLong, tag.TypeIfd, tag.TypeShort:
+		var dst [2]uint32
+		if n := r.parseUint32List(t, dst[:]); n > 0 {
+			return dst[0]
+		}
+	case tag.TypeByte, tag.TypeUndefined, tag.TypeASCII, tag.TypeASCIINoNul:
+		var dst [4]byte
+		if n := r.parseByteList(t, dst[:]); n > 0 {
+			return uint32(dst[0])
+		}
+	}
+	return 0
+}
+
+func (r *Reader) parseMakerNoteInt16(t tag.Entry) int16 {
+	switch t.Type {
+	case tag.TypeSignedShort, tag.TypeShort:
+	default:
+		return 0
+	}
+	var raw [1]uint16
+	if r.parseUint16List(t, raw[:]) == 0 {
+		return 0
+	}
+	return int16(raw[0])
 }
 
 // parseFirstUint32 parses the first uint32-compatible value from EXIF metadata.
@@ -487,9 +496,15 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 		if got := len(buf) / 4; got < n {
 			n = got
 		}
-		for i := 0; i < n; i++ {
-			start := i * 4
-			dst[i] = t.ByteOrder.Uint32(buf[start : start+4])
+		if t.ByteOrder == utils.LittleEndian {
+			for i, j := 0, 0; i < n; i, j = i+1, j+4 {
+				dst[i] = binary.LittleEndian.Uint32(buf[j:])
+			}
+		} else {
+			for i := 0; i < n; i++ {
+				start := i * 4
+				dst[i] = t.ByteOrder.Uint32(buf[start : start+4])
+			}
 		}
 	case tag.TypeShort:
 		buf, _, err := r.readTagBytes(t, uint32(n*2))
@@ -499,9 +514,15 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 		if got := len(buf) / 2; got < n {
 			n = got
 		}
-		for i := 0; i < n; i++ {
-			start := i * 2
-			dst[i] = uint32(t.ByteOrder.Uint16(buf[start : start+2]))
+		if t.ByteOrder == utils.LittleEndian {
+			for i, j := 0, 0; i < n; i, j = i+1, j+2 {
+				dst[i] = uint32(binary.LittleEndian.Uint16(buf[j:]))
+			}
+		} else {
+			for i := 0; i < n; i++ {
+				start := i * 2
+				dst[i] = uint32(t.ByteOrder.Uint16(buf[start : start+2]))
+			}
 		}
 	default:
 		return 0
@@ -526,9 +547,15 @@ func (r *Reader) parseInt32List(t tag.Entry, dst []int32) int {
 	if got := len(buf) / 4; got < n {
 		n = got
 	}
-	for i := 0; i < n; i++ {
-		start := i * 4
-		dst[i] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
+	if t.ByteOrder == utils.LittleEndian {
+		for i, j := 0, 0; i < n; i, j = i+1, j+4 {
+			dst[i] = int32(binary.LittleEndian.Uint32(buf[j:]))
+		}
+	} else {
+		for i := 0; i < n; i++ {
+			start := i * 4
+			dst[i] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
+		}
 	}
 	return n
 }
@@ -582,10 +609,17 @@ func (r *Reader) parseRationalSList(t tag.Entry, dst []int32) int {
 	if got := len(buf) / 8; got < n {
 		n = got
 	}
-	for i := 0; i < n; i++ {
-		start := i * 8
-		dst[i*2] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
-		dst[i*2+1] = int32(t.ByteOrder.Uint32(buf[start+4 : start+8]))
+	if t.ByteOrder == utils.LittleEndian {
+		for i, j := 0, 0; i < n; i, j = i+1, j+8 {
+			dst[i*2] = int32(binary.LittleEndian.Uint32(buf[j:]))
+			dst[i*2+1] = int32(binary.LittleEndian.Uint32(buf[j+4:]))
+		}
+	} else {
+		for i := 0; i < n; i++ {
+			start := i * 8
+			dst[i*2] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
+			dst[i*2+1] = int32(t.ByteOrder.Uint32(buf[start+4 : start+8]))
+		}
 	}
 	return n
 }
@@ -642,8 +676,57 @@ var (
 	exifTextASCII   = []byte("ASCII\x00\x00\x00")
 	exifTextUnicode = []byte("UNICODE\x00")
 	exifTextJIS     = []byte("JIS\x00\x00\x00\x00\x00")
-	exifTextEmpty   = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
+
+func isNULOrSpace(b byte) bool {
+	return b == 0 || b == ' '
+}
+
+func classifyExifTextHeader(header []byte) exifTextEncoding {
+	if len(header) < 8 {
+		return exifTextEncodingUnknown
+	}
+
+	// Common canonical headers fast-path.
+	switch {
+	case bytes.Equal(header, exifTextASCII):
+		return exifTextEncodingASCII
+	case bytes.Equal(header, exifTextUnicode):
+		return exifTextEncodingUnicode
+	case bytes.Equal(header, exifTextJIS):
+		return exifTextEncodingJIS
+	}
+
+	// ExifTool compatibility for malformed-but-common padding:
+	// ASCII and empty IDs padded with NUL/spaces.
+	if bytes.Equal(header[:5], []byte("ASCII")) {
+		if isNULOrSpace(header[5]) && isNULOrSpace(header[6]) && isNULOrSpace(header[7]) {
+			return exifTextEncodingASCII
+		}
+		return exifTextEncodingUnknown
+	}
+	if bytes.Equal(header[:7], []byte("UNICODE")) {
+		// Match ExifTool behavior: uppercase UNICODE only.
+		if isNULOrSpace(header[7]) {
+			return exifTextEncodingUnicode
+		}
+		return exifTextEncodingUnknown
+	}
+	if bytes.Equal(header[:3], []byte("JIS")) {
+		for i := 3; i < 8; i++ {
+			if !isNULOrSpace(header[i]) {
+				return exifTextEncodingUnknown
+			}
+		}
+		return exifTextEncodingJIS
+	}
+	for i := 0; i < 8; i++ {
+		if !isNULOrSpace(header[i]) {
+			return exifTextEncodingUnknown
+		}
+	}
+	return exifTextEncodingASCII
+}
 
 // parseExifUserComment decodes EXIF UserComment (0x9286) using the EXIF text
 // header conventions that ExifTool also recognizes.
@@ -658,15 +741,15 @@ func (r *Reader) parseExifUserComment(t tag.Entry) string {
 		return ""
 	}
 	if len(buf) < 8 {
-		return exifASCIIText(bytes.TrimSpace(trimNULBuffer(buf)))
+		return exifASCIIText(trimASCIIWhitespace(trimNULBuffer(buf)))
 	}
 
 	header := buf[:8]
 	payload := buf[8:]
-	switch {
-	case bytes.Equal(header, exifTextASCII), bytes.Equal(header, exifTextJIS), bytes.Equal(header, exifTextEmpty):
+	switch classifyExifTextHeader(header) {
+	case exifTextEncodingASCII, exifTextEncodingJIS:
 		return exifASCIIText(payload)
-	case bytes.Equal(header, exifTextUnicode):
+	case exifTextEncodingUnicode:
 		return exifUTF16Text(payload, t.ByteOrder)
 	default:
 		// Fall back to best-effort text decoding for malformed headers.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -22,20 +23,28 @@ func benchmarkParseSamples(b *testing.B, samples []benchSample, opts ...ReaderOp
 
 	for _, sample := range samples {
 		sample := sample
-		b.Run(sample.name, func(b *testing.B) {
-			path, err := firstMatch(filepath.Join(benchDir, sample.glob))
-			if err != nil {
-				b.Fatalf("glob %q: %v", sample.glob, err)
-			}
-			if path == "" {
-				b.Skipf("no sample found for %s in %s", sample.glob, benchDir)
-			}
 
-			data, err := os.ReadFile(path)
-			if err != nil {
-				b.Fatalf("read %s: %v", path, err)
-			}
+		path, err := firstMatch(filepath.Join(benchDir, sample.glob))
+		if err != nil {
+			b.Fatalf("glob %q: %v", sample.glob, err)
+		}
+		if path == "" {
+			b.Skipf("no sample found for %s in %s", sample.glob, benchDir)
+		}
 
+		data, err := os.ReadFile(path)
+		if err != nil {
+			b.Fatalf("read %s: %v", path, err)
+		}
+
+		benchName := sample.name
+		if parsed, parseErr := Parse(bytes.NewReader(data)); parseErr == nil {
+			if model := strings.TrimSpace(parsed.IFD0.Model); model != "" {
+				benchName = model + "/" + sample.name
+			}
+		}
+
+		b.Run(benchName, func(b *testing.B) {
 			b.ReportAllocs()
 			b.SetBytes(int64(len(data)))
 			b.ResetTimer()
@@ -92,3 +101,13 @@ func firstMatch(pattern string) (string, error) {
 	}
 	return paths[0], nil
 }
+
+// BenchmarkParseFormats/Canon_EOS_6D/CR2-2   	  146330	      7737 ns/op	2766194.87 MB/s	    1544 B/op	      18 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R/CR3-2    	   94710	     11723 ns/op	2701806.39 MB/s	    3731 B/op	      20 allocs/op
+// BenchmarkParseFormats/HERO6_Black/GPR-2    	  328575	      3688 ns/op	1208736.22 MB/s	     184 B/op	       8 allocs/op
+// BenchmarkParseFormats/NIKON_D300S/NEF-2    	  150327	      7483 ns/op	1827959.84 MB/s	     736 B/op	      18 allocs/op
+// BenchmarkParseFormats/JPG-2                	 1323674	       882.9 ns/op	1369075.04 MB/s	      68 B/op	       3 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R6/JXL-2   	  479952	      2724 ns/op	140208.68 MB/s	     232 B/op	      10 allocs/op
+// BenchmarkParseFormats/iPhone_8/HEI-2       	   51920	     22360 ns/op	25725.17 MB/s	     417 B/op	      14 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_6D/CR2-2         	  137852	      8158 ns/op	2623566.14 MB/s	    1368 B/op	      17 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_R/CR3-2          	  110773	     10201 ns/op	3104768.74 MB/s	    1424 B/op	      19 allocs/op
