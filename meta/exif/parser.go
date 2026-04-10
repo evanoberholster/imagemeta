@@ -5,18 +5,20 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
 // tagFromBuffer decodes a tag entry from a raw TIFF directory buffer.
-func tagFromBuffer(directory ifd.Directory, buf []byte) (tag.Entry, error) {
+func tagFromBuffer(directory tag.Directory, buf []byte) (tag.Entry, error) {
 	tagID := tag.ID(directory.ByteOrder.Uint16(buf[:2]))
 	tagType := tag.Type(directory.ByteOrder.Uint16(buf[2:4]))
 	unitCount := directory.ByteOrder.Uint32(buf[4:8])
-	valueOffset := directory.ByteOrder.Uint32(buf[8:12]) + directory.BaseOffset
+	valueOffset := directory.ByteOrder.Uint32(buf[8:12])
 	tagType = tagTypeFor(directory.Type, tagID, tagType)
+	if !tag.NewEntry(tagID, tagType, unitCount, valueOffset, directory.Type, directory.Index, directory.ByteOrder).IsEmbedded() {
+		valueOffset += directory.BaseOffset
+	}
 
 	entry := tag.NewEntry(tagID, tagType, unitCount, valueOffset, directory.Type, directory.Index, directory.ByteOrder)
 	if !tagType.IsValid() {
@@ -26,20 +28,22 @@ func tagFromBuffer(directory ifd.Directory, buf []byte) (tag.Entry, error) {
 }
 
 // tagTypeFor resolves the effective tag type for parser dispatch.
-func tagTypeFor(directoryType ifd.Type, id tag.ID, typ tag.Type) tag.Type {
-	if typ.Is(tag.TypeLong) || typ.Is(tag.TypeUndefined) {
-		switch directoryType {
-		case ifd.IFD0:
-			if id == tag.TagExifIFDPointer || id == tag.TagGPSIFDPointer {
-				return tag.TypeIfd
-			}
-		case ifd.ExifIFD:
-			if id == tag.TagMakerNote {
-				return tag.TypeIfd
-			}
-		}
+func tagTypeFor(directoryType tag.IfdType, id tag.ID, typ tag.Type) tag.Type {
+	if (typ.Is(tag.TypeLong) || typ.Is(tag.TypeUndefined)) && tagUsesIfdType(directoryType, id) {
+		return tag.TypeIfd
 	}
 	return typ
+}
+
+func tagUsesIfdType(directoryType tag.IfdType, id tag.ID) bool {
+	switch directoryType {
+	case tag.IFD0:
+		return id == tag.TagExifIFDPointer || id == tag.TagGPSIFDPointer
+	case tag.ExifIFD:
+		return id == tag.TagMakerNote
+	default:
+		return false
+	}
 }
 
 // addTag appends a tag to parser state while preserving parse order constraints.
@@ -132,7 +136,7 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		}
 		if offset != 0 {
 			r.appendSubIFDOffset(offset)
-			r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, ifd.SubIFD0, 0, t.ByteOrder))
+			r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, tag.SubIFD0, 0, t.ByteOrder))
 		}
 		return
 	}
@@ -157,9 +161,9 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 			break
 		}
 		r.appendSubIFDOffset(offset)
-		subType := ifd.SubIFD0
-		if i < int(ifd.SubIFD7-ifd.SubIFD0)+1 {
-			subType = ifd.Type(uint8(ifd.SubIFD0) + uint8(i))
+		subType := tag.SubIFD0
+		if i < int(tag.SubIFD7-tag.SubIFD0)+1 {
+			subType = tag.IfdType(uint8(tag.SubIFD0) + uint8(i))
 		}
 		r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, subType, int8(i), t.ByteOrder))
 	}
@@ -177,35 +181,35 @@ func (r *Reader) appendSubIFDOffset(offset uint32) {
 // parseTag parses the requested value from EXIF metadata.
 func (r *Reader) parseTag(t tag.Entry) {
 	switch t.IfdType {
-	case ifd.IFD0:
+	case tag.IFD0:
 		if !r.parseIFD0Tag(t) {
 			return
 		}
-	case ifd.IFD1:
+	case tag.IFD1:
 		if !r.parseImageIFDTag(t, &r.Exif.IFD1) {
 			return
 		}
-	case ifd.IFD2:
+	case tag.IFD2:
 		if !r.parseImageIFDTag(t, &r.Exif.IFD2) {
 			return
 		}
-	case ifd.GPSIFD:
+	case tag.GPSIFD:
 		if !r.parseGPSTag(t) {
 			return
 		}
-	case ifd.MakerNoteIFD:
+	case tag.MakerNoteIFD:
 		if !r.parseMakerNoteTag(t) {
 			return
 		}
 		r.makerNoteInfo().MarkTagParsed(uint16(t.ID))
 		return
-	case ifd.ExifIFD:
+	case tag.ExifIFD:
 		if !r.parseExifTag(t) {
 			return
 		}
 	default:
 		// SubIFD{0..7} tags are normalized through ExifIFD parsing semantics.
-		if t.IfdType != ifd.ExifIFD && !t.IfdType.IsSubIFD() {
+		if t.IfdType != tag.ExifIFD && !t.IfdType.IsSubIFD() {
 			return
 		}
 	}
@@ -265,9 +269,9 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 	case tag.TagModel:
 		r.Exif.IFD0.Model = r.parseString(t)
 	case tag.TagArtist:
-		r.Exif.IFD0.Artist = r.parseString(t)
+		r.Exif.IFD0.Artist = r.parseStringTrimRightSpaceNewline(t)
 	case tag.TagCopyright:
-		r.Exif.IFD0.Copyright = r.parseDisplayString(t, 512)
+		r.Exif.IFD0.Copyright = r.parseDisplayStringTrimRightSpaceNewline(t, 512)
 	case tag.TagApplicationNotes:
 		// TODO: TagApplicationNotes parsing intentionally disabled for now.
 		// The payload is often large and not needed in the hot parse path.
@@ -528,6 +532,8 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 		if r.Exif.CameraSerial == "" {
 			r.Exif.CameraSerial = r.Exif.ExifIFD.BodySerialNumber
 		}
+	case tag.TagUserComment:
+		r.Exif.ExifIFD.UserComment = r.parseExifUserComment(t)
 	case tag.TagFlashpixVersion:
 		r.Exif.ExifIFD.FlashpixVersion = r.parseStringAllowUndefined(t)
 	case tag.TagDeviceSettingDescription:
@@ -567,12 +573,12 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagFNumber:
 		r.Exif.ExifIFD.FNumber = r.parseAperture(t)
 	case tag.TagApertureValue:
-		r.Exif.ExifIFD.ApertureValue = r.parseAperture(t)
-		if r.Exif.ExifIFD.FNumber == 0 {
+		r.Exif.ExifIFD.ApertureValue = r.parseApexAperture(t)
+		if r.Exif.ExifIFD.FNumber == 0 && apertureIsFinite(r.Exif.ExifIFD.ApertureValue) {
 			r.Exif.ExifIFD.FNumber = apertureValueToFNumber(r.Exif.ExifIFD.ApertureValue)
 		}
 	case tag.TagMaxApertureValue:
-		r.Exif.ExifIFD.MaxApertureValue = r.parseAperture(t)
+		r.Exif.ExifIFD.MaxApertureValue = r.parseApexAperture(t)
 	case tag.TagSubjectDistance:
 		r.Exif.ExifIFD.SubjectDistance = r.parseRationalValue(t)
 	case tag.TagBrightnessValue:
@@ -774,7 +780,29 @@ func apertureValueToFNumber(v meta.Aperture) meta.Aperture {
 	if v == 0 {
 		return 0
 	}
-	// Exif ApertureValue is APEX. Convert to F-number approximation.
+	return v
+}
+
+func apertureIsFinite(v meta.Aperture) bool {
 	f := float64(v)
-	return meta.Aperture(math.Round(math.Exp2(f*0.5)*100) / 100)
+	return !math.IsNaN(f) && !math.IsInf(f, 0)
+}
+
+func apexApertureToFNumber(v float64) meta.Aperture {
+	if v == 0 {
+		return 0
+	}
+	// Some cameras write a large sentinel for "infinite" aperture. Mirror
+	// ExifTool behavior and preserve that as +Inf instead of a huge float.
+	if math.Abs(v) > 1024 {
+		return meta.Aperture(math.Inf(1))
+	}
+	return meta.Aperture(math.Exp2(v * 0.5))
+}
+
+func apexShutterSpeedToSeconds(v float64) meta.ShutterSpeed {
+	if math.IsNaN(v) || math.Abs(v) >= 100 {
+		return 0
+	}
+	return meta.ShutterSpeed(math.Exp2(-v))
 }

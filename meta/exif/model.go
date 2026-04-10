@@ -1,6 +1,9 @@
 package exif
 
 import (
+	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -122,7 +125,7 @@ type IFD0Tags struct {
 // Field names and tag IDs follow ExifTool EXIF tag naming where applicable:
 // https://exiftool.org/TagNames/EXIF.html
 type ExifIFDTags struct {
-	LensInfo [8]uint32 // 0xa432 LensInfo (LensSpecification)
+	LensInfo *LensInfo // 0xa432 LensInfo (LensSpecification)
 	// TODO: ExifVersion and FlashpixVersion are UNDEFINED in spec.
 	// Keep canonical text form for parity with exiftool output.
 	ExifVersion     string // 0x9000 ExifVersion
@@ -139,14 +142,15 @@ type ExifIFDTags struct {
 	LensSerial       string // 0xa435 LensSerialNumber
 	CameraOwnerName  string // 0xa430 OwnerName (CameraOwnerName)
 	BodySerialNumber string // 0xa431 SerialNumber (BodySerialNumber)
+	UserComment      string // 0x9286 UserComment
 
 	ExposureTime             meta.ExposureTime    // 0x829a ExposureTime
 	FocalLength              meta.FocalLength     // 0x920a FocalLength
 	FocalLengthIn35mmFormat  meta.FocalLength     // 0xa405 FocalLengthIn35mmFormat
 	FNumber                  meta.Aperture        // 0x829d FNumber
-	ApertureValue            meta.Aperture        // 0x9202 ApertureValue (APEX units)
-	MaxApertureValue         meta.Aperture        // 0x9205 MaxApertureValue (APEX units)
-	ShutterSpeedValue        meta.ShutterSpeed    // 0x9201 ShutterSpeedValue
+	ApertureValue            meta.Aperture        // 0x9202 ApertureValue converted from APEX to F-number
+	MaxApertureValue         meta.Aperture        // 0x9205 MaxApertureValue converted from APEX to F-number
+	ShutterSpeedValue        meta.ShutterSpeed    // 0x9201 ShutterSpeedValue converted from APEX to seconds
 	BrightnessValue          float32              // 0x9203 BrightnessValue
 	ExposureProgram          meta.ExposureProgram // 0x8822 ExposureProgram
 	ExposureBias             meta.ExposureBias    // 0x9204 ExposureCompensation (ExposureBiasValue)
@@ -250,8 +254,38 @@ type ImageIFD struct {
 	BitsPerSampleCount uint8
 }
 
-// LensInfo is equivalent to ExifIFD LensSpecification packed as rationals.
-type LensInfo [8]uint32
+// LensInfo stores ExifIFD LensSpecification as four rationals.
+type LensInfo struct {
+	MinFocalLength        tag.RationalU
+	MaxFocalLength        tag.RationalU
+	MaxApertureAtMinFocal tag.RationalU
+	MaxApertureAtMaxFocal tag.RationalU
+}
+
+func (l LensInfo) String() string {
+	return strings.Join([]string{
+		l.lensInfoPart(l.MinFocalLength),
+		l.lensInfoPart(l.MaxFocalLength),
+		l.lensInfoPart(l.MaxApertureAtMinFocal),
+		l.lensInfoPart(l.MaxApertureAtMaxFocal),
+	}, " ")
+}
+
+// MarshalText emits an ExifTool -n style representation like "24 70 2.8 4".
+func (l LensInfo) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
+
+func (LensInfo) lensInfoPart(v tag.RationalU) string {
+	if v.Denominator == 0 {
+		return "undef"
+	}
+	f := v.Float64()
+	if f == float64(int64(f)) {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return strconv.FormatFloat(f, 'f', -1, 64)
+}
 
 // GPSInfo stores parsed GPS fields.
 type GPSInfo struct {
@@ -495,6 +529,18 @@ type TimeTags struct {
 	ifdBitset           uint16
 }
 
+type timeTagsJSON struct {
+	ModifyDate          time.Time `json:"ModifyDate"`
+	DateTimeOriginal    time.Time `json:"DateTimeOriginal"`
+	CreateDate          time.Time `json:"CreateDate"`
+	OffsetTime          *string   `json:"OffsetTime"`
+	OffsetTimeOriginal  *string   `json:"OffsetTimeOriginal"`
+	OffsetTimeDigitized *string   `json:"OffsetTimeDigitized"`
+	SubSecTime          uint16    `json:"SubSecTime"`
+	SubSecTimeOriginal  uint16    `json:"SubSecTimeOriginal"`
+	SubSecTimeDigitized uint16    `json:"SubSecTimeDigitized"`
+}
+
 const (
 	timeTagBitModifyDate uint16 = 1 << iota
 	timeTagBitDateTimeOriginal
@@ -551,6 +597,22 @@ func (t TimeTags) TagParsedBitset() uint16 {
 	return t.ifdBitset
 }
 
+// MarshalJSON preserves EXIF-style UTC offset strings instead of serializing
+// time.Location internals as empty objects.
+func (t TimeTags) MarshalJSON() ([]byte, error) {
+	return json.Marshal(timeTagsJSON{
+		ModifyDate:          t.ModifyDate,
+		DateTimeOriginal:    t.DateTimeOriginal,
+		CreateDate:          t.CreateDate,
+		OffsetTime:          offsetTimeStringPtr(t.OffsetTime),
+		OffsetTimeOriginal:  offsetTimeStringPtr(t.OffsetTimeOriginal),
+		OffsetTimeDigitized: offsetTimeStringPtr(t.OffsetTimeDigitized),
+		SubSecTime:          t.SubSecTime,
+		SubSecTimeOriginal:  t.SubSecTimeOriginal,
+		SubSecTimeDigitized: t.SubSecTimeDigitized,
+	})
+}
+
 // GetModifyDate returns the computed or normalized value.
 func (t TimeTags) GetModifyDate() time.Time {
 	return applyTimeParts(t.ModifyDate, t.SubSecTime, t.OffsetTime)
@@ -575,6 +637,14 @@ func (t TimeTags) GetSelectedDate() time.Time {
 		return d
 	}
 	return t.GetModifyDate()
+}
+
+func offsetTimeStringPtr(loc *time.Location) *string {
+	if loc == nil {
+		return nil
+	}
+	s := loc.String()
+	return &s
 }
 
 // HasSubSecTime reports whether the requested parsed value is present.

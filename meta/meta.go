@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
@@ -76,14 +76,14 @@ type ExifHeader struct {
 	TiffHeaderOffset uint32
 	ExifLength       uint32
 	ByteOrder        utils.ByteOrder
-	FirstIfd         ifds.IfdType
+	FirstIfd         tag.IfdType
 	ImageType        imagetype.ImageType
 }
 
 // IsValid returns true if the ExifHeader ByteOrder is not nil and
 // the FirstIfdOffset is greater than 0
 func (h ExifHeader) IsValid() bool {
-	return h.ByteOrder != utils.UnknownEndian && h.FirstIfdOffset > 0 && h.FirstIfd != ifds.NullIFD
+	return h.ByteOrder != utils.UnknownEndian && h.FirstIfdOffset > 0 && h.FirstIfd != tag.Unknown
 }
 
 func (h ExifHeader) String() string {
@@ -94,7 +94,7 @@ func (h ExifHeader) String() string {
 func NewExifHeader(byteOrder utils.ByteOrder, firstIfdOffset, tiffHeaderOffset uint32, exifLength uint32, imageType imagetype.ImageType) ExifHeader {
 	return ExifHeader{
 		ByteOrder:        byteOrder,
-		FirstIfd:         ifds.IFD0,
+		FirstIfd:         tag.IFD0,
 		FirstIfdOffset:   firstIfdOffset,
 		TiffHeaderOffset: tiffHeaderOffset,
 		ExifLength:       exifLength,

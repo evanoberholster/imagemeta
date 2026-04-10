@@ -1,19 +1,61 @@
 package exif
 
 import (
-	"strings"
-
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/sony"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
+
+// makerNoteInfo returns the typed maker-note container from Exif.MakerNote.
+func (r *Reader) makerNoteInfo() *makernote.Info {
+	return &r.Exif.MakerNote
+}
+
+func (r *Reader) appleMakerNote() *makernote.Apple {
+	info := r.makerNoteInfo()
+	if info.Apple == nil {
+		info.Apple = &makernote.Apple{}
+	}
+	return info.Apple
+}
+
+func (r *Reader) nikonMakerNote() *nikon.Nikon {
+	info := r.makerNoteInfo()
+	if info.Nikon == nil {
+		info.Nikon = &nikon.Nikon{}
+	}
+	return info.Nikon
+}
+
+func (r *Reader) panasonicMakerNote() *panasonic.Panasonic {
+	info := r.makerNoteInfo()
+	if info.Panasonic == nil {
+		info.Panasonic = &panasonic.Panasonic{}
+	}
+	return info.Panasonic
+}
+
+func (r *Reader) sonyMakerNote() *sony.Sony {
+	info := r.makerNoteInfo()
+	if info.Sony == nil {
+		info.Sony = &sony.Sony{}
+	}
+	return info.Sony
+}
 
 // parseMakerNoteTag parses vendor-specific maker-note tags.
 func (r *Reader) parseMakerNoteTag(t tag.Entry) bool {
 	switch r.ensureMakerNoteMake() {
 	case makernote.CameraMakeCanon:
-		return r.parseCanonMakerNoteTag(t)
+		return r.parseCanonTag(t)
 	case makernote.CameraMakeNikon:
-		return r.parseNikonMakerNoteTag(t)
+		return r.parseNikonTag(t)
+	case makernote.CameraMakePanasonic:
+		return r.parsePanasonicTag(t)
+	case makernote.CameraMakeSony:
+		return r.parseSonyTag(t)
 	case makernote.CameraMakeApple:
 		return r.parseAppleMakerNoteTag(t)
 	default:
@@ -21,81 +63,34 @@ func (r *Reader) parseMakerNoteTag(t tag.Entry) bool {
 	}
 }
 
-// parseCanonMakerNoteTag parses selected Canon maker-note tags.
-func (r *Reader) parseCanonMakerNoteTag(t tag.Entry) bool {
-	return r.parseCanonTag(t)
-}
-
-// parseNikonMakerNoteTag parses selected Nikon maker-note tags.
-func (r *Reader) parseNikonMakerNoteTag(t tag.Entry) bool {
-	info := r.makerNoteInfo()
-	switch uint16(t.ID) {
-	case makernote.TagNikonVersion:
-		info.Nikon.VersionCount = uint8(r.parseByteList(t, info.Nikon.Version[:]))
-	case makernote.TagNikonISOSetting:
-		info.Nikon.ISOSetting = r.parseNikonISOSetting(t)
-	case makernote.TagNikonColorMode:
-		info.Nikon.ColorMode = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonQuality:
-		info.Nikon.Quality = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonWhiteBalance:
-		info.Nikon.WhiteBalance = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonSharpness:
-		info.Nikon.Sharpness = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonFocusMode:
-		info.Nikon.FocusMode = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonFlashSetting:
-		info.Nikon.FlashSetting = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonFlashType:
-		info.Nikon.FlashType = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonISOSelection:
-		info.Nikon.ISOSelection = r.parseStringAllowUndefined(t)
-	case makernote.TagNikonSerialNumber:
-		info.Nikon.SerialNumber = strings.TrimSpace(r.parseStringAllowUndefined(t))
-	case makernote.TagNikonLens:
-		info.Nikon.Lens = r.parseStringAllowUndefined(t)
-	default:
-		return false
-	}
-	return true
-}
-
 // parseAppleMakerNoteTag parses selected Apple maker-note tags.
 func (r *Reader) parseAppleMakerNoteTag(t tag.Entry) bool {
-	info := r.makerNoteInfo()
+	info := r.appleMakerNote()
 	switch uint16(t.ID) {
 	case makernote.TagAppleMakerNoteVersion:
-		info.Apple.MakerNoteVersion = int32(r.parseUint32(t))
+		info.MakerNoteVersion = int32(r.parseUint32(t))
 	case makernote.TagAppleRunTime:
-		info.Apple.RunTime = r.parseDisplayString(t, 128)
+		info.RunTime = r.parseDisplayString(t, 128)
 	case makernote.TagAppleAETarget:
-		info.Apple.AETarget = int32(r.parseUint32(t))
+		info.AETarget = int32(r.parseUint32(t))
 	case makernote.TagAppleAEAverage:
-		info.Apple.AEAverage = int32(r.parseUint32(t))
+		info.AEAverage = int32(r.parseUint32(t))
 	case makernote.TagAppleAFStable:
-		info.Apple.AFStable = r.parseUint32(t) != 0
+		info.AFStable = r.parseUint32(t) != 0
 	case makernote.TagAppleBurstUUID:
-		info.Apple.BurstUUID = r.parseStringAllowUndefined(t)
+		info.BurstUUID = r.parseStringAllowUndefined(t)
 	case makernote.TagAppleAEStable:
-		info.Apple.AEStable = r.parseUint32(t) != 0
+		info.AEStable = r.parseUint32(t) != 0
 	case makernote.TagAppleOISMode:
-		info.Apple.OISMode = int32(r.parseUint32(t))
+		info.OISMode = int32(r.parseUint32(t))
 	case makernote.TagAppleContentID:
-		info.Apple.ContentIdentifier = r.parseStringAllowUndefined(t)
+		info.ContentIdentifier = r.parseStringAllowUndefined(t)
 	case makernote.TagAppleImageCaptureType:
-		info.Apple.ImageCaptureType = int32(r.parseUint32(t))
+		info.ImageCaptureType = int32(r.parseUint32(t))
 	case makernote.TagAppleImageUniqueID:
-		info.Apple.ImageUniqueID = r.parseStringAllowUndefined(t)
+		info.ImageUniqueID = r.parseStringAllowUndefined(t)
 	default:
 		return false
 	}
 	return true
-}
-
-func (r *Reader) parseNikonISOSetting(t tag.Entry) uint32 {
-	var iso [2]uint16
-	if n := r.parseUint16List(t, iso[:]); n > 0 {
-		return uint32(iso[0])
-	}
-	return r.parseUint32(t)
 }

@@ -1,7 +1,5 @@
 package tag
 
-import "github.com/evanoberholster/imagemeta/meta/exif/ifd"
-
 const (
 	// Pseudo tag used by parser to model TIFF next-IFD chain.
 	TagNextIFD ID = 0xffff
@@ -437,17 +435,17 @@ var gpsNames = map[ID]string{
 }
 
 // NameFor returns the known tag name for an IFD/tag pair.
-func NameFor(directoryType ifd.Type, id ID) string {
+func NameFor(directoryType IfdType, id ID) string {
 	switch directoryType {
-	case ifd.IFD0, ifd.IFD1, ifd.IFD2:
+	case IFD0, IFD1, IFD2:
 		if name, ok := rootNames[id]; ok {
 			return name
 		}
-	case ifd.ExifIFD, ifd.SubIFD0, ifd.SubIFD1, ifd.SubIFD2, ifd.SubIFD3, ifd.SubIFD4, ifd.SubIFD5, ifd.SubIFD6, ifd.SubIFD7:
+	case ExifIFD, SubIFD0, SubIFD1, SubIFD2, SubIFD3, SubIFD4, SubIFD5, SubIFD6, SubIFD7:
 		if name, ok := exifNames[id]; ok {
 			return name
 		}
-	case ifd.GPSIFD:
+	case GPSIFD:
 		if name, ok := gpsNames[id]; ok {
 			return name
 		}

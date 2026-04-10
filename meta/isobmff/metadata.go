@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	exiftag "github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -138,7 +138,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 				continue
 			}
 
-			header, headerErr := readExifHeader(&inner, ifds.IFD0, imageType)
+			header, headerErr := readExifHeader(&inner, exiftag.IFD0, imageType)
 			if headerErr != nil {
 				if logLevelDebug() {
 					logDebug().Object("box", inner).Err(headerErr).Msg("skip invalid mdat exif header")
@@ -184,7 +184,7 @@ func (r *Reader) readExif(b *box) (err error) {
 		return fmt.Errorf("readExif: %w", err)
 	}
 
-	header, err := readExifHeader(b, ifds.IFD0, r.metadataImageType())
+	header, err := readExifHeader(b, exiftag.IFD0, r.metadataImageType())
 	if err != nil {
 		return fmt.Errorf("readExif: %w", err)
 	}
@@ -258,7 +258,7 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 }
 
 // readExifHeader parses byte-order and IFD0 offset from the TIFF header prefix.
-func readExifHeader(b *box, firstIfd ifds.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
+func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
 	buf, err := b.Peek(8)
 	if err != nil {
 		err = fmt.Errorf("readExifHeader: %w", err)

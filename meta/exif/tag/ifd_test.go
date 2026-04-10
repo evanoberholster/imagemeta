@@ -1,4 +1,4 @@
-package ifd
+package tag
 
 import (
 	"testing"
@@ -6,17 +6,17 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
-func TestTypeProperties(t *testing.T) {
+func TestIfdTypeProperties(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name      string
-		typ       Type
+		typ       IfdType
 		wantName  string
 		wantSub   bool
 		wantRoot  bool
 		wantValid bool
-		next      Type
+		next      IfdType
 		nextOK    bool
 	}{
 		{
@@ -77,24 +77,24 @@ func TestTypeProperties(t *testing.T) {
 			t.Parallel()
 
 			if got := tt.typ.String(); got != tt.wantName {
-				t.Fatalf("Type.String() = %q, want %q", got, tt.wantName)
+				t.Fatalf("IfdType.String() = %q, want %q", got, tt.wantName)
 			}
 			if got := tt.typ.IsSubIFD(); got != tt.wantSub {
-				t.Fatalf("Type.IsSubIFD() = %v, want %v", got, tt.wantSub)
+				t.Fatalf("IfdType.IsSubIFD() = %v, want %v", got, tt.wantSub)
 			}
 			if got := tt.typ.IsRootIFD(); got != tt.wantRoot {
-				t.Fatalf("Type.IsRootIFD() = %v, want %v", got, tt.wantRoot)
+				t.Fatalf("IfdType.IsRootIFD() = %v, want %v", got, tt.wantRoot)
 			}
 			if got := tt.typ.IsValid(); got != tt.wantValid {
-				t.Fatalf("Type.IsValid() = %v, want %v", got, tt.wantValid)
+				t.Fatalf("IfdType.IsValid() = %v, want %v", got, tt.wantValid)
 			}
 
 			next, ok := tt.typ.NextRootIFD()
 			if ok != tt.nextOK {
-				t.Fatalf("Type.NextRootIFD() ok = %v, want %v", ok, tt.nextOK)
+				t.Fatalf("IfdType.NextRootIFD() ok = %v, want %v", ok, tt.nextOK)
 			}
 			if next != tt.next {
-				t.Fatalf("Type.NextRootIFD() next = %v, want %v", next, tt.next)
+				t.Fatalf("IfdType.NextRootIFD() next = %v, want %v", next, tt.next)
 			}
 		})
 	}
@@ -103,7 +103,7 @@ func TestTypeProperties(t *testing.T) {
 func TestDirectoryNewAndString(t *testing.T) {
 	t.Parallel()
 
-	d := New(utils.LittleEndian, ExifIFD, 2, 0x1234, 0x10)
+	d := NewDirectory(utils.LittleEndian, ExifIFD, 2, 0x1234, 0x10)
 
 	if d.ByteOrder != utils.LittleEndian {
 		t.Fatalf("ByteOrder = %v, want %v", d.ByteOrder, utils.LittleEndian)

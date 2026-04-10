@@ -7,10 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
-	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/rs/zerolog"
 )
 
@@ -207,7 +206,7 @@ func BenchmarkHeif(b *testing.B) {
 					}
 					rr.Reset(r)
 
-					ir := exif2.NewIfdReader(zerolog.Logger{})
+					ir := exif.NewReader(zerolog.Logger{})
 
 					it, scanErr := imagetype.ScanBuf(rr)
 					if scanErr != nil {
@@ -215,7 +214,7 @@ func BenchmarkHeif(b *testing.B) {
 						readerPool.Put(rr)
 						b.Fatal(scanErr)
 					}
-					header, headerErr := tiff.ScanTiffHeader(rr, it)
+					header, headerErr := exif.ScanTiffHeader(rr, it)
 					if headerErr != nil {
 						ir.Close()
 						readerPool.Put(rr)
@@ -235,9 +234,9 @@ func BenchmarkHeif(b *testing.B) {
 					if _, err = r.Seek(0, 0); err != nil {
 						b.Fatal(err)
 					}
-					ir := exif2.NewIfdReader(zerolog.Logger{})
+					ir := exif.NewReader(zerolog.Logger{})
 
-					br := isobmff.NewReader(r, ir.DecodeIfd, nil, nil)
+					br := isobmff.NewReader(r, ir.DecodeIfdAppend, nil, nil)
 					if err := br.ReadFTYP(); err != nil {
 						panic(err)
 					}
