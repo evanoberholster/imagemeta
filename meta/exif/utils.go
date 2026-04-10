@@ -32,6 +32,19 @@ func parseStrUint(buf []byte) (u uint) {
 	return
 }
 
+// trimTrailingNULBytes removes trailing NUL bytes without trimming any other
+// characters. This is used for fields like IFD0 Make where the raw text should
+// be preserved apart from EXIF string terminators.
+func trimTrailingNULBytes(buf []byte) []byte {
+	for i := len(buf) - 1; i >= 0; i-- {
+		if buf[i] == 0 {
+			continue
+		}
+		return buf[:i+1]
+	}
+	return nil
+}
+
 // trimNULBuffer trims input bytes into the expected EXIF representation.
 func trimNULBuffer(buf []byte) []byte {
 	for i := len(buf) - 1; i >= 0; i-- {

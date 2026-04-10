@@ -77,7 +77,7 @@ const (
 	TagNewRawImageDigest            ID = 0xc7a7
 	TagDefaultUserCrop              ID = 0xc7b5
 	TagPrintIM                      ID = 0xc4a5
-	TagSR2Private                   ID = 0xc634
+	TagDNGAdobeData                 ID = 0xc634
 	TagPanasonicTitle               ID = 0xc6d2
 	TagPanasonicTitle2              ID = 0xc6d3
 	TagPanasonicRawVersion          ID = 0x0001
@@ -294,7 +294,7 @@ var rootNames = map[ID]string{
 	TagNewRawImageDigest:            "NewRawImageDigest",
 	TagDefaultUserCrop:              "DefaultUserCrop",
 	TagPrintIM:                      "PrintIM",
-	TagSR2Private:                   "SR2Private",
+	TagDNGAdobeData:                 "DNGAdobeData",
 	TagPanasonicTitle:               "PanasonicTitle",
 	TagPanasonicTitle2:              "PanasonicTitle2",
 	TagPanasonicRawVersion:          "PanasonicRawVersion",

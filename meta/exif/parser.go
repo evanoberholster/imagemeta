@@ -1,12 +1,14 @@
 package exif
 
 import (
+	"encoding/binary"
 	"math"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // tagFromBuffer decodes a tag entry from a raw TIFF directory buffer.
@@ -99,7 +101,7 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		}
 		return
 	}
-	offsetRemaining := len(r.Exif.IFD0.SubIFDOffsets) - int(r.Exif.IFD0.SubIFDOffsetCount)
+	offsetRemaining := len(r.Exif.IFD0.subIFDOffsets) - int(r.Exif.IFD0.subIFDOffsetCount)
 	if offsetRemaining <= 0 {
 		if r.warnEnabled() {
 			r.warnTagContext(t, "subifd offset capacity reached; skipping parse", false)
@@ -157,7 +159,7 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		if offset == 0 {
 			continue
 		}
-		if int(r.Exif.IFD0.SubIFDOffsetCount) >= len(r.Exif.IFD0.SubIFDOffsets) {
+		if int(r.Exif.IFD0.subIFDOffsetCount) >= len(r.Exif.IFD0.subIFDOffsets) {
 			break
 		}
 		r.appendSubIFDOffset(offset)
@@ -171,11 +173,11 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 
 // appendSubIFDOffset stores a parsed SubIFD pointer in the bounded IFD0 list.
 func (r *Reader) appendSubIFDOffset(offset uint32) {
-	if offset == 0 || int(r.Exif.IFD0.SubIFDOffsetCount) >= len(r.Exif.IFD0.SubIFDOffsets) {
+	if offset == 0 || int(r.Exif.IFD0.subIFDOffsetCount) >= len(r.Exif.IFD0.subIFDOffsets) {
 		return
 	}
-	r.Exif.IFD0.SubIFDOffsets[r.Exif.IFD0.SubIFDOffsetCount] = offset
-	r.Exif.IFD0.SubIFDOffsetCount++
+	r.Exif.IFD0.subIFDOffsets[r.Exif.IFD0.subIFDOffsetCount] = offset
+	r.Exif.IFD0.subIFDOffsetCount++
 }
 
 // parseTag parses the requested value from EXIF metadata.
@@ -201,7 +203,6 @@ func (r *Reader) parseTag(t tag.Entry) {
 		if !r.parseMakerNoteTag(t) {
 			return
 		}
-		r.makerNoteInfo().MarkTagParsed(uint16(t.ID))
 		return
 	case tag.ExifIFD:
 		if !r.parseExifTag(t) {
@@ -222,7 +223,7 @@ func (r *Reader) parseTag(t tag.Entry) {
 // case branch below. These tags are treated as handled for coverage/reporting
 // parity but are not mapped into the Exif model.
 func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
-	if r.parseIFD0TimeTag(t) || r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0DNGTag(t) || r.parseIFD0PanasonicRawTag(t) {
+	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0DNGTag(t) {
 		return true
 	}
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
@@ -242,8 +243,8 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 	}
 }
 
-// parseIFD0TimeTag parses IFD0 time tags into the normalized time model.
-func (r *Reader) parseIFD0TimeTag(t tag.Entry) bool {
+// parseIFD0TextTag parses IFD0 tags with string or date types.
+func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagDateTime:
 		modifyDate := r.parseDate(t)
@@ -253,19 +254,9 @@ func (r *Reader) parseIFD0TimeTag(t tag.Entry) bool {
 	case tag.TagDateTimeOriginal:
 		dateTimeOriginal := r.parseDate(t)
 		r.Exif.Time.DateTimeOriginal = dateTimeOriginal
-		r.Exif.IFD0.DateTimeOriginal = dateTimeOriginal
 		r.Exif.Time.markTagParsed(t.ID)
-	default:
-		return false
-	}
-	return true
-}
-
-// parseIFD0TextTag parses IFD0 textual metadata fields.
-func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
-	switch t.ID {
 	case tag.TagMake:
-		r.parseIFD0MakeTag(t)
+		r.Exif.CameraMakeID, r.Exif.IFD0.Make = r.parseMakeTag(t)
 	case tag.TagModel:
 		r.Exif.IFD0.Model = r.parseString(t)
 	case tag.TagArtist:
@@ -276,7 +267,8 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 		// TODO: TagApplicationNotes parsing intentionally disabled for now.
 		// The payload is often large and not needed in the hot parse path.
 	case tag.TagPrintIM:
-		r.Exif.IFD0.PrintIM = r.parseDisplayString(t, 512)
+		// ignore tag
+		//r.Exif.IFD0.PrintIM = r.parseDisplayString(t, 512)
 	case tag.TagImageDescription:
 		r.Exif.IFD0.ImageDescription = r.parseString(t)
 	case tag.TagSoftware:
@@ -287,110 +279,88 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 	return true
 }
 
-// parseIFD0MakeTag parses IFD0 Make and prefers enum identification first.
-//
-// When the make can be identified, only Exif.CameraMakeID is set to avoid
-// unnecessary Make string allocations on the hot path.
-func (r *Reader) parseIFD0MakeTag(t tag.Entry) {
+// parseMakeTag parses MakeTag and caches the maker-note make ID for subsequent maker-note parsing.
+// The maker-note make ID is resolved from IFD0:Make
+func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, Make string) {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
 	default:
-		r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-		r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
-		return
+		return makernote.CameraMakeUnknown, makeID.String()
 	}
 
 	var raw []byte
 	if t.IsEmbedded() {
 		size := t.Size()
 		t.EmbeddedValue(r.state.buf[:4])
-		raw = trimNULBuffer(r.state.buf[:size])
+		raw = trimTrailingNULBytes(r.state.buf[:size])
 	} else {
 		buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
 		if err != nil {
-			r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-			r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
-			return
+			return makernote.CameraMakeUnknown, makeID.String()
 		}
-		raw = trimNULBuffer(buf)
+		raw = trimTrailingNULBytes(buf)
 	}
 
 	if len(raw) == 0 {
-		r.Exif.CameraMakeID = makernote.CameraMakeUnknown
-		r.Exif.IFD0.Make = makernote.CameraMakeUnknown.String()
-		return
+		return makernote.CameraMakeUnknown, makeID.String()
 	}
 
-	var makeID makernote.CameraMake
 	if len(raw) <= 64 {
-		var scratch [64]byte
-		copy(scratch[:], raw)
-		makeID = makernote.IdentifyCameraMake(scratch[:len(raw)])
+		makeID = makernote.IdentifyCameraMake(raw)
 	} else {
 		makeID = makernote.IdentifyCameraMakeString(string(raw))
 	}
-	r.Exif.CameraMakeID = makeID
 
 	if makeID == makernote.CameraMakeUnknown {
-		r.Exif.IFD0.Make = string(raw)
+		Make = string(raw)
 		return
 	}
-	r.Exif.IFD0.Make = makeID.String()
+	return makeID, makeID.String()
 }
 
 // parseIFD0ImageTag parses IFD0 image geometry and layout tags.
 func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagSubfileType:
-		r.Exif.IFD0.SubfileType = r.parseUint32(t)
+		r.Exif.IFD0.SubfileType = meta.SubfileType(r.parseUint32(t))
 	case tag.TagTileWidth:
-		r.Exif.IFD0.TileWidth = r.parseUint32(t)
+		// ingnore tag
 	case tag.TagTileLength:
-		r.Exif.IFD0.TileLength = r.parseUint32(t)
+		// ingnore tag
 	case tag.TagTileOffsets:
-		r.Exif.IFD0.TileOffsets = r.parseUint32(t)
+		// ingnore tag
 	case tag.TagTileByteCounts:
-		r.Exif.IFD0.TileByteCounts = r.parseUint32(t)
+		// ingnore tag
 	case tag.TagThumbnailOffset:
-		r.Exif.IFD0.ThumbnailOffset = r.parseUint32(t)
+		r.Exif.IFD0.ThumbnailOffset = r.parseFirstUint32(t)
 	case tag.TagThumbnailLength:
-		r.Exif.IFD0.ThumbnailLength = r.parseUint32(t)
+		r.Exif.IFD0.ThumbnailLength = r.parseFirstUint32(t)
 	case tag.TagBitsPerSample:
-		r.Exif.IFD0.BitsPerSampleCount = uint8(r.parseUint16List(t, r.Exif.IFD0.BitsPerSample[:]))
+		// ingnore tag
 	case tag.TagCompression:
 		r.Exif.IFD0.Compression = meta.Compression(r.parseUint16(t))
 	case tag.TagRowsPerStrip:
-		r.Exif.IFD0.RowsPerStrip = r.parseUint32(t)
+		// ingnore tag
 	case tag.TagSubIFDs:
 		r.parseSubIFDs(t)
 	case tag.TagPlanarConfiguration:
-		r.Exif.IFD0.PlanarConfiguration = r.parseUint16(t)
+		// ingnore tag
 	case tag.TagXResolution:
 		r.Exif.IFD0.XResolution = r.parseRationalValue(t)
 	case tag.TagYResolution:
 		r.Exif.IFD0.YResolution = r.parseRationalValue(t)
 	case tag.TagResolutionUnit:
-		r.Exif.IFD0.ResolutionUnit = r.parseUint16(t)
+		r.Exif.IFD0.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagImageWidth:
 		r.Exif.IFD0.ImageWidth = r.parseUint32(t)
 	case tag.TagImageLength:
 		r.Exif.IFD0.ImageHeight = r.parseUint32(t)
 	case tag.TagStripOffsets:
-		r.Exif.IFD0.StripOffsets = r.parseUint32(t)
+		r.Exif.IFD0.ImageOffset = r.parseFirstUint32(t)
 	case tag.TagStripByteCounts:
-		r.Exif.IFD0.StripByteCounts = r.parseUint32(t)
+		r.Exif.IFD0.ImageLength = r.parseFirstUint32(t)
 	case tag.TagOrientation:
 		r.Exif.IFD0.Orientation = meta.Orientation(r.parseUint16(t))
-	case tag.TagSR2Private:
-		switch t.Type {
-		case tag.TypeByte, tag.TypeUndefined:
-			var packed [4]byte
-			if r.parseByteList(t, packed[:]) > 0 {
-				r.Exif.IFD0.SR2Private = t.ByteOrder.Uint32(packed[:])
-			}
-		default:
-			r.Exif.IFD0.SR2Private = r.parseUint32(t)
-		}
 	default:
 		return false
 	}
@@ -400,6 +370,8 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 // parseIFD0DNGTag parses IFD0 DNG extension fields.
 func (r *Reader) parseIFD0DNGTag(t tag.Entry) bool {
 	switch t.ID {
+	case tag.TagDNGAdobeData:
+		r.parseDNGAdobeData(t)
 	case tag.TagDNGVersion:
 		r.Exif.DNG.DNGVersionCount = uint8(r.parseByteList(t, r.Exif.DNG.DNGVersion[:]))
 		if r.Exif.ImageType == imagetype.ImageTiff {
@@ -431,58 +403,228 @@ func (r *Reader) parseIFD0DNGTag(t tag.Entry) bool {
 	return true
 }
 
-// parseIFD0PanasonicRawTag parses Panasonic RW2/RWL root-IFD tags.
-func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
-	if r.Exif.ImageType != imagetype.ImagePanaRAW {
-		return false
+func (r *Reader) parseDNGAdobeData(t tag.Entry) {
+	if t.Type != tag.TypeUndefined && t.Type != tag.TypeByte {
+		return
 	}
-	switch t.ID {
-	case tag.TagPanasonicRawVersion:
-		r.parseByteList(t, r.Exif.PanasonicRaw.Version[:])
-	case tag.TagPanasonicSensorWidth:
-		r.Exif.PanasonicRaw.SensorWidth = r.parseUint16(t)
-	case tag.TagPanasonicSensorHeight:
-		r.Exif.PanasonicRaw.SensorHeight = r.parseUint16(t)
-	case tag.TagPanasonicBitsPerSample:
-		r.Exif.PanasonicRaw.BitsPerSample = r.parseUint16(t)
-	case tag.TagPanasonicCompression:
-		r.Exif.PanasonicRaw.Compression = r.parseUint16(t)
-	case tag.TagPanasonicISO:
-		r.Exif.PanasonicRaw.ISO = uint32(r.parseUint16(t))
-	case tag.TagPanasonicISOHighPrecision:
-		r.Exif.PanasonicRaw.ISO = r.parseUint32(t)
-	case tag.TagNoiseReductionParams:
-		// Not parsed
-	case tag.TagWBInfo2:
-		// Not parsed
-	case tag.TagPanasonicRawFormat:
-		r.Exif.PanasonicRaw.RawFormat = r.parseUint16(t)
-	case tag.TagJpgFromRaw:
-		// TODO: parse JpgFromRaw payload into typed preview metadata if needed.
-		// Keep offset/length only to avoid large allocations for embedded JPEGs.
-		r.Exif.PanasonicRaw.JpgFromRawOffset = t.ValueOffset
-		r.Exif.PanasonicRaw.JpgFromRawLength = t.UnitCount
-	case tag.TagPanasonicRawDataOffset:
-		r.Exif.PanasonicRaw.RawDataOffset = r.parseUint32(t)
-	case tag.TagPanasonicDistortionInfo:
-		// Not parsed
-	case tag.TagPanasonicCropTop:
-		r.Exif.PanasonicRaw.CropTop = r.parseUint16(t)
-	case tag.TagPanasonicCropLeft:
-		r.Exif.PanasonicRaw.CropLeft = r.parseUint16(t)
-	case tag.TagPanasonicCropBottom:
-		r.Exif.PanasonicRaw.CropBottom = r.parseUint16(t)
-	case tag.TagPanasonicCropRight:
-		r.Exif.PanasonicRaw.CropRight = r.parseUint16(t)
-	case tag.TagPanasonicTitle:
-		r.Exif.PanasonicRaw.Title = r.parseStringAllowUndefined(t)
-	case tag.TagPanasonicTitle2:
-		r.Exif.PanasonicRaw.Title2 = r.parseStringAllowUndefined(t)
-	default:
-		return false
+	if err := r.seekToTag(t); err != nil {
+		return
 	}
-	return true
+
+	size := t.Size()
+	if size < 6 {
+		_ = r.discard(int(size))
+		return
+	}
+
+	header, err := r.fastRead(6)
+	if err != nil {
+		return
+	}
+	if len(header) < 6 || string(header[:6]) != "Adobe\x00" {
+		remaining := int(size) - len(header)
+		if remaining > 0 {
+			_ = r.discard(remaining)
+		}
+		return
+	}
+
+	recordCount := 0
+	recordBytesRemaining := size - 6
+	for recordBytesRemaining >= 8 {
+		recordHeader, readErr := r.fastRead(8)
+		if readErr != nil || len(recordHeader) < 8 {
+			return
+		}
+		recordBytesRemaining -= 8
+
+		recordTag := string(recordHeader[:4])
+		recordSize := binary.BigEndian.Uint32(recordHeader[4:8])
+		if recordSize > recordBytesRemaining {
+			_ = r.discard(int(recordBytesRemaining))
+			break
+		}
+
+		recordCount++
+		recordStart := r.po
+		switch recordTag {
+		case "MakN":
+			r.parseDNGAdobeMakerNotes(recordStart, recordSize)
+		default:
+			_ = r.discard(int(recordSize))
+		}
+
+		recordEnd := recordStart + recordSize
+		if r.po < recordEnd {
+			_ = r.discard(int(recordEnd - r.po))
+		}
+		recordBytesRemaining -= recordSize
+
+		if recordSize&1 != 0 {
+			if recordBytesRemaining == 0 {
+				break
+			}
+			_ = r.discard(1)
+			recordBytesRemaining--
+		}
+	}
+
+	if recordCount > 0xff {
+		recordCount = 0xff
+	}
+	r.Exif.DNG.AdobeData.RecordCount = uint8(recordCount)
+	if recordBytesRemaining > 0 {
+		_ = r.discard(int(recordBytesRemaining))
+	}
 }
+
+func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
+	if recordSize < 6 {
+		_ = r.discard(int(recordSize))
+		return
+	}
+
+	header, err := r.fastRead(6)
+	if err != nil || len(header) < 6 {
+		return
+	}
+
+	byteOrder := utils.UnknownEndian
+	switch {
+	case header[0] == 'I' && header[1] == 'I':
+		byteOrder = utils.LittleEndian
+	case header[0] == 'M' && header[1] == 'M':
+		byteOrder = utils.BigEndian
+	}
+	if byteOrder == utils.UnknownEndian {
+		recordEnd := recordStart + recordSize
+		if r.po < recordEnd {
+			_ = r.discard(int(recordEnd - r.po))
+		}
+		return
+	}
+
+	originalOffset := binary.BigEndian.Uint32(header[2:6])
+	headerLength := uint32(6)
+	if recordSize >= 18 {
+		prefix, peekErr := r.reader.Peek(12)
+		if peekErr == nil && len(prefix) >= 4 &&
+			prefix[0] == 0 && prefix[1] == 0 && prefix[2] == 0 && prefix[3] == 1 {
+			if err := r.discard(12); err != nil {
+				return
+			}
+			headerLength = 18
+		}
+	}
+	if recordSize <= headerLength {
+		return
+	}
+
+	dirStart := recordStart + headerLength
+	if dirStart < originalOffset {
+		recordEnd := recordStart + recordSize
+		if r.po < recordEnd {
+			_ = r.discard(int(recordEnd - r.po))
+		}
+		return
+	}
+
+	r.Exif.DNG.AdobeData.MakerNoteOriginalOffset = originalOffset
+	r.Exif.DNG.AdobeData.MakerNoteRecordLength = recordSize
+
+	parent := tag.NewEntry(tag.TagMakerNote, tag.TypeUndefined, recordSize, recordStart, tag.ExifIFD, 0, byteOrder)
+	child := tag.NewDirectory(byteOrder, tag.MakerNoteIFD, 0, dirStart, dirStart-originalOffset)
+	queueStart := r.state.len
+	if err := r.readMakerNoteDirectory(parent, child); err != nil && r.warnEnabled() {
+		r.warn().Err(err).Uint32("tagOffset", recordStart).Msg("failed parsing DNG Adobe maker notes")
+	}
+	r.parseQueuedMakerNoteRange(queueStart)
+}
+
+func (r *Reader) parseQueuedMakerNoteRange(start uint32) {
+	if start >= r.state.len {
+		return
+	}
+
+	end := r.state.len
+	if end-start > 1 {
+		r.state.sortRange(start, end)
+	}
+
+	for i := start; i < end; i++ {
+		t := r.state.tag[i]
+		if t.IfdType != tag.MakerNoteIFD {
+			continue
+		}
+		if t.IsIfd() {
+			child := t.ChildDirectory()
+			if child.Type == tag.MakerNoteIFD {
+				if err := r.seekToTag(t); err != nil {
+					continue
+				}
+				if err := r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
+					r.warn().Err(err).Uint16("tagID", uint16(t.ID)).Msg("failed parsing nested maker-note ifd")
+				}
+			}
+			continue
+		}
+		r.parseTag(t)
+	}
+	r.state.len = start
+}
+
+// parseIFD0PanasonicRawTag parses Panasonic RW2/RWL root-IFD tags.
+// func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
+// 	if r.Exif.ImageType != imagetype.ImagePanaRAW {
+// 		return false
+// 	}
+// 	switch t.ID {
+// 	case tag.TagPanasonicRawVersion:
+// 		r.parseByteList(t, r.Exif.PanasonicRaw.Version[:])
+// 	case tag.TagPanasonicSensorWidth:
+// 		r.Exif.PanasonicRaw.SensorWidth = r.parseUint16(t)
+// 	case tag.TagPanasonicSensorHeight:
+// 		r.Exif.PanasonicRaw.SensorHeight = r.parseUint16(t)
+// 	case tag.TagPanasonicBitsPerSample:
+// 		r.Exif.PanasonicRaw.BitsPerSample = r.parseUint16(t)
+// 	case tag.TagPanasonicCompression:
+// 		r.Exif.PanasonicRaw.Compression = r.parseUint16(t)
+// 	case tag.TagPanasonicISO:
+// 		r.Exif.PanasonicRaw.ISO = uint32(r.parseUint16(t))
+// 	case tag.TagPanasonicISOHighPrecision:
+// 		r.Exif.PanasonicRaw.ISO = r.parseUint32(t)
+// 	case tag.TagNoiseReductionParams:
+// 		// Not parsed
+// 	case tag.TagWBInfo2:
+// 		// Not parsed
+// 	case tag.TagPanasonicRawFormat:
+// 		r.Exif.PanasonicRaw.RawFormat = r.parseUint16(t)
+// 	case tag.TagJpgFromRaw:
+// 		// TODO: parse JpgFromRaw payload into typed preview metadata if needed.
+// 		// Keep offset/length only to avoid large allocations for embedded JPEGs.
+// 		r.Exif.PanasonicRaw.JpgFromRawOffset = t.ValueOffset
+// 		r.Exif.PanasonicRaw.JpgFromRawLength = t.UnitCount
+// 	case tag.TagPanasonicRawDataOffset:
+// 		r.Exif.PanasonicRaw.RawDataOffset = r.parseUint32(t)
+// 	case tag.TagPanasonicDistortionInfo:
+// 		// Not parsed
+// 	case tag.TagPanasonicCropTop:
+// 		r.Exif.PanasonicRaw.CropTop = r.parseUint16(t)
+// 	case tag.TagPanasonicCropLeft:
+// 		r.Exif.PanasonicRaw.CropLeft = r.parseUint16(t)
+// 	case tag.TagPanasonicCropBottom:
+// 		r.Exif.PanasonicRaw.CropBottom = r.parseUint16(t)
+// 	case tag.TagPanasonicCropRight:
+// 		r.Exif.PanasonicRaw.CropRight = r.parseUint16(t)
+// 	case tag.TagPanasonicTitle:
+// 		r.Exif.PanasonicRaw.Title = r.parseStringAllowUndefined(t)
+// 	case tag.TagPanasonicTitle2:
+// 		r.Exif.PanasonicRaw.Title2 = r.parseStringAllowUndefined(t)
+// 	default:
+// 		return false
+// 	}
+// 	return true
+// }
 
 // parseExifTag parses ExifIFD/SubIFD tags into typed model fields.
 //
@@ -563,7 +705,7 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagFocalPlaneYResolution:
 		r.Exif.ExifIFD.FocalPlaneYResolution = r.parseRationalValue(t)
 	case tag.TagFocalPlaneResolutionUnit:
-		r.Exif.ExifIFD.FocalPlaneResolutionUnit = r.parseUint16(t)
+		r.Exif.ExifIFD.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagSubjectArea:
 		r.parseUint16List(t, r.Exif.ExifIFD.SubjectArea[:])
 	case tag.TagExposureTime:
@@ -708,7 +850,6 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 	default:
 		return false
 	}
-	r.Exif.GPS.markTagParsed(t.ID)
 	return true
 }
 
@@ -716,9 +857,9 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 	switch t.ID {
 	case tag.TagSubfileType:
-		dst.SubfileType = r.parseUint32(t)
+		dst.SubfileType = meta.SubfileType(r.parseUint32(t))
 	case tag.TagBitsPerSample:
-		dst.BitsPerSampleCount = uint8(r.parseUint16List(t, dst.BitsPerSample[:]))
+		// ingnore tag
 	case tag.TagCompression:
 		dst.Compression = meta.Compression(r.parseUint16(t))
 	case tag.TagXResolution:
@@ -726,13 +867,13 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 	case tag.TagYResolution:
 		dst.YResolution = r.parseRationalValue(t)
 	case tag.TagResolutionUnit:
-		dst.ResolutionUnit = r.parseUint16(t)
+		dst.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagImageWidth:
 		dst.ImageWidth = r.parseUint32(t)
 	case tag.TagImageLength:
 		dst.ImageHeight = r.parseUint32(t)
 	case tag.TagMake:
-		dst.Make = r.parseString(t)
+		_, dst.Make = r.parseMakeTag(t)
 	case tag.TagModel:
 		dst.Model = r.parseString(t)
 	case tag.TagImageDescription:
@@ -741,14 +882,10 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 		dst.Software = r.parseString(t)
 	case tag.TagDateTime:
 		dst.ModifyDate = r.parseDate(t)
-	case tag.TagStripOffsets:
-		dst.StripOffsets = r.parseUint32(t)
-	case tag.TagStripByteCounts:
-		dst.StripByteCounts = r.parseUint32(t)
-	case tag.TagThumbnailOffset:
-		dst.ThumbnailOffset = r.parseUint32(t)
-	case tag.TagThumbnailLength:
-		dst.ThumbnailLength = r.parseUint32(t)
+	case tag.TagStripOffsets, tag.TagThumbnailOffset:
+		dst.ImageOffset = r.parseFirstUint32(t)
+	case tag.TagStripByteCounts, tag.TagThumbnailLength:
+		dst.ImageLength = r.parseFirstUint32(t)
 	case tag.TagOrientation:
 		dst.Orientation = meta.Orientation(r.parseUint16(t))
 	default:

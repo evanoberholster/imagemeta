@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"errors"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -19,14 +21,11 @@ func TestMergeIFD0CoreFields(t *testing.T) {
 
 	dst := Exif{}
 	dst.IFD0.ImageWidth = 100
-	dst.IFD0.TileWidth = 0
 
 	src := Exif{}
 	src.IFD0.ImageWidth = 200
 	src.IFD0.ImageHeight = 300
-	src.IFD0.TileWidth = 512
-	src.IFD0.TileLength = 256
-	src.IFD0.RowsPerStrip = 42
+	src.IFD0.SubfileType = meta.SubfileTypeReducedResolutionImage
 
 	mergeIFD0CoreFields(&dst, src)
 
@@ -36,11 +35,8 @@ func TestMergeIFD0CoreFields(t *testing.T) {
 	if dst.IFD0.ImageHeight != 300 {
 		t.Fatalf("ImageHeight not copied: got %d, want 300", dst.IFD0.ImageHeight)
 	}
-	if dst.IFD0.TileWidth != 512 || dst.IFD0.TileLength != 256 {
-		t.Fatalf("tile fields not copied: got (%d,%d)", dst.IFD0.TileWidth, dst.IFD0.TileLength)
-	}
-	if dst.IFD0.RowsPerStrip != 42 {
-		t.Fatalf("RowsPerStrip not copied: got %d, want 42", dst.IFD0.RowsPerStrip)
+	if dst.IFD0.SubfileType != meta.SubfileTypeReducedResolutionImage {
+		t.Fatalf("SubfileType not copied: got %v", dst.IFD0.SubfileType)
 	}
 
 	mergeIFD0CoreFields(nil, src) // no panic
@@ -241,6 +237,71 @@ func TestParseSubSecTimeEmbedded(t *testing.T) {
 	}
 }
 
+func TestParseDNGAdobeDataSample(t *testing.T) {
+	benchDir := os.Getenv("IMAGEMETA_BENCH_IMAGE_DIR")
+	if benchDir == "" {
+		benchDir = defaultBenchImageDir
+	}
+
+	samplePath := filepath.Join(benchDir, "1.dng")
+	if _, err := os.Stat(samplePath); err != nil {
+		t.Skipf("sample not found: %s", samplePath)
+	}
+
+	f, err := os.Open(samplePath)
+	if err != nil {
+		t.Fatalf("open %s: %v", samplePath, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	parsed, err := Parse(f)
+	if err != nil {
+		t.Fatalf("parse %s: %v", samplePath, err)
+	}
+
+	if got := parsed.DNG.AdobeData.RecordCount; got != 1 {
+		t.Fatalf("DNG.AdobeData.RecordCount = %d, want 1", got)
+	}
+	if got := parsed.DNG.AdobeData.MakerNoteOriginalOffset; got != 0x03e4 {
+		t.Fatalf("DNG.AdobeData.MakerNoteOriginalOffset = 0x%x, want 0x3e4", got)
+	}
+	if got := parsed.DNG.AdobeData.MakerNoteRecordLength; got != 68242 {
+		t.Fatalf("DNG.AdobeData.MakerNoteRecordLength = %d, want 68242", got)
+	}
+	if parsed.MakerNote.Canon == nil {
+		t.Fatalf("Canon maker-note missing for %s", samplePath)
+	}
+	if got := parsed.MakerNote.Canon.ImageType; got != "Canon EOS 6D" {
+		t.Fatalf("Canon.ImageType = %q, want %q", got, "Canon EOS 6D")
+	}
+	if got := parsed.MakerNote.Canon.LensModel; got != "EF70-200mm f/2.8L IS II USM" {
+		t.Fatalf("Canon.LensModel = %q, want %q", got, "EF70-200mm f/2.8L IS II USM")
+	}
+	if got := parsed.MakerNote.Canon.TimeInfo.TimeZone; got != 180 {
+		t.Fatalf("Canon.TimeInfo.TimeZone = %d, want 180", got)
+	}
+}
+
+func TestParseIFD0MakeTagTrimsAndNormalizesKnownMake(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(zerolog.Nop())
+	defer r.Close()
+
+	raw := append([]byte("NIKON CORPORATION\x00"), bytes.Repeat([]byte{'x'}, 48)...)
+	r.Reset(bytes.NewReader(raw))
+
+	e := tag.NewEntry(tag.TagMake, tag.TypeASCII, 18, 0, tag.IFD0, 0, utils.LittleEndian)
+	r.Exif.CameraMakeID, r.Exif.IFD0.Make = r.parseMakeTag(e)
+
+	if got := r.Exif.CameraMakeID; got != makernote.CameraMakeNikon {
+		t.Fatalf("CameraMakeID = %v, want %v", got, makernote.CameraMakeNikon)
+	}
+	if got := r.Exif.IFD0.Make; got != makernote.CameraMakeNikon.String() {
+		t.Fatalf("IFD0.Make = %q, want %q", got, makernote.CameraMakeNikon.String())
+	}
+}
+
 func TestParseSubIFDsSingleTypeIFDUsesValueOffset(t *testing.T) {
 	t.Parallel()
 
@@ -250,10 +311,10 @@ func TestParseSubIFDsSingleTypeIFDUsesValueOffset(t *testing.T) {
 	tg := tag.NewEntry(tag.TagSubIFDs, tag.TypeIfd, 1, 0x1234, tag.IFD0, 0, utils.LittleEndian)
 	r.parseSubIFDs(tg)
 
-	if got := r.Exif.IFD0.SubIFDOffsetCount; got != 1 {
+	if got := r.Exif.IFD0.subIFDOffsetCount; got != 1 {
 		t.Fatalf("SubIFDOffsetCount = %d, want 1", got)
 	}
-	if got := r.Exif.IFD0.SubIFDOffsets[0]; got != 0x1234 {
+	if got := r.Exif.IFD0.subIFDOffsets[0]; got != 0x1234 {
 		t.Fatalf("SubIFDOffsets[0] = 0x%x, want 0x1234", got)
 	}
 	if got := r.state.len; got != 1 {
@@ -289,10 +350,10 @@ func TestParseSubIFDsClampsToQueueCapacity(t *testing.T) {
 	tg := tag.NewEntry(tag.TagSubIFDs, tag.TypeLong, 4, 0, tag.IFD0, 0, utils.LittleEndian)
 	r.parseSubIFDs(tg)
 
-	if got := r.Exif.IFD0.SubIFDOffsetCount; got != 1 {
+	if got := r.Exif.IFD0.subIFDOffsetCount; got != 1 {
 		t.Fatalf("SubIFDOffsetCount = %d, want 1", got)
 	}
-	if got := r.Exif.IFD0.SubIFDOffsets[0]; got != 0x10 {
+	if got := r.Exif.IFD0.subIFDOffsets[0]; got != 0x10 {
 		t.Fatalf("SubIFDOffsets[0] = 0x%x, want 0x10", got)
 	}
 	if got := r.state.len; got != tagQueueMax {
@@ -315,16 +376,16 @@ func TestParseSubIFDsClampsToOffsetCapacity(t *testing.T) {
 	r := NewReader(zerolog.Nop())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
-	r.Exif.IFD0.SubIFDOffsetCount = uint8(len(r.Exif.IFD0.SubIFDOffsets) - 1)
+	r.Exif.IFD0.subIFDOffsetCount = uint8(len(r.Exif.IFD0.subIFDOffsets) - 1)
 
 	tg := tag.NewEntry(tag.TagSubIFDs, tag.TypeLong, 4, 0, tag.IFD0, 0, utils.LittleEndian)
 	r.parseSubIFDs(tg)
 
-	if got := r.Exif.IFD0.SubIFDOffsetCount; got != uint8(len(r.Exif.IFD0.SubIFDOffsets)) {
-		t.Fatalf("SubIFDOffsetCount = %d, want %d", got, len(r.Exif.IFD0.SubIFDOffsets))
+	if got := r.Exif.IFD0.subIFDOffsetCount; got != uint8(len(r.Exif.IFD0.subIFDOffsets)) {
+		t.Fatalf("SubIFDOffsetCount = %d, want %d", got, len(r.Exif.IFD0.subIFDOffsets))
 	}
-	last := len(r.Exif.IFD0.SubIFDOffsets) - 1
-	if got := r.Exif.IFD0.SubIFDOffsets[last]; got != 0x10 {
+	last := len(r.Exif.IFD0.subIFDOffsets) - 1
+	if got := r.Exif.IFD0.subIFDOffsets[last]; got != 0x10 {
 		t.Fatalf("SubIFDOffsets[last] = 0x%x, want 0x10", got)
 	}
 	if got := r.state.len; got != 1 {

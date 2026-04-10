@@ -16,15 +16,14 @@ import (
 type Exif struct {
 	GPS          GPSInfo
 	Time         TimeTags
-	IFD0         IFD0Tags
+	IFD0         IFD0Tag
 	ExifIFD      ExifIFDTags
 	IFD1         ImageIFD
 	IFD2         ImageIFD
-	PanasonicRaw PanasonicRawTags
 	DNG          DNGTags
 	MakerNote    makernote.Info
-	CameraMakeID makernote.CameraMake
 	CameraSerial string
+	CameraMakeID makernote.CameraMake
 	ImageType    imagetype.ImageType
 
 	ifdBitset    [8]uint64
@@ -75,13 +74,11 @@ func (e *Exif) markTagParsed(tagID uint16) {
 	e.highTagCount++
 }
 
-// IFD0Tags groups tags from the primary image IFD (IFD0).
-type IFD0Tags struct {
-	XResolution   tag.RationalU
-	YResolution   tag.RationalU
-	BitsPerSample [8]uint16
-	SubIFDOffsets [8]uint32
-
+// IFD0Tag groups tags from the primary image IFD (IFD0).
+type IFD0Tag struct {
+	ModifyDate       time.Time
+	XResolution      tag.RationalU
+	YResolution      tag.RationalU
 	Make             string
 	Model            string
 	Artist           string
@@ -91,34 +88,22 @@ type IFD0Tags struct {
 	// TODO: ApplicationNotes (UNDEFINED) may contain large payloads (for example XMP).
 	// Parsing is currently disabled to avoid unnecessary allocations.
 
-	StripOffsets    uint32
-	StripByteCounts uint32
-	ThumbnailOffset uint32
-	ThumbnailLength uint32
-	TileWidth       uint32
-	TileLength      uint32
-	TileOffsets     uint32
-	TileByteCounts  uint32
-	SubfileType     uint32
-	SR2Private      uint32
-	RowsPerStrip    uint32
-	ExifIFDPointer  uint32
-	GPSIFDPointer   uint32
 	ImageWidth      uint32
 	ImageHeight     uint32
+	ImageOffset     uint32
+	ImageLength     uint32
+	ThumbnailOffset uint32
+	ThumbnailLength uint32
+	SubfileType     meta.SubfileType
 
-	Compression         meta.Compression
-	Orientation         meta.Orientation
-	PlanarConfiguration uint16
-	ResolutionUnit      uint16
-	BitsPerSampleCount  uint8
-	SubIFDOffsetCount   uint8
+	Compression    meta.Compression
+	Orientation    meta.Orientation
+	ResolutionUnit meta.ResolutionUnit
+	Rating         uint16
+	RatingPercent  uint16
 
-	DateTimeOriginal time.Time
-	ModifyDate       time.Time
-
-	// TODO: PrintIM payload is UNDEFINED and may include mixed binary/text content.
-	PrintIM string
+	subIFDOffsets     [8]uint32
+	subIFDOffsetCount uint8
 }
 
 // ExifIFDTags groups tags from the ExifIFD directory.
@@ -162,7 +147,7 @@ type ExifIFDTags struct {
 	PixelXDimension          uint32               // 0xa002 ExifImageWidth
 	PixelYDimension          uint32               // 0xa003 ExifImageHeight
 	InteropIFDPointer        uint32               // 0xa005 InteropOffset
-	FocalPlaneResolutionUnit uint16               // 0xa210 FocalPlaneResolutionUnit
+	FocalPlaneResolutionUnit meta.ResolutionUnit  // 0xa210 FocalPlaneResolutionUnit
 	ColorSpace               uint16               // 0xa001 ColorSpace
 	LightSource              uint16               // 0x9208 LightSource
 	CustomRendered           uint16               // 0xa401 CustomRendered
@@ -204,6 +189,19 @@ type DNGTags struct {
 	DNGBackwardVersionCount uint8
 
 	BestQualityScale tag.RationalU
+	AdobeData        DNGAdobeData
+}
+
+// DNGAdobeData stores selected information from IFD0 tag 0xc634
+// (DNGAdobeData / Adobe private data).
+//
+// ExifTool parses this as an "Adobe\0" record stream. We currently model the
+// overall record count plus the Adobe-mutated maker-note record details needed
+// to rebase and parse MakN data.
+type DNGAdobeData struct {
+	RecordCount             uint8
+	MakerNoteOriginalOffset uint32
+	MakerNoteRecordLength   uint32
 }
 
 // PanasonicRawTags groups Panasonic RW2/RWL specific root-IFD tags.
@@ -233,25 +231,23 @@ type PanasonicRawTags struct {
 
 // ImageIFD stores the core image-bearing tags from non-primary root IFDs.
 type ImageIFD struct {
-	XResolution        tag.RationalU
-	YResolution        tag.RationalU
-	BitsPerSample      [8]uint16
-	Compression        meta.Compression
-	SubfileType        uint32
-	ThumbnailOffset    uint32
-	ThumbnailLength    uint32
-	StripOffsets       uint32
-	StripByteCounts    uint32
-	ImageWidth         uint32
-	ImageHeight        uint32
-	Make               string
-	Model              string
-	Software           string
-	ImageDescription   string
-	ModifyDate         time.Time
-	Orientation        meta.Orientation
-	ResolutionUnit     uint16
-	BitsPerSampleCount uint8
+	XResolution    tag.RationalU
+	YResolution    tag.RationalU
+	ResolutionUnit meta.ResolutionUnit
+	Compression    meta.Compression
+	Orientation    meta.Orientation
+
+	SubfileType meta.SubfileType
+	ImageOffset uint32
+	ImageLength uint32
+	ImageWidth  uint32
+	ImageHeight uint32
+
+	Make             string
+	Model            string
+	Software         string
+	ImageDescription string
+	ModifyDate       time.Time
 }
 
 // LensInfo stores ExifIFD LensSpecification as four rationals.
@@ -285,234 +281,6 @@ func (LensInfo) lensInfoPart(v tag.RationalU) string {
 		return strconv.FormatInt(int64(f), 10)
 	}
 	return strconv.FormatFloat(f, 'f', -1, 64)
-}
-
-// GPSInfo stores parsed GPS fields.
-type GPSInfo struct {
-	date              time.Time
-	satellites        string
-	status            string
-	measureMode       string
-	mapDatum          string
-	latitude          float64
-	longitude         float64
-	destLatitude      float64
-	destLongitude     float64
-	ifdBitset         uint64
-	dop               tag.RationalU
-	speed             tag.RationalU
-	track             tag.RationalU
-	imgDirection      tag.RationalU
-	destBearing       tag.RationalU
-	destDistance      tag.RationalU
-	hPositioningError tag.RationalU
-	altitude          float32
-	versionID         [4]byte
-	differential      uint16
-	speedRef          tag.GPSRef
-	trackRef          tag.GPSRef
-	imgDirectionRef   tag.GPSRef
-	destLatitudeRef   tag.GPSRef
-	destLongitudeRef  tag.GPSRef
-	destBearingRef    tag.GPSRef
-	destDistanceRef   tag.GPSRef
-	latitudeRef       tag.GPSRef
-	longitudeRef      tag.GPSRef
-	altitudeRef       tag.GPSRef
-}
-
-// Date returns the combined GPS timestamp.
-func (g GPSInfo) Date() time.Time {
-	return g.GPSTimestamp()
-}
-
-// GPSTimestamp returns the combined GPS timestamp.
-func (g GPSInfo) GPSTimestamp() time.Time {
-	return g.date
-}
-
-// GPSTime returns the combined GPS timestamp.
-// Deprecated: use GPSTimestamp.
-func (g GPSInfo) GPSTime() time.Time {
-	return g.GPSTimestamp()
-}
-
-// setDate sets the internal state value used during parsing.
-func (g *GPSInfo) setDate(date time.Time) {
-	if pending, ok := gpsPendingDelta(g.date); ok {
-		g.date = date.Add(pending)
-		return
-	}
-	g.date = date
-}
-
-// setTime sets the internal state value used during parsing.
-func (g *GPSInfo) setTime(delta time.Duration) {
-	if delta == 0 {
-		return
-	}
-	if g.date.IsZero() {
-		// Store pending GPS time without adding another struct field.
-		g.date = time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC).Add(delta)
-		return
-	}
-	g.date = g.date.Add(delta)
-}
-
-// gpsPendingDelta extracts a pending GPS time offset encoded in sentinel date form.
-func gpsPendingDelta(ts time.Time) (time.Duration, bool) {
-	if ts.IsZero() {
-		return 0, false
-	}
-	if ts.Year() != 1 || ts.Month() != time.January || ts.Day() != 1 {
-		return 0, false
-	}
-	return time.Duration(ts.Hour())*time.Hour +
-		time.Duration(ts.Minute())*time.Minute +
-		time.Duration(ts.Second())*time.Second +
-		time.Duration(ts.Nanosecond()), true
-}
-
-// Latitude returns the signed latitude in decimal degrees.
-func (g GPSInfo) Latitude() float64 {
-	if g.latitudeRef == tag.GPSRefSouth {
-		return -1 * g.latitude
-	}
-	return g.latitude
-}
-
-// Longitude returns the signed longitude in decimal degrees.
-func (g GPSInfo) Longitude() float64 {
-	if g.longitudeRef == tag.GPSRefWest {
-		return -1 * g.longitude
-	}
-	return g.longitude
-}
-
-// DestLatitude returns the signed destination latitude in decimal degrees.
-func (g GPSInfo) DestLatitude() float64 {
-	if g.destLatitudeRef == tag.GPSRefSouth {
-		return -1 * g.destLatitude
-	}
-	return g.destLatitude
-}
-
-// DestLongitude returns the signed destination longitude in decimal degrees.
-func (g GPSInfo) DestLongitude() float64 {
-	if g.destLongitudeRef == tag.GPSRefWest {
-		return -1 * g.destLongitude
-	}
-	return g.destLongitude
-}
-
-// Altitude returns the signed altitude value.
-func (g GPSInfo) Altitude() float32 {
-	if g.altitudeRef == tag.GPSRefBelowSeaLevel {
-		return -1 * g.altitude
-	}
-	return g.altitude
-}
-
-// VersionID returns the GPSVersionID tuple.
-func (g GPSInfo) VersionID() [4]byte {
-	return g.versionID
-}
-
-// Satellites returns the GPSSatellites field.
-func (g GPSInfo) Satellites() string {
-	return g.satellites
-}
-
-// Status returns the GPSStatus field.
-func (g GPSInfo) Status() string {
-	return g.status
-}
-
-// MeasureMode returns the GPSMeasureMode field.
-func (g GPSInfo) MeasureMode() string {
-	return g.measureMode
-}
-
-// DOP returns the parsed GPSDOP rational value.
-func (g GPSInfo) DOP() tag.RationalU {
-	return g.dop
-}
-
-// SpeedWithRef returns GPSSpeed together with GPSSpeedRef.
-func (g GPSInfo) SpeedWithRef() tag.GPSRationalRef[tag.RationalU] {
-	return tag.GPSRationalRef[tag.RationalU]{
-		Ref:   g.speedRef.String(),
-		Value: g.speed,
-	}
-}
-
-// TrackWithRef returns GPSTrack together with GPSTrackRef.
-func (g GPSInfo) TrackWithRef() tag.GPSRationalRef[tag.RationalU] {
-	return tag.GPSRationalRef[tag.RationalU]{
-		Ref:   g.trackRef.String(),
-		Value: g.track,
-	}
-}
-
-// ImgDirectionWithRef returns GPSImgDirection together with GPSImgDirectionRef.
-func (g GPSInfo) ImgDirectionWithRef() tag.GPSRationalRef[tag.RationalU] {
-	return tag.GPSRationalRef[tag.RationalU]{
-		Ref:   g.imgDirectionRef.String(),
-		Value: g.imgDirection,
-	}
-}
-
-// DestBearingWithRef returns GPSDestBearing together with GPSDestBearingRef.
-func (g GPSInfo) DestBearingWithRef() tag.GPSRationalRef[tag.RationalU] {
-	return tag.GPSRationalRef[tag.RationalU]{
-		Ref:   g.destBearingRef.String(),
-		Value: g.destBearing,
-	}
-}
-
-// DestDistanceWithRef returns GPSDestDistance together with GPSDestDistanceRef.
-func (g GPSInfo) DestDistanceWithRef() tag.GPSRationalRef[tag.RationalU] {
-	return tag.GPSRationalRef[tag.RationalU]{
-		Ref:   g.destDistanceRef.String(),
-		Value: g.destDistance,
-	}
-}
-
-// HPositioningError returns the GPSHPositioningError value.
-func (g GPSInfo) HPositioningError() tag.RationalU {
-	return g.hPositioningError
-}
-
-// MapDatum returns the GPSMapDatum field.
-func (g GPSInfo) MapDatum() string {
-	return g.mapDatum
-}
-
-// Differential returns the GPSDifferential field.
-func (g GPSInfo) Differential() uint16 {
-	return g.differential
-}
-
-// HasTagParsed reports whether a GPS tag ID was parsed.
-// GPS tags are addressed by their raw tag ID (for example 0x0002 for GPSLatitude).
-func (g GPSInfo) HasTagParsed(tagID uint16) bool {
-	if tagID > 63 {
-		return false
-	}
-	return (g.ifdBitset & (uint64(1) << tagID)) != 0
-}
-
-// TagParsedBitset returns the GPS parsed-tag bitset.
-func (g GPSInfo) TagParsedBitset() uint64 {
-	return g.ifdBitset
-}
-
-// markTagParsed marks a GPS tag ID as parsed in the GPS-level bitset.
-func (g *GPSInfo) markTagParsed(id tag.ID) {
-	if id > 63 {
-		return
-	}
-	g.ifdBitset |= uint64(1) << id
 }
 
 // TimeTags contains parsed EXIF time values.
