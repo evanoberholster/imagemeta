@@ -3,6 +3,7 @@ package exif
 import (
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -35,5 +36,41 @@ func TestIsCanonMakerNotePrefix(t *testing.T) {
 	}
 	if isCanonMakerNotePrefix([]byte{'I', 'I', '*', 0, 8, 0, 0, 0}) {
 		t.Fatal("isCanonMakerNotePrefix returned true for TIFF header")
+	}
+}
+
+func TestMakerNoteAccessorsLazyAllocation(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	info := r.makerNoteInfo()
+	if info.Apple != nil || info.Canon != nil || info.Nikon != nil {
+		t.Fatal("makerNoteInfo() should not eagerly allocate vendor maker-note structs")
+	}
+
+	r.Exif.MakerNote = makernote.Info{}
+	info = r.makerNoteInfo()
+	if got := r.appleMakerNote(); got == nil {
+		t.Fatal("appleMakerNote() = nil")
+	}
+	if info.Apple == nil {
+		t.Fatal("appleMakerNote() did not allocate Apple maker-note")
+	}
+	if info.Canon != nil || info.Nikon != nil {
+		t.Fatal("appleMakerNote() should only allocate Apple maker-note")
+	}
+
+	r.Exif.MakerNote = makernote.Info{}
+	info = r.makerNoteInfo()
+	if got := r.nikonMakerNote(); got == nil {
+		t.Fatal("nikonMakerNote() = nil")
+	}
+	if info.Nikon == nil {
+		t.Fatal("nikonMakerNote() did not allocate Nikon maker-note")
+	}
+	if info.Apple != nil || info.Canon != nil {
+		t.Fatal("nikonMakerNote() should only allocate Nikon maker-note")
 	}
 }

@@ -1,11 +1,19 @@
 package makernote
 
+import (
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/sony"
+)
+
 // Info contains parsed maker-note values for supported vendors.
 type Info struct {
-	Make  CameraMake
-	Apple Apple
-	Canon Canon
-	Nikon Nikon
+	Make      CameraMake
+	Apple     *Apple
+	Canon     *Canon
+	Nikon     *nikon.Nikon
+	Panasonic *panasonic.Panasonic
+	Sony      *sony.Sony
 
 	parsedTagCount uint8
 	parsedTagIDs   [128]uint16
@@ -52,25 +60,6 @@ func (i *Info) MergeParsedTags(src Info) {
 	for idx := 0; idx < n; idx++ {
 		i.MarkTagParsed(src.parsedTagIDs[idx])
 	}
-}
-
-// Nikon contains selected Nikon maker-note fields.
-type Nikon struct {
-	Version [8]byte
-
-	Quality      string
-	ColorMode    string
-	WhiteBalance string
-	Sharpness    string
-	FocusMode    string
-	FlashSetting string
-	FlashType    string
-	ISOSelection string
-	SerialNumber string
-	Lens         string
-
-	VersionCount uint8
-	ISOSetting   uint32
 }
 
 // Apple contains selected Apple maker-note fields.

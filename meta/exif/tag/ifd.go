@@ -1,4 +1,4 @@
-package ifd
+package tag
 
 import (
 	"fmt"
@@ -6,11 +6,11 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
-// Type identifies an EXIF/TIFF image file directory kind.
-type Type uint8
+// IfdType identifies an EXIF/TIFF image file directory kind.
+type IfdType uint8
 
 const (
-	Unknown Type = iota
+	Unknown IfdType = iota
 	IFD0
 	IFD1
 	IFD2
@@ -27,7 +27,7 @@ const (
 	SubIFD7
 )
 
-func (t Type) String() string {
+func (t IfdType) String() string {
 	switch t {
 	case IFD0:
 		return "IFD0"
@@ -62,15 +62,15 @@ func (t Type) String() string {
 	}
 }
 
-func (t Type) IsSubIFD() bool {
+func (t IfdType) IsSubIFD() bool {
 	return t >= SubIFD0 && t <= SubIFD7
 }
 
-func (t Type) IsRootIFD() bool {
+func (t IfdType) IsRootIFD() bool {
 	return t == IFD0 || t == IFD1 || t == IFD2
 }
 
-func (t Type) NextRootIFD() (Type, bool) {
+func (t IfdType) NextRootIFD() (IfdType, bool) {
 	switch t {
 	case IFD0:
 		return IFD1, true
@@ -81,7 +81,7 @@ func (t Type) NextRootIFD() (Type, bool) {
 	}
 }
 
-func (t Type) IsValid() bool {
+func (t IfdType) IsValid() bool {
 	return t != Unknown
 }
 
@@ -90,12 +90,12 @@ type Directory struct {
 	Offset     uint32
 	BaseOffset uint32
 	ByteOrder  utils.ByteOrder
-	Type       Type
+	Type       IfdType
 	Index      int8
 }
 
-// New returns a Directory instance.
-func New(byteOrder utils.ByteOrder, directoryType Type, index int8, ifdOffset uint32, baseOffset uint32) Directory {
+// NewDirectory returns a Directory instance.
+func NewDirectory(byteOrder utils.ByteOrder, directoryType IfdType, index int8, ifdOffset uint32, baseOffset uint32) Directory {
 	return Directory{
 		Offset:     ifdOffset,
 		BaseOffset: baseOffset,

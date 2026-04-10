@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -12,14 +13,17 @@ import (
 
 func init() {
 	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.DebugLevel)
-	exif.Logger = exif.Logger.Level(zerolog.WarnLevel)
-	isobmff.Logger = isobmff.Logger.Level(zerolog.DebugLevel)
+	exif.Logger = exif.Logger.Level(zerolog.ErrorLevel)
+	isobmff.Logger = isobmff.Logger.Level(zerolog.ErrorLevel)
 }
 
 func main() {
-	//f, err := os.Open(dir + "/" + "DJI.dng")
-	//f, err := os.Open(dir + "/" + "iPhone11.heic")
-	f, err := os.Open("1.cr3")
+	path := "1.NEF"
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	}
+
+	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
@@ -33,5 +37,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(e)
+	buf, err := json.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+
+	//colored := pretty.Color(pretty.Pretty(buf), nil)
+	fmt.Printf("%s\n", string(buf))
 }

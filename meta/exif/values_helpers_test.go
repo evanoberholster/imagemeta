@@ -41,6 +41,26 @@ func TestTrimNULBuffer(t *testing.T) {
 	}
 }
 
+func TestTrimRightSpaceNewline(t *testing.T) {
+	t.Parallel()
+
+	if got := trimRightSpaceNewline([]byte("Artist Name   \n\n")); string(got) != "Artist Name" {
+		t.Fatalf("trimRightSpaceNewline() = %q, want %q", got, "Artist Name")
+	}
+	if got := trimRightSpaceNewline([]byte("Artist Name\x00")); string(got) != "Artist Name" {
+		t.Fatalf("trimRightSpaceNewline() = %q, want %q", got, "Artist Name")
+	}
+	if got := trimRightSpaceNewline([]byte("      \x00")); len(got) != 0 {
+		t.Fatalf("trimRightSpaceNewline() = %q, want empty", got)
+	}
+	if got := trimRightSpaceNewline([]byte("Copyright\r\n")); string(got) != "Copyright" {
+		t.Fatalf("trimRightSpaceNewline() = %q, want %q", got, "Copyright")
+	}
+	if got := trimRightSpaceNewline([]byte("")); len(got) != 0 {
+		t.Fatalf("trimRightSpaceNewline(empty) = %q, want empty", got)
+	}
+}
+
 func TestRationalDuration(t *testing.T) {
 	t.Parallel()
 

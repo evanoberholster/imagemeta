@@ -3,12 +3,10 @@ package tag
 import (
 	"strconv"
 	"strings"
-
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 )
 
 // ValueNameFor returns the symbolic name for a numeric enum value.
-func ValueNameFor(directoryType ifd.Type, id ID, value uint32) string {
+func ValueNameFor(directoryType IfdType, id ID, value uint32) string {
 	if names := valueNames(directoryType, id); names != nil {
 		if name, ok := names[value]; ok {
 			return name
@@ -18,7 +16,7 @@ func ValueNameFor(directoryType ifd.Type, id ID, value uint32) string {
 }
 
 // ParseValueID parses either a numeric string or known symbolic enum value.
-func ParseValueID(directoryType ifd.Type, id ID, raw string) (uint32, bool) {
+func ParseValueID(directoryType IfdType, id ID, raw string) (uint32, bool) {
 	if v, ok := parseUint(raw); ok {
 		return v, true
 	}
@@ -30,21 +28,21 @@ func ParseValueID(directoryType ifd.Type, id ID, raw string) (uint32, bool) {
 	return v, ok
 }
 
-func valueNames(directoryType ifd.Type, id ID) map[uint32]string {
+func valueNames(directoryType IfdType, id ID) map[uint32]string {
 	switch directoryType {
-	case ifd.IFD0, ifd.IFD1, ifd.IFD2:
+	case IFD0, IFD1, IFD2:
 		return ifd0ValueNames[id]
-	case ifd.ExifIFD, ifd.SubIFD0, ifd.SubIFD1, ifd.SubIFD2, ifd.SubIFD3, ifd.SubIFD4, ifd.SubIFD5, ifd.SubIFD6, ifd.SubIFD7:
+	case ExifIFD, SubIFD0, SubIFD1, SubIFD2, SubIFD3, SubIFD4, SubIFD5, SubIFD6, SubIFD7:
 		return exifValueNames[id]
 	}
 	return nil
 }
 
-func valueIDs(directoryType ifd.Type, id ID) map[string]uint32 {
+func valueIDs(directoryType IfdType, id ID) map[string]uint32 {
 	switch directoryType {
-	case ifd.IFD0, ifd.IFD1, ifd.IFD2:
+	case IFD0, IFD1, IFD2:
 		return ifd0ValueIDs[id]
-	case ifd.ExifIFD, ifd.SubIFD0, ifd.SubIFD1, ifd.SubIFD2, ifd.SubIFD3, ifd.SubIFD4, ifd.SubIFD5, ifd.SubIFD6, ifd.SubIFD7:
+	case ExifIFD, SubIFD0, SubIFD1, SubIFD2, SubIFD3, SubIFD4, SubIFD5, SubIFD6, SubIFD7:
 		return exifValueIDs[id]
 	}
 	return nil

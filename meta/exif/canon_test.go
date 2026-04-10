@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	metacanon "github.com/evanoberholster/imagemeta/meta/canon"
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	metacanon "github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -31,7 +31,7 @@ func parseAFInfo2ForTest(t *testing.T, words []uint16, model string, isAFInfo3 b
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -58,7 +58,7 @@ func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -70,7 +70,8 @@ func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits
 	br.Reset(raw)
 	r.Reset(&br)
 	r.Exif.IFD0.Model = model
-	r.makerNoteInfo().Canon.CameraSettings.FocalUnits = focalUnits
+	r.Exif.MakerNote.Canon = &makernote.Canon{}
+	r.Exif.MakerNote.Canon.CanonCameraSettings.FocalUnits = focalUnits
 	return r.parseCanonShotInfo(entry)
 }
 
@@ -348,7 +349,7 @@ func TestParseCanonBatteryType(t *testing.T) {
 				tag.TypeUndefined,
 				tc.unitCount,
 				0,
-				ifd.MakerNoteIFD,
+				tag.MakerNoteIFD,
 				0,
 				utils.LittleEndian,
 			)
@@ -373,7 +374,7 @@ func TestParseCanonLensModelTerminatedAtNUL(t *testing.T) {
 		tag.TypeASCII,
 		uint32(len(raw)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -388,7 +389,7 @@ func TestParseCanonLensModelTerminatedAtNUL(t *testing.T) {
 		t.Fatal("parseCanonTag returned false for LensModel")
 	}
 
-	if got := r.makerNoteInfo().Canon.LensModel; got != "EF70-200" {
+	if got := r.Exif.MakerNote.Canon.LensModel; got != "EF70-200" {
 		t.Fatalf("LensModel = %q, want %q", got, "EF70-200")
 	}
 }
@@ -401,7 +402,7 @@ func TestParseCanonBatteryTypeTag(t *testing.T) {
 		tag.TypeUndefined,
 		uint32(len(raw)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -416,7 +417,7 @@ func TestParseCanonBatteryTypeTag(t *testing.T) {
 		t.Fatal("parseCanonTag returned false for BatteryType")
 	}
 
-	if got := r.makerNoteInfo().Canon.BatteryType; got != "LP-E6N" {
+	if got := r.Exif.MakerNote.Canon.BatteryType; got != "LP-E6N" {
 		t.Fatalf("BatteryType = %q, want %q", got, "LP-E6N")
 	}
 }
@@ -431,7 +432,7 @@ func TestParseCanonImageUniqueIDFromByte(t *testing.T) {
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -447,7 +448,7 @@ func TestParseCanonImageUniqueIDFromByte(t *testing.T) {
 	}
 
 	want := meta.UUIDFromString("e42dcff186924c33974dbf00e17f6162")
-	if got := r.makerNoteInfo().Canon.ImageUniqueID; got != want {
+	if got := r.Exif.MakerNote.Canon.ImageUniqueID; got != want {
 		t.Fatalf("ImageUniqueID = %v, want %v", got, want)
 	}
 }
@@ -459,7 +460,7 @@ func TestParseCanonImageUniqueIDAllZeroIsNilUUID(t *testing.T) {
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -473,7 +474,7 @@ func TestParseCanonImageUniqueIDAllZeroIsNilUUID(t *testing.T) {
 	if ok := r.parseCanonTag(entry); !ok {
 		t.Fatal("parseCanonTag returned false for ImageUniqueID")
 	}
-	if got := r.makerNoteInfo().Canon.ImageUniqueID; got != meta.NilUUID {
+	if got := r.Exif.MakerNote.Canon.ImageUniqueID; got != meta.NilUUID {
 		t.Fatalf("ImageUniqueID = %v, want NilUUID", got)
 	}
 }
@@ -785,8 +786,6 @@ func TestParseCanonMaxAperture(t *testing.T) {
 	}
 }
 
-var sinkCanonCameraSettings metacanon.CameraSettings
-
 func benchmarkCanonCameraSettingsData() ([64]int16, [64]uint16) {
 	var signed [64]int16
 	var unsigned [64]uint16
@@ -838,7 +837,7 @@ func TestParseCanonCameraSettingsIndexMapping(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(input)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -893,7 +892,7 @@ func TestParseCanonCameraSettingsShortInputProgressive(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -933,7 +932,7 @@ func TestParseCanonCameraSettingsApertureConversions(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -964,7 +963,7 @@ func TestParseCanonCameraSettingsInvalidLengthReturnsZero(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -979,38 +978,6 @@ func TestParseCanonCameraSettingsInvalidLengthReturnsZero(t *testing.T) {
 	if got != (metacanon.CameraSettings{}) {
 		t.Fatalf("parseCanonCameraSettings(invalid length) = %+v, want zero value", got)
 	}
-}
-
-func BenchmarkParseCanonCameraSettings(b *testing.B) {
-	_, unsigned := benchmarkCanonCameraSettingsData()
-	input := make([]uint16, 53)
-	input[0] = uint16(len(input) * 2) // leading CameraSettings byte-size header
-	copy(input[1:], unsigned[:52])
-	raw := canonUint16WordsToBytes(input, utils.LittleEndian)
-	entry := tag.NewEntry(
-		tag.ID(metacanon.CanonCameraSettings),
-		tag.TypeShort,
-		uint32(len(input)),
-		0,
-		ifd.MakerNoteIFD,
-		0,
-		utils.LittleEndian,
-	)
-
-	r := NewReader(Logger)
-	defer r.Close()
-	var br bytes.Reader
-
-	b.ReportAllocs()
-	b.SetBytes(int64(len(raw)))
-
-	var dst metacanon.CameraSettings
-	for i := 0; i < b.N; i++ {
-		br.Reset(raw)
-		r.Reset(&br)
-		dst = r.parseCanonCameraSettings(entry)
-	}
-	sinkCanonCameraSettings = dst
 }
 
 func TestParseCanonShotInfo(t *testing.T) {
@@ -1163,17 +1130,15 @@ func TestParseCanonTimeInfo(t *testing.T) {
 			city := metacanon.TimeZoneCityNewYork
 			daylightSavings := metacanon.DaylightSavingsOn
 
-			raw := make([]byte, 12)
-			tc.bo.PutUint32(raw[0:4], uint32(tz))
-			tc.bo.PutUint32(raw[4:8], uint32(city))
-			tc.bo.PutUint32(raw[8:12], uint32(daylightSavings))
+			words := []uint32{16, uint32(tz), uint32(city), uint32(daylightSavings)}
+			raw := canonUint32WordsToBytes(words, tc.bo)
 
 			entry := tag.NewEntry(
 				tag.ID(metacanon.TimeInfo),
 				tag.TypeLong,
-				3,
+				uint32(len(words)),
 				0,
-				ifd.MakerNoteIFD,
+				tag.MakerNoteIFD,
 				0,
 				tc.bo,
 			)
@@ -1199,6 +1164,103 @@ func TestParseCanonTimeInfo(t *testing.T) {
 	}
 }
 
+func TestParseCanonFileInfoIndexMapping(t *testing.T) {
+	words := make([]uint16, 62)
+	words[0] = uint16(len(words) * 2)
+	words[1] = 0x1234
+	words[2] = 0x5678
+	words[3] = uint16(metacanon.BracketModeWB)
+	words[4] = u16(-2)
+	words[5] = 3
+	words[6] = uint16(metacanon.RawJpgQualityCRAW)
+	words[7] = uint16(metacanon.RawJpgSizeMedium3)
+	words[8] = uint16(metacanon.OnOffAutoAuto)
+	words[9] = 2
+	words[12] = u16(-1)
+	words[13] = 4
+	words[14] = uint16(metacanon.FilterEffectRed)
+	words[15] = 0xffff
+	words[16] = 75
+	words[19] = uint16(metacanon.OnOffAutoOn)
+	words[20] = 299
+	words[21] = 267
+	words[23] = uint16(metacanon.ShutterModeElectronic)
+	words[25] = uint16(metacanon.OnOffAutoOff)
+	words[32] = uint16(metacanon.OnOffAutoOff)
+	words[61] = uint16(metacanon.CanonRFLensType(258))
+
+	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
+	entry := tag.NewEntry(
+		tag.ID(metacanon.CanonFileInfo),
+		tag.TypeShort,
+		uint32(len(words)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+
+	got := r.parseCanonFileInfo(entry)
+	if got.FileNumber != 0x56781234 {
+		t.Fatalf("FileNumber = %#x, want %#x", got.FileNumber, uint32(0x56781234))
+	}
+	if got.BracketMode != metacanon.BracketModeWB {
+		t.Fatalf("BracketMode = %d, want %d", got.BracketMode, metacanon.BracketModeWB)
+	}
+	if got.BracketValue != -2 {
+		t.Fatalf("BracketValue = %d, want -2", got.BracketValue)
+	}
+	if got.RawJpgQuality != metacanon.RawJpgQualityCRAW {
+		t.Fatalf("RawJpgQuality = %d, want %d", got.RawJpgQuality, metacanon.RawJpgQualityCRAW)
+	}
+	if got.RawJpgSize != metacanon.RawJpgSizeMedium3 {
+		t.Fatalf("RawJpgSize = %d, want %d", got.RawJpgSize, metacanon.RawJpgSizeMedium3)
+	}
+	if got.LongExposureNoiseReduction2 != metacanon.OnOffAutoAuto {
+		t.Fatalf("LongExposureNoiseReduction2 = %d, want %d", got.LongExposureNoiseReduction2, metacanon.OnOffAutoAuto)
+	}
+	if got.WBBracketMode != 2 {
+		t.Fatalf("WBBracketMode = %d, want 2", got.WBBracketMode)
+	}
+	if got.WBBracketValueAB != -1 {
+		t.Fatalf("WBBracketValueAB = %d, want -1", got.WBBracketValueAB)
+	}
+	if got.WBBracketValueGM != 4 {
+		t.Fatalf("WBBracketValueGM = %d, want 4", got.WBBracketValueGM)
+	}
+	if got.FilterEffect != metacanon.FilterEffectRed {
+		t.Fatalf("FilterEffect = %d, want %d", got.FilterEffect, metacanon.FilterEffectRed)
+	}
+	if got.ToningEffect != metacanon.ToningEffect(0xffff) {
+		t.Fatalf("ToningEffect = %#x, want %#x", got.ToningEffect, uint16(0xffff))
+	}
+	if got.MacroMagnification != 75 {
+		t.Fatalf("MacroMagnification = %d, want 75", got.MacroMagnification)
+	}
+	if got.LiveViewShooting != metacanon.OnOffAutoOn {
+		t.Fatalf("LiveViewShooting = %d, want %d", got.LiveViewShooting, metacanon.OnOffAutoOn)
+	}
+	if got.FocusDistance != metacanon.NewFocusDistance(299, 267) {
+		t.Fatalf("FocusDistance = %v, want %v", got.FocusDistance, metacanon.NewFocusDistance(299, 267))
+	}
+	if got.ShutterMode != metacanon.ShutterModeElectronic {
+		t.Fatalf("ShutterMode = %d, want %d", got.ShutterMode, metacanon.ShutterModeElectronic)
+	}
+	if got.AntiFlicker != metacanon.OnOffAutoOff {
+		t.Fatalf("AntiFlicker = %d, want %d", got.AntiFlicker, metacanon.OnOffAutoOff)
+	}
+	if got.RFLensType != metacanon.CanonRFLensType(258) {
+		t.Fatalf("RFLensType = %d, want 258", got.RFLensType)
+	}
+}
+
 func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 	words := make([]uint16, 26)
 	words[2] = 2
@@ -1215,7 +1277,7 @@ func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -1249,7 +1311,7 @@ func TestParseCanonFaceDetect2IndexMapping(t *testing.T) {
 		tag.TypeByte,
 		uint32(len(raw)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -1278,7 +1340,7 @@ func TestParseCanonFaceDetect3IndexMapping(t *testing.T) {
 		tag.TypeShort,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -1305,14 +1367,15 @@ func canonUint32WordsToBytes(words []uint32, bo utils.ByteOrder) []byte {
 }
 
 func TestParseCanonLightingOptIndexMapping(t *testing.T) {
-	words := make([]uint32, 11)
-	words[0] = 1  // PeripheralIlluminationCorr
-	words[1] = 2  // AutoLightingOptimizer
-	words[2] = 1  // HighlightTonePriority
-	words[3] = 2  // LongExposureNoiseReduction
-	words[4] = 3  // HighISONoiseReduction
-	words[9] = 2  // DigitalLensOptimizer
-	words[10] = 1 // DualPixelRaw
+	words := make([]uint32, 12)
+	words[0] = uint32(len(words) * 4)
+	words[1] = 1  // PeripheralIlluminationCorr
+	words[2] = 2  // AutoLightingOptimizer
+	words[3] = 1  // HighlightTonePriority
+	words[4] = 2  // LongExposureNoiseReduction
+	words[5] = 3  // HighISONoiseReduction
+	words[10] = 2 // DigitalLensOptimizer
+	words[11] = 1 // DualPixelRaw
 
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
@@ -1320,7 +1383,7 @@ func TestParseCanonLightingOptIndexMapping(t *testing.T) {
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -1357,14 +1420,14 @@ func TestParseCanonLightingOptIndexMapping(t *testing.T) {
 }
 
 func TestParseCanonLightingOptShortPayload(t *testing.T) {
-	words := []uint32{1, 3, 1}
+	words := []uint32{16, 1, 3, 1}
 	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
 	entry := tag.NewEntry(
 		tag.ID(metacanon.CanonLightingOpt),
 		tag.TypeLong,
 		uint32(len(words)),
 		0,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		0,
 		utils.LittleEndian,
 	)
@@ -1391,5 +1454,166 @@ func TestParseCanonLightingOptShortPayload(t *testing.T) {
 	}
 	if got.DigitalLensOptimizer != 0 {
 		t.Fatalf("DigitalLensOptimizer = %d, want 0", got.DigitalLensOptimizer)
+	}
+}
+
+func TestParseCanonMultiExpIndexMapping(t *testing.T) {
+	words := []uint32{16, 0, 3, 5}
+	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
+	entry := tag.NewEntry(
+		tag.ID(metacanon.CanonMultiExp),
+		tag.TypeLong,
+		uint32(len(words)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+
+	got := r.parseCanonMultiExp(entry)
+	if got.MultiExposure != 0 {
+		t.Fatalf("MultiExposure = %d, want 0", got.MultiExposure)
+	}
+	if got.MultiExposureControl != 3 {
+		t.Fatalf("MultiExposureControl = %d, want 3", got.MultiExposureControl)
+	}
+	if got.MultiExposureShots != 5 {
+		t.Fatalf("MultiExposureShots = %d, want 5", got.MultiExposureShots)
+	}
+}
+
+func TestParseCanonHDRInfoIndexMapping(t *testing.T) {
+	words := []uint32{12, 0, 2}
+	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
+	entry := tag.NewEntry(
+		tag.ID(metacanon.CanonHDRInfo),
+		tag.TypeLong,
+		uint32(len(words)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+
+	got := r.parseCanonHDRInfo(entry)
+	if got.HDR != 0 {
+		t.Fatalf("HDR = %d, want 0", got.HDR)
+	}
+	if got.HDREffect != 2 {
+		t.Fatalf("HDREffect = %d, want 2", got.HDREffect)
+	}
+}
+
+func TestParseCanonProcessingInfoIndexMapping(t *testing.T) {
+	words := []uint16{
+		28,
+		0,    // ToneCurve
+		2,    // Sharpness
+		0,    // SharpnessFrequency
+		10,   // SensorRedLevel
+		11,   // SensorBlueLevel
+		12,   // WhiteBalanceRed
+		13,   // WhiteBalanceBlue
+		14,   // WhiteBalance
+		3100, // ColorTemperature
+		130,  // PictureStyle
+		0,    // DigitalGain
+		1,    // WBShiftAB
+		2,    // WBShiftGM
+		3,    // UnsharpMaskFineness
+		4,    // UnsharpMaskThreshold
+	}
+
+	raw := canonUint16WordsToBytes(words, utils.LittleEndian)
+	entry := tag.NewEntry(
+		tag.ID(metacanon.CanonProcessingInfo),
+		tag.TypeShort,
+		uint32(len(words)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+
+	got := r.parseCanonProcessingInfo(entry)
+	if got.ToneCurve != 0 {
+		t.Fatalf("ToneCurve = %d, want 0", got.ToneCurve)
+	}
+	if got.Sharpness != 2 {
+		t.Fatalf("Sharpness = %d, want 2", got.Sharpness)
+	}
+	if got.SharpnessFrequency != 0 {
+		t.Fatalf("SharpnessFrequency = %d, want 0", got.SharpnessFrequency)
+	}
+	if got.ColorTemperature != 3100 {
+		t.Fatalf("ColorTemperature = %d, want 3100", got.ColorTemperature)
+	}
+	if got.PictureStyle != 130 {
+		t.Fatalf("PictureStyle = %d, want 130", got.PictureStyle)
+	}
+	if got.DigitalGain != 0 {
+		t.Fatalf("DigitalGain = %d, want 0", got.DigitalGain)
+	}
+	if got.UnsharpMaskThreshold != 4 {
+		t.Fatalf("UnsharpMaskThreshold = %d, want 4", got.UnsharpMaskThreshold)
+	}
+}
+
+func TestParseCanonAFMicroAdjIndexMapping(t *testing.T) {
+	words := []uint32{
+		16,
+		0,
+		7,
+		3,
+	}
+
+	raw := canonUint32WordsToBytes(words, utils.LittleEndian)
+	entry := tag.NewEntry(
+		tag.ID(metacanon.CanonAFMicroAdj),
+		tag.TypeLong,
+		uint32(len(words)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+
+	got := r.parseCanonAFMicroAdj(entry)
+	if got.Mode != 0 {
+		t.Fatalf("Mode = %d, want 0", got.Mode)
+	}
+	if got.ValueNumerator != 7 {
+		t.Fatalf("ValueNumerator = %d, want 7", got.ValueNumerator)
+	}
+	if got.ValueDenominator != 3 {
+		t.Fatalf("ValueDenominator = %d, want 3", got.ValueDenominator)
 	}
 }

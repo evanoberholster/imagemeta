@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
@@ -21,6 +20,5 @@ func SetLogger(w io.Writer, level zerolog.Level) {
 	logger = log.Output(w).Level(level)
 	jpeg.Logger = logger
 	exif.Logger = logger
-	exif2.Logger = logger
 	isobmff.Logger = logger
 }

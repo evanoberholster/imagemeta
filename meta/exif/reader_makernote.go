@@ -3,20 +3,24 @@ package exif
 import (
 	"strings"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 // readMakerNoteDirectory parses a maker-note directory for the active camera make.
-func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child ifd.Directory) error {
+func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
 	makeID := r.ensureMakerNoteMake()
 	switch makeID {
 	case makernote.CameraMakeNikon:
 		return r.readNikonMakerNoteDirectory(parent, child)
 	case makernote.CameraMakeCanon:
 		return r.readCanonMakerNoteDirectory(parent, child)
+	case makernote.CameraMakePanasonic:
+		return r.readPanasonicMakerNoteDirectory(parent, child)
+	case makernote.CameraMakeSony:
+		return r.readDirectory(child, false)
 	case makernote.CameraMakeApple:
 		// Apple maker notes are parsed as a regular IFD at the maker-note offset.
 		return r.readDirectory(child, false)
@@ -52,13 +56,24 @@ func (r *Reader) ensureMakerNoteMake() makernote.CameraMake {
 			r.Exif.CameraMakeID = makernote.IdentifyCameraMakeString(model)
 		}
 	}
+	if r.Exif.CameraMakeID == makernote.CameraMakeUnknown {
+		switch r.Exif.ImageType {
+		case imagetype.ImagePanaRAW:
+			r.Exif.CameraMakeID = makernote.CameraMakePanasonic
+		case imagetype.ImageJPEG, imagetype.ImageTiff:
+			// no image-type-only fallback
+		}
+	}
+	if r.Exif.CameraMakeID == makernote.CameraMakeUnknown && (r.Exif.PanasonicRaw.Version[0] != 0 || r.Exif.PanasonicRaw.SensorWidth != 0) {
+		r.Exif.CameraMakeID = makernote.CameraMakePanasonic
+	}
 
 	info.Make = r.Exif.CameraMakeID
 	return info.Make
 }
 
 // readNikonMakerNoteDirectory parses Nikon maker-note TIFF headers and directory offsets.
-func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child ifd.Directory) error {
+func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
 	header, err := r.fastRead(makernoteNikonHeaderLength)
 	if err != nil {
 		return err
@@ -71,12 +86,13 @@ func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child ifd.Directo
 		return nil
 	}
 
-	nikonDir := ifd.New(
+	const nikonTIFFHeaderOffset = 10
+	nikonDir := tag.NewDirectory(
 		byteOrder,
-		ifd.MakerNoteIFD,
+		tag.MakerNoteIFD,
 		child.Index,
-		parent.ValueOffset+ifdRelOffset,
-		parent.ValueOffset,
+		parent.ValueOffset+nikonTIFFHeaderOffset+ifdRelOffset,
+		parent.ValueOffset+nikonTIFFHeaderOffset,
 	)
 	return r.readDirectory(nikonDir, false)
 }
@@ -88,7 +104,7 @@ func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child ifd.Directo
 //  2. "Canon\0\0\0" prefixed IFD payload.
 //  3. Embedded TIFF header ("II*\0"/"MM\0*") with a relative MakerNote IFD offset
 //     used by CR3.
-func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child ifd.Directory) error {
+func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
 	header, ok := r.peekMakerNotePrefix(canonMakerNotePrefixLength)
 	if !ok {
 		return r.readDirectory(child, false)
@@ -100,9 +116,9 @@ func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child ifd.Directo
 			if err := r.discard(int(ifdRelOffset)); err != nil {
 				return err
 			}
-			embedded := ifd.New(
+			embedded := tag.NewDirectory(
 				byteOrder,
-				ifd.MakerNoteIFD,
+				tag.MakerNoteIFD,
 				child.Index,
 				parent.ValueOffset+ifdRelOffset,
 				parent.ValueOffset,
@@ -116,9 +132,9 @@ func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child ifd.Directo
 		if err := r.discard(canonMakerNotePrefixLength); err != nil {
 			return err
 		}
-		prefixed := ifd.New(
+		prefixed := tag.NewDirectory(
 			child.ByteOrder,
-			ifd.MakerNoteIFD,
+			tag.MakerNoteIFD,
 			child.Index,
 			parent.ValueOffset+canonMakerNotePrefixLength,
 			parent.ValueOffset,
@@ -162,6 +178,26 @@ func isCanonMakerNotePrefix(prefix []byte) bool {
 		prefix[5] == 0 &&
 		prefix[6] == 0 &&
 		prefix[7] == 0
+}
+
+// readPanasonicMakerNoteDirectory parses Panasonic's fixed label prefix before
+// the maker-note IFD.
+func (r *Reader) readPanasonicMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
+	header, ok := r.peekMakerNotePrefix(makernote.PanasonicMakerNotePrefixLength)
+	if !ok || !makernote.HasPanasonicHeader(header) {
+		return r.readDirectory(child, false)
+	}
+	if err := r.discard(makernote.PanasonicMakerNotePrefixLength); err != nil {
+		return err
+	}
+	prefixed := tag.NewDirectory(
+		child.ByteOrder,
+		tag.MakerNoteIFD,
+		child.Index,
+		parent.ValueOffset+makernote.PanasonicMakerNotePrefixLength,
+		parent.ValueOffset+makernote.PanasonicMakerNotePrefixLength,
+	)
+	return r.readDirectory(prefixed, false)
 }
 
 const makernoteNikonHeaderLength = 18

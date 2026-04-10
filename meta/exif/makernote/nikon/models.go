@@ -2,15 +2,35 @@ package nikon
 
 import "strconv"
 
-// NikonCameraModelSourceFile is the source used to derive this table.
-// "Image/ExifTool/Nikon.pm", "Image/ExifTool/NikonSettings.pm", "Image/ExifTool/NikonCustom.pm"
-// "https://en.wikipedia.org/wiki/Category:Nikon_digital_cameras"
-// "https://en.wikipedia.org/wiki/Category:Nikon_DSLR_cameras"
-// "https://en.wikipedia.org/wiki/Category:Nikon_1_cameras"
-// "https://en.wikipedia.org/wiki/Category:Nikon_Z-mount_cameras"
-// NikonCameraModelSourceVersion is the ExifTool version used to generate this table. "13.50"
-// Note: ExifTool does not expose a single Nikon model-ID table like Canon's %canonModelID.
+// NikonCameraModelSourceFile lists the source material used to derive this
+// model-name table.
+//
+// Primary Nikon naming sources:
+//   - Image/ExifTool/Nikon.pm
+//   - Image/ExifTool/NikonSettings.pm
+//   - Image/ExifTool/NikonCustom.pm
+//
+// Supplemental sources were used only to round out public Nikon model naming
+// where ExifTool's maker-note logic references a model string but does not
+// expose a single consolidated table:
+//   - https://en.wikipedia.org/wiki/Category:Nikon_digital_cameras
+//   - https://en.wikipedia.org/wiki/Category:Nikon_DSLR_cameras
+//   - https://en.wikipedia.org/wiki/Category:Nikon_1_cameras
+//   - https://en.wikipedia.org/wiki/Category:Nikon_Z-mount_cameras
+//
+// ExifTool does not provide a Nikon equivalent of Canon's consolidated
+// canonModelID lookup table, so imagemeta keeps Nikon models as a normalized
+// string-backed enum rather than a numeric maker-note model ID.
+//
+// NikonCameraModelSourceVersion is the ExifTool version used when generating
+// this table. Current source version: "13.50".
 
+// NikonCameraModel identifies a Nikon camera model by its canonical display
+// string.
+//
+// This type is not derived from a Nikon maker-note numeric model ID. Instead it
+// is a compile-time enum over Nikon model-name strings commonly encountered in
+// ExifTool, maker-note conditionals, and model-specific AFInfo2 handling.
 type NikonCameraModel uint32
 
 const (
@@ -145,7 +165,8 @@ const (
 	NikonModelCoolpixW300
 )
 
-// NikonCameraModelCount is the number of Nikon model entries in this table.
+// NikonCameraModelCount is the number of Nikon model entries in this table,
+// including NikonModelUnknown.
 const NikonCameraModelCount = 128
 
 const _NikonCameraModel_name = "UnknownNIKON D3NIKON D300SNIKON D3SNIKON D3XNIKON D4NIKON D4SNIKON D5NIKON D6NIKON D40NIKON D80NIKON D90NIKON D500NIKON D5000NIKON D5100NIKON D5200NIKON D610NIKON D700NIKON D7000NIKON D7500NIKON D780NIKON D800NIKON D810NIKON D850NIKON DfNIKON D3300NIKON D5300NIKON D7100NIKON Z 30NIKON Z 5NIKON Z5_2NIKON Z 50NIKON Z50_2NIKON Z 6NIKON Z 6_2NIKON Z6_3NIKON Z 6IIINIKON Z 7NIKON Z 7_2NIKON Z 7IINIKON Z 8NIKON Z 9NIKON Z fNIKON Z fcNIKON COOLPIX ANIKON 1 AW1NIKON 1 J1NIKON 1 J2NIKON 1 J3NIKON 1 J4NIKON 1 J5NIKON 1 S1NIKON 1 S2NIKON 1 V1NIKON 1 V2NIKON 1 V3NIKON D1NIKON D1HNIKON D1XNIKON D2HNIKON D2HsNIKON D2XNIKON D2XsNIKON D40XNIKON D50NIKON D60NIKON D70NIKON D100NIKON D200NIKON D300NIKON D3000NIKON D3100NIKON D3200NIKON D3400NIKON D3500NIKON D5500NIKON D5600NIKON D600NIKON D7200NIKON D750NIKON D800ENIKON D810ANIKON E2NIKON E2NNIKON E2NSNIKON E2SNIKON E3NIKON E3SNIKON Z5IINIKON Z50IINIKON ZRNIKON COOLPIX A1000NIKON COOLPIX A300NIKON COOLPIX A900NIKON COOLPIX B500NIKON COOLPIX B600NIKON COOLPIX P1NIKON COOLPIX P100NIKON COOLPIX P300NIKON COOLPIX P310NIKON COOLPIX P340NIKON COOLPIX P500NIKON COOLPIX P5000NIKON COOLPIX P510NIKON COOLPIX P520NIKON COOLPIX P530NIKON COOLPIX P600NIKON COOLPIX P6000NIKON COOLPIX P7000NIKON COOLPIX P7100NIKON COOLPIX P7700NIKON COOLPIX P7800NIKON COOLPIX P900NIKON COOLPIX P950NIKON COOLPIX P1000NIKON COOLPIX S10NIKON COOLPIX S610NIKON COOLPIX S620NIKON COOLPIX S4000NIKON COOLPIX S7000NIKON COOLPIX S8000NIKON COOLPIX S8100NIKON COOLPIX S9100NIKON COOLPIX S9300NIKON COOLPIX S9700NIKON COOLPIX S9900NIKON COOLPIX W100NIKON COOLPIX W150NIKON COOLPIX W300"
@@ -162,6 +183,7 @@ var _NikonCameraModel_index = [...]uint16{
 	1523, 1542, 1560, 1578, 1596,
 }
 
+// String returns the canonical Nikon model string used by this enum.
 func (m NikonCameraModel) String() string {
 	i := int(m)
 	if i < 0 || i >= len(_NikonCameraModel_index)-1 {

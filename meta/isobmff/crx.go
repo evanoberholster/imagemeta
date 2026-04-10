@@ -3,9 +3,9 @@ package isobmff
 import (
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	exiftag "github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
 // Canon CR3-specific UUID box identifiers.
@@ -85,13 +85,13 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 		case typeCTBO:
 			return readCTBOBox(inner)
 		case typeCMT1:
-			return r.readCMTBox(inner, ifds.IFD0)
+			return r.readCMTBox(inner, exiftag.IFD0)
 		case typeCMT2:
-			return r.readCMTBox(inner, ifds.ExifIFD)
+			return r.readCMTBox(inner, exiftag.ExifIFD)
 		case typeCMT3:
-			return r.readCMTBox(inner, ifds.MknoteIFD)
+			return r.readCMTBox(inner, exiftag.MakerNoteIFD)
 		case typeCMT4:
-			return r.readCMTBox(inner, ifds.GPSIFD)
+			return r.readCMTBox(inner, exiftag.GPSIFD)
 		case typeTHMB, typeThmb:
 			sawTHMB = true
 			return r.readTHMBBox(inner)
@@ -115,7 +115,7 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 // readCMTBox reads an ISOBMFF Box "CMT1","CMT2","CMT3", or "CMT4" from CR3.
 //
 // Each CMT box contains TIFF/Exif-like IFD data for a specific IFD family.
-func (r *Reader) readCMTBox(b *box, ifdType ifds.IfdType) (err error) {
+func (r *Reader) readCMTBox(b *box, ifdType exiftag.IfdType) (err error) {
 	if r.exifReader == nil {
 		return nil
 	}

@@ -145,12 +145,17 @@ type AFInfo struct {
 	AFAreaWidth      uint16     // AFInfo [6]
 	AFAreaHeight     uint16     // AFInfo [7]
 
-	AFArea []AFPoint // AFInfo/AFInfo2 [width,height,x,y] tuples
+	// AFArea mirrors ExifTool's raw Canon AF area tuples: width, height,
+	// x-position, and y-position in Canon AF coordinates.
+	AFArea []AFPoint
 
 	AFPointsInFocusBits  []int  // AFInfo [10] / AFInfo2 [12]
 	AFPointsSelectedBits []int  // AFInfo2 [13]
 	PrimaryAFPoint       uint16 // AFInfo [11/12] / AFInfo2 [14]
 
+	// AFPoints is a derived convenience view for drawing AF rectangles.
+	// AFInfo2/AFInfo3 converts Canon center-based coordinates to image-space
+	// top-left rectangles. Legacy AFInfo exposes the raw tuples unchanged.
 	AFPoints []AFPoint
 }
 
@@ -191,7 +196,10 @@ type FaceDetect3Info struct {
 	FacesDetected uint16 // [3] FacesDetected
 }
 
-// AFPoint is an Auto Focus Point
+// AFPoint stores width, height, x, and y values for a Canon AF area tuple.
+//
+// In AFInfo.AFArea, x/y are the raw Canon AF coordinates. In AFInfo.AFPoints,
+// x/y may be derived rectangle coordinates depending on the source table.
 type AFPoint [4]int16
 
 // NewAFPoint returns a new AFPoint from

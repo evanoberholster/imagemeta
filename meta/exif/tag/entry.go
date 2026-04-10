@@ -3,7 +3,6 @@ package tag
 import (
 	"fmt"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
@@ -16,13 +15,13 @@ type Entry struct {
 	UnitCount   uint32
 	ID          ID
 	Type        Type
-	IfdType     ifd.Type
+	IfdType     IfdType
 	IfdIndex    int8
 	ByteOrder   utils.ByteOrder
 }
 
 // NewEntry returns a new tag Entry.
-func NewEntry(id ID, typ Type, unitCount, valueOffset uint32, directoryType ifd.Type, ifdIndex int8, byteOrder utils.ByteOrder) Entry {
+func NewEntry(id ID, typ Type, unitCount, valueOffset uint32, directoryType IfdType, ifdIndex int8, byteOrder utils.ByteOrder) Entry {
 	return Entry{
 		ValueOffset: valueOffset,
 		UnitCount:   unitCount,
@@ -119,29 +118,29 @@ func (t Entry) EmbeddedLong() uint32 {
 }
 
 // ChildDirectory resolves known child-IFD pointers for this tag.
-func (t Entry) ChildDirectory() ifd.Directory {
+func (t Entry) ChildDirectory() Directory {
 	switch t.IfdType {
-	case ifd.IFD0:
+	case IFD0:
 		switch t.ID {
 		case TagExifIFDPointer:
-			return ifd.New(t.ByteOrder, ifd.ExifIFD, t.IfdIndex, t.ValueOffset, 0)
+			return NewDirectory(t.ByteOrder, ExifIFD, t.IfdIndex, t.ValueOffset, 0)
 		case TagGPSIFDPointer:
-			return ifd.New(t.ByteOrder, ifd.GPSIFD, t.IfdIndex, t.ValueOffset, 0)
+			return NewDirectory(t.ByteOrder, GPSIFD, t.IfdIndex, t.ValueOffset, 0)
 		case TagNextIFD:
-			return ifd.New(t.ByteOrder, ifd.IFD1, t.IfdIndex+1, t.ValueOffset, 0)
+			return NewDirectory(t.ByteOrder, IFD1, t.IfdIndex+1, t.ValueOffset, 0)
 		}
-	case ifd.IFD1:
+	case IFD1:
 		if t.ID == TagNextIFD {
-			return ifd.New(t.ByteOrder, ifd.IFD2, t.IfdIndex+1, t.ValueOffset, 0)
+			return NewDirectory(t.ByteOrder, IFD2, t.IfdIndex+1, t.ValueOffset, 0)
 		}
-	case ifd.ExifIFD:
+	case ExifIFD:
 		if t.ID == TagMakerNote {
-			return ifd.New(t.ByteOrder, ifd.MakerNoteIFD, t.IfdIndex, t.ValueOffset, 0)
+			return NewDirectory(t.ByteOrder, MakerNoteIFD, t.IfdIndex, t.ValueOffset, 0)
 		}
-	case ifd.SubIFD0, ifd.SubIFD1, ifd.SubIFD2, ifd.SubIFD3, ifd.SubIFD4, ifd.SubIFD5, ifd.SubIFD6, ifd.SubIFD7:
-		return ifd.New(t.ByteOrder, t.IfdType, t.IfdIndex, t.ValueOffset, 0)
+	case SubIFD0, SubIFD1, SubIFD2, SubIFD3, SubIFD4, SubIFD5, SubIFD6, SubIFD7:
+		return NewDirectory(t.ByteOrder, t.IfdType, t.IfdIndex, t.ValueOffset, 0)
 	}
-	return ifd.New(t.ByteOrder, ifd.Unknown, t.IfdIndex, t.ValueOffset, 0)
+	return NewDirectory(t.ByteOrder, Unknown, t.IfdIndex, t.ValueOffset, 0)
 }
 
 // MarshalZerologObject implements zerolog object marshaling.

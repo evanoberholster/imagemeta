@@ -1,6 +1,8 @@
 package exif
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +17,41 @@ func TestRationalUFloat64(t *testing.T) {
 	}
 	if got := (tag.RationalU{Numerator: 3, Denominator: 0}).Float64(); got != 0 {
 		t.Fatalf("tag.RationalU.Float64() with zero denominator = %v, want 0", got)
+	}
+}
+
+func TestLensInfoStringAndJSON(t *testing.T) {
+	t.Parallel()
+
+	info := &LensInfo{
+		MinFocalLength:        tag.RationalU{Numerator: 24, Denominator: 1},
+		MaxFocalLength:        tag.RationalU{Numerator: 70, Denominator: 1},
+		MaxApertureAtMinFocal: tag.RationalU{Numerator: 28, Denominator: 10},
+		MaxApertureAtMaxFocal: tag.RationalU{Numerator: 4, Denominator: 1},
+	}
+
+	if got, want := info.String(), "24 70 2.8 4"; got != want {
+		t.Fatalf("LensInfo.String() = %q, want %q", got, want)
+	}
+
+	buf, err := json.Marshal(struct {
+		LensInfo *LensInfo
+	}{LensInfo: info})
+	if err != nil {
+		t.Fatalf("json.Marshal(LensInfo): %v", err)
+	}
+	if got, want := string(buf), `{"LensInfo":"24 70 2.8 4"}`; got != want {
+		t.Fatalf("json.Marshal(LensInfo) = %s, want %s", got, want)
+	}
+
+	buf, err = json.Marshal(struct {
+		LensInfo *LensInfo
+	}{})
+	if err != nil {
+		t.Fatalf("json.Marshal(nil LensInfo): %v", err)
+	}
+	if got, want := string(buf), `{"LensInfo":null}`; got != want {
+		t.Fatalf("json.Marshal(nil LensInfo) = %s, want %s", got, want)
 	}
 }
 
@@ -200,5 +237,26 @@ func TestApplyTimeParts(t *testing.T) {
 	want := base.Add(250*time.Millisecond - 2*time.Hour)
 	if !got.Equal(want) {
 		t.Fatalf("applyTimeParts() = %v, want %v", got, want)
+	}
+}
+
+func TestTimeTagsMarshalJSONOffsetStrings(t *testing.T) {
+	t.Parallel()
+
+	tt := TimeTags{
+		ModifyDate:         time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC),
+		OffsetTimeOriginal: time.FixedZone("+01:00", 60*60),
+	}
+
+	buf, err := json.Marshal(tt)
+	if err != nil {
+		t.Fatalf("json.Marshal(TimeTags): %v", err)
+	}
+	got := string(buf)
+	if !strings.Contains(got, `"OffsetTimeOriginal":"+01:00"`) {
+		t.Fatalf("OffsetTimeOriginal JSON = %s", got)
+	}
+	if !strings.Contains(got, `"OffsetTime":null`) {
+		t.Fatalf("OffsetTime nil should marshal as null: %s", got)
 	}
 }

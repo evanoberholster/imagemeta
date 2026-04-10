@@ -3,15 +3,10 @@ package exif
 import (
 	"bytes"
 	"encoding/binary"
-	"math"
-	"math/bits"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -20,49 +15,6 @@ const (
 	hoursToSeconds   = 60 * minutesToSeconds
 	minutesToSeconds = 60
 )
-
-var (
-	timezoneCache   = map[int32]*time.Location{}
-	timezoneCacheMu sync.RWMutex
-)
-
-// parseStrUint parses the requested value from EXIF metadata.
-func parseStrUint(buf []byte) (u uint) {
-	for i := 0; i < len(buf); i++ {
-		if buf[i] >= '0' && buf[i] <= '9' {
-			u *= 10
-			u += uint(buf[i] - '0')
-		}
-	}
-	return
-}
-
-// trimNULBuffer trims input bytes into the expected EXIF representation.
-func trimNULBuffer(buf []byte) []byte {
-	for i := len(buf) - 1; i >= 0; i-- {
-		if buf[i] == 0 || buf[i] == ' ' || buf[i] == '\n' {
-			continue
-		}
-		return buf[:i+1]
-	}
-	return nil
-}
-
-// getLocation returns a cached fixed-zone location for an EXIF offset string.
-func getLocation(offset int32, label []byte) *time.Location {
-	timezoneCacheMu.RLock()
-	if z, ok := timezoneCache[offset]; ok {
-		timezoneCacheMu.RUnlock()
-		return z
-	}
-	timezoneCacheMu.RUnlock()
-
-	timezoneCacheMu.Lock()
-	loc := time.FixedZone(string(label), int(offset))
-	timezoneCache[offset] = loc
-	timezoneCacheMu.Unlock()
-	return loc
-}
 
 // parseASCIIValueBytes parses ASCII-ish tag payload into a trimmed byte slice.
 // Returned bytes reference parser buffers and are only valid until next read.
@@ -86,6 +38,16 @@ func (r *Reader) parseASCIIValueBytes(t tag.Entry) []byte {
 // parseString parses the requested value from EXIF metadata.
 func (r *Reader) parseString(t tag.Entry) string {
 	buf := r.parseASCIIValueBytes(t)
+	if len(buf) == 0 {
+		return ""
+	}
+	return string(buf)
+}
+
+// parseStringTrimRightSpaceNewline parses ASCII EXIF text and removes trailing
+// spaces and line breaks before converting to string.
+func (r *Reader) parseStringTrimRightSpaceNewline(t tag.Entry) string {
+	buf := trimRightSpaceNewline(r.parseASCIIValueBytes(t))
 	if len(buf) == 0 {
 		return ""
 	}
@@ -209,6 +171,102 @@ func (r *Reader) parseDisplayString(t tag.Entry, maxBytes uint32) string {
 		out[i] = '.'
 	}
 	return strings.TrimRight(string(out), " \t\r\n")
+}
+
+// parseDisplayStringTrimRightSpaceNewline is like parseDisplayString but trims
+// trailing spaces and line breaks on the byte slice before converting to string.
+func (r *Reader) parseDisplayStringTrimRightSpaceNewline(t tag.Entry, maxBytes uint32) string {
+	var buf []byte
+	switch {
+	case t.IsEmbedded():
+		if maxBytes == 0 {
+			return ""
+		}
+		n := t.Size()
+		if n > maxBytes {
+			n = maxBytes
+		}
+		t.EmbeddedValue(r.state.buf[:4])
+		buf = r.state.buf[:n]
+	case t.IsType(tag.TypeUndefined), t.IsType(tag.TypeByte), t.IsType(tag.TypeASCII), t.IsType(tag.TypeASCIINoNul):
+		if maxBytes == 0 {
+			return ""
+		}
+		var err error
+		buf, _, err = r.readTagBytes(t, maxBytes)
+		if err != nil || len(buf) == 0 {
+			return ""
+		}
+	default:
+		return ""
+	}
+
+	buf = trimRightSpaceNewline(buf)
+	if len(buf) == 0 {
+		return ""
+	}
+
+	allPrintable := true
+	for i := 0; i < len(buf); i++ {
+		if buf[i] < 0x20 || buf[i] > 0x7e {
+			allPrintable = false
+			break
+		}
+	}
+	if allPrintable {
+		return string(buf)
+	}
+
+	if len(buf) <= 512 {
+		var out [512]byte
+		for i := 0; i < len(buf); i++ {
+			b := buf[i]
+			if b >= 0x20 && b <= 0x7e {
+				out[i] = b
+				continue
+			}
+			out[i] = '.'
+		}
+		outBuf := trimRightSpaceNewline(out[:len(buf)])
+		if len(outBuf) == 0 {
+			return ""
+		}
+		return string(outBuf)
+	}
+
+	out := make([]byte, len(buf))
+	for i := 0; i < len(buf); i++ {
+		b := buf[i]
+		if b >= 0x20 && b <= 0x7e {
+			out[i] = b
+			continue
+		}
+		out[i] = '.'
+	}
+	out = trimRightSpaceNewline(out)
+	if len(out) == 0 {
+		return ""
+	}
+	return string(out)
+}
+
+func trimRightSpaceNewline(buf []byte) []byte {
+	end := len(buf)
+	if end > 0 && buf[end-1] == 0 {
+		end--
+	}
+	if end > 0 && buf[end-1] == 0 {
+		end--
+	}
+	for end > 0 {
+		switch buf[end-1] {
+		case ' ', '\n', '\r':
+			end--
+		default:
+			return buf[:end]
+		}
+	}
+	return buf[:0]
 }
 
 // parseUndefinedBytes parses the requested UNDEFINED value from EXIF metadata.
@@ -551,14 +609,14 @@ func (r *Reader) parseDate(t tag.Entry) time.Time {
 // parseOffsetTime parses the requested value from EXIF metadata.
 func (r *Reader) parseOffsetTime(t tag.Entry) *time.Location {
 	if !t.IsType(tag.TypeASCII) {
-		return time.UTC
+		return nil
 	}
 	buf, _, err := r.readTagBytes(t, 8)
 	if err != nil || len(buf) < 6 {
-		return time.UTC
+		return nil
 	}
 	if buf[3] != ':' {
-		return time.UTC
+		return nil
 	}
 	offset := int(parseStrUint(buf[1:3]))*hoursToSeconds + int(parseStrUint(buf[4:6]))*minutesToSeconds
 	switch buf[0] {
@@ -567,7 +625,43 @@ func (r *Reader) parseOffsetTime(t tag.Entry) *time.Location {
 	case '+':
 		return getLocation(int32(offset), buf[:6])
 	default:
-		return time.UTC
+		return nil
+	}
+}
+
+var (
+	exifTextASCII   = []byte("ASCII\x00\x00\x00")
+	exifTextUnicode = []byte("UNICODE\x00")
+	exifTextJIS     = []byte("JIS\x00\x00\x00\x00\x00")
+	exifTextEmpty   = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+)
+
+// parseExifUserComment decodes EXIF UserComment (0x9286) using the EXIF text
+// header conventions that ExifTool also recognizes.
+func (r *Reader) parseExifUserComment(t tag.Entry) string {
+	switch t.Type {
+	case tag.TypeUndefined, tag.TypeByte, tag.TypeASCII, tag.TypeASCIINoNul:
+	default:
+		return ""
+	}
+	buf := r.parseOpaqueBytes(t, min(t.Size(), 4096))
+	if len(buf) == 0 {
+		return ""
+	}
+	if len(buf) < 8 {
+		return exifASCIIText(bytes.TrimSpace(trimNULBuffer(buf)))
+	}
+
+	header := buf[:8]
+	payload := buf[8:]
+	switch {
+	case bytes.Equal(header, exifTextASCII), bytes.Equal(header, exifTextJIS), bytes.Equal(header, exifTextEmpty):
+		return exifASCIIText(payload)
+	case bytes.Equal(header, exifTextUnicode):
+		return exifUTF16Text(payload, t.ByteOrder)
+	default:
+		// Fall back to best-effort text decoding for malformed headers.
+		return exifASCIIText(buf)
 	}
 }
 
@@ -578,6 +672,26 @@ func (r *Reader) parseAperture(t tag.Entry) meta.Aperture {
 		return 0
 	}
 	return meta.Aperture(float32(rat[0]) / float32(rat[1]))
+}
+
+// parseApexAperture parses an APEX aperture value and converts it to an F-number.
+func (r *Reader) parseApexAperture(t tag.Entry) meta.Aperture {
+	switch {
+	case t.IsType(tag.TypeSignedRational):
+		var rat [2]int32
+		if r.parseRationalSList(t, rat[:]) == 0 || rat[1] == 0 {
+			return 0
+		}
+		return apexApertureToFNumber(float64(rat[0]) / float64(rat[1]))
+	case t.IsType(tag.TypeRational):
+		rat := r.parseRationalU(t)
+		if rat[1] == 0 {
+			return 0
+		}
+		return apexApertureToFNumber(float64(rat[0]) / float64(rat[1]))
+	default:
+		return 0
+	}
 }
 
 // parseExposureTime parses the requested value from EXIF metadata.
@@ -591,15 +705,16 @@ func (r *Reader) parseExposureTime(t tag.Entry) meta.ExposureTime {
 
 // parseShutterSpeed parses the requested value from EXIF metadata.
 func (r *Reader) parseShutterSpeed(t tag.Entry) meta.ShutterSpeed {
-	rat := r.parseRationalU(t)
-	if rat[1] == 0 {
-		return 0
-	}
-	return meta.ShutterSpeed(float32(rat[0]) / float32(rat[1]))
+	return apexShutterSpeedToSeconds(r.parseSignedRationalFloat64(t))
 }
 
 // parseSignedRationalFloat32 parses a rational (signed or unsigned) as float32.
 func (r *Reader) parseSignedRationalFloat32(t tag.Entry) float32 {
+	return float32(r.parseSignedRationalFloat64(t))
+}
+
+// parseSignedRationalFloat64 parses a rational (signed or unsigned) as float64.
+func (r *Reader) parseSignedRationalFloat64(t tag.Entry) float64 {
 	switch {
 	case t.IsType(tag.TypeSignedRational):
 		var rat [2]int32
@@ -609,13 +724,13 @@ func (r *Reader) parseSignedRationalFloat32(t tag.Entry) float32 {
 		if rat[1] == 0 {
 			return 0
 		}
-		return float32(rat[0]) / float32(rat[1])
+		return float64(rat[0]) / float64(rat[1])
 	case t.IsType(tag.TypeRational):
 		rat := r.parseRationalU(t)
 		if rat[1] == 0 {
 			return 0
 		}
-		return float32(rat[0]) / float32(rat[1])
+		return float64(rat[0]) / float64(rat[1])
 	default:
 		return 0
 	}
@@ -623,11 +738,27 @@ func (r *Reader) parseSignedRationalFloat32(t tag.Entry) float32 {
 
 // parseExposureBias parses the requested value from EXIF metadata.
 func (r *Reader) parseExposureBias(t tag.Entry) meta.ExposureBias {
-	rat := r.parseRationalU(t)
-	if rat[1] == 0 {
+	switch {
+	case t.IsType(tag.TypeSignedRational):
+		var rat [2]int32
+		if r.parseRationalSList(t, rat[:]) == 0 || rat[1] == 0 {
+			return meta.NewExposureBias(0, 0)
+		}
+		n, d := rat[0], rat[1]
+		if d < 0 {
+			n = -n
+			d = -d
+		}
+		return meta.NewExposureBias(int16(n), int16(d))
+	case t.IsType(tag.TypeRational):
+		rat := r.parseRationalU(t)
+		if rat[1] == 0 {
+			return meta.NewExposureBias(0, 0)
+		}
+		return meta.NewExposureBias(int16(rat[0]), int16(rat[1]))
+	default:
 		return meta.NewExposureBias(0, 0)
 	}
-	return meta.NewExposureBias(int16(rat[0]), int16(rat[1]))
 }
 
 // parseFocalLength parses the requested value from EXIF metadata.
@@ -647,23 +778,19 @@ func (r *Reader) parseFocalLength(t tag.Entry) meta.FocalLength {
 }
 
 // parseLensInfo parses the requested value from EXIF metadata.
-func (r *Reader) parseLensInfo(t tag.Entry) LensInfo {
+func (r *Reader) parseLensInfo(t tag.Entry) *LensInfo {
 	if t.IsEmbedded() {
-		return LensInfo{}
+		return nil
 	}
 	buf, _, err := r.readTagBytes(t, 32)
 	if err != nil || len(buf) < 32 {
-		return LensInfo{}
+		return nil
 	}
-	return LensInfo{
-		t.ByteOrder.Uint32(buf[:4]),
-		t.ByteOrder.Uint32(buf[4:8]),
-		t.ByteOrder.Uint32(buf[8:12]),
-		t.ByteOrder.Uint32(buf[12:16]),
-		t.ByteOrder.Uint32(buf[16:20]),
-		t.ByteOrder.Uint32(buf[20:24]),
-		t.ByteOrder.Uint32(buf[24:28]),
-		t.ByteOrder.Uint32(buf[28:32]),
+	return &LensInfo{
+		MinFocalLength:        tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[:4]), Denominator: t.ByteOrder.Uint32(buf[4:8])},
+		MaxFocalLength:        tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[8:12]), Denominator: t.ByteOrder.Uint32(buf[12:16])},
+		MaxApertureAtMinFocal: tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[16:20]), Denominator: t.ByteOrder.Uint32(buf[20:24])},
+		MaxApertureAtMaxFocal: tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[24:28]), Denominator: t.ByteOrder.Uint32(buf[28:32])},
 	}
 }
 
@@ -827,38 +954,6 @@ func (r *Reader) parseGPSTimeStamp(t tag.Entry) time.Duration {
 		rationalDuration(v[4], v[5], time.Second)
 }
 
-// rationalDuration converts a positive EXIF rational into a duration scaled by unit.
-func rationalDuration(num uint32, den uint32, unit time.Duration) time.Duration {
-	if num == 0 || den == 0 || unit <= 0 {
-		return 0
-	}
-	unitU := uint64(unit)
-	numU := uint64(num)
-	denU := uint64(den)
-
-	// Guard whole-part multiplication to avoid uint64 wrap.
-	maxWhole := uint64(math.MaxInt64) / unitU
-	whole := numU / denU
-	if whole > maxWhole {
-		return time.Duration(math.MaxInt64)
-	}
-
-	wholeUnits := whole * unitU
-
-	// Compute (remainder * unit) / den as a 128-bit product to avoid overflow.
-	remainder := numU % denU
-	hi, lo := bits.Mul64(remainder, unitU)
-	var frac uint64
-	if hi >= denU {
-		return time.Duration(math.MaxInt64)
-	}
-	frac, _ = bits.Div64(hi, lo, denU)
-	if wholeUnits > uint64(math.MaxInt64)-frac {
-		return time.Duration(math.MaxInt64)
-	}
-	return time.Duration(wholeUnits + frac)
-}
-
 // parseGPSDateStamp parses the requested value from EXIF metadata.
 func (r *Reader) parseGPSDateStamp(t tag.Entry) time.Time {
 	if !t.IsType(tag.TypeASCII) {
@@ -889,120 +984,6 @@ func (r *Reader) parseGPSDateStamp(t tag.Entry) time.Time {
 		)
 	}
 	return time.Time{}
-}
-
-// readTagBytes reads data from the underlying stream or parser buffers.
-func (r *Reader) readTagBytes(t tag.Entry, max uint32) (buf []byte, truncated bool, err error) {
-	if err = r.seekToTag(t); err != nil {
-		return nil, false, err
-	}
-
-	size := t.Size()
-	if size == 0 {
-		return nil, false, nil
-	}
-	if max > 0 && size > max {
-		size = max
-		truncated = true
-	}
-	if size > uint32(len(r.state.buf)) {
-		size = uint32(len(r.state.buf))
-		truncated = true
-	}
-
-	buf, err = r.fastRead(int(size))
-	if err != nil {
-		return nil, false, err
-	}
-
-	remaining := int(t.Size() - size)
-	if remaining > 0 {
-		truncated = true
-		if discardErr := r.discard(remaining); discardErr != nil {
-			return nil, true, discardErr
-		}
-	}
-	return buf, truncated, nil
-}
-
-// seekToTag moves reader state to the location required for parsing.
-func (r *Reader) seekToTag(t tag.Entry) error {
-	return r.discard(int(t.ValueOffset) - int(r.po))
-}
-
-// fastRead reads a bounded byte slice using the optimized buffered path.
-func (r *Reader) fastRead(n int) ([]byte, error) {
-	if n == 0 {
-		return nil, nil
-	}
-	if n < 0 || n > len(r.state.buf) {
-		return nil, imagetype.ErrDataLength
-	}
-	if r.exifLength > 0 && int(r.po)+n > int(r.exifLength) {
-		return nil, imagetype.ErrDataLength
-	}
-	buf, err := r.reader.Peek(n)
-	if err != nil {
-		return nil, err
-	}
-	readCount, err := r.reader.Discard(len(buf))
-	r.po += uint32(readCount)
-	return buf, err
-}
-
-// fastRead2 reads a bounded byte slice using the optimized buffered path.
-func (r *Reader) fastRead2(buf []byte) (int, error) {
-	l := len(buf)
-	if l == 0 {
-		return 0, nil
-	}
-	if l > len(r.state.buf) {
-		return 0, imagetype.ErrDataLength
-	}
-	if r.exifLength > 0 && int(r.po)+l > int(r.exifLength) {
-		return 0, imagetype.ErrDataLength
-	}
-	readCount, err := r.reader.Read(buf)
-	r.po += uint32(readCount)
-	if err != nil {
-		return 0, err
-	}
-	buf = buf[:readCount]
-	return readCount, nil
-}
-
-// discard advances the reader by discarding the requested number of bytes.
-func (r *Reader) discard(n int) error {
-	if n <= 0 {
-		return nil
-	}
-	if r.exifLength > 0 && int(r.exifLength) < n+int(r.po) {
-		n = int(r.exifLength) - int(r.po)
-	}
-	if n <= 0 {
-		return nil
-	}
-	discarded, err := r.reader.Discard(n)
-	r.po += uint32(discarded)
-	return err
-}
-
-// readUint16 reads data from the underlying stream or parser buffers.
-func (r *Reader) readUint16(directory ifd.Directory) (uint16, error) {
-	buf, err := r.fastRead(2)
-	if err != nil || len(buf) < 2 {
-		return 0, err
-	}
-	return directory.ByteOrder.Uint16(buf), nil
-}
-
-// readUint32 reads data from the underlying stream or parser buffers.
-func (r *Reader) readUint32(directory ifd.Directory) (uint32, error) {
-	buf, err := r.fastRead(4)
-	if err != nil || len(buf) < 4 {
-		return 0, err
-	}
-	return directory.ByteOrder.Uint32(buf), nil
 }
 
 // TODO(simd): accelerate trim/ASCII scan and offset-date parsing with simd/archsimd

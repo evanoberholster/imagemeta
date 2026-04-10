@@ -89,6 +89,22 @@ func (aa Aperture) String() string {
 	return strconv.FormatFloat(float64(aa), 'f', 2, 32)
 }
 
+// MarshalJSON emits aperture values as JSON numbers when finite and as ExifTool-like
+// strings for infinities, since JSON doesn't support Inf literals.
+func (aa Aperture) MarshalJSON() ([]byte, error) {
+	f := float64(aa)
+	switch {
+	case math.IsNaN(f):
+		return []byte("null"), nil
+	case math.IsInf(f, 1):
+		return []byte(`"Inf"`), nil
+	case math.IsInf(f, -1):
+		return []byte(`"-Inf"`), nil
+	default:
+		return strconv.AppendFloat(nil, f, 'f', -1, 32), nil
+	}
+}
+
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (aa Aperture) MarshalText() (text []byte, err error) {
@@ -148,6 +164,9 @@ const (
 // To parse a string expressed as a positive or negative fraction.
 // ex: "+1/3" or ex: "-2/3" use ExposureBias.UnmarshalText.
 func NewExposureBias(n int16, d int16) ExposureBias {
+	if n == 0 {
+		return 0
+	}
 	n = n << 8
 	d = d << 8 >> 8
 	return ExposureBias(n + d)
@@ -162,7 +181,7 @@ func (eb ExposureBias) String() string {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (eb ExposureBias) MarshalText() (text []byte, err error) {
-	if eb == 0 {
+	if eb == 0 || eb>>8 == 0 {
 		return unsafeGetBytes(exposureBiasZero), nil
 	}
 	text = make([]byte, 0, 5)
@@ -179,6 +198,7 @@ func (eb ExposureBias) MarshalText() (text []byte, err error) {
 // used by encoding/json
 func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 	if text[0] == '0' {
+		*eb = 0
 		return
 	}
 	for i := 0; i < len(text); i++ {
@@ -193,9 +213,7 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 				default:
 					n = int16(parseUint(text[:i]))
 				}
-				n = n << 8
-				n += int16(parseUint(text[i+1:]))
-				*eb = ExposureBias(n)
+				*eb = NewExposureBias(n, int16(parseUint(text[i+1:])))
 				return err
 			}
 		}

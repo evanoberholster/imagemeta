@@ -2,8 +2,6 @@ package tag
 
 import (
 	"testing"
-
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 )
 
 func TestNameFor(t *testing.T) {
@@ -11,16 +9,16 @@ func TestNameFor(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		ifdType ifd.Type
+		ifdType IfdType
 		tagID   ID
 		want    string
 	}{
-		{name: "root", ifdType: ifd.IFD0, tagID: TagMake, want: "Make"},
-		{name: "exif", ifdType: ifd.ExifIFD, tagID: TagExposureTime, want: "ExposureTime"},
-		{name: "gps", ifdType: ifd.GPSIFD, tagID: TagGPSLatitude, want: "GPSLatitude"},
-		{name: "gps dest distance", ifdType: ifd.GPSIFD, tagID: TagGPSDestDistance, want: "GPSDestDistance"},
-		{name: "unknown tag", ifdType: ifd.IFD0, tagID: ID(0xbeef), want: "0xbeef"},
-		{name: "wrong ifd", ifdType: ifd.ExifIFD, tagID: TagMake, want: "0x010f"},
+		{name: "root", ifdType: IFD0, tagID: TagMake, want: "Make"},
+		{name: "exif", ifdType: ExifIFD, tagID: TagExposureTime, want: "ExposureTime"},
+		{name: "gps", ifdType: GPSIFD, tagID: TagGPSLatitude, want: "GPSLatitude"},
+		{name: "gps dest distance", ifdType: GPSIFD, tagID: TagGPSDestDistance, want: "GPSDestDistance"},
+		{name: "unknown tag", ifdType: IFD0, tagID: ID(0xbeef), want: "0xbeef"},
+		{name: "wrong ifd", ifdType: ExifIFD, tagID: TagMake, want: "0x010f"},
 	}
 
 	for _, tt := range tests {
@@ -37,13 +35,13 @@ func TestNameFor(t *testing.T) {
 func TestValueNameFor(t *testing.T) {
 	t.Parallel()
 
-	if got, want := ValueNameFor(ifd.IFD0, TagOrientation, 1), "Horizontal (normal)"; got != want {
+	if got, want := ValueNameFor(IFD0, TagOrientation, 1), "Horizontal (normal)"; got != want {
 		t.Fatalf("ValueNameFor() = %q, want %q", got, want)
 	}
-	if got, want := ValueNameFor(ifd.ExifIFD, TagExposureMode, 2), "Auto bracket"; got != want {
+	if got, want := ValueNameFor(ExifIFD, TagExposureMode, 2), "Auto bracket"; got != want {
 		t.Fatalf("ValueNameFor() = %q, want %q", got, want)
 	}
-	if got, want := ValueNameFor(ifd.ExifIFD, TagExposureMode, 255), "255"; got != want {
+	if got, want := ValueNameFor(ExifIFD, TagExposureMode, 255), "255"; got != want {
 		t.Fatalf("ValueNameFor() unknown = %q, want %q", got, want)
 	}
 }
@@ -53,7 +51,7 @@ func TestParseValueID(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		ifdType ifd.Type
+		ifdType IfdType
 		tagID   ID
 		raw     string
 		want    uint32
@@ -61,7 +59,7 @@ func TestParseValueID(t *testing.T) {
 	}{
 		{
 			name:    "numeric decimal",
-			ifdType: ifd.IFD0,
+			ifdType: IFD0,
 			tagID:   TagOrientation,
 			raw:     "6",
 			want:    6,
@@ -69,7 +67,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "numeric with suffix",
-			ifdType: ifd.IFD0,
+			ifdType: IFD0,
 			tagID:   TagOrientation,
 			raw:     "6 (Rotate 90 CW)",
 			want:    6,
@@ -77,7 +75,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "numeric hex",
-			ifdType: ifd.ExifIFD,
+			ifdType: ExifIFD,
 			tagID:   TagFlash,
 			raw:     "0x1f",
 			want:    0x1f,
@@ -85,7 +83,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "enum alias normalized",
-			ifdType: ifd.IFD0,
+			ifdType: IFD0,
 			tagID:   TagOrientation,
 			raw:     " horizontal ",
 			want:    1,
@@ -93,7 +91,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "enum full name",
-			ifdType: ifd.ExifIFD,
+			ifdType: ExifIFD,
 			tagID:   TagExposureProgram,
 			raw:     "Aperture-priority AE",
 			want:    3,
@@ -101,7 +99,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "unsupported tag",
-			ifdType: ifd.GPSIFD,
+			ifdType: GPSIFD,
 			tagID:   TagGPSLatitude,
 			raw:     "1",
 			want:    1,
@@ -109,7 +107,7 @@ func TestParseValueID(t *testing.T) {
 		},
 		{
 			name:    "unsupported enum text",
-			ifdType: ifd.GPSIFD,
+			ifdType: GPSIFD,
 			tagID:   TagGPSLatitude,
 			raw:     "north",
 			want:    0,

@@ -3,14 +3,13 @@ package tag
 import (
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 func TestEntryBasics(t *testing.T) {
 	t.Parallel()
 
-	e := NewEntry(TagMake, TypeASCII, 4, 0x31323300, ifd.IFD0, 0, utils.LittleEndian)
+	e := NewEntry(TagMake, TypeASCII, 4, 0x31323300, IFD0, 0, utils.LittleEndian)
 
 	if e.ID != TagMake || e.Type != TypeASCII || e.UnitCount != 4 {
 		t.Fatalf("NewEntry() produced unexpected fields: %+v", e)
@@ -40,7 +39,7 @@ func TestEntryEmbeddedValue(t *testing.T) {
 
 	t.Run("little-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeASCII, 4, 0x04030201, ifd.IFD0, 0, utils.LittleEndian)
+		e := NewEntry(TagMake, TypeASCII, 4, 0x04030201, IFD0, 0, utils.LittleEndian)
 		var dst [4]byte
 		e.EmbeddedValue(dst[:])
 		if got := dst; got != [4]byte{0x01, 0x02, 0x03, 0x04} {
@@ -50,7 +49,7 @@ func TestEntryEmbeddedValue(t *testing.T) {
 
 	t.Run("big-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeASCII, 4, 0x04030201, ifd.IFD0, 0, utils.BigEndian)
+		e := NewEntry(TagMake, TypeASCII, 4, 0x04030201, IFD0, 0, utils.BigEndian)
 		var dst [4]byte
 		e.EmbeddedValue(dst[:])
 		if got := dst; got != [4]byte{0x04, 0x03, 0x02, 0x01} {
@@ -64,7 +63,7 @@ func TestEntryEmbeddedShort(t *testing.T) {
 
 	t.Run("little-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeShort, 1, 0x04030201, ifd.IFD0, 0, utils.LittleEndian)
+		e := NewEntry(TagMake, TypeShort, 1, 0x04030201, IFD0, 0, utils.LittleEndian)
 		if got, want := e.EmbeddedShort(), uint16(0x0201); got != want {
 			t.Fatalf("EmbeddedShort() = %#x, want %#x", got, want)
 		}
@@ -72,7 +71,7 @@ func TestEntryEmbeddedShort(t *testing.T) {
 
 	t.Run("big-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeShort, 1, 0x04030201, ifd.IFD0, 0, utils.BigEndian)
+		e := NewEntry(TagMake, TypeShort, 1, 0x04030201, IFD0, 0, utils.BigEndian)
 		if got, want := e.EmbeddedShort(), uint16(0x0403); got != want {
 			t.Fatalf("EmbeddedShort() = %#x, want %#x", got, want)
 		}
@@ -131,7 +130,7 @@ func TestEntryEmbeddedShorts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := NewEntry(TagMake, TypeShort, tt.unitCount, 0x04030201, ifd.IFD0, 0, tt.byteOrder)
+			e := NewEntry(TagMake, TypeShort, tt.unitCount, 0x04030201, IFD0, 0, tt.byteOrder)
 			dst := make([]uint16, tt.dstLen)
 			gotN := e.EmbeddedShorts(dst)
 			if gotN != len(tt.want) {
@@ -151,7 +150,7 @@ func TestEntryEmbeddedLong(t *testing.T) {
 
 	t.Run("little-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeLong, 1, 0x04030201, ifd.IFD0, 0, utils.LittleEndian)
+		e := NewEntry(TagMake, TypeLong, 1, 0x04030201, IFD0, 0, utils.LittleEndian)
 		if got, want := e.EmbeddedLong(), uint32(0x04030201); got != want {
 			t.Fatalf("EmbeddedLong() = %#x, want %#x", got, want)
 		}
@@ -159,7 +158,7 @@ func TestEntryEmbeddedLong(t *testing.T) {
 
 	t.Run("big-endian", func(t *testing.T) {
 		t.Parallel()
-		e := NewEntry(TagMake, TypeLong, 1, 0x01020304, ifd.IFD0, 0, utils.BigEndian)
+		e := NewEntry(TagMake, TypeLong, 1, 0x01020304, IFD0, 0, utils.BigEndian)
 		if got, want := e.EmbeddedLong(), uint32(0x01020304); got != want {
 			t.Fatalf("EmbeddedLong() = %#x, want %#x", got, want)
 		}
@@ -169,12 +168,12 @@ func TestEntryEmbeddedLong(t *testing.T) {
 func TestEntryIsEmbeddedAndIsIfd(t *testing.T) {
 	t.Parallel()
 
-	embedded := NewEntry(TagDateTime, TypeShort, 2, 0, ifd.IFD0, 0, utils.LittleEndian) // 2*2 = 4
+	embedded := NewEntry(TagDateTime, TypeShort, 2, 0, IFD0, 0, utils.LittleEndian) // 2*2 = 4
 	if !embedded.IsEmbedded() {
 		t.Fatal("Entry.IsEmbedded() should be true when size <= 4")
 	}
 
-	pointer := NewEntry(TagExifIFDPointer, TypeIfd, 1, 0, ifd.IFD0, 0, utils.LittleEndian)
+	pointer := NewEntry(TagExifIFDPointer, TypeIfd, 1, 0, IFD0, 0, utils.LittleEndian)
 	if pointer.IsEmbedded() {
 		t.Fatal("Entry.IsEmbedded() should be false for TypeIfd")
 	}
@@ -206,7 +205,7 @@ func TestEntryIsEmbeddedBoundaries(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			e := NewEntry(TagMake, tt.typ, tt.u, 0, ifd.IFD0, 0, utils.LittleEndian)
+			e := NewEntry(TagMake, tt.typ, tt.u, 0, IFD0, 0, utils.LittleEndian)
 			if got := e.IsEmbedded(); got != tt.want {
 				t.Fatalf("IsEmbedded() = %v, want %v", got, tt.want)
 			}
@@ -220,7 +219,7 @@ func TestEntryChildDirectory(t *testing.T) {
 	tests := []struct {
 		name          string
 		entry         Entry
-		wantType      ifd.Type
+		wantType      IfdType
 		wantIndex     int8
 		wantOffset    uint32
 		wantBase      uint32
@@ -228,8 +227,8 @@ func TestEntryChildDirectory(t *testing.T) {
 	}{
 		{
 			name:          "ifd0 exif pointer",
-			entry:         NewEntry(TagExifIFDPointer, TypeIfd, 1, 0x120, ifd.IFD0, 0, utils.LittleEndian),
-			wantType:      ifd.ExifIFD,
+			entry:         NewEntry(TagExifIFDPointer, TypeIfd, 1, 0x120, IFD0, 0, utils.LittleEndian),
+			wantType:      ExifIFD,
 			wantIndex:     0,
 			wantOffset:    0x120,
 			wantBase:      0,
@@ -237,8 +236,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "ifd0 gps pointer",
-			entry:         NewEntry(TagGPSIFDPointer, TypeIfd, 1, 0x220, ifd.IFD0, 0, utils.BigEndian),
-			wantType:      ifd.GPSIFD,
+			entry:         NewEntry(TagGPSIFDPointer, TypeIfd, 1, 0x220, IFD0, 0, utils.BigEndian),
+			wantType:      GPSIFD,
 			wantIndex:     0,
 			wantOffset:    0x220,
 			wantBase:      0,
@@ -246,8 +245,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "ifd0 next ifd",
-			entry:         NewEntry(TagNextIFD, TypeIfd, 1, 0x320, ifd.IFD0, 0, utils.LittleEndian),
-			wantType:      ifd.IFD1,
+			entry:         NewEntry(TagNextIFD, TypeIfd, 1, 0x320, IFD0, 0, utils.LittleEndian),
+			wantType:      IFD1,
 			wantIndex:     1,
 			wantOffset:    0x320,
 			wantBase:      0,
@@ -255,8 +254,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "ifd1 next ifd",
-			entry:         NewEntry(TagNextIFD, TypeIfd, 1, 0x420, ifd.IFD1, 5, utils.LittleEndian),
-			wantType:      ifd.IFD2,
+			entry:         NewEntry(TagNextIFD, TypeIfd, 1, 0x420, IFD1, 5, utils.LittleEndian),
+			wantType:      IFD2,
 			wantIndex:     6,
 			wantOffset:    0x420,
 			wantBase:      0,
@@ -264,8 +263,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "exif maker note",
-			entry:         NewEntry(TagMakerNote, TypeIfd, 1, 0x520, ifd.ExifIFD, 2, utils.LittleEndian),
-			wantType:      ifd.MakerNoteIFD,
+			entry:         NewEntry(TagMakerNote, TypeIfd, 1, 0x520, ExifIFD, 2, utils.LittleEndian),
+			wantType:      MakerNoteIFD,
 			wantIndex:     2,
 			wantOffset:    0x520,
 			wantBase:      0,
@@ -273,8 +272,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "subifd passthrough",
-			entry:         NewEntry(TagExposureTime, TypeLong, 1, 0x620, ifd.SubIFD3, 3, utils.LittleEndian),
-			wantType:      ifd.SubIFD3,
+			entry:         NewEntry(TagExposureTime, TypeLong, 1, 0x620, SubIFD3, 3, utils.LittleEndian),
+			wantType:      SubIFD3,
 			wantIndex:     3,
 			wantOffset:    0x620,
 			wantBase:      0,
@@ -282,8 +281,8 @@ func TestEntryChildDirectory(t *testing.T) {
 		},
 		{
 			name:          "unknown mapping",
-			entry:         NewEntry(TagExposureTime, TypeLong, 1, 0x720, ifd.GPSIFD, 1, utils.LittleEndian),
-			wantType:      ifd.Unknown,
+			entry:         NewEntry(TagExposureTime, TypeLong, 1, 0x720, GPSIFD, 1, utils.LittleEndian),
+			wantType:      Unknown,
 			wantIndex:     1,
 			wantOffset:    0x720,
 			wantBase:      0,
