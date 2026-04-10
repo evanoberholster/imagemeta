@@ -7,18 +7,45 @@ import "github.com/evanoberholster/imagemeta/meta/utils"
 // Intentionally excluded:
 // - LensType value decoding
 const (
-	TagNikonVersion      uint16 = 0x0001
-	TagNikonISOSetting   uint16 = 0x0002
-	TagNikonColorMode    uint16 = 0x0003
-	TagNikonQuality      uint16 = 0x0004
-	TagNikonWhiteBalance uint16 = 0x0005
-	TagNikonSharpness    uint16 = 0x0006
-	TagNikonFocusMode    uint16 = 0x0007
-	TagNikonFlashSetting uint16 = 0x0008
-	TagNikonFlashType    uint16 = 0x0009
-	TagNikonISOSelection uint16 = 0x000f
-	TagNikonSerialNumber uint16 = 0x001d
-	TagNikonLens         uint16 = 0x0084
+	TagNikonMakerNoteVersion       uint16 = 0x0001
+	TagNikonISO                    uint16 = 0x0002
+	TagNikonColorMode              uint16 = 0x0003
+	TagNikonQuality                uint16 = 0x0004
+	TagNikonWhiteBalance           uint16 = 0x0005
+	TagNikonSharpness              uint16 = 0x0006
+	TagNikonFocusMode              uint16 = 0x0007
+	TagNikonFlashSetting           uint16 = 0x0008
+	TagNikonFlashType              uint16 = 0x0009
+	TagNikonISOSelection           uint16 = 0x000f
+	TagNikonISOSetting             uint16 = 0x0013
+	TagNikonSerialNumber           uint16 = 0x001d
+	TagNikonColorSpace             uint16 = 0x001e
+	TagNikonVRInfo                 uint16 = 0x001f
+	TagNikonActiveDLighting        uint16 = 0x0022
+	TagNikonWorldTime              uint16 = 0x0024
+	TagNikonISOInfo                uint16 = 0x0025
+	TagNikonVignetteControl        uint16 = 0x002a
+	TagNikonShutterMode            uint16 = 0x0034
+	TagNikonMechanicalShutterCount uint16 = 0x0037
+	TagNikonImageSizeRAW           uint16 = 0x003e
+	TagNikonColorTemperatureAuto   uint16 = 0x004f
+	TagNikonLensType               uint16 = 0x0083
+	TagNikonLens                   uint16 = 0x0084
+	TagNikonManualFocusDistance    uint16 = 0x0085
+	TagNikonDigitalZoom            uint16 = 0x0086
+	TagNikonFlashMode              uint16 = 0x0087
+	TagNikonAFInfo                 uint16 = 0x0088
+	TagNikonShootingMode           uint16 = 0x0089
+	TagNikonLensFStops             uint16 = 0x008b
+	TagNikonSerialNumber2          uint16 = 0x00a0
+	TagNikonImageCount             uint16 = 0x00a5
+	TagNikonDeletedImageCount      uint16 = 0x00a6
+	TagNikonShutterCount           uint16 = 0x00a7
+	TagNikonPowerUpTime            uint16 = 0x00b6
+	TagNikonAFInfo2                uint16 = 0x00b7
+	TagNikonFileInfo               uint16 = 0x00b8
+	TagNikonAFTune                 uint16 = 0x00b9
+	TagNikonSilentPhotography      uint16 = 0x00bf
 )
 
 const nikonHeaderLength = 18

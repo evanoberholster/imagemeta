@@ -2,25 +2,25 @@ package exif
 
 import (
 	"bytes"
-	"math"
-	"math/bits"
-	"strings"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	metacanon "github.com/evanoberholster/imagemeta/meta/canon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	metacanon "github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
 func (r *Reader) parseCanonTag(t tag.Entry) bool {
-	dst := &r.makerNoteInfo().Canon
-
+	if r.Exif.MakerNote.Canon == nil {
+		r.Exif.MakerNote.Canon = &makernote.Canon{}
+	}
+	dst := r.Exif.MakerNote.Canon
 	switch metacanon.MakerNoteTag(t.ID) {
 	case metacanon.CanonImageType:
 		dst.ImageType = r.parseStringAllowUndefined(t)
 	case metacanon.CanonFirmwareVersion:
 		dst.FirmwareVersion = r.parseStringAllowUndefined(t)
 	case metacanon.CanonFocalLength:
-		dst.FocalLength = r.parseCanonFocalLength(t)
+		dst.CanonFocalLength = r.parseCanonFocalLength(t)
 	case metacanon.CanonFlashInfo:
 		//dst.FlashInfo = r.parseCanonFlashInfo(t)
 	case metacanon.FileNumber:
@@ -38,11 +38,11 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	case metacanon.CanonInternalSerialNumber:
 		dst.InternalSerialNumber = r.parseStringAllowUndefined(t)
 	case metacanon.CanonCameraSettings:
-		dst.CameraSettings = r.parseCanonCameraSettings(t)
+		dst.CanonCameraSettings = r.parseCanonCameraSettings(t)
 	case metacanon.CanonShotInfo:
-		dst.ShotInfo = r.parseCanonShotInfo(t)
+		dst.CanonShotInfo = r.parseCanonShotInfo(t)
 	case metacanon.CanonFileInfo:
-		dst.FileInfo = r.parseCanonFileInfo(t)
+		dst.CanonFileInfo = r.parseCanonFileInfo(t)
 	case metacanon.TimeInfo:
 		dst.TimeInfo = r.parseCanonTimeInfo(t)
 	case metacanon.BatteryType:
@@ -464,26 +464,29 @@ func (r *Reader) parseCanonAspectInfo(t tag.Entry) metacanon.AspectInfo {
 // parseCanonProcessingInfo parses tag 0x00a0 (ProcessingInfo).
 func (r *Reader) parseCanonProcessingInfo(t tag.Entry) metacanon.ProcessingInfo {
 	var raw [24]uint16
-	if n := r.parseCanonUint16List(t, raw[:]); n < 14 {
-		r.warnCanonShortRead(t, "parseCanonProcessingInfo", n, 14)
+	n := r.parseCanonUint16List(t, raw[:])
+	if n < 2 {
+		r.warnCanonShortRead(t, "parseCanonProcessingInfo", n, 2)
 		return metacanon.ProcessingInfo{}
 	}
 	return metacanon.ProcessingInfo{
-		ToneCurve:            int16(raw[0]), // ExifTool Processing table uses FIRST_ENTRY=1.
-		Sharpness:            int16(raw[1]),
-		SharpnessFrequency:   int16(raw[2]),
-		SensorRedLevel:       int16(raw[3]),
-		SensorBlueLevel:      int16(raw[4]),
-		WhiteBalanceRed:      int16(raw[5]),
-		WhiteBalanceBlue:     int16(raw[6]),
-		WhiteBalance:         int16(raw[7]),
-		ColorTemperature:     int16(raw[8]),
-		PictureStyle:         int16(raw[9]),
-		DigitalGain:          int16(raw[10]),
-		WBShiftAB:            int16(raw[11]),
-		WBShiftGM:            int16(raw[12]),
-		UnsharpMaskFineness:  int16(raw[13]),
-		UnsharpMaskThreshold: int16(raw[14]),
+		// ExifTool ProcessingInfo uses FIRST_ENTRY => 1, so raw[0] is the size word.
+		// The payload length varies by model, so decode conditionally.
+		ToneCurve:            canonI16At(raw[:], n, 1),
+		Sharpness:            canonI16At(raw[:], n, 2),
+		SharpnessFrequency:   canonI16At(raw[:], n, 3),
+		SensorRedLevel:       canonI16At(raw[:], n, 4),
+		SensorBlueLevel:      canonI16At(raw[:], n, 5),
+		WhiteBalanceRed:      canonI16At(raw[:], n, 6),
+		WhiteBalanceBlue:     canonI16At(raw[:], n, 7),
+		WhiteBalance:         canonI16At(raw[:], n, 8),
+		ColorTemperature:     canonI16At(raw[:], n, 9),
+		PictureStyle:         canonI16At(raw[:], n, 10),
+		DigitalGain:          canonI16At(raw[:], n, 11),
+		WBShiftAB:            canonI16At(raw[:], n, 12),
+		WBShiftGM:            canonI16At(raw[:], n, 13),
+		UnsharpMaskFineness:  canonI16At(raw[:], n, 14),
+		UnsharpMaskThreshold: canonI16At(raw[:], n, 15),
 	}
 
 }
@@ -491,48 +494,53 @@ func (r *Reader) parseCanonProcessingInfo(t tag.Entry) metacanon.ProcessingInfo 
 // parseCanonAFMicroAdj parses tag 0x4013 (AFMicroAdj).
 func (r *Reader) parseCanonAFMicroAdj(t tag.Entry) metacanon.AFMicroAdjInfo {
 	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 3 {
-		r.warnCanonShortRead(t, "parseCanonAFMicroAdj", n, 3)
+	n := r.parseCanonInt32List(t, raw[:])
+	if n < 2 {
+		r.warnCanonShortRead(t, "parseCanonAFMicroAdj", n, 2)
 		return metacanon.AFMicroAdjInfo{}
 	}
-	// ExifTool AFMicroAdj table uses FIRST_ENTRY=1.
-	return metacanon.AFMicroAdjInfo{
-		Mode:             raw[0],
-		ValueNumerator:   raw[1],
-		ValueDenominator: raw[2],
+	dst := metacanon.AFMicroAdjInfo{
+		Mode: raw[1],
 	}
+	if n > 2 {
+		dst.ValueNumerator = raw[2]
+	}
+	if n > 3 {
+		dst.ValueDenominator = raw[3]
+	}
+	return dst
 }
 
 // parseCanonLightingOpt parses tag 0x4018 (LightingOpt).
 func (r *Reader) parseCanonLightingOpt(t tag.Entry) metacanon.LightingOptInfo {
-	var raw [11]int32
+	var raw [12]int32
 	n := r.parseCanonInt32List(t, raw[:])
-	if n == 0 {
-		r.warnCanonShortRead(t, "parseCanonLightingOpt", n, 1)
+	if n < 2 {
+		r.warnCanonShortRead(t, "parseCanonLightingOpt", n, 2)
 		return metacanon.LightingOptInfo{}
 	}
 
 	dst := metacanon.LightingOptInfo{
 		// ExifTool LightingOpt table uses FIRST_ENTRY=1.
-		PeripheralIlluminationCorr: raw[0],
-	}
-	if n > 1 {
-		dst.AutoLightingOptimizer = raw[1]
+		PeripheralIlluminationCorr: raw[1],
 	}
 	if n > 2 {
-		dst.HighlightTonePriority = raw[2]
+		dst.AutoLightingOptimizer = raw[2]
 	}
 	if n > 3 {
-		dst.LongExposureNoiseReduction = raw[3]
+		dst.HighlightTonePriority = raw[3]
 	}
 	if n > 4 {
-		dst.HighISONoiseReduction = raw[4]
+		dst.LongExposureNoiseReduction = raw[4]
 	}
-	if n > 9 {
-		dst.DigitalLensOptimizer = raw[9]
+	if n > 5 {
+		dst.HighISONoiseReduction = raw[5]
 	}
 	if n > 10 {
-		dst.DualPixelRaw = raw[10]
+		dst.DigitalLensOptimizer = raw[10]
+	}
+	if n > 11 {
+		dst.DualPixelRaw = raw[11]
 	}
 	return dst
 }
@@ -562,29 +570,29 @@ func (r *Reader) parseCanonLensInfo(t tag.Entry) metacanon.LensInfoForService {
 // parseCanonMultiExp parses tag 0x4021 (MultiExp).
 func (r *Reader) parseCanonMultiExp(t tag.Entry) metacanon.MultiExpInfo {
 	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 3 {
-		r.warnCanonShortRead(t, "parseCanonMultiExp", n, 3)
+	if n := r.parseCanonInt32List(t, raw[:]); n < 4 {
+		r.warnCanonShortRead(t, "parseCanonMultiExp", n, 4)
 		return metacanon.MultiExpInfo{}
 	}
 	return metacanon.MultiExpInfo{
 		// ExifTool MultiExp table uses FIRST_ENTRY=1.
-		MultiExposure:        int32(raw[0]),
-		MultiExposureControl: int32(raw[1]),
-		MultiExposureShots:   int32(raw[2]),
+		MultiExposure:        raw[1],
+		MultiExposureControl: raw[2],
+		MultiExposureShots:   raw[3],
 	}
 }
 
 // parseCanonHDRInfo parses tag 0x4025 (HDRInfo).
 func (r *Reader) parseCanonHDRInfo(t tag.Entry) metacanon.HDRInfo {
 	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 2 {
-		r.warnCanonShortRead(t, "parseCanonHDRInfo", n, 2)
+	if n := r.parseCanonInt32List(t, raw[:]); n < 3 {
+		r.warnCanonShortRead(t, "parseCanonHDRInfo", n, 3)
 		return metacanon.HDRInfo{}
 	}
 	return metacanon.HDRInfo{
 		// ExifTool HDRInfo table uses FIRST_ENTRY=1.
-		HDR:       int32(raw[0]),
-		HDREffect: int32(raw[1]),
+		HDR:       raw[1],
+		HDREffect: raw[2],
 	}
 }
 
@@ -868,47 +876,48 @@ func (r *Reader) parseCanonShotInfo(t tag.Entry) metacanon.ShotInfo {
 // parseCanonFileInfo parses tag 0x0093 (CanonFileInfo).
 func (r *Reader) parseCanonFileInfo(t tag.Entry) metacanon.FileInfo {
 	var raw [64]uint16
-	if n := r.parseCanonUint16List(t, raw[:]); n < 60 {
-		r.warnCanonShortRead(t, "parseCanonFileInfo", n, 60)
+	n := r.parseCanonUint16List(t, raw[:])
+	if n < 2 {
+		r.warnCanonShortRead(t, "parseCanonFileInfo", n, 2)
 		return metacanon.FileInfo{}
 	}
 
 	// Tag 0x0093 index 1 is model-dependent (FileNumber or ShutterCount).
 	// Preserve raw 32-bit representation for both fields.
 	return metacanon.FileInfo{
-		FileNumber:                  uint32(raw[0]) | (uint32(raw[1]) << 16),
-		BracketMode:                 metacanon.BracketMode(int16(raw[2])),
-		BracketValue:                int16(raw[3]),
-		BracketShotNumber:           int16(raw[4]),
-		RawJpgQuality:               metacanon.RawJpgQuality(raw[5]),
-		RawJpgSize:                  metacanon.RawJpgSize(raw[6]),
-		LongExposureNoiseReduction2: metacanon.OnOffAuto(raw[7]),
-		WBBracketMode:               int16(raw[8]),
-		WBBracketValueAB:            int16(raw[11]),
-		WBBracketValueGM:            int16(raw[12]),
-		FilterEffect:                metacanon.FilterEffect(raw[13]),
-		ToningEffect:                metacanon.ToningEffect(raw[14]),
-		MacroMagnification:          int16(raw[15]),
-		LiveViewShooting:            metacanon.OnOffAuto(raw[18]),
-		FocusDistance:               metacanon.NewFocusDistance(raw[19], raw[20]),
-		ShutterMode:                 metacanon.ShutterMode(raw[22]),
-		FlashExposureLock:           metacanon.OnOffAuto(raw[24]),
-		AntiFlicker:                 metacanon.OnOffAuto(raw[31]),
-		RFLensType:                  metacanon.CanonRFLensType(raw[60]),
+		FileNumber:                  uint32(canonU16At(raw[:], n, 1)) | (uint32(canonU16At(raw[:], n, 2)) << 16),
+		BracketMode:                 metacanon.BracketMode(canonI16At(raw[:], n, 3)),
+		BracketValue:                canonI16At(raw[:], n, 4),
+		BracketShotNumber:           canonI16At(raw[:], n, 5),
+		RawJpgQuality:               metacanon.RawJpgQuality(canonU16At(raw[:], n, 6)),
+		RawJpgSize:                  metacanon.RawJpgSize(canonU16At(raw[:], n, 7)),
+		LongExposureNoiseReduction2: metacanon.OnOffAuto(canonU16At(raw[:], n, 8)),
+		WBBracketMode:               canonI16At(raw[:], n, 9),
+		WBBracketValueAB:            canonI16At(raw[:], n, 12),
+		WBBracketValueGM:            canonI16At(raw[:], n, 13),
+		FilterEffect:                metacanon.FilterEffect(canonU16At(raw[:], n, 14)),
+		ToningEffect:                metacanon.ToningEffect(canonU16At(raw[:], n, 15)),
+		MacroMagnification:          canonI16At(raw[:], n, 16),
+		LiveViewShooting:            metacanon.OnOffAuto(canonU16At(raw[:], n, 19)),
+		FocusDistance:               metacanon.NewFocusDistance(canonU16At(raw[:], n, 20), canonU16At(raw[:], n, 21)),
+		ShutterMode:                 metacanon.ShutterMode(canonU16At(raw[:], n, 23)),
+		FlashExposureLock:           metacanon.OnOffAuto(canonU16At(raw[:], n, 25)),
+		AntiFlicker:                 metacanon.OnOffAuto(canonU16At(raw[:], n, 32)),
+		RFLensType:                  metacanon.CanonRFLensType(canonU16At(raw[:], n, 61)),
 	}
 }
 
 // parseCanonTimeInfo parses tag 0x0035 (TimeInfo).
 func (r *Reader) parseCanonTimeInfo(t tag.Entry) metacanon.CanonTimeInfo {
-	var raw [4]uint32
-	if n := r.parseUint32List(t, raw[:]); n < 3 {
-		r.warnCanonShortRead(t, "parseCanonTimeInfo", n, 3)
+	var raw [4]int32
+	if n := r.parseCanonInt32List(t, raw[:]); n < 4 {
+		r.warnCanonShortRead(t, "parseCanonTimeInfo", n, 4)
 		return metacanon.CanonTimeInfo{}
 	}
 	return metacanon.CanonTimeInfo{
-		TimeZone:        int32(raw[0]),
-		TimeZoneCity:    metacanon.TimeZoneCity(int32(raw[1])),
-		DaylightSavings: metacanon.DaylightSavings(int32(raw[2])),
+		TimeZone:        raw[1],
+		TimeZoneCity:    metacanon.TimeZoneCity(raw[2]),
+		DaylightSavings: metacanon.DaylightSavings(raw[3]),
 	}
 }
 
@@ -1109,7 +1118,7 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) metacanon.AFInfo {
 		if decodeInFocus {
 			startIdx := len(combinedBits)
 			combinedBits = canonAppendBitWordsRange(combinedBits, words, n, bitsStart, maskWordCount)
-			dst.AFPointsInFocusBits = combinedBits[startIdx:len(combinedBits)]
+			dst.AFPointsInFocusBits = combinedBits[startIdx:]
 		} else {
 			dst.AFPointsInFocusBits = nil
 		}
@@ -1118,7 +1127,7 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) metacanon.AFInfo {
 			// ExifTool only decodes AFPointsSelected for EOS models.
 			startIdx := len(combinedBits)
 			combinedBits = canonAppendBitWordsRange(combinedBits, words, n, selectedStart, maskWordCount)
-			dst.AFPointsSelectedBits = combinedBits[startIdx:len(combinedBits)]
+			dst.AFPointsSelectedBits = combinedBits[startIdx:]
 		} else {
 			dst.AFPointsSelectedBits = nil
 		}
@@ -1166,24 +1175,6 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) metacanon.AFInfo {
 	return dst
 }
 
-const canonAFWordsMax = 8192
-
-func canonAFWordsBuffer(stack []uint16, unitCount uint32) ([]uint16, bool) {
-	if unitCount == 0 {
-		return stack[:0], false
-	}
-	wordCount := int(unitCount)
-	truncated := false
-	if unitCount > canonAFWordsMax {
-		wordCount = canonAFWordsMax
-		truncated = true
-	}
-	if wordCount <= len(stack) {
-		return stack[:wordCount], truncated
-	}
-	return make([]uint16, wordCount), truncated
-}
-
 func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want int) {
 	if !r.warnEnabled() {
 		return
@@ -1196,347 +1187,6 @@ func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want i
 		Int("wordsDecoded", got).
 		Int("wordsRequested", want).
 		Msg("canon AF payload truncated to parser word cap")
-}
-
-func canonAFInfoSource(id tag.ID) metacanon.AFInfoSource {
-	switch metacanon.MakerNoteTag(id) {
-	case metacanon.CanonAFInfo:
-		return metacanon.AFInfoSourceAFInfo
-	case metacanon.CanonAFInfo2:
-		return metacanon.AFInfoSourceAFInfo2
-	case metacanon.AFInfo3:
-		return metacanon.AFInfoSourceAFInfo3
-	default:
-		return metacanon.AFInfoSourceUnknown
-	}
-}
-
-func canonShouldReplaceAFInfo(current, candidate metacanon.AFInfo) bool {
-	curHas := canonAFInfoHasData(current)
-	candHas := canonAFInfoHasData(candidate)
-	switch {
-	case candHas && !curHas:
-		return true
-	case !candHas && curHas:
-		return false
-	case !candHas && !curHas:
-		return canonAFInfoSourcePriority(candidate.Source) > canonAFInfoSourcePriority(current.Source)
-	}
-
-	curScore := canonAFInfoQualityScore(current)
-	candScore := canonAFInfoQualityScore(candidate)
-	if candScore != curScore {
-		return candScore > curScore
-	}
-
-	return canonAFInfoSourcePriority(candidate.Source) > canonAFInfoSourcePriority(current.Source)
-}
-
-func canonAFInfoHasData(v metacanon.AFInfo) bool {
-	return v.NumAFPoints != 0 ||
-		v.ValidAFPoints != 0 ||
-		v.CanonImageWidth != 0 ||
-		v.CanonImageHeight != 0 ||
-		len(v.AFArea) != 0 ||
-		len(v.AFPointsInFocusBits) != 0 ||
-		len(v.AFPointsSelectedBits) != 0 ||
-		v.PrimaryAFPoint != 0
-}
-
-func canonAFInfoQualityScore(v metacanon.AFInfo) int {
-	score := int(v.NumAFPoints) + int(v.ValidAFPoints)
-	score += len(v.AFArea)
-	score += len(v.AFPoints)
-	score += len(v.AFPointsInFocusBits)
-	score += len(v.AFPointsSelectedBits)
-	if v.CanonImageWidth != 0 && v.CanonImageHeight != 0 {
-		score += 8
-	}
-	if v.AFImageWidth != 0 && v.AFImageHeight != 0 {
-		score += 8
-	}
-	if v.AFAreaWidth != 0 || v.AFAreaHeight != 0 {
-		score += 4
-	}
-	return score
-}
-
-func canonAFInfoSourcePriority(source metacanon.AFInfoSource) int {
-	switch source {
-	case metacanon.AFInfoSourceAFInfo2:
-		return 3
-	case metacanon.AFInfoSourceAFInfo3:
-		return 2
-	case metacanon.AFInfoSourceAFInfo:
-		return 1
-	default:
-		return 0
-	}
-}
-
-func canonU16At(vals []uint16, n, idx int) uint16 {
-	if idx < 0 || idx >= n {
-		return 0
-	}
-	return vals[idx]
-}
-
-func canonBitWordCount(pointCount int) int {
-	if pointCount <= 0 {
-		return 0
-	}
-	return (pointCount + 15) / 16
-}
-
-func canonRangeLen(n, start, count int) int {
-	if count <= 0 || start < 0 || start >= n {
-		return 0
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return 0
-	}
-	return end - start
-}
-
-func canonDecodeUniformAFArea(vals []uint16, n, xStart, yStart, count int, w, h int16) []metacanon.AFPoint {
-	pointCount := canonRangeLen(n, xStart, count)
-	if yLen := canonRangeLen(n, yStart, count); yLen < pointCount {
-		pointCount = yLen
-	}
-	if pointCount == 0 {
-		return nil
-	}
-
-	areas := make([]metacanon.AFPoint, pointCount)
-	for i := 0; i < pointCount; i++ {
-		areas[i] = metacanon.NewAFPoint(w, h, int16(vals[xStart+i]), int16(vals[yStart+i]))
-	}
-	return areas
-}
-
-// canonLegacyAFInfoPrimary mirrors Canon.pm sequence handling for AFInfo:
-// sequence 11 is either PrimaryAFPoint or an 8-word unknown block, and
-// sequence 12 is always PrimaryAFPoint when enough payload remains.
-func canonLegacyAFInfoPrimary(vals []uint16, n, seq11Start, afInfoCount int) uint16 {
-	if afInfoCount == 36 {
-		return canonU16At(vals, n, seq11Start+8)
-	}
-	if seq11Start+1 < n {
-		return vals[seq11Start+1]
-	}
-	return canonU16At(vals, n, seq11Start)
-}
-
-func canonDecodeBitWordsRange(vals []uint16, n, start, count int) []int {
-	capHint := canonCountBitWordsRange(vals, n, start, count)
-	if capHint == 0 {
-		return nil
-	}
-	out := make([]int, 0, capHint)
-	return canonAppendBitWordsRange(out, vals, n, start, count)
-}
-
-func canonCountBitWordsRange(vals []uint16, n, start, count int) int {
-	if count <= 0 || start < 0 || start >= n {
-		return 0
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return 0
-	}
-	total := 0
-	for i := start; i < end; i++ {
-		total += bits.OnesCount16(vals[i])
-	}
-	return total
-}
-
-func canonAppendBitWordsRange(dst []int, vals []uint16, n, start, count int) []int {
-	if count <= 0 || start < 0 || start >= n {
-		return dst
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return dst
-	}
-
-	base := 0
-	for i := start; i < end; i++ {
-		word := vals[i]
-		for word != 0 {
-			bit := bits.TrailingZeros16(word)
-			dst = append(dst, base+bit)
-			word &= word - 1
-		}
-		base += 16
-	}
-	return dst
-}
-
-func (r *Reader) canonModelName() string {
-	if model := r.Exif.IFD0.Model; model != "" {
-		return model
-	}
-	return r.makerNoteInfo().Canon.ImageType
-}
-
-func canonModelIsEOS(model string) bool {
-	return strings.Contains(model, "EOS")
-}
-
-func (r *Reader) canonShotInfoLegacyExposureTime() bool {
-	model := r.canonModelName()
-	if !strings.Contains(model, "EOS 20D") && !strings.Contains(model, "EOS 350D") {
-		return false
-	}
-	return r.makerNoteInfo().Canon.CameraSettings.FocalUnits > 1
-}
-
-func canonShotISO(code int16) float32 {
-	if code == 0 {
-		return 100
-	}
-	return float32(100.0 * math.Exp2(float64(code-160)/32.0))
-}
-
-func canonShotActualISO(autoISO, baseISO float32) float32 {
-	if autoISO <= 0 || baseISO <= 0 {
-		return 0
-	}
-	return (autoISO * baseISO) / 100.0
-}
-
-func canonShotAperture(code int16) meta.Aperture {
-	if code == 0 {
-		return 0
-	}
-	return meta.Aperture(math.Exp2(canonEV(code) * 0.5))
-}
-
-func canonShotExposureTime(code int16, legacy20D350D bool) meta.ExposureTime {
-	if code == 0 {
-		return 0
-	}
-	if legacy20D350D {
-		return meta.ExposureTime(math.Exp2(float64(code-640) / 32.0))
-	}
-	return meta.ExposureTime(math.Exp2(-canonEV(code)))
-}
-
-func canonShotCameraTemperature(raw int16, model string) int16 {
-	if raw == 0 || !canonModelIsEOS(model) {
-		return 0
-	}
-	return raw - 128
-}
-
-func canonShotFlashGuideNumber(raw int16) float32 {
-	if raw < 0 {
-		return 0
-	}
-	return float32(raw) / 32.0
-}
-
-// parseCanonMaxAperture converts Canon CameraSettings MaxAperture/MinAperture
-// codes to f-numbers using ExifTool's CanonEv conversion.
-//
-// ExifTool Canon.pm:
-//
-//	ValueConv => exp(CanonEv($val)*log(2)/2)
-func parseCanonMaxAperture(raw uint16) meta.Aperture {
-	code := int16(raw)
-	if code <= 0 {
-		return 0
-	}
-	ev := canonEV(code)
-	return meta.Aperture(math.Exp2(ev * 0.5))
-}
-
-// canonEV decodes Canon's hex-based EV codes (modulo 0x20).
-func canonEV(code int16) float64 {
-	val := int(code)
-	sign := 1.0
-	if val < 0 {
-		val = -val
-		sign = -1
-	}
-
-	frac := val & 0x1f
-	base := val - frac
-	fracEV := float64(frac)
-
-	// ExifTool CanonEv special-cases Canon 1/3 and 2/3 encodings.
-	switch frac {
-	case 0x0c:
-		fracEV = 32.0 / 3.0
-	case 0x14:
-		fracEV = 64.0 / 3.0
-	}
-	return sign * (float64(base) + fracEV) / 32.0
-}
-
-// parseCanonDisplayAperture converts DisplayAperture (sequence 35) as ExifTool:
-// RawConv => '$val ? $val : undef', ValueConv => '$val / 10'.
-func parseCanonDisplayAperture(raw uint16) meta.Aperture {
-	if raw == 0 {
-		return 0
-	}
-	return meta.Aperture(float32(raw) / 10.0)
-}
-
-func canonTerminateAtNUL(s string) string {
-	start := 0
-	for start < len(s) {
-		switch s[start] {
-		case ' ', '\t', '\n', '\r':
-			start++
-		default:
-			goto findEnd
-		}
-	}
-
-findEnd:
-	end := len(s)
-	for i := start; i < end; i++ {
-		if s[i] == 0 {
-			end = i
-			break
-		}
-	}
-	for end > start {
-		switch s[end-1] {
-		case ' ', '\t', '\n', '\r':
-			end--
-		default:
-			return s[start:end]
-		}
-	}
-	return s[start:end]
-}
-
-func canonHexBytes(b []byte) string {
-	if len(b) == 0 {
-		return ""
-	}
-	const table = "0123456789abcdef"
-	var out strings.Builder
-	out.Grow(len(b) * 2)
-	for i := range b {
-		v := b[i]
-		out.WriteByte(table[v>>4])
-		out.WriteByte(table[v&0x0f])
-	}
-	return out.String()
 }
 
 func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {

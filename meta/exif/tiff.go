@@ -1,13 +1,13 @@
 // Package tiff reads Tiff Header metadata information from image files before being processed by exif package
-package tiff
+package exif
 
 import (
 	"bufio"
 	"io"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -56,7 +56,7 @@ func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
 		tiffHeaderOffset := uint32(discarded)
 		header = meta.NewExifHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, it)
-		header.FirstIfd = ifds.IFD0
+		header.FirstIfd = tag.IFD0
 		return header, nil
 	}
 }

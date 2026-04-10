@@ -3,13 +3,12 @@ package exif
 import (
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/ifd"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
 func testEntryAtOffset(offset uint32) tag.Entry {
-	return tag.NewEntry(tag.TagMake, tag.TypeLong, 1, offset, ifd.IFD0, 0, utils.LittleEndian)
+	return tag.NewEntry(tag.TagMake, tag.TypeLong, 1, offset, tag.IFD0, 0, utils.LittleEndian)
 }
 
 func TestStateAddTagOrdersByOffsetAfterSort(t *testing.T) {

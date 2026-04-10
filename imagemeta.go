@@ -14,7 +14,6 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	"github.com/evanoberholster/imagemeta/meta/png"
-	"github.com/evanoberholster/imagemeta/meta/tiff"
 	"github.com/evanoberholster/imagemeta/preview"
 	"github.com/pkg/errors"
 )
@@ -62,8 +61,8 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
 			return exif.Exif{}, err
 		}
-	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG:
-		header, err := tiff.ScanTiffHeader(rr, it)
+	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF:
+		header, err := exif.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif.Exif{}, err
 		}
@@ -133,7 +132,7 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 	if err != nil {
 		return exif.Exif{}, err
 	}
-	header, err := tiff.ScanTiffHeader(rr, it)
+	header, err := exif.ScanTiffHeader(rr, it)
 	if err != nil {
 		return exif.Exif{}, err
 	}
@@ -144,7 +143,6 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 		return ir.Exif, err
 	}
 	return ir.Exif, nil
-	//return exif2.DecodeHeader(r, moov.Meta.Exif[0], moov.Meta.Exif[1], moov.Meta.Exif[3])
 }
 
 // DecodeCR2 decodes a CR2 file from an io.Reader returning Exif or an error.
