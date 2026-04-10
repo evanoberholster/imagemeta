@@ -3,6 +3,7 @@ package makernote
 import (
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -51,7 +52,7 @@ func TestParseNikonHeader(t *testing.T) {
 	hdr[13] = 0x2a
 	hdr[17] = 0x08
 
-	bo, off, ok := ParseNikonHeader(hdr[:])
+	bo, off, ok := nikon.ParseNikonHeader(hdr[:])
 	if !ok {
 		t.Fatal("ParseNikonHeader should succeed")
 	}

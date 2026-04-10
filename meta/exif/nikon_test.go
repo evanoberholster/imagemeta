@@ -7,17 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
-	metanikon "github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
-func parseNikonBlockForTest(t *testing.T, tagID uint16, raw []byte, model string) *metanikon.Nikon {
+func parseNikonBlockForTest(t *testing.T, tagID tag.ID, raw []byte, model string) *nikon.Nikon {
 	t.Helper()
 
 	entry := tag.NewEntry(
-		tag.ID(tagID),
+		tagID,
 		tag.TypeUndefined,
 		uint32(len(raw)),
 		0,
@@ -34,7 +33,7 @@ func parseNikonBlockForTest(t *testing.T, tagID uint16, raw []byte, model string
 	r.Reset(&br)
 	r.Exif.IFD0.Model = model
 	if ok := r.parseNikonTag(entry); !ok {
-		t.Fatalf("parseNikonTag returned false for 0x%04x", tagID)
+		t.Fatalf("parseNikonTag returned false for 0x%04x", uint16(tagID))
 	}
 	return r.nikonMakerNote()
 }
@@ -48,7 +47,7 @@ func TestParseNikonISOInfoUsesByteOffsets(t *testing.T) {
 		0x00, 0x00,
 	}
 
-	got := parseNikonBlockForTest(t, makernote.TagNikonISOInfo, raw, "NIKON D300S").ISOInfo
+	got := parseNikonBlockForTest(t, tag.ID(nikon.ISOInfo), raw, "NIKON D300S").ISOInfo
 	if math.IsInf(got.ISO, 0) || math.IsInf(got.ISO2, 0) {
 		t.Fatalf("ISOInfo produced non-finite ISO values: %+v", got)
 	}
@@ -71,7 +70,7 @@ func TestParseNikonFileInfoLittleEndianHeuristic(t *testing.T) {
 		0x7c, 0x10,
 	}
 
-	got := parseNikonBlockForTest(t, makernote.TagNikonFileInfo, raw, "NIKON Z 9").FileInfo
+	got := parseNikonBlockForTest(t, tag.ID(nikon.FileInfo), raw, "NIKON Z 9").FileInfo
 	if got.FileInfoVersion != "0100" {
 		t.Fatalf("FileInfoVersion = %q, want 0100", got.FileInfoVersion)
 	}
@@ -100,7 +99,7 @@ func TestParseNikonAFInfo2V0400(t *testing.T) {
 	utils.LittleEndian.PutUint16(raw[0x48:0x4a], 323)
 	raw[0x4a] = 1
 
-	got := parseNikonBlockForTest(t, makernote.TagNikonAFInfo2, raw, "NIKON Z 9").AFInfo2
+	got := parseNikonBlockForTest(t, tag.ID(nikon.AFInfo2), raw, "NIKON Z 9").AFInfo2
 	if got.AFInfo2Version != "0400" {
 		t.Fatalf("AFInfo2Version = %q, want 0400", got.AFInfo2Version)
 	}

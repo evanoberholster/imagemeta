@@ -25,53 +25,6 @@ type Exif struct {
 	CameraSerial string
 	CameraMakeID makernote.CameraMake
 	ImageType    imagetype.ImageType
-
-	ifdBitset    [8]uint64
-	highTagIDs   [128]uint16
-	highTagCount uint8
-}
-
-const exifBitsetMaxTagID uint16 = (8 * 64) - 1
-
-// HasTagParsed reports whether a tag ID has been parsed into typed fields.
-func (e Exif) HasTagParsed(tagID uint16) bool {
-	if tagID <= exifBitsetMaxTagID {
-		word := tagID >> 6
-		mask := uint64(1) << (tagID & 63)
-		return (e.ifdBitset[word] & mask) != 0
-	}
-	n := min(int(e.highTagCount), len(e.highTagIDs))
-	for i := range n {
-		if e.highTagIDs[i] == tagID {
-			return true
-		}
-	}
-	return false
-}
-
-// TagParsedBitset returns the internal parsed-tag bitset.
-func (e Exif) TagParsedBitset() [8]uint64 {
-	return e.ifdBitset
-}
-
-// markTagParsed marks a tag ID as parsed in the EXIF-level bitset.
-func (e *Exif) markTagParsed(tagID uint16) {
-	if tagID <= exifBitsetMaxTagID {
-		word := tagID >> 6
-		e.ifdBitset[word] |= uint64(1) << (tagID & 63)
-		return
-	}
-	n := min(int(e.highTagCount), len(e.highTagIDs))
-	for i := range n {
-		if e.highTagIDs[i] == tagID {
-			return
-		}
-	}
-	if n >= len(e.highTagIDs) {
-		return
-	}
-	e.highTagIDs[n] = tagID
-	e.highTagCount++
 }
 
 // IFD0Tag groups tags from the primary image IFD (IFD0).
@@ -102,6 +55,8 @@ type IFD0Tag struct {
 	Rating         uint16
 	RatingPercent  uint16
 
+	exifIfdPointer    uint32
+	gpsIfdPointer     uint32
 	subIFDOffsets     [8]uint32
 	subIFDOffsetCount uint8
 }
@@ -167,9 +122,6 @@ type ExifIFDTags struct {
 	DigitalZoomRatio        tag.RationalU // 0xa404 DigitalZoomRatio
 	SubjectArea             [4]uint16     // 0x9214 SubjectArea
 	ComponentsConfiguration [4]byte       // 0x9101 ComponentsConfiguration
-	// TODO: DeviceSettingDescription is UNDEFINED and often vendor-specific binary data.
-	// Keep printable representation for parity with exiftool dumps.
-	DeviceSettingDescription string // 0xa40b DeviceSettingDescription
 	// Time tags from ExifIFD are normalized into Exif.Time for a single source of truth.
 }
 

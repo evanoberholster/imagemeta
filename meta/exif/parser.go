@@ -214,7 +214,6 @@ func (r *Reader) parseTag(t tag.Entry) {
 			return
 		}
 	}
-	r.Exif.markTagParsed(uint16(t.ID))
 }
 
 // parseIFD0Tag parses IFD0 tags into typed model fields.
@@ -281,7 +280,7 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 
 // parseMakeTag parses MakeTag and caches the maker-note make ID for subsequent maker-note parsing.
 // The maker-note make ID is resolved from IFD0:Make
-func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, Make string) {
+func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, makeName string) {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
 	default:
@@ -312,7 +311,7 @@ func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, Make st
 	}
 
 	if makeID == makernote.CameraMakeUnknown {
-		Make = string(raw)
+		makeName = string(raw)
 		return
 	}
 	return makeID, makeID.String()
@@ -679,7 +678,8 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagFlashpixVersion:
 		r.Exif.ExifIFD.FlashpixVersion = r.parseStringAllowUndefined(t)
 	case tag.TagDeviceSettingDescription:
-		r.Exif.ExifIFD.DeviceSettingDescription = r.parseStringAllowUndefined(t)
+		// Not parsed
+		// The payload is often large and not needed in the hot parse path.
 	case tag.TagPixelXDimension:
 		r.Exif.ExifIFD.PixelXDimension = r.parseUint32(t)
 		if r.Exif.IFD0.ImageWidth == 0 {

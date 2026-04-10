@@ -74,6 +74,22 @@ func NewReader(l zerolog.Logger, opts ...ReaderOption) *Reader {
 	return r
 }
 
+func (r *Reader) resetOffsets() {
+	r.po = 0
+	r.exifLength = 0
+	r.firstIFDOffset = 0
+}
+
+func (r *Reader) resetDecodeState(resetExif bool) {
+	if r.state != nil {
+		r.state.reset()
+	}
+	if resetExif {
+		r.Exif = Exif{}
+	}
+	r.resetOffsets()
+}
+
 func acquirePooledReader(l zerolog.Logger) *Reader {
 	r, ok := parseReaderPool.Get().(*Reader)
 	if !ok || r == nil {
@@ -87,14 +103,10 @@ func acquirePooledReader(l zerolog.Logger) *Reader {
 		}
 		r.state = s
 	}
-	r.state.reset()
 	r.releaseOwnedReader()
 	r.reader = nil
-	r.Exif = Exif{}
+	r.resetDecodeState(true)
 	r.afInfoDecodeOptions = AFInfoDecodeAll
-	r.po = 0
-	r.exifLength = 0
-	r.firstIFDOffset = 0
 	return r
 }
 
@@ -111,9 +123,7 @@ func releasePooledReader(r *Reader) {
 	r.reader = nil
 	r.Exif = Exif{}
 	r.afInfoDecodeOptions = AFInfoDecodeAll
-	r.po = 0
-	r.exifLength = 0
-	r.firstIFDOffset = 0
+	r.resetOffsets()
 	parseReaderPool.Put(r)
 }
 
@@ -147,11 +157,7 @@ func (r *Reader) Close() {
 // Reset prepares the reader for a new decode operation.
 func (r *Reader) Reset(reader io.Reader) {
 	r.setReader(reader)
-	r.state.reset()
-	r.Exif = Exif{}
-	r.po = 0
-	r.exifLength = 0
-	r.firstIFDOffset = 0
+	r.resetDecodeState(true)
 }
 
 // Parse scans a TIFF header and parses EXIF into Exif.
@@ -254,42 +260,13 @@ func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
 	return reader.Exif, nil
 }
 
-// mergeIFD0CoreFields merges parsed values into the destination EXIF model.
-func mergeIFD0CoreFields(dst *Exif, src Exif) {
-	if dst == nil {
-		return
-	}
-	if dst.IFD0.SubfileType == 0 && src.IFD0.SubfileType != 0 {
-		dst.IFD0.SubfileType = src.IFD0.SubfileType
-	}
-	if dst.IFD0.ImageWidth == 0 && src.IFD0.ImageWidth != 0 {
-		dst.IFD0.ImageWidth = src.IFD0.ImageWidth
-	}
-	if dst.IFD0.ImageHeight == 0 && src.IFD0.ImageHeight != 0 {
-		dst.IFD0.ImageHeight = src.IFD0.ImageHeight
-	}
-	for i := range dst.ifdBitset {
-		dst.ifdBitset[i] |= src.ifdBitset[i]
-	}
-	n := int(src.highTagCount)
-	if n > len(src.highTagIDs) {
-		n = len(src.highTagIDs)
-	}
-	for i := 0; i < n; i++ {
-		dst.markTagParsed(src.highTagIDs[i])
-	}
-}
-
 // initDecode initializes reader state for one decode operation.
 func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif bool) {
 	if resetExif {
 		r.Reset(reader)
 	} else {
 		r.setReader(reader)
-		r.state.reset()
-		r.po = 0
-		r.exifLength = 0
-		r.firstIFDOffset = 0
+		r.resetDecodeState(false)
 	}
 
 	r.Exif.ImageType = header.ImageType
@@ -414,11 +391,9 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			if t.IfdType == tag.IFD0 {
 				switch t.ID {
 				case tag.TagExifIFDPointer:
-					//r.Exif.IFD0.ExifIFDPointer = t.ValueOffset
-					r.Exif.markTagParsed(uint16(t.ID))
+					r.Exif.IFD0.exifIfdPointer = t.ValueOffset
 				case tag.TagGPSIFDPointer:
-					//r.Exif.IFD0.GPSIFDPointer = t.ValueOffset
-					r.Exif.markTagParsed(uint16(t.ID))
+					r.Exif.IFD0.gpsIfdPointer = t.ValueOffset
 				}
 			}
 			if err = r.seekToTag(t); err != nil {
@@ -430,7 +405,6 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 				if err = r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
 					r.warn().Err(err).Str("ifd", child.String()).Msg("failed parsing maker-note ifd")
 				}
-				r.Exif.markTagParsed(uint16(t.ID))
 				r.state.sortUnread()
 				continue
 			}
@@ -444,7 +418,6 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			r.state.sortUnread()
 		case t.ID == tag.TagSubIFDs && t.IfdType == tag.IFD0:
 			r.parseSubIFDs(t)
-			r.Exif.markTagParsed(uint16(t.ID))
 			r.state.sortUnread()
 		default:
 			r.parseTag(t)
@@ -487,43 +460,8 @@ func (r *Reader) parseDirectoryTagHeadersPerEntry(directory tag.Directory, tagCo
 
 // parseDirectoryTagHeadersBulk decodes all tag headers from a single contiguous read.
 func (r *Reader) parseDirectoryTagHeadersBulk(directory tag.Directory, tagCount uint16) error {
-	total := int(tagCount) * 12
-	if total <= 0 {
-		return nil
-	}
-	// Fallback preserves behavior if parser limits are increased above read buffer capacity.
-	if total > len(r.state.buf) {
-		return r.parseDirectoryTagHeadersPerEntry(directory, tagCount)
-	}
-
-	raw, err := r.fastRead(total)
-	if err != nil {
-		return err
-	}
-	if len(raw) < total {
-		return io.ErrUnexpectedEOF
-	}
-
-	warnEnabled := r.warnEnabled()
-	ifdName := ""
-	if warnEnabled {
-		ifdName = directory.String()
-	}
-	for pos := 0; pos < total; pos += 12 {
-		t, parseErr := tagFromBuffer(directory, raw[pos:pos+12])
-		if parseErr != nil {
-			if warnEnabled {
-				r.warn().Err(parseErr).Str("ifd", ifdName).Send()
-			}
-			continue
-		}
-		if t.IsEmbedded() {
-			r.parseTag(t)
-			continue
-		}
-		r.addTag(t)
-	}
-	return nil
+	// Retained for test parity with the non-trusted parser path.
+	return r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount)
 }
 
 // parseDirectoryTagHeadersBulkTrusted inlines tag decode for trusted bulk buffers.
