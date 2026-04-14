@@ -3,8 +3,8 @@ package meta
 import (
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,9 +36,9 @@ func TestXmpHeader(t *testing.T) {
 }
 
 func TestExifHeader(t *testing.T) {
-	h1 := ExifHeader{ByteOrder: utils.BigEndian, FirstIfd: ifds.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
+	h1 := ExifHeader{ByteOrder: utils.BigEndian, FirstIfd: tag.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
 	h2 := NewExifHeader(utils.BigEndian, 1234, 16, 1024, imagetype.ImagePNG)
-	h2.FirstIfd = ifds.IFD0
+	h2.FirstIfd = tag.IFD0
 
 	assert.Equal(t, h1, h2, "")
 	assert.True(t, h2.IsValid(), "IsValid")

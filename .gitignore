@@ -20,13 +20,20 @@
 # Coverage
 *.cov
 
+# Go temporary files
+.go*
+.bin
+.cache*
+
 samples/*
 xml/test*
 testImages/gen.go
 testImages/*.html
 test/*
 meta/cmd/*
-xmp/test/samples/*
+meta/xmp/coverage*
+
+cmd/exifcache
 
 *.CR3
 *.CR2

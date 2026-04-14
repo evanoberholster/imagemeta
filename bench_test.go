@@ -1,16 +1,15 @@
 package imagemeta
 
 import (
-	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif2"
 	"github.com/evanoberholster/imagemeta/imagetype"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/tiff"
+	"github.com/evanoberholster/imagemeta/meta/exif"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/rs/zerolog"
 )
 
@@ -143,7 +142,7 @@ func BenchmarkTiff(b *testing.B) {
 					b.Fatal(err)
 				}
 				if _, err = DecodeTiff(r); err != nil {
-					if err != ErrNoExif {
+					if !errors.Is(err, ErrNoExif) {
 						b.Error(err)
 					}
 				}
@@ -173,7 +172,7 @@ func BenchmarkJPEG(b *testing.B) {
 				}
 				_, err = DecodeJPEG(r)
 				if err != nil {
-					if err != ErrNoExif {
+					if !errors.Is(err, ErrNoExif) {
 						b.Error(err)
 					}
 				}
@@ -201,21 +200,30 @@ func BenchmarkHeif(b *testing.B) {
 					if _, err = r.Seek(0, 0); err != nil {
 						b.Fatal(err)
 					}
-					rr := readerPool.Get().(*bufio.Reader)
+					rr, poolErr := getPooledReader()
+					if poolErr != nil {
+						b.Fatal(poolErr)
+					}
 					rr.Reset(r)
 
-					ir := exif2.NewIfdReader(zerolog.Logger{})
+					ir := exif.NewReader(zerolog.Logger{})
 
-					it, err := imagetype.ScanBuf(rr)
-					if err != nil {
-						b.Fatal(err)
+					it, scanErr := imagetype.ScanBuf(rr)
+					if scanErr != nil {
+						ir.Close()
+						readerPool.Put(rr)
+						b.Fatal(scanErr)
 					}
-					header, err := tiff.ScanTiffHeader(rr, it)
-					if err != nil {
-						b.Fatal(err)
+					header, headerErr := exif.ScanTiffHeader(rr, it)
+					if headerErr != nil {
+						ir.Close()
+						readerPool.Put(rr)
+						b.Fatal(headerErr)
 					}
-					if err := ir.DecodeTiff(r, header); err != nil {
-						b.Fatal(err)
+					if decodeErr := ir.DecodeTiff(r, header); decodeErr != nil {
+						ir.Close()
+						readerPool.Put(rr)
+						b.Fatal(decodeErr)
 					}
 					ir.Close()
 					readerPool.Put(rr)
@@ -226,17 +234,16 @@ func BenchmarkHeif(b *testing.B) {
 					if _, err = r.Seek(0, 0); err != nil {
 						b.Fatal(err)
 					}
-					ir := exif2.NewIfdReader(zerolog.Logger{})
+					ir := exif.NewReader(zerolog.Logger{})
 
-					br := isobmff.NewReader(r)
-					br.ExifReader = ir.DecodeIfd
+					br := isobmff.NewReader(r, ir.DecodeIfdAppend, nil, nil)
 					if err := br.ReadFTYP(); err != nil {
 						panic(err)
 					}
-					if err := br.ReadMetadata(); err != nil {
+					if err := readMetadataAllowBenchmarkEOF(br); err != nil {
 						panic(err)
 					}
-					if err := br.ReadMetadata(); err != nil {
+					if err := readMetadataAllowBenchmarkEOF(br); err != nil {
 						panic(err)
 					}
 					ir.Close()
@@ -245,4 +252,12 @@ func BenchmarkHeif(b *testing.B) {
 			})
 		})
 	}
+}
+
+func readMetadataAllowBenchmarkEOF(r *isobmff.Reader) error {
+	err := r.ReadMetadata()
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	return err
 }

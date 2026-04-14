@@ -3,6 +3,7 @@ package meta
 import (
 	"math"
 	"strconv"
+	"strings"
 )
 
 //go:generate msgp
@@ -16,7 +17,7 @@ const (
 )
 
 // NewFocalLength returns a new FocalLength by dividing
-// "n" numerator and "d" demoninator
+// "n" numerator and "d" denominator
 func NewFocalLength(n, d uint32) FocalLength {
 	return FocalLength(float32(n) / float32(d))
 }
@@ -55,7 +56,7 @@ func (fl *FocalLength) UnmarshalText(text []byte) (err error) {
 type Aperture float32
 
 // NewAperture returns a new Aperture by dividing the
-// "n" numerator over the "d" demoninator
+// "n" numerator over the "d" denominator
 func NewAperture(n uint32, d uint32) Aperture {
 	return Aperture(float32(n) / float32(d))
 }
@@ -71,11 +72,12 @@ func parseAperture(buf []byte) Aperture {
 	// TODO: Improve parsing functionality
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
-			if i < len(buf)+1 {
-				n := uint16(parseUint(buf[:i]))
-				d := uint16(parseUint(buf[i+1:]))
-				return Aperture(n / d)
+			n := uint16(parseUint(buf[:i]))
+			d := uint16(parseUint(buf[i+1:]))
+			if d == 0 {
+				return 0
 			}
+			return Aperture(float32(n) / float32(d))
 		}
 	}
 	return Aperture(0)
@@ -86,6 +88,22 @@ func (aa Aperture) String() string {
 		return strconv.FormatFloat(float64(aa), 'f', 0, 32)
 	}
 	return strconv.FormatFloat(float64(aa), 'f', 2, 32)
+}
+
+// MarshalJSON emits aperture values as JSON numbers when finite and as ExifTool-like
+// strings for infinities, since JSON doesn't support Inf literals.
+func (aa Aperture) MarshalJSON() ([]byte, error) {
+	f := float64(aa)
+	switch {
+	case math.IsNaN(f):
+		return []byte("null"), nil
+	case math.IsInf(f, 1):
+		return []byte(`"Inf"`), nil
+	case math.IsInf(f, -1):
+		return []byte(`"-Inf"`), nil
+	default:
+		return strconv.AppendFloat(nil, f, 'f', -1, 32), nil
+	}
 }
 
 // MarshalText implements the TextMarshaler interface that is
@@ -147,6 +165,9 @@ const (
 // To parse a string expressed as a positive or negative fraction.
 // ex: "+1/3" or ex: "-2/3" use ExposureBias.UnmarshalText.
 func NewExposureBias(n int16, d int16) ExposureBias {
+	if n == 0 {
+		return 0
+	}
 	n = n << 8
 	d = d << 8 >> 8
 	return ExposureBias(n + d)
@@ -161,7 +182,7 @@ func (eb ExposureBias) String() string {
 // MarshalText implements the TextMarshaler interface that is
 // used by encoding/json
 func (eb ExposureBias) MarshalText() (text []byte, err error) {
-	if eb == 0 {
+	if eb == 0 || eb>>8 == 0 {
 		return unsafeGetBytes(exposureBiasZero), nil
 	}
 	text = make([]byte, 0, 5)
@@ -178,22 +199,22 @@ func (eb ExposureBias) MarshalText() (text []byte, err error) {
 // used by encoding/json
 func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 	if text[0] == '0' {
+		*eb = 0
 		return
 	}
 	for i := 0; i < len(text); i++ {
 		if text[i] == '/' {
 			if i < len(text)+1 {
 				var n int16
-				if text[0] == '+' {
+				switch text[0] {
+				case '+':
 					n = int16(parseUint(text[1:i]))
-				} else if text[0] == '-' {
+				case '-':
 					n = int16(parseUint(text[1:i])) * -1
-				} else {
+				default:
 					n = int16(parseUint(text[:i]))
 				}
-				n = n << 8
-				n += int16(parseUint(text[i+1:]))
-				*eb = ExposureBias(n)
+				*eb = NewExposureBias(n, int16(parseUint(text[i+1:])))
 				return err
 			}
 		}
@@ -531,6 +552,37 @@ func (o Orientation) String() string {
 	return Orientation(0).String()
 }
 
+// ResolutionUnit is the EXIF/TIFF resolution unit.
+type ResolutionUnit uint16
+
+// ResolutionUnit values.
+const (
+	ResolutionUnitUnknown ResolutionUnit = iota
+	ResolutionUnitNone
+	ResolutionUnitInches
+	ResolutionUnitCentimeters
+	ResolutionUnitMillimeters
+	ResolutionUnitMicrometers
+)
+
+// String returns a ResolutionUnit as an ExifTool-style string.
+func (r ResolutionUnit) String() string {
+	switch r {
+	case ResolutionUnitNone:
+		return "None"
+	case ResolutionUnitInches:
+		return "inches"
+	case ResolutionUnitCentimeters:
+		return "cm"
+	case ResolutionUnitMillimeters:
+		return "mm"
+	case ResolutionUnitMicrometers:
+		return "um"
+	default:
+		return "Unknown"
+	}
+}
+
 // Compression is Exif Compression.
 type Compression uint16
 
@@ -636,6 +688,123 @@ func (c Compression) String() string {
 	case 65535:
 		return "Pentax PEF Compressecase: "
 	default:
-		return "Unkown"
+		return "Unknown"
 	}
+}
+
+// SubfileType is TIFF NewSubfileType (ExifTool: SubfileType).
+//
+// Source: Image::ExifTool::Exif.pm %subfileType.
+type SubfileType uint32
+
+const (
+	SubfileTypeFullResolutionImage                       SubfileType = 0x00000000
+	SubfileTypeReducedResolutionImage                    SubfileType = 0x00000001
+	SubfileTypeSinglePageOfMultiPageImage                SubfileType = 0x00000002
+	SubfileTypeSinglePageReducedResolutionMultiPageImage SubfileType = 0x00000003
+	SubfileTypeTransparencyMask                          SubfileType = 0x00000004
+	SubfileTypeTransparencyMaskReducedResolutionImage    SubfileType = 0x00000005
+	SubfileTypeTransparencyMaskMultiPageImage            SubfileType = 0x00000006
+	SubfileTypeTransparencyMaskReducedMultiPageImage     SubfileType = 0x00000007
+	SubfileTypeDepthMap                                  SubfileType = 0x00000008
+	SubfileTypeDepthMapReducedResolutionImage            SubfileType = 0x00000009
+	SubfileTypeEnhancedImageData                         SubfileType = 0x00000010
+	SubfileTypeAlternateReducedResolutionImage           SubfileType = 0x00010001
+	SubfileTypeSemanticMask                              SubfileType = 0x00010004
+	SubfileTypeInvalid                                   SubfileType = 0xffffffff
+)
+
+func (s SubfileType) String() string {
+	switch s {
+	case SubfileTypeFullResolutionImage:
+		return "Full-resolution image"
+	case SubfileTypeReducedResolutionImage:
+		return "Reduced-resolution image"
+	case SubfileTypeSinglePageOfMultiPageImage:
+		return "Single page of multi-page image"
+	case SubfileTypeSinglePageReducedResolutionMultiPageImage:
+		return "Single page of multi-page reduced-resolution image"
+	case SubfileTypeTransparencyMask:
+		return "Transparency mask"
+	case SubfileTypeTransparencyMaskReducedResolutionImage:
+		return "Transparency mask of reduced-resolution image"
+	case SubfileTypeTransparencyMaskMultiPageImage:
+		return "Transparency mask of multi-page image"
+	case SubfileTypeTransparencyMaskReducedMultiPageImage:
+		return "Transparency mask of reduced-resolution multi-page image"
+	case SubfileTypeDepthMap:
+		return "Depth map"
+	case SubfileTypeDepthMapReducedResolutionImage:
+		return "Depth map of reduced-resolution image"
+	case SubfileTypeEnhancedImageData:
+		return "Enhanced image data"
+	case SubfileTypeAlternateReducedResolutionImage:
+		return "Alternate reduced-resolution image"
+	case SubfileTypeSemanticMask:
+		return "Semantic Mask"
+	case SubfileTypeInvalid:
+		return "invalid"
+	}
+
+	var parts []string
+	if s&0x00000001 != 0 {
+		parts = append(parts, "Reduced resolution")
+	}
+	if s&0x00000002 != 0 {
+		parts = append(parts, "Single page")
+	}
+	if s&0x00000004 != 0 {
+		parts = append(parts, "Transparency mask")
+	}
+	if s&0x00000008 != 0 {
+		parts = append(parts, "TIFF/IT final page")
+	}
+	if s&0x00000010 != 0 {
+		parts = append(parts, "TIFF-FX mixed raster content")
+	}
+	if len(parts) == 0 {
+		return "Unknown"
+	}
+	return strings.Join(parts, ", ")
+}
+
+// Rational32 stores a signed rational value using 32-bit numerator/denominator.
+type Rational32 struct {
+	Numerator   int32
+	Denominator int32
+}
+
+// NewRational32 creates a Rational32 and normalizes zero denominator to 1.
+func NewRational32(n, d int32) Rational32 {
+	if d == 0 {
+		d = 1
+	}
+	return Rational32{Numerator: n, Denominator: d}
+}
+
+// Float32 returns the rational value as float32.
+func (r Rational32) Float32() float32 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float32(r.Numerator) / float32(r.Denominator)
+}
+
+// Float64 returns the rational value as float64.
+func (r Rational32) Float64() float64 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float64(r.Numerator) / float64(r.Denominator)
+}
+
+func (r Rational32) String() string {
+	if r.Denominator == 0 {
+		return "0/1"
+	}
+	buf := make([]byte, 0, 24)
+	buf = strconv.AppendInt(buf, int64(r.Numerator), 10)
+	buf = append(buf, '/')
+	buf = strconv.AppendInt(buf, int64(r.Denominator), 10)
+	return string(buf)
 }

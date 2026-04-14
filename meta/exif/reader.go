@@ -1,0 +1,537 @@
+package exif
+
+import (
+	"bufio"
+	"errors"
+	"io"
+	"sync"
+
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
+)
+
+const (
+	defaultExifLength    = 4 * 1024 * 1024
+	maxTagCount          = 256
+	parseProbeReaderSize = 64
+	parseTiffReaderSize  = 4096
+)
+
+type eofReader struct{}
+
+func (eofReader) Read(_ []byte) (int, error) {
+	return 0, io.EOF
+}
+
+var (
+	pooledEOFReader = eofReader{}
+	parseReaderPool = sync.Pool{
+		New: func() any {
+			return &Reader{loggerMixin: newLoggerMixin(Logger)}
+		},
+	}
+	isobmffReaderPool = sync.Pool{
+		New: func() any {
+			return isobmff.NewReader(nil, nil, nil, nil)
+		},
+	}
+	tiffBufioReaderPool = utils.NewBufioReaderPool(parseTiffReaderSize, pooledEOFReader)
+)
+
+// Reader reads and parses EXIF IFD trees.
+type Reader struct {
+	loggerMixin
+	reader      utils.BufferedReader
+	ownedReader *bufio.Reader
+	state       *state
+
+	Exif Exif
+
+	afInfoDecodeOptions AFInfoDecodeOptions
+
+	po             uint32
+	exifLength     uint32
+	firstIFDOffset uint32
+}
+
+// NewReader creates an EXIF reader. Call Close when done.
+func NewReader(l zerolog.Logger, opts ...ReaderOption) *Reader {
+	s, ok := statePool.Get().(*state)
+	if !ok || s == nil {
+		s = new(state)
+	}
+	s.reset()
+	r := &Reader{
+		loggerMixin:         newLoggerMixin(l),
+		state:               s,
+		afInfoDecodeOptions: AFInfoDecodeAll,
+	}
+	applyReaderOptions(r, opts)
+	return r
+}
+
+func (r *Reader) resetOffsets() {
+	r.po = 0
+	r.exifLength = 0
+	r.firstIFDOffset = 0
+}
+
+func (r *Reader) resetDecodeState(resetExif bool) {
+	if r.state != nil {
+		r.state.reset()
+	}
+	if resetExif {
+		r.Exif = Exif{}
+	}
+	r.resetOffsets()
+}
+
+func acquirePooledReader(l zerolog.Logger) *Reader {
+	r, ok := parseReaderPool.Get().(*Reader)
+	if !ok || r == nil {
+		r = &Reader{}
+	}
+	r.loggerMixin = newLoggerMixin(l)
+	if r.state == nil {
+		s, stateOK := statePool.Get().(*state)
+		if !stateOK || s == nil {
+			s = new(state)
+		}
+		r.state = s
+	}
+	r.releaseOwnedReader()
+	r.reader = nil
+	r.resetDecodeState(true)
+	r.afInfoDecodeOptions = AFInfoDecodeAll
+	return r
+}
+
+func releasePooledReader(r *Reader) {
+	if r == nil {
+		return
+	}
+	if r.state != nil {
+		r.state.reset()
+		statePool.Put(r.state)
+		r.state = nil
+	}
+	r.releaseOwnedReader()
+	r.reader = nil
+	r.Exif = Exif{}
+	r.afInfoDecodeOptions = AFInfoDecodeAll
+	r.resetOffsets()
+	parseReaderPool.Put(r)
+}
+
+func acquirePooledISOBMFFReader(src io.Reader, exifReader isobmff.ExifReader) *isobmff.Reader {
+	r, ok := isobmffReaderPool.Get().(*isobmff.Reader)
+	if !ok || r == nil {
+		return isobmff.NewReader(src, exifReader, nil, nil)
+	}
+	r.Reset(src, exifReader, nil, nil)
+	return r
+}
+
+func releasePooledISOBMFFReader(r *isobmff.Reader) {
+	if r == nil {
+		return
+	}
+	r.Close()
+	isobmffReaderPool.Put(r)
+}
+
+// Close returns parser state to the pool.
+func (r *Reader) Close() {
+	r.releaseOwnedReader()
+	if r.state != nil {
+		r.state.reset()
+		statePool.Put(r.state)
+		r.state = nil
+	}
+}
+
+// Reset prepares the reader for a new decode operation.
+func (r *Reader) Reset(reader io.Reader) {
+	r.setReader(reader)
+	r.resetDecodeState(true)
+}
+
+// Parse scans a TIFF header and parses EXIF into Exif.
+func Parse(rs io.ReadSeeker) (Exif, error) {
+	return ParseWithReaderOptions(rs)
+}
+
+// ParseWithReaderOptions scans a TIFF header and parses EXIF into Exif
+// with optional reader-specific parse options.
+func ParseWithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error) {
+	br := tiffBufioReaderPool.Acquire(rs)
+	defer tiffBufioReaderPool.Release(br)
+
+	probe := scanParseProbe(br)
+	if probe.imageType.IsISOBMFF() {
+		return parseCR3FromReader(br, opts...)
+	}
+
+	reader := acquirePooledReader(Logger)
+	defer releasePooledReader(reader)
+	applyReaderOptions(reader, opts)
+
+	header := probe.panHeader
+	if probe.hasPanasonicHeader {
+		// Panasonic RW2 uses an alternate TIFF signature at byte 0.
+		// Use the probe-derived header directly and decode in a single pass.
+	} else {
+		var err error
+		header, err = ScanTiffHeader(br, probe.imageType)
+		if err != nil {
+			return Exif{}, err
+		}
+	}
+
+	return reader.Exif, reader.DecodeTiff(br, header)
+}
+
+type parseProbeInfo struct {
+	imageType          imagetype.ImageType
+	panHeader          meta.ExifHeader
+	hasPanasonicHeader bool
+}
+
+// scanParseProbe scans input bytes once to detect the image type and optional
+// Panasonic RW2 alternate TIFF header.
+func scanParseProbe(br *bufio.Reader) parseProbeInfo {
+	var out parseProbeInfo
+
+	buf, err := br.Peek(parseProbeReaderSize)
+	if err != nil && len(buf) == 0 {
+		return out
+	}
+
+	if it, detectErr := imagetype.Buf(buf); detectErr == nil {
+		out.imageType = it
+	}
+
+	if len(buf) < 8 {
+		return out
+	}
+
+	switch {
+	case buf[0] == 'I' && buf[1] == 'I' && buf[2] == 0x55 && buf[3] == 0x00:
+		offset := utils.LittleEndian.Uint32(buf[4:8])
+		if offset >= 8 {
+			out.panHeader = meta.NewExifHeader(utils.LittleEndian, offset, 0, 0, imagetype.ImagePanaRAW)
+			out.hasPanasonicHeader = true
+		}
+	case buf[0] == 'M' && buf[1] == 'M' && buf[2] == 0x00 && buf[3] == 0x55:
+		offset := utils.BigEndian.Uint32(buf[4:8])
+		if offset >= 8 {
+			out.panHeader = meta.NewExifHeader(utils.BigEndian, offset, 0, 0, imagetype.ImagePanaRAW)
+			out.hasPanasonicHeader = true
+		}
+	}
+	return out
+}
+
+func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
+	reader := acquirePooledReader(Logger)
+	defer releasePooledReader(reader)
+	applyReaderOptions(reader, opts)
+
+	bmr := acquirePooledISOBMFFReader(src, reader.DecodeIfdAppend)
+	defer releasePooledISOBMFFReader(bmr)
+
+	if err := bmr.ReadFTYP(); err != nil {
+		return Exif{}, err
+	}
+	for {
+		err := bmr.ReadMetadata()
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		return reader.Exif, err
+	}
+	return reader.Exif, nil
+}
+
+// initDecode initializes reader state for one decode operation.
+func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif bool) {
+	if resetExif {
+		r.Reset(reader)
+	} else {
+		r.setReader(reader)
+		r.resetDecodeState(false)
+	}
+
+	r.Exif.ImageType = header.ImageType
+	r.firstIFDOffset = header.FirstIfdOffset
+	if header.ExifLength == 0 {
+		r.exifLength = defaultExifLength
+	} else {
+		r.exifLength = header.ExifLength
+	}
+}
+
+func (r *Reader) setReader(reader io.Reader) {
+	r.releaseOwnedReader()
+	if reader == nil {
+		r.reader = nil
+		return
+	}
+	if br, ok := reader.(utils.BufferedReader); ok {
+		r.reader = br
+		return
+	}
+	br := tiffBufioReaderPool.Acquire(reader)
+	r.ownedReader = br
+	r.reader = br
+}
+
+func (r *Reader) releaseOwnedReader() {
+	if r.ownedReader == nil {
+		return
+	}
+	tiffBufioReaderPool.Release(r.ownedReader)
+	r.ownedReader = nil
+}
+
+// rootDirectory resolves the root IFD for a header.
+func (r *Reader) rootDirectory(header meta.ExifHeader) (tag.Directory, bool) {
+	rootType := header.FirstIfd
+	if !rootType.IsValid() {
+		if r.warnEnabled() {
+			r.warn().Str("ifd", header.FirstIfd.String()).Uint8("ifdID", uint8(header.FirstIfd)).Msg("unsupported root ifd type")
+		}
+		return tag.Directory{}, false
+	}
+	return tag.NewDirectory(header.ByteOrder, rootType, 0, header.FirstIfdOffset, 0), true
+}
+
+// decodeRootIFD decodes a root IFD with optional pre-positioned reader state.
+func (r *Reader) decodeRootIFD(reader io.Reader, header meta.ExifHeader, resetExif bool, positioned bool) error {
+	r.initDecode(reader, header, resetExif)
+	if positioned {
+		r.po = header.FirstIfdOffset
+	} else if err := r.discard(int(header.FirstIfdOffset)); err != nil {
+		return err
+	}
+	root, ok := r.rootDirectory(header)
+	if !ok {
+		return nil
+	}
+	return r.readDirectory(root, true)
+}
+
+// DecodeTiff parses EXIF from a TIFF-like stream.
+func (r *Reader) DecodeTiff(reader io.Reader, header meta.ExifHeader) error {
+	return r.decodeRootIFD(reader, header, true, false)
+}
+
+// DecodeJPEGIfd parses EXIF from JPEG APP1 payload bytes.
+func (r *Reader) DecodeJPEGIfd(reader io.Reader, header meta.ExifHeader) error {
+	return r.decodeRootIFD(reader, header, true, false)
+}
+
+// DecodeIfd parses EXIF from an already positioned TIFF IFD stream.
+func (r *Reader) DecodeIfd(reader io.Reader, header meta.ExifHeader) error {
+	return r.decodeRootIFD(reader, header, true, true)
+}
+
+// DecodeIfdAppend parses a TIFF IFD payload and merges results into the current Exif value.
+//
+// Use this for containers (for example CR3/ISOBMFF) that deliver metadata across
+// multiple IFD payloads.
+func (r *Reader) DecodeIfdAppend(reader io.Reader, header meta.ExifHeader) error {
+	return r.decodeRootIFD(reader, header, false, true)
+}
+
+// readDirectory reads data from the underlying stream or parser buffers.
+func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
+	if !directory.Type.IsValid() {
+		return nil
+	}
+	tagCount, err := r.readUint16(directory)
+	if err != nil {
+		return err
+	}
+	if tagCount > maxTagCount {
+		if r.warnEnabled() {
+			r.warn().Str("ifd", directory.String()).Uint16("tagCount", tagCount).Msg("exif tag count exceeds parser limit")
+		}
+		return nil
+	}
+
+	if err = r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount); err != nil {
+		return err
+	}
+
+	nextIFDOffset, err := r.readUint32(directory)
+	if err != nil {
+		return err
+	}
+	if _, ok := directory.Type.NextRootIFD(); ok && nextIFDOffset != 0 {
+		r.addTag(tag.NewEntry(tag.TagNextIFD, tag.TypeIfd, 1, nextIFDOffset, directory.Type, directory.Index+1, directory.ByteOrder))
+	}
+
+	if !drainQueue {
+		return nil
+	}
+
+	r.state.sortAll()
+
+	for t := r.state.currentTag(); r.state.validTag(); t = r.state.advanceTag() {
+		switch {
+		case t.IsIfd():
+			if t.IfdType == tag.IFD0 {
+				switch t.ID {
+				case tag.TagExifIFDPointer:
+					r.Exif.IFD0.exifIfdPointer = t.ValueOffset
+				case tag.TagGPSIFDPointer:
+					r.Exif.IFD0.gpsIfdPointer = t.ValueOffset
+				}
+			}
+			if err = r.seekToTag(t); err != nil {
+				return err
+			}
+			r.state.resetPosition()
+			child := t.ChildDirectory()
+			if child.Type == tag.MakerNoteIFD {
+				if err = r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
+					r.warn().Err(err).Str("ifd", child.String()).Msg("failed parsing maker-note ifd")
+				}
+				r.state.sortUnread()
+				continue
+			}
+			if child.Type.IsValid() {
+				if err = r.readDirectory(child, false); err != nil {
+					if r.warnEnabled() {
+						r.warn().Err(err).Str("ifd", child.String()).Msg("failed parsing child ifd")
+					}
+				}
+			}
+			r.state.sortUnread()
+		case t.ID == tag.TagSubIFDs && t.IfdType == tag.IFD0:
+			r.parseSubIFDs(t)
+			r.state.sortUnread()
+		default:
+			r.parseTag(t)
+			r.state.sortUnread()
+		}
+	}
+	return nil
+}
+
+// parseDirectoryTagHeadersPerEntry decodes tag headers by reading 12 bytes per entry.
+func (r *Reader) parseDirectoryTagHeadersPerEntry(directory tag.Directory, tagCount uint16) error {
+	warnEnabled := r.warnEnabled()
+	ifdName := ""
+	if warnEnabled {
+		ifdName = directory.String()
+	}
+	for i := 0; i < int(tagCount); i++ {
+		headerBuf, readErr := r.fastRead(12)
+		if readErr != nil {
+			return readErr
+		}
+		if len(headerBuf) < 12 {
+			return io.ErrUnexpectedEOF
+		}
+		t, parseErr := tagFromBuffer(directory, headerBuf)
+		if parseErr != nil {
+			if warnEnabled {
+				r.warn().Err(parseErr).Str("ifd", ifdName).Send()
+			}
+			continue
+		}
+		if t.IsEmbedded() {
+			r.parseTag(t)
+			continue
+		}
+		r.addTag(t)
+	}
+	return nil
+}
+
+// parseDirectoryTagHeadersBulk decodes all tag headers from a single contiguous read.
+func (r *Reader) parseDirectoryTagHeadersBulk(directory tag.Directory, tagCount uint16) error {
+	// Retained for test parity with the non-trusted parser path.
+	return r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount)
+}
+
+// parseDirectoryTagHeadersBulkTrusted inlines tag decode for trusted bulk buffers.
+//
+// This variant avoids tagFromBuffer/NewEntry/IsEmbedded call overhead in favor of
+// direct field extraction and a local embedded-size switch.
+func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, tagCount uint16) error {
+	total := int(tagCount) * 12
+	if total <= 0 {
+		return nil
+	}
+	if total > len(r.state.buf) {
+		return r.parseDirectoryTagHeadersPerEntry(directory, tagCount)
+	}
+
+	raw, err := r.fastRead(total)
+	if err != nil {
+		return err
+	}
+	if len(raw) < total {
+		return io.ErrUnexpectedEOF
+	}
+
+	warnEnabled := r.warnEnabled()
+	ifdName := ""
+	if warnEnabled {
+		ifdName = directory.String()
+	}
+
+	byteOrder := directory.ByteOrder
+	directoryType := directory.Type
+	directoryIndex := directory.Index
+	baseOffset := directory.BaseOffset
+
+	for pos := 0; pos < total; pos += 12 {
+		h := raw[pos : pos+12]
+		tagID := tag.ID(byteOrder.Uint16(h[:2]))
+		tagType := tag.Type(byteOrder.Uint16(h[2:4]))
+		unitCount := byteOrder.Uint32(h[4:8])
+		valueOffset := byteOrder.Uint32(h[8:12])
+
+		if (tagType.Is(tag.TypeLong) || tagType.Is(tag.TypeUndefined)) && tagUsesIfdType(directoryType, tagID) {
+			tagType = tag.TypeIfd
+		}
+
+		if !tagType.IsValid() {
+			if warnEnabled {
+				r.warn().Err(tag.ErrTagTypeNotValid).Str("ifd", ifdName).Send()
+			}
+			continue
+		}
+
+		t := tag.Entry{
+			ValueOffset: valueOffset,
+			UnitCount:   unitCount,
+			ID:          tagID,
+			Type:        tagType,
+			IfdType:     directoryType,
+			IfdIndex:    directoryIndex,
+			ByteOrder:   byteOrder,
+		}
+		if !t.IsEmbedded() {
+			t.ValueOffset += baseOffset
+		}
+
+		if t.IsEmbedded() {
+			r.parseTag(t)
+			continue
+		}
+		r.addTag(t)
+	}
+	return nil
+}
