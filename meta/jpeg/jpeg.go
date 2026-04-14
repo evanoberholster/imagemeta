@@ -39,6 +39,15 @@ func ScanJPEGWithReaderAt(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 	return scanJPEG(r, readerAt, exifReader, xmpReader)
 }
 
+// ScanJPEGWithSource scans JPEG markers from stream and uses source for
+// independent segment reads when source implements io.ReaderAt.
+func ScanJPEGWithSource(stream io.Reader, source io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) error {
+	if ra, ok := source.(io.ReaderAt); ok {
+		return ScanJPEGWithReaderAt(stream, ra, exifReader, xmpReader)
+	}
+	return ScanJPEG(stream, exifReader, xmpReader)
+}
+
 // ScanMetadata scans a JPEG stream and returns metadata stored directly in JPEG
 // marker segments, such as JFIF, CIFF, MPF, ICC, Photoshop/IPTC, Adobe APP14 and
 // SOF image dimensions.

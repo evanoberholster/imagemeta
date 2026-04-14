@@ -4,26 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-
-	"github.com/evanoberholster/imagemeta/meta"
 )
-
-// ExifReader is invoked with Exif payload bytes and its parsed header.
-type ExifReader func(r io.Reader, h meta.ExifHeader) error
-
-// XMPReader is invoked with XMP payload bytes and XPacket metadata.
-type XMPReader func(r io.Reader, h XPacketHeader) error
-
-// PreviewImageReader is invoked with preview image bytes and metadata header.
-type PreviewImageReader func(r io.Reader, h meta.PreviewHeader) error
-
-// XPacketHeader describes discovered XPacket payload metadata.
-type XPacketHeader struct {
-	Offset       uint64
-	Length       int
-	HasXPacketPI bool
-	HasXMPMeta   bool
-}
 
 // Errors
 var (
@@ -69,6 +50,20 @@ func (r *Reader) ReadFTYP() (err error) {
 	}
 	r.initMetadataGoals()
 	return nil
+}
+
+// ReadMetadataUntilEOF reads metadata boxes until the stream is exhausted.
+func (r *Reader) ReadMetadataUntilEOF() error {
+	for {
+		err := r.ReadMetadata()
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
 }
 
 func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {

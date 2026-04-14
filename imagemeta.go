@@ -4,7 +4,6 @@ package imagemeta
 
 import (
 	"bufio"
-
 	"io"
 	"sync"
 
@@ -58,9 +57,11 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	ir.Exif.ImageType = it
 	switch it {
 	case imagetype.ImageJPEG:
-		if err = scanJPEG(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
+		if err = jpeg.ScanJPEGWithSource(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
 			return exif.Exif{}, err
 		}
+	case imagetype.ImageCRW:
+		return DecodeCRW(r)
 	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF:
 		header, err := exif.ScanTiffHeader(rr, it)
 		if err != nil {
@@ -75,7 +76,7 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 		if err := bmr.ReadFTYP(); err != nil {
 			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 		}
-		if err := readMetadataUntilDone(bmr); err != nil {
+		if err := bmr.ReadMetadataUntilEOF(); err != nil {
 			return ir.Exif, err
 		}
 	case imagetype.ImagePNG:
@@ -113,7 +114,7 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
-	if err := readMetadataUntilDone(bmr); err != nil {
+	if err := bmr.ReadMetadataUntilEOF(); err != nil {
 		return ir.Exif, err
 	}
 	return ir.Exif, nil
@@ -150,6 +151,28 @@ func DecodeCR2(r io.ReadSeeker) (exif.Exif, error) {
 	return DecodeTiff(r)
 }
 
+// DecodeCRW decodes a CRW file from an io.ReadSeeker returning Exif or an error.
+func DecodeCRW(r io.ReadSeeker) (exif.Exif, error) {
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return exif.Exif{}, err
+	}
+	it, err := imagetype.Scan(r)
+	if err != nil {
+		return exif.Exif{}, err
+	}
+	if it != imagetype.ImageCRW {
+		return exif.Exif{}, ErrMetadataNotSupported
+	}
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return exif.Exif{}, err
+	}
+	ciff, err := jpeg.ParseCIFFReader(r)
+	if err != nil {
+		return exif.Exif{}, err
+	}
+	return exif.FromCIFF(ciff, it), nil
+}
+
 // DecodeHeif decodes a Heif file from an io.Reader returning Exif or an error.
 // Needs improvement
 func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
@@ -176,7 +199,7 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
-	if err := readMetadataUntilDone(bmr); err != nil {
+	if err := bmr.ReadMetadataUntilEOF(); err != nil {
 		return ir.Exif, err
 	}
 	return ir.Exif, nil
@@ -202,7 +225,7 @@ func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
-	if err = scanJPEG(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
+	if err = jpeg.ScanJPEGWithSource(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
 		return exif.Exif{}, err
 	}
 	ir.Exif.ImageType = it
@@ -244,29 +267,9 @@ func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
 		return nil, errors.Wrapf(err, "ReadFtypBox")
 	}
 
-	if err := readMetadataUntilDone(bmr); err != nil {
+	if err := bmr.ReadMetadataUntilEOF(); err != nil {
 		return nil, err
 	}
 
 	return pr.PreviewImage, nil
-}
-
-func readMetadataUntilDone(r *isobmff.Reader) error {
-	for {
-		err := r.ReadMetadata()
-		if err == nil {
-			continue
-		}
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		return err
-	}
-}
-
-func scanJPEG(stream io.Reader, source io.Reader, exifReader func(io.Reader, meta.ExifHeader) error, xmpReader func(io.Reader) error) error {
-	if ra, ok := source.(io.ReaderAt); ok {
-		return jpeg.ScanJPEGWithReaderAt(stream, ra, exifReader, xmpReader)
-	}
-	return jpeg.ScanJPEG(stream, exifReader, xmpReader)
 }

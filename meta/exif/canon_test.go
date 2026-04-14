@@ -574,7 +574,7 @@ func TestCanonShouldReplaceAFInfoSourceTieBreak(t *testing.T) {
 func TestParseCanonAFInfo2LargePayload(t *testing.T) {
 	const numAFPoints = 1053
 
-	maskWords := canonBitWordCount(numAFPoints)
+	maskWords := canon.BitWordCount(numAFPoints)
 	totalWords := 8 + (4 * numAFPoints) + (2 * maskWords)
 	words := make([]uint16, totalWords)
 	words[1] = 22 // AFAreaMode

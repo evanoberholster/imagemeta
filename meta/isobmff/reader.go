@@ -83,10 +83,11 @@ type Reader struct {
 	heic heicMeta
 	ftyp fileTypeBox
 
-	br                   *bufio.Reader
-	exifReader           ExifReader
-	xmpReader            XMPReader
-	previewImageReader   PreviewImageReader
+	br                 *bufio.Reader
+	exifReader         meta.ExifReader
+	xmpReader          meta.XMPReader
+	previewImageReader meta.PreviewImageReader
+
 	pooledBufio          bool
 	offset               int64
 	discardSeekThreshold int
@@ -98,7 +99,7 @@ type Reader struct {
 }
 
 // NewReader returns a new Reader.
-func NewReader(r io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) *Reader {
+func NewReader(r io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *Reader {
 	reader := newReader(r)
 	reader.exifReader = exifReader
 	reader.xmpReader = xmpReader
@@ -184,7 +185,7 @@ func (r *Reader) reset(newSource io.Reader) {
 }
 
 // Reset reinitializes reader state for a new source and callbacks.
-func (r *Reader) Reset(newSource io.Reader, exifReader ExifReader, xmpReader XMPReader, previewImageReader PreviewImageReader) {
+func (r *Reader) Reset(newSource io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) {
 	r.Close()
 	*r = newReader(newSource)
 	r.exifReader = exifReader
@@ -345,7 +346,7 @@ func (r *Reader) callExifReader(b *box, h meta.ExifHeader) error {
 }
 
 // callXMPReader dispatches XMP payload bytes to the configured callback.
-func (r *Reader) callXMPReader(b *box, h XPacketHeader) error {
+func (r *Reader) callXMPReader(b *box, h meta.XPacketHeader) error {
 	if r.xmpReader == nil {
 		return nil
 	}

@@ -16,9 +16,9 @@ func TestReadMetadataCR3XPacketCallback(t *testing.T) {
 	file := append(makeFTYP("crx "), makeUUIDBox(cr3XPacketUUID, xpacketPayload)...)
 
 	var gotPayload []byte
-	var gotHeader XPacketHeader
+	var gotHeader meta.XPacketHeader
 
-	r := NewReader(bytes.NewReader(file), nil, func(rr io.Reader, h XPacketHeader) error {
+	r := NewReader(bytes.NewReader(file), nil, func(rr io.Reader, h meta.XPacketHeader) error {
 		var err error
 		gotPayload, err = io.ReadAll(rr)
 		gotHeader = h
@@ -244,9 +244,9 @@ func TestReadMetadataHEIFXMPFromMdatCallback(t *testing.T) {
 	file = append(file, makeBox("mdat", xmpPayload)...)
 
 	var gotPayload []byte
-	var gotHeader XPacketHeader
+	var gotHeader meta.XPacketHeader
 
-	r := NewReader(bytes.NewReader(file), nil, func(rr io.Reader, h XPacketHeader) error {
+	r := NewReader(bytes.NewReader(file), nil, func(rr io.Reader, h meta.XPacketHeader) error {
 		var err error
 		gotPayload, err = io.ReadAll(rr)
 		gotHeader = h
@@ -416,7 +416,7 @@ func TestReadMetadataStopsAfterMetadataGoalsSatisfied(t *testing.T) {
 	xpacketPayload := []byte("<?xpacket begin='\\ufeff'?><x:xmpmeta></x:xmpmeta>")
 	file := append(makeFTYP("crx "), makeUUIDBox(cr3XPacketUUID, xpacketPayload)...)
 
-	r := NewReader(bytes.NewReader(file), nil, func(_ io.Reader, _ XPacketHeader) error {
+	r := NewReader(bytes.NewReader(file), nil, func(_ io.Reader, _ meta.XPacketHeader) error {
 		return nil
 	}, nil)
 	t.Cleanup(r.Close)
@@ -478,7 +478,7 @@ func TestReadMetadataCR3StopsAfterExifXMPAndSinglePreview(t *testing.T) {
 			_, err := io.Copy(io.Discard, rr)
 			return err
 		},
-		func(rr io.Reader, _ XPacketHeader) error {
+		func(rr io.Reader, _ meta.XPacketHeader) error {
 			xmpCalls++
 			_, err := io.Copy(io.Discard, rr)
 			return err

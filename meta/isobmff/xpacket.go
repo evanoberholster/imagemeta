@@ -1,6 +1,10 @@
 package isobmff
 
-import "bytes"
+import (
+	"bytes"
+
+	"github.com/evanoberholster/imagemeta/meta"
+)
 
 const xpacketProbeLength = 512
 
@@ -13,7 +17,7 @@ var (
 
 // evaluateXPacketHeader inspects a small prefix of the payload for common XMP markers.
 // It does not consume bytes from the source.
-func evaluateXPacketHeader(b *box) (h XPacketHeader, err error) {
+func evaluateXPacketHeader(b *box) (h meta.XPacketHeader, err error) {
 	h.Offset = boxPayloadOffset(b)
 	h.Length = b.remain
 	if b.remain == 0 {

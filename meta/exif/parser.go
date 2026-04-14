@@ -572,64 +572,19 @@ func (r *Reader) parseQueuedMakerNoteRange(start uint32) {
 	r.state.len = start
 }
 
-// parseIFD0PanasonicRawTag parses Panasonic RW2/RWL root-IFD tags.
-// func (r *Reader) parseIFD0PanasonicRawTag(t tag.Entry) bool {
-// 	if r.Exif.ImageType != imagetype.ImagePanaRAW {
-// 		return false
-// 	}
-// 	switch t.ID {
-// 	case tag.TagPanasonicRawVersion:
-// 		r.parseByteList(t, r.Exif.PanasonicRaw.Version[:])
-// 	case tag.TagPanasonicSensorWidth:
-// 		r.Exif.PanasonicRaw.SensorWidth = r.parseUint16(t)
-// 	case tag.TagPanasonicSensorHeight:
-// 		r.Exif.PanasonicRaw.SensorHeight = r.parseUint16(t)
-// 	case tag.TagPanasonicBitsPerSample:
-// 		r.Exif.PanasonicRaw.BitsPerSample = r.parseUint16(t)
-// 	case tag.TagPanasonicCompression:
-// 		r.Exif.PanasonicRaw.Compression = r.parseUint16(t)
-// 	case tag.TagPanasonicISO:
-// 		r.Exif.PanasonicRaw.ISO = uint32(r.parseUint16(t))
-// 	case tag.TagPanasonicISOHighPrecision:
-// 		r.Exif.PanasonicRaw.ISO = r.parseUint32(t)
-// 	case tag.TagNoiseReductionParams:
-// 		// Not parsed
-// 	case tag.TagWBInfo2:
-// 		// Not parsed
-// 	case tag.TagPanasonicRawFormat:
-// 		r.Exif.PanasonicRaw.RawFormat = r.parseUint16(t)
-// 	case tag.TagJpgFromRaw:
-// 		// TODO: parse JpgFromRaw payload into typed preview metadata if needed.
-// 		// Keep offset/length only to avoid large allocations for embedded JPEGs.
-// 		r.Exif.PanasonicRaw.JpgFromRawOffset = t.ValueOffset
-// 		r.Exif.PanasonicRaw.JpgFromRawLength = t.UnitCount
-// 	case tag.TagPanasonicRawDataOffset:
-// 		r.Exif.PanasonicRaw.RawDataOffset = r.parseUint32(t)
-// 	case tag.TagPanasonicDistortionInfo:
-// 		// Not parsed
-// 	case tag.TagPanasonicCropTop:
-// 		r.Exif.PanasonicRaw.CropTop = r.parseUint16(t)
-// 	case tag.TagPanasonicCropLeft:
-// 		r.Exif.PanasonicRaw.CropLeft = r.parseUint16(t)
-// 	case tag.TagPanasonicCropBottom:
-// 		r.Exif.PanasonicRaw.CropBottom = r.parseUint16(t)
-// 	case tag.TagPanasonicCropRight:
-// 		r.Exif.PanasonicRaw.CropRight = r.parseUint16(t)
-// 	case tag.TagPanasonicTitle:
-// 		r.Exif.PanasonicRaw.Title = r.parseStringAllowUndefined(t)
-// 	case tag.TagPanasonicTitle2:
-// 		r.Exif.PanasonicRaw.Title2 = r.parseStringAllowUndefined(t)
-// 	default:
-// 		return false
-// 	}
-// 	return true
-// }
-
 // parseExifTag parses ExifIFD/SubIFD tags into typed model fields.
 //
 // Non-parsed ExifIFD/SubIFD tags are currently handled by falling through to
 // the default case (`return false`) when there is no modeled parser mapping.
 func (r *Reader) parseExifTag(t tag.Entry) bool {
+	return r.parseExifTimeTag(t) ||
+		r.parseExifTextTag(t) ||
+		r.parseExifImageTag(t) ||
+		r.parseExifExposureTag(t) ||
+		r.parseExifCaptureTag(t)
+}
+
+func (r *Reader) parseExifTimeTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagDateTimeOriginal:
 		r.Exif.Time.DateTimeOriginal = r.parseDate(t)
@@ -655,6 +610,14 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagOffsetTimeDigitized:
 		r.Exif.Time.OffsetTimeDigitized = r.parseOffsetTime(t)
 		r.Exif.Time.markTagParsed(t.ID)
+	default:
+		return false
+	}
+	return true
+}
+
+func (r *Reader) parseExifTextTag(t tag.Entry) bool {
+	switch t.ID {
 	case tag.TagExifVersion:
 		r.Exif.ExifIFD.ExifVersion = r.parseStringAllowUndefined(t)
 	case tag.TagLensMake:
@@ -680,6 +643,14 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagDeviceSettingDescription:
 		// Not parsed
 		// The payload is often large and not needed in the hot parse path.
+	default:
+		return false
+	}
+	return true
+}
+
+func (r *Reader) parseExifImageTag(t tag.Entry) bool {
+	switch t.ID {
 	case tag.TagPixelXDimension:
 		r.Exif.ExifIFD.PixelXDimension = r.parseUint32(t)
 		if r.Exif.IFD0.ImageWidth == 0 {
@@ -708,6 +679,14 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 		r.Exif.ExifIFD.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagSubjectArea:
 		r.parseUint16List(t, r.Exif.ExifIFD.SubjectArea[:])
+	default:
+		return false
+	}
+	return true
+}
+
+func (r *Reader) parseExifExposureTag(t tag.Entry) bool {
+	switch t.ID {
 	case tag.TagExposureTime:
 		r.Exif.ExifIFD.ExposureTime = r.parseExposureTime(t)
 	case tag.TagShutterSpeedValue:
@@ -717,7 +696,7 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 	case tag.TagApertureValue:
 		r.Exif.ExifIFD.ApertureValue = r.parseApexAperture(t)
 		if r.Exif.ExifIFD.FNumber == 0 && apertureIsFinite(r.Exif.ExifIFD.ApertureValue) {
-			r.Exif.ExifIFD.FNumber = apertureValueToFNumber(r.Exif.ExifIFD.ApertureValue)
+			r.Exif.ExifIFD.FNumber = r.Exif.ExifIFD.ApertureValue
 		}
 	case tag.TagMaxApertureValue:
 		r.Exif.ExifIFD.MaxApertureValue = r.parseApexAperture(t)
@@ -749,6 +728,14 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 		r.Exif.ExifIFD.FocalLengthIn35mmFormat = r.parseFocalLength(t)
 	case tag.TagExposureIndex:
 		r.Exif.ExifIFD.ExposureIndex = r.parseRationalValue(t)
+	default:
+		return false
+	}
+	return true
+}
+
+func (r *Reader) parseExifCaptureTag(t tag.Entry) bool {
+	switch t.ID {
 	case tag.TagSensingMethod:
 		r.Exif.ExifIFD.SensingMethod = r.parseUint16(t)
 	case tag.TagFileSource:
@@ -910,14 +897,6 @@ func (r *Reader) parseSubSecTime(t tag.Entry) uint16 {
 		return 0
 	}
 	return uint16(parseStrUint(trimNULBuffer(buf)))
-}
-
-// apertureValueToFNumber converts APEX aperture values into F-number approximations.
-func apertureValueToFNumber(v meta.Aperture) meta.Aperture {
-	if v == 0 {
-		return 0
-	}
-	return v
 }
 
 func apertureIsFinite(v meta.Aperture) bool {

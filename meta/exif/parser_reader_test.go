@@ -368,15 +368,9 @@ func TestParseSubIFDsClampsToOffsetCapacity(t *testing.T) {
 	}
 }
 
-func TestApertureValueToFNumber(t *testing.T) {
+func TestApexApertureAndShutterConversions(t *testing.T) {
 	t.Parallel()
 
-	if got := apertureValueToFNumber(0); got != 0 {
-		t.Fatalf("apertureValueToFNumber(0) = %v, want 0", got)
-	}
-	if got, want := apertureValueToFNumber(meta.Aperture(2)), meta.Aperture(2); got != want {
-		t.Fatalf("apertureValueToFNumber(2) = %v, want %v", got, want)
-	}
 	if got, want := apexApertureToFNumber(1), meta.Aperture(math.Sqrt2); math.Abs(float64(got-want)) > 0.0001 {
 		t.Fatalf("apexApertureToFNumber(1) = %v, want %v", got, want)
 	}

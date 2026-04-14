@@ -54,7 +54,8 @@ type CIFF struct {
 	UnknownTags            map[string]string
 }
 
-func parseCIFF(payload []byte) (*CIFF, error) {
+// ParseCIFF parses Canon CIFF metadata from APP0 HEAPJPGM records or CRW files.
+func ParseCIFF(payload []byte) (*CIFF, error) {
 	if !isCIFFPayload(payload) || len(payload) < 18 {
 		return nil, errShortSegment("CIFF")
 	}
@@ -74,6 +75,66 @@ func parseCIFF(payload []byte) (*CIFF, error) {
 		c.UnknownTags = nil
 	}
 	return c, nil
+}
+
+// ParseCIFFReader parses Canon CIFF metadata from a seekable CRW stream.
+func ParseCIFFReader(r io.ReadSeeker) (*CIFF, error) {
+	size, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = r.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	if ra, ok := r.(io.ReaderAt); ok {
+		return ParseCIFFReaderAt(ra, size)
+	}
+	return ParseCIFFReaderAt(readSeekerAt{r: r}, size)
+}
+
+// ParseCIFFReaderAt parses Canon CIFF metadata from a random-access CRW stream.
+func ParseCIFFReaderAt(r io.ReaderAt, size int64) (*CIFF, error) {
+	if size < 18 {
+		return nil, errShortSegment("CIFF")
+	}
+	header := make([]byte, 14)
+	if _, err := r.ReadAt(header, 0); err != nil {
+		return nil, err
+	}
+	if !isCIFFPayload(header) {
+		return nil, errShortSegment("CIFF")
+	}
+	order := ciffByteOrder(header)
+	if order == utils.UnknownEndian {
+		return nil, io.ErrUnexpectedEOF
+	}
+	c := &CIFF{UnknownTags: make(map[string]string)}
+	headerLen := int64(order.Uint32(header[2:6]))
+	if headerLen < 14 || headerLen > size-6 {
+		headerLen = 0
+	}
+	if err := parseCIFFDirectoryAt(c, r, order, headerLen, size-headerLen, "CIFF", 0); err != nil {
+		return nil, err
+	}
+	if len(c.UnknownTags) == 0 {
+		c.UnknownTags = nil
+	}
+	return c, nil
+}
+
+type readSeekerAt struct {
+	r io.ReadSeeker
+}
+
+func (r readSeekerAt) ReadAt(p []byte, off int64) (int, error) {
+	if _, err := r.r.Seek(off, io.SeekStart); err != nil {
+		return 0, err
+	}
+	n, err := io.ReadFull(r.r, p)
+	if err == io.ErrUnexpectedEOF {
+		err = io.EOF
+	}
+	return n, err
 }
 
 func ciffByteOrder(payload []byte) utils.ByteOrder {
@@ -127,6 +188,68 @@ func parseCIFFDirectory(c *CIFF, block []byte, order utils.ByteOrder, blockStart
 				continue
 			}
 			value = block[ptr : ptr+size]
+		}
+		parseCIFFTag(c, order, dirName, tagID, tagType, value)
+	}
+	return nil
+}
+
+func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, blockStart, blockSize int64, dirName string, depth int) error {
+	if depth > 16 || blockStart < 0 || blockSize < 6 {
+		return nil
+	}
+	blockEnd := blockStart + blockSize
+	if blockEnd < blockStart {
+		return nil
+	}
+	buf := make([]byte, 4)
+	dirPtrPos := blockEnd - 4
+	if _, err := reader.ReadAt(buf, dirPtrPos); err != nil {
+		return nil
+	}
+	dirOffset := int64(order.Uint32(buf)) + blockStart
+	if dirOffset < blockStart || dirOffset+2 > blockEnd {
+		return nil
+	}
+	buf = make([]byte, 2)
+	if _, err := reader.ReadAt(buf, dirOffset); err != nil {
+		return nil
+	}
+	entries := int64(order.Uint16(buf))
+	dirEntries := dirOffset + 2
+	if dirEntries+entries*10 > blockEnd {
+		return nil
+	}
+	entriesBuf := make([]byte, entries*10)
+	if _, err := reader.ReadAt(entriesBuf, dirEntries); err != nil {
+		return nil
+	}
+	for i := int64(0); i < entries; i++ {
+		entry := entriesBuf[i*10:]
+		tag := order.Uint16(entry[0:2])
+		if tag&0x8000 != 0 {
+			continue
+		}
+		size := int64(order.Uint32(entry[2:6]))
+		ptr := int64(order.Uint32(entry[6:10])) + blockStart
+		tagID := tag & 0x3fff
+		tagType := (tag >> 8) & 0x38
+		valueInDir := tag&0x4000 != 0
+		if (tagType == 0x28 || tagType == 0x30) && !valueInDir {
+			if ptr >= blockStart && size > 0 && ptr+size <= blockEnd {
+				_ = parseCIFFDirectoryAt(c, reader, order, ptr, size, ciffDirName(tagID), depth+1)
+			}
+			continue
+		}
+		value := entry[2:10]
+		if !valueInDir {
+			if size < 0 || ptr < blockStart || ptr+size > blockEnd {
+				continue
+			}
+			value = make([]byte, size)
+			if _, err := reader.ReadAt(value, ptr); err != nil {
+				continue
+			}
 		}
 		parseCIFFTag(c, order, dirName, tagID, tagType, value)
 	}

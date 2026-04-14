@@ -16,9 +16,8 @@ func (jr *jpegReader) readAPP0() {
 			jr.logMarker("APP0 JFIF")
 		}
 		if jr.metadata != nil && isJFIFPrefix(jr.buf) {
-			payload, err := jr.readSegmentPayload()
-			if err != nil {
-				jr.err = err
+			payload, ok := jr.readMetadataPayload()
+			if !ok {
 				return
 			}
 			jr.metadata.JFIF, jr.err = parseJFIF(payload)
@@ -26,16 +25,15 @@ func (jr *jpegReader) readAPP0() {
 		}
 	}
 	if jr.metadata != nil {
-		payload, err := jr.readSegmentPayload()
-		if err != nil {
-			jr.err = err
+		payload, ok := jr.readMetadataPayload()
+		if !ok {
 			return
 		}
 		if isCIFFPayload(payload) {
 			if logInfo() {
 				jr.logMarker("APP0 CIFF")
 			}
-			jr.metadata.CIFF, jr.err = parseCIFF(payload)
+			jr.metadata.CIFF, jr.err = ParseCIFF(payload)
 		}
 		return
 	}
@@ -79,9 +77,8 @@ func (jr *jpegReader) readAPP2() {
 			jr.logMarker("APP2 ICC Profile")
 		}
 		if jr.metadata != nil {
-			payload, err := jr.readSegmentPayload()
-			if err != nil {
-				jr.err = err
+			payload, ok := jr.readMetadataPayload()
+			if !ok {
 				return
 			}
 			jr.err = jr.metadata.addICCChunk(payload)
@@ -93,9 +90,8 @@ func (jr *jpegReader) readAPP2() {
 			jr.logMarker("APP2 MPF")
 		}
 		if jr.metadata != nil {
-			payload, err := jr.readSegmentPayload()
-			if err != nil {
-				jr.err = err
+			payload, ok := jr.readMetadataPayload()
+			if !ok {
 				return
 			}
 			jr.metadata.MPF, jr.err = parseMPF(payload, uint32(jr.offset)+8)
@@ -112,9 +108,8 @@ func (jr *jpegReader) readAPP13() {
 			jr.logMarker("APP13 Photoshop")
 		}
 		if jr.metadata != nil {
-			payload, err := jr.readSegmentPayload()
-			if err != nil {
-				jr.err = err
+			payload, ok := jr.readMetadataPayload()
+			if !ok {
 				return
 			}
 			jr.metadata.Photoshop, jr.metadata.IPTC, jr.err = parsePhotoshop(payload)
@@ -130,9 +125,8 @@ func (jr *jpegReader) readAPP14() {
 			jr.logMarker("APP14 Adobe")
 		}
 		if jr.metadata != nil {
-			payload, err := jr.readSegmentPayload()
-			if err != nil {
-				jr.err = err
+			payload, ok := jr.readMetadataPayload()
+			if !ok {
 				return
 			}
 			jr.metadata.Adobe, jr.err = parseAdobe(payload)
@@ -163,6 +157,30 @@ func (jr *jpegReader) readAPPMarker() {
 	}
 }
 
+func (jr *jpegReader) readMetadataPayload() ([]byte, bool) {
+	payload, err := jr.readSegmentPayload()
+	if err != nil {
+		jr.err = err
+		return nil, false
+	}
+	return payload, true
+}
+
+func (jr *jpegReader) readCallbackPayload(remain int, cb func(io.Reader) error) (int, error) {
+	if cb == nil {
+		return remain, nil
+	}
+	if jr.readerAt != nil {
+		sr := io.NewSectionReader(jr.readerAt, int64(jr.discarded), int64(remain))
+		return remain, cb(sr)
+	}
+	lr := utils.NewLimitedBufferedReader(jr.br, remain)
+	err := cb(lr)
+	consumed := remain - lr.N
+	jr.discarded += uint32(consumed)
+	return lr.N, err
+}
+
 // readExif reads the Exif header/component with the attached metadata
 // ExifDecodeFn. If the function is nil it discards the Exif segment.
 func (jr *jpegReader) readExif() (err error) {
@@ -189,19 +207,11 @@ func (jr *jpegReader) readExif() (err error) {
 
 	// Read Exif
 	if jr.ExifReader != nil {
-		if jr.readerAt != nil {
-			sr := io.NewSectionReader(jr.readerAt, int64(jr.discarded), int64(remain))
-			if err = jr.ExifReader(sr, exifHeader); err != nil {
-				return err
-			}
-		} else {
-			lr := utils.NewLimitedBufferedReader(jr.br, remain)
-			if err = jr.ExifReader(lr, exifHeader); err != nil {
-				return err
-			}
-			consumed := remain - lr.N
-			jr.discarded += uint32(consumed)
-			remain = lr.N
+		remain, err = jr.readCallbackPayload(remain, func(r io.Reader) error {
+			return jr.ExifReader(r, exifHeader)
+		})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -224,19 +234,9 @@ func (jr *jpegReader) readXMP() (err error) {
 	}
 	// Read XMP Decode Function here
 	if jr.XMPReader != nil {
-		if jr.readerAt != nil {
-			sr := io.NewSectionReader(jr.readerAt, int64(jr.discarded), int64(remain))
-			if err = jr.XMPReader(sr); err != nil {
-				return err
-			}
-		} else {
-			r := &io.LimitedReader{R: jr.br, N: int64(remain)}
-			if err = jr.XMPReader(r); err != nil {
-				return err
-			}
-			consumed := remain - int(r.N)
-			jr.discarded += uint32(consumed)
-			remain = int(r.N)
+		remain, err = jr.readCallbackPayload(remain, jr.XMPReader)
+		if err != nil {
+			return err
 		}
 	}
 	// Discard remaining bytes

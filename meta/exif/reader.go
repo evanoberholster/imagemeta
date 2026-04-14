@@ -127,7 +127,7 @@ func releasePooledReader(r *Reader) {
 	parseReaderPool.Put(r)
 }
 
-func acquirePooledISOBMFFReader(src io.Reader, exifReader isobmff.ExifReader) *isobmff.Reader {
+func acquirePooledISOBMFFReader(src io.Reader, exifReader meta.ExifReader) *isobmff.Reader {
 	r, ok := isobmffReaderPool.Get().(*isobmff.Reader)
 	if !ok || r == nil {
 		return isobmff.NewReader(src, exifReader, nil, nil)
