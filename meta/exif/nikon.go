@@ -137,21 +137,7 @@ func (r *Reader) parseNikonText(t tag.Entry) string {
 }
 
 func (r *Reader) parseNikonUint32(t tag.Entry) uint32 {
-	switch t.Type {
-	case tag.TypeLong, tag.TypeIfd:
-		return r.parseUint32(t)
-	case tag.TypeShort, tag.TypeSignedShort:
-		var v [1]uint16
-		if r.parseUint16List(t, v[:]) > 0 {
-			return uint32(v[0])
-		}
-	case tag.TypeByte, tag.TypeUndefined, tag.TypeASCII, tag.TypeASCIINoNul:
-		var v [1]byte
-		if r.parseByteList(t, v[:]) > 0 {
-			return uint32(v[0])
-		}
-	}
-	return 0
+	return r.parseMakerNoteUint32(t)
 }
 
 func (r *Reader) parseNikonISOValue(t tag.Entry) uint32 {

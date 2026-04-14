@@ -239,6 +239,66 @@ func TestScanJPEGExtendedXMP(t *testing.T) {
 	}
 }
 
+func TestScanMetadataSyntheticAPPFamilies(t *testing.T) {
+	data := testJPEG(
+		testSegment(markerAPP0, testJFIFPayload(1, 2, 1, 300, 200)),
+		testSegment(markerAPP2, testMPFPayload(2, 100, 200)),
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x0404, append(
+				testIPTCDataset(2, 25, []byte("codex")),
+				testIPTCDataset(2, 80, []byte("Jane Doe"))...,
+			)),
+		)),
+		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
+	)
+
+	got, err := ScanMetadata(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.JFIF == nil || got.JFIF.MajorVersion != 1 || got.JFIF.MinorVersion != 2 ||
+		got.JFIF.XResolution != 300 || got.JFIF.YResolution != 200 {
+		t.Fatalf("JFIF = %+v", got.JFIF)
+	}
+	if got.MPF == nil || got.MPF.NumberOfImages != 2 || len(got.MPF.Images) != 2 {
+		t.Fatalf("MPF = %+v", got.MPF)
+	}
+	if got.MPF.Images[0].MPImageStart != 128 || got.MPF.Images[1].MPImageStart != 228 {
+		t.Fatalf("MPImageStart = %d/%d, want 128/228", got.MPF.Images[0].MPImageStart, got.MPF.Images[1].MPImageStart)
+	}
+	if got.Photoshop == nil || !got.Photoshop.CopyrightFlagSet || got.Photoshop.CopyrightFlag != 1 {
+		t.Fatalf("Photoshop = %+v", got.Photoshop)
+	}
+	if got.IPTC == nil || len(got.IPTC.Keywords) != 1 || got.IPTC.Keywords[0] != "codex" || got.IPTC.ByLine != "Jane Doe" {
+		t.Fatalf("IPTC = %+v", got.IPTC)
+	}
+	if got.Adobe == nil || got.Adobe.DCTEncodeVersion != 100 || got.Adobe.ColorTransform != 1 {
+		t.Fatalf("Adobe = %+v", got.Adobe)
+	}
+}
+
+func TestScanMetadataAssemblesICCChunks(t *testing.T) {
+	profile := testICCProfile()
+	split := 70
+	data := testJPEG(
+		testSegment(markerAPP2, testICCPayload(2, 2, profile[split:])),
+		testSegment(markerAPP2, testICCPayload(1, 2, profile[:split])),
+	)
+
+	got, err := ScanMetadata(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ICC == nil {
+		t.Fatal("ICC profile was not parsed")
+	}
+	if got.ICC.ProfileFileSignature != "acsp" || got.ICC.ProfileVersion != 4 ||
+		got.ICC.ProfileClass != "mntr" || got.ICC.ColorSpaceData != "RGB " {
+		t.Fatalf("ICC = %+v", got.ICC)
+	}
+}
+
 func TestScanMetadataCanonCIFFSample(t *testing.T) {
 	f, err := os.Open("../../download_samples/Canon/Canon/CanonPowerShotA5.jpg")
 	if err != nil {
@@ -265,6 +325,50 @@ func TestScanMetadataCanonCIFFSample(t *testing.T) {
 		got.CIFF.FileNumber != 45 ||
 		got.CIFF.Model != "Canon PowerShot A5" {
 		t.Fatalf("CIFF = %+v", got.CIFF)
+	}
+}
+
+func TestParseCIFFCRW(t *testing.T) {
+	f, err := os.Open("../../testImages/CRW.CRW")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	got, err := ParseCIFFReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Make != "Canon" {
+		t.Fatalf("Make = %q, want Canon", got.Make)
+	}
+	if got.Model != "Canon EOS D30" {
+		t.Fatalf("Model = %q, want Canon EOS D30", got.Model)
+	}
+	if got.ImageWidth == 0 || got.ImageHeight == 0 {
+		t.Fatalf("image dimensions = %dx%d, want non-zero", got.ImageWidth, got.ImageHeight)
+	}
+	if got.DateTimeOriginal.IsZero() {
+		t.Fatal("DateTimeOriginal is zero")
+	}
+	if got.FocalLength == 0 {
+		t.Fatal("FocalLength is zero")
+	}
+}
+
+func TestParseCIFFReaderWithoutReaderAt(t *testing.T) {
+	f, err := os.Open("../../testImages/CRW.CRW")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	got, err := ParseCIFFReader(readSeekerOnly{f})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Model != "Canon EOS D30" {
+		t.Fatalf("Model = %q, want Canon EOS D30", got.Model)
 	}
 }
 
@@ -334,6 +438,10 @@ func TestScanMetadataCanonAPPFamilies(t *testing.T) {
 	}
 }
 
+type readSeekerOnly struct {
+	io.ReadSeeker
+}
+
 type onlyReader struct {
 	r *bytes.Reader
 }
@@ -359,6 +467,109 @@ func testSegment(marker markerType, payload []byte) []byte {
 
 func testTIFFHeader() []byte {
 	return []byte{'I', 'I', '*', 0, 8, 0, 0, 0}
+}
+
+func testJFIFPayload(major, minor, unit uint8, xres, yres uint16) []byte {
+	payload := make([]byte, 14)
+	copy(payload, []byte(jfifPrefix))
+	payload[5] = major
+	payload[6] = minor
+	payload[7] = unit
+	binary.BigEndian.PutUint16(payload[8:10], xres)
+	binary.BigEndian.PutUint16(payload[10:12], yres)
+	return payload
+}
+
+func testAdobePayload(version, flags0, flags1 uint16, transform uint8) []byte {
+	payload := make([]byte, 12)
+	copy(payload, []byte(adobePrefix))
+	binary.BigEndian.PutUint16(payload[5:7], version)
+	binary.BigEndian.PutUint16(payload[7:9], flags0)
+	binary.BigEndian.PutUint16(payload[9:11], flags1)
+	payload[11] = transform
+	return payload
+}
+
+func testMPFPayload(imageCount uint32, starts ...uint32) []byte {
+	const (
+		ifdOffset = 8
+		tagCount  = 3
+		entrySize = 12
+	)
+	entriesStart := ifdOffset + 2
+	nextIFDStart := entriesStart + tagCount*entrySize
+	mpEntryOffset := nextIFDStart + 4
+	tiffLen := mpEntryOffset + len(starts)*16
+	tiff := make([]byte, tiffLen)
+	copy(tiff, []byte{'I', 'I', '*', 0})
+	binary.LittleEndian.PutUint32(tiff[4:8], ifdOffset)
+	binary.LittleEndian.PutUint16(tiff[ifdOffset:ifdOffset+2], tagCount)
+
+	putEntry := func(index int, tagID, typ uint16, count uint32, raw []byte) {
+		pos := entriesStart + index*entrySize
+		binary.LittleEndian.PutUint16(tiff[pos:pos+2], tagID)
+		binary.LittleEndian.PutUint16(tiff[pos+2:pos+4], typ)
+		binary.LittleEndian.PutUint32(tiff[pos+4:pos+8], count)
+		copy(tiff[pos+8:pos+12], raw)
+	}
+
+	putEntry(0, 0xb000, 7, 4, []byte("0100"))
+	var raw [4]byte
+	binary.LittleEndian.PutUint32(raw[:], imageCount)
+	putEntry(1, 0xb001, 4, 1, raw[:])
+	binary.LittleEndian.PutUint32(raw[:], uint32(mpEntryOffset))
+	putEntry(2, 0xb002, 7, uint32(len(starts)*16), raw[:])
+
+	for i, start := range starts {
+		pos := mpEntryOffset + i*16
+		binary.LittleEndian.PutUint32(tiff[pos:pos+4], 0x02000000)
+		binary.LittleEndian.PutUint32(tiff[pos+4:pos+8], 10)
+		binary.LittleEndian.PutUint32(tiff[pos+8:pos+12], start)
+	}
+	return append([]byte(mpfPrefix), tiff...)
+}
+
+func testPhotoshopPayload(resources ...[]byte) []byte {
+	payload := []byte(photoshopPrefix)
+	for _, resource := range resources {
+		payload = append(payload, resource...)
+	}
+	return payload
+}
+
+func testPhotoshopResource(id uint16, data []byte) []byte {
+	out := []byte{'8', 'B', 'I', 'M', 0, 0, 0, 0}
+	binary.BigEndian.PutUint16(out[4:6], id)
+	var size [4]byte
+	binary.BigEndian.PutUint32(size[:], uint32(len(data)))
+	out = append(out, size[:]...)
+	out = append(out, data...)
+	if len(out)&1 != 0 {
+		out = append(out, 0)
+	}
+	return out
+}
+
+func testIPTCDataset(record, dataset uint8, value []byte) []byte {
+	out := []byte{0x1c, record, dataset, 0, 0}
+	binary.BigEndian.PutUint16(out[3:5], uint16(len(value)))
+	return append(out, value...)
+}
+
+func testICCPayload(seq, total uint8, chunk []byte) []byte {
+	payload := append([]byte(iccPrefix+"\x00"), seq, total)
+	return append(payload, chunk...)
+}
+
+func testICCProfile() []byte {
+	profile := make([]byte, 132)
+	copy(profile[4:8], []byte("lcms"))
+	binary.BigEndian.PutUint32(profile[8:12], 0x00040000)
+	copy(profile[12:16], []byte("mntr"))
+	copy(profile[16:20], []byte("RGB "))
+	copy(profile[20:24], []byte("XYZ "))
+	copy(profile[36:40], []byte("acsp"))
+	return profile
 }
 
 func testExtendedXMPSegment(guid string, size, offset uint32, chunk []byte) []byte {

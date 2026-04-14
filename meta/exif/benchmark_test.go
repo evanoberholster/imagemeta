@@ -11,8 +11,9 @@ import (
 const defaultBenchImageDir = "/home/evanoberholster/go/src/github.com/evanoberholster/test/img"
 
 type benchSample struct {
-	name string
-	glob string
+	name     string
+	glob     string
+	matchIdx int
 }
 
 func benchmarkParseSamples(b *testing.B, samples []benchSample, opts ...ReaderOption) {
@@ -24,7 +25,7 @@ func benchmarkParseSamples(b *testing.B, samples []benchSample, opts ...ReaderOp
 	for _, sample := range samples {
 		sample := sample
 
-		path, err := firstMatch(filepath.Join(benchDir, sample.glob))
+		path, err := nthMatch(filepath.Join(benchDir, sample.glob), sample.matchIdx)
 		if err != nil {
 			b.Fatalf("glob %q: %v", sample.glob, err)
 		}
@@ -70,7 +71,8 @@ func BenchmarkParseFormats(b *testing.B) {
 		{name: "CR3", glob: "*.CR3"},
 		{name: "GPR", glob: "*.GPR"},
 		{name: "NEF", glob: "*.NEF"},
-		{name: "JPG", glob: "*.jpg"},
+		{name: "JPG-1", glob: "*.jpg"},
+		{name: "JPG-2", glob: "*.jpg", matchIdx: 1},
 		{name: "JXL", glob: "*.jxl"},
 		{name: "HEI", glob: "*.heic"},
 	}
@@ -90,24 +92,25 @@ func BenchmarkParseFormatsAFInfoBitsetsOnly(b *testing.B) {
 	benchmarkParseSamples(b, samples, opts)
 }
 
-// firstMatch returns the first path that matches the provided glob.
-func firstMatch(pattern string) (string, error) {
+// nthMatch returns the path at idx from the sorted paths matching the provided glob.
+func nthMatch(pattern string, idx int) (string, error) {
 	paths, err := filepath.Glob(pattern)
 	if err != nil {
 		return "", err
 	}
-	if len(paths) == 0 {
+	if idx < 0 || idx >= len(paths) {
 		return "", nil
 	}
-	return paths[0], nil
+	return paths[idx], nil
 }
 
-// BenchmarkParseFormats/Canon_EOS_6D/CR2-2   	  146330	      7737 ns/op	2766194.87 MB/s	    1544 B/op	      18 allocs/op
-// BenchmarkParseFormats/Canon_EOS_R/CR3-2    	   94710	     11723 ns/op	2701806.39 MB/s	    3731 B/op	      20 allocs/op
-// BenchmarkParseFormats/HERO6_Black/GPR-2    	  328575	      3688 ns/op	1208736.22 MB/s	     184 B/op	       8 allocs/op
-// BenchmarkParseFormats/NIKON_D300S/NEF-2    	  150327	      7483 ns/op	1827959.84 MB/s	     736 B/op	      18 allocs/op
-// BenchmarkParseFormats/JPG-2                	 1323674	       882.9 ns/op	1369075.04 MB/s	      68 B/op	       3 allocs/op
-// BenchmarkParseFormats/Canon_EOS_R6/JXL-2   	  479952	      2724 ns/op	140208.68 MB/s	     232 B/op	      10 allocs/op
-// BenchmarkParseFormats/iPhone_8/HEI-2       	   51920	     22360 ns/op	25725.17 MB/s	     417 B/op	      14 allocs/op
-// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_6D/CR2-2         	  137852	      8158 ns/op	2623566.14 MB/s	    1368 B/op	      17 allocs/op
-// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_R/CR3-2          	  110773	     10201 ns/op	3104768.74 MB/s	    1424 B/op	      19 allocs/op
+// BenchmarkParseFormats/Canon_EOS_6D/CR2-2   	  141033	      8127 ns/op	2633377.29 MB/s	    1544 B/op	      18 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R/CR3-2    	   93792	     11411 ns/op	2775657.62 MB/s	    3729 B/op	      20 allocs/op
+// BenchmarkParseFormats/HERO6_Black/GPR-2    	  328492	      3794 ns/op	1174922.25 MB/s	     184 B/op	       8 allocs/op
+// BenchmarkParseFormats/NIKON_D300S/NEF-2    	  144343	      7871 ns/op	1737803.63 MB/s	     736 B/op	      18 allocs/op
+// BenchmarkParseFormats/JPG-1-2              	 1316133	       964.6 ns/op	1253088.14 MB/s	      68 B/op	       3 allocs/op
+// BenchmarkParseFormats/Canon_EOS_6D/JPG-2-2 	  420878	      2755 ns/op	1326597.08 MB/s	     208 B/op	       8 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R6/JXL-2   	  398570	      2909 ns/op	131304.96 MB/s	     232 B/op	      10 allocs/op
+// BenchmarkParseFormats/iPhone_8/HEI-2       	   57021	     20159 ns/op	28533.38 MB/s	     419 B/op	      14 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_6D/CR2-2         	  146234	      7979 ns/op	2682219.44 MB/s	    1368 B/op	      17 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_R/CR3-2          	   94360	     11061 ns/op	2863413.30 MB/s	    1424 B/op	      19 allocs/op

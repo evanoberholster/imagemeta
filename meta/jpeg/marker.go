@@ -198,7 +198,7 @@ func isJFIFPayload(buf []byte) bool {
 func isCIFFPayload(buf []byte) bool {
 	return len(buf) >= 14 &&
 		(bytes.Equal(buf[:2], []byte("II")) || bytes.Equal(buf[:2], []byte("MM"))) &&
-		bytes.Equal(buf[6:14], []byte("HEAPJPGM"))
+		(bytes.Equal(buf[6:14], []byte("HEAPJPGM")) || bytes.Equal(buf[6:14], []byte("HEAPCCDR")))
 }
 
 func isICCPayload(buf []byte) bool {

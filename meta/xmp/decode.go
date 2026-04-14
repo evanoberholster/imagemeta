@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	"github.com/orisano/gosax"
@@ -133,7 +134,7 @@ func parseISOBMFF(r io.Reader, opts ParseOptions) (XMP, error) {
 	bmffReader := isobmff.NewReader(
 		r,
 		nil,
-		func(packet io.Reader, _ isobmff.XPacketHeader) error {
+		func(packet io.Reader, _ meta.XPacketHeader) error {
 			x, err := ParseXmpWithOptions(packet, opts)
 			if err != nil {
 				return err

@@ -235,27 +235,6 @@ func (r *Reader) fastRead(n int) ([]byte, error) {
 	return buf, err
 }
 
-// fastRead2 reads a bounded byte slice using the optimized buffered path.
-func (r *Reader) fastRead2(buf []byte) (int, error) {
-	l := len(buf)
-	if l == 0 {
-		return 0, nil
-	}
-	if l > len(r.state.buf) {
-		return 0, imagetype.ErrDataLength
-	}
-	if r.exifLength > 0 && int(r.po)+l > int(r.exifLength) {
-		return 0, imagetype.ErrDataLength
-	}
-	readCount, err := r.reader.Read(buf)
-	r.po += uint32(readCount)
-	if err != nil {
-		return 0, err
-	}
-	buf = buf[:readCount]
-	return readCount, nil
-}
-
 // discard advances the reader by discarding the requested number of bytes.
 func (r *Reader) discard(n int) error {
 	if n <= 0 {
@@ -393,108 +372,6 @@ func canonU16At(vals []uint16, n, idx int) uint16 {
 
 func canonI16At(vals []uint16, n, idx int) int16 {
 	return int16(canonU16At(vals, n, idx))
-}
-
-func canonBitWordCount(pointCount int) int {
-	if pointCount <= 0 {
-		return 0
-	}
-	return (pointCount + 15) / 16
-}
-
-func canonRangeLen(n, start, count int) int {
-	if count <= 0 || start < 0 || start >= n {
-		return 0
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return 0
-	}
-	return end - start
-}
-
-func canonDecodeUniformAFArea(vals []uint16, n, xStart, yStart, count int, w, h int16) []metacanon.AFPoint {
-	pointCount := canonRangeLen(n, xStart, count)
-	if yLen := canonRangeLen(n, yStart, count); yLen < pointCount {
-		pointCount = yLen
-	}
-	if pointCount == 0 {
-		return nil
-	}
-
-	areas := make([]metacanon.AFPoint, pointCount)
-	for i := 0; i < pointCount; i++ {
-		areas[i] = metacanon.NewAFPoint(w, h, int16(vals[xStart+i]), int16(vals[yStart+i]))
-	}
-	return areas
-}
-
-// canonLegacyAFInfoPrimary mirrors Canon.pm sequence handling for AFInfo:
-// sequence 11 is either PrimaryAFPoint or an 8-word unknown block, and
-// sequence 12 is always PrimaryAFPoint when enough payload remains.
-func canonLegacyAFInfoPrimary(vals []uint16, n, seq11Start, afInfoCount int) uint16 {
-	if afInfoCount == 36 {
-		return canonU16At(vals, n, seq11Start+8)
-	}
-	if seq11Start+1 < n {
-		return vals[seq11Start+1]
-	}
-	return canonU16At(vals, n, seq11Start)
-}
-
-func canonDecodeBitWordsRange(vals []uint16, n, start, count int) []int {
-	capHint := canonCountBitWordsRange(vals, n, start, count)
-	if capHint == 0 {
-		return nil
-	}
-	out := make([]int, 0, capHint)
-	return canonAppendBitWordsRange(out, vals, n, start, count)
-}
-
-func canonCountBitWordsRange(vals []uint16, n, start, count int) int {
-	if count <= 0 || start < 0 || start >= n {
-		return 0
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return 0
-	}
-	total := 0
-	for i := start; i < end; i++ {
-		total += bits.OnesCount16(vals[i])
-	}
-	return total
-}
-
-func canonAppendBitWordsRange(dst []int, vals []uint16, n, start, count int) []int {
-	if count <= 0 || start < 0 || start >= n {
-		return dst
-	}
-	end := start + count
-	if end > n {
-		end = n
-	}
-	if end <= start {
-		return dst
-	}
-
-	base := 0
-	for i := start; i < end; i++ {
-		word := vals[i]
-		for word != 0 {
-			bit := bits.TrailingZeros16(word)
-			dst = append(dst, base+bit)
-			word &= word - 1
-		}
-		base += 16
-	}
-	return dst
 }
 
 func (r *Reader) canonModelName() string {

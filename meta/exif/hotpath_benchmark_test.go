@@ -23,7 +23,7 @@ func benchmarkAFInfo2Words(numAFPoints int) []uint16 {
 	if numAFPoints <= 0 {
 		numAFPoints = 1
 	}
-	maskWords := canonBitWordCount(numAFPoints)
+	maskWords := metacanon.BitWordCount(numAFPoints)
 	// AFInfo2 layout: fixed(8) + width/height/x/y + inFocus mask + selected mask.
 	total := 8 + (4 * numAFPoints) + (2 * maskWords)
 	words := make([]uint16, total)

@@ -309,7 +309,7 @@ func (r *Reader) parseMakerNoteUint32(t tag.Entry) uint32 {
 		switch t.Type {
 		case tag.TypeLong, tag.TypeIfd:
 			return t.EmbeddedLong()
-		case tag.TypeShort:
+		case tag.TypeShort, tag.TypeSignedShort:
 			return uint32(t.EmbeddedShort())
 		}
 	}
@@ -318,6 +318,11 @@ func (r *Reader) parseMakerNoteUint32(t tag.Entry) uint32 {
 		var dst [2]uint32
 		if n := r.parseUint32List(t, dst[:]); n > 0 {
 			return dst[0]
+		}
+	case tag.TypeSignedShort:
+		var dst [1]uint16
+		if n := r.parseUint16List(t, dst[:]); n > 0 {
+			return uint32(dst[0])
 		}
 	case tag.TypeByte, tag.TypeUndefined, tag.TypeASCII, tag.TypeASCIINoNul:
 		var dst [4]byte

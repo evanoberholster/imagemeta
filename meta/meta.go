@@ -38,6 +38,15 @@ type Reader interface {
 // For Xmp Metadata use XmpHeader and XmpFn.
 type DecodeFn func(io.Reader, *Metadata) error
 
+// ExifReader is invoked with Exif payload bytes and its parsed header.
+type ExifReader func(r io.Reader, h ExifHeader) error
+
+// XMPReader is invoked with XMP payload bytes and XPacket metadata.
+type XMPReader func(r io.Reader, h XPacketHeader) error
+
+// PreviewImageReader is invoked with preview image bytes and metadata header.
+type PreviewImageReader func(r io.Reader, h PreviewHeader) error
+
 // Metadata is common metadata among image parsers
 type Metadata struct {
 	// Exif Decode Function with ExifHeader
@@ -111,6 +120,14 @@ func (h ExifHeader) MarshalZerologObject(e *zerolog.Event) {
 // Contains Offset and Length of XMP metadata.
 type XmpHeader struct {
 	Offset, Length uint32
+}
+
+// XPacketHeader describes discovered XPacket payload metadata.
+type XPacketHeader struct {
+	Offset       uint64
+	Length       int
+	HasXPacketPI bool
+	HasXMPMeta   bool
 }
 
 // NewXMPHeader returns a new xmp.Header with an offset

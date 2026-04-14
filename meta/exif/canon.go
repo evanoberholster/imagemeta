@@ -197,6 +197,57 @@ func (r *Reader) parseCanonInt32List(t tag.Entry, dst []int32) int {
 	return n
 }
 
+type canonSeq16 []uint16
+
+func (s canonSeq16) present(seq int) bool {
+	idx := seq - 1
+	return idx >= 0 && idx < len(s)
+}
+
+func (s canonSeq16) u16(seq int) uint16 {
+	if !s.present(seq) {
+		return 0
+	}
+	return s[seq-1]
+}
+
+func (s canonSeq16) i16(seq int) int16 {
+	return int16(s.u16(seq))
+}
+
+type canonFirstEntry1Int32 []int32
+
+func (s canonFirstEntry1Int32) present(seq int) bool {
+	return seq > 0 && seq < len(s)
+}
+
+func (s canonFirstEntry1Int32) i32(seq int) int32 {
+	if !s.present(seq) {
+		return 0
+	}
+	return s[seq]
+}
+
+func (s canonFirstEntry1Int32) u32(seq int) uint32 {
+	return uint32(s.i32(seq))
+}
+
+func (r *Reader) parseCanonSizedUint16Payload(t tag.Entry, parser string, dst []uint16) (canonSeq16, bool) {
+	n := r.parseCanonUint16List(t, dst)
+	if n < 1 {
+		r.warnCanonShortRead(t, parser, n, 1)
+		return nil, false
+	}
+	if uint32(dst[0]) != t.Size() {
+		r.warnCanonInvalidSize(t, parser, uint32(dst[0]))
+		return nil, false
+	}
+	if n < 2 {
+		return nil, false
+	}
+	return canonSeq16(dst[1:n]), true
+}
+
 func (r *Reader) parseCanonBlockPreview(t tag.Entry) canon.BlockPreview {
 	dst := canon.BlockPreview{Size: t.Size()}
 	if dst.Size == 0 {
@@ -284,68 +335,29 @@ func (r *Reader) parseCanonAFConfig(t tag.Entry) canon.AFConfig {
 		r.warnCanonShortRead(t, "parseCanonAFConfig", n, 2)
 		return canon.AFConfig{}
 	}
+	settings := canonFirstEntry1Int32(raw[:n])
 	dst := canon.AFConfig{
-		AFConfigTool: uint32(raw[1]) + 1,
-	}
-	if n > 2 {
-		dst.AFTrackingSensitivity = raw[2]
-	}
-	if n > 3 {
-		dst.AFAccelDecelTracking = raw[3]
-	}
-	if n > 4 {
-		dst.AFPointSwitching = raw[4]
-	}
-	if n > 5 {
-		dst.AIServoFirstImage = raw[5]
-	}
-	if n > 6 {
-		dst.AIServoSecondImage = raw[6]
-	}
-	if n > 7 {
-		dst.USMLensElectronicMF = raw[7]
-	}
-	if n > 8 {
-		dst.AFAssistBeam = raw[8]
-	}
-	if n > 9 {
-		dst.OneShotAFRelease = raw[9]
-	}
-	if n > 10 {
-		dst.AutoAFPointSelEOSiTRAF = raw[10]
-	}
-	if n > 11 {
-		dst.LensDriveWhenAFImpossible = raw[11]
-	}
-	if n > 12 {
-		dst.SelectAFAreaSelectionMode = uint32(raw[12])
-	}
-	if n > 13 {
-		dst.AFAreaSelectionMethod = raw[13]
-	}
-	if n > 14 {
-		dst.OrientationLinkedAF = raw[14]
-	}
-	if n > 15 {
-		dst.ManualAFPointSelPattern = raw[15]
-	}
-	if n > 16 {
-		dst.AFPointDisplayDuringFocus = raw[16]
-	}
-	if n > 17 {
-		dst.VFDisplayIllumination = raw[17]
-	}
-	if n > 18 {
-		dst.AFStatusViewfinder = raw[18]
-	}
-	if n > 19 {
-		dst.InitialAFPointInServo = raw[19]
-	}
-	if n > 20 {
-		dst.SubjectToDetect = raw[20]
-	}
-	if n > 24 {
-		dst.EyeDetection = raw[24]
+		AFConfigTool:              settings.u32(1) + 1,
+		AFTrackingSensitivity:     settings.i32(2),
+		AFAccelDecelTracking:      settings.i32(3),
+		AFPointSwitching:          settings.i32(4),
+		AIServoFirstImage:         settings.i32(5),
+		AIServoSecondImage:        settings.i32(6),
+		USMLensElectronicMF:       settings.i32(7),
+		AFAssistBeam:              settings.i32(8),
+		OneShotAFRelease:          settings.i32(9),
+		AutoAFPointSelEOSiTRAF:    settings.i32(10),
+		LensDriveWhenAFImpossible: settings.i32(11),
+		SelectAFAreaSelectionMode: settings.u32(12),
+		AFAreaSelectionMethod:     settings.i32(13),
+		OrientationLinkedAF:       settings.i32(14),
+		ManualAFPointSelPattern:   settings.i32(15),
+		AFPointDisplayDuringFocus: settings.i32(16),
+		VFDisplayIllumination:     settings.i32(17),
+		AFStatusViewfinder:        settings.i32(18),
+		InitialAFPointInServo:     settings.i32(19),
+		SubjectToDetect:           settings.i32(20),
+		EyeDetection:              settings.i32(24),
 	}
 	return dst
 }
@@ -600,277 +612,104 @@ func (r *Reader) parseCanonHDRInfo(t tag.Entry) canon.HDRInfo {
 // parseCanonCameraSettings parses tag 0x0001 (CanonCameraSettings).
 func (r *Reader) parseCanonCameraSettings(t tag.Entry) canon.CameraSettings {
 	var raw [53]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	if n < 1 {
-		r.warnCanonShortRead(t, "parseCanonCameraSettings", n, 1)
-		return canon.CameraSettings{}
-	}
-	declaredSizeBytes := uint32(raw[0])
-	if declaredSizeBytes != t.Size() {
-		if r.warnEnabled() {
-			r.warn().
-				Str("parser", "parseCanonCameraSettings").
-				Uint16("tagID", uint16(t.ID)).
-				Str("tagName", t.Name()).
-				Stringer("tagType", t.Type).
-				Uint32("unitCount", t.UnitCount).
-				Uint32("declaredSizeBytes", declaredSizeBytes).
-				Uint32("actualSizeBytes", t.Size()).
-				Msg("invalid canon camera settings payload length")
-		}
-		return canon.CameraSettings{}
-	}
-	if n < 2 {
+	settings, ok := r.parseCanonSizedUint16Payload(t, "parseCanonCameraSettings", raw[:])
+	if !ok {
 		return canon.CameraSettings{}
 	}
 
-	// Canon CameraSettings stores a 16-bit size word first. The remaining
-	// words map directly to ExifTool's documented sequence numbers, so payload
-	// sequence N lives at settings[N-1].
-	settings := raw[1:n]
-
-	var dst canon.CameraSettings
-	dst.MacroMode = canon.MacroMode(settings[0]) // [1]
-
-	if len(settings) > 1 {
-		dst.SelfTimer = int16(settings[1]) // [2]
+	return canon.CameraSettings{
+		MacroMode:         canon.MacroMode(settings.u16(1)),
+		SelfTimer:         settings.i16(2),
+		Quality:           canon.Quality(settings.i16(3)),
+		CanonFlashMode:    canon.CanonFlashMode(settings.i16(4)),
+		ContinuousDrive:   canon.ContinuousDrive(settings.i16(5)),
+		FocusMode:         canon.FocusMode(settings.i16(7)),
+		RecordMode:        canon.RecordMode(settings.i16(9)),
+		CanonImageSize:    canon.CanonImageSize(settings.i16(10)),
+		EasyMode:          canon.EasyMode(settings.i16(11)),
+		DigitalZoom:       canon.DigitalZoom(settings.i16(12)),
+		Contrast:          settings.i16(13),
+		Saturation:        settings.i16(14),
+		Sharpness:         settings.i16(15),
+		CameraISO:         canon.CameraISO(settings.i16(16)),
+		MeteringMode:      canon.MeteringMode(settings.i16(17)),
+		FocusRange:        canon.FocusRange(settings.i16(18)),
+		AFPoint:           settings.u16(19),
+		CanonExposureMode: canon.ExposureMode(settings.i16(20)),
+		LensType:          canon.CanonLensType(settings.u16(22)),
+		MaxFocalLength:    settings.u16(23),
+		MinFocalLength:    settings.u16(24),
+		FocalUnits:        settings.u16(25),
+		MaxAperture:       parseCanonMaxAperture(settings.u16(26)),
+		MinAperture:       parseCanonMaxAperture(settings.u16(27)),
+		FlashModel:        canon.FlashModel(settings.i16(28)),
+		FlashBits:         settings.u16(29),
+		FocusContinuous:   canon.FocusContinuous(settings.i16(32)),
+		AESetting:         canon.AESetting(settings.i16(33)),
+		ImageStabilization: canon.ImageStabilization(
+			settings.i16(34),
+		),
+		DisplayAperture:   parseCanonDisplayAperture(settings.u16(35)),
+		ZoomSourceWidth:   settings.u16(36),
+		ZoomTargetWidth:   settings.u16(37),
+		SpotMeteringMode:  canon.SpotMeteringMode(settings.i16(39)),
+		PhotoEffect:       canon.PhotoEffect(settings.i16(40)),
+		ManualFlashOutput: canon.ManualFlashOutput(settings.i16(41)),
+		ColorTone:         settings.i16(42),
+		SRAWQuality:       canon.SRAWQuality(settings.i16(46)),
+		FocusBracketing:   canon.FocusBracketing(settings.i16(50)),
+		Clarity:           settings.i16(51),
+		HDRPQ:             canon.HDRPQ(settings.u16(52)),
 	}
-	if len(settings) > 2 {
-		dst.Quality = canon.Quality(int16(settings[2])) // [3]
-	}
-	if len(settings) > 3 {
-		dst.CanonFlashMode = canon.CanonFlashMode(int16(settings[3])) // [4]
-	}
-	if len(settings) > 4 {
-		dst.ContinuousDrive = canon.ContinuousDrive(int16(settings[4])) // [5]
-	}
-	if len(settings) > 6 {
-		dst.FocusMode = canon.FocusMode(int16(settings[6])) // [7]
-	}
-	if len(settings) > 8 {
-		dst.RecordMode = canon.RecordMode(int16(settings[8])) // [9]
-	}
-	if len(settings) > 9 {
-		dst.CanonImageSize = canon.CanonImageSize(int16(settings[9])) // [10]
-	}
-	if len(settings) > 10 {
-		dst.EasyMode = canon.EasyMode(int16(settings[10])) // [11]
-	}
-	if len(settings) > 11 {
-		dst.DigitalZoom = canon.DigitalZoom(int16(settings[11])) // [12]
-	}
-	if len(settings) > 12 {
-		dst.Contrast = int16(settings[12]) // [13]
-	}
-	if len(settings) > 13 {
-		dst.Saturation = int16(settings[13]) // [14]
-	}
-	if len(settings) > 14 {
-		dst.Sharpness = int16(settings[14]) // [15]
-	}
-	if len(settings) > 15 {
-		dst.CameraISO = canon.CameraISO(int16(settings[15])) // [16]
-	}
-	if len(settings) > 16 {
-		dst.MeteringMode = canon.MeteringMode(int16(settings[16])) // [17]
-	}
-	if len(settings) > 17 {
-		dst.FocusRange = canon.FocusRange(int16(settings[17])) // [18]
-	}
-	if len(settings) > 18 {
-		dst.AFPoint = settings[18] // [19]
-	}
-	if len(settings) > 19 {
-		dst.CanonExposureMode = canon.ExposureMode(int16(settings[19])) // [20]
-	}
-	if len(settings) > 21 {
-		dst.LensType = canon.CanonLensType(settings[21]) // [22]
-	}
-	if len(settings) > 22 {
-		dst.MaxFocalLength = settings[22] // [23]
-	}
-	if len(settings) > 23 {
-		dst.MinFocalLength = settings[23] // [24]
-	}
-	if len(settings) > 24 {
-		dst.FocalUnits = settings[24] // [25]
-	}
-	if len(settings) > 25 {
-		dst.MaxAperture = parseCanonMaxAperture(settings[25]) // [26]
-	}
-	if len(settings) > 26 {
-		dst.MinAperture = parseCanonMaxAperture(settings[26]) // [27]
-	}
-	if len(settings) > 27 {
-		dst.FlashModel = canon.FlashModel(int16(settings[27])) // [28]
-	}
-	if len(settings) > 28 {
-		dst.FlashBits = settings[28] // [29]
-	}
-	if len(settings) > 31 {
-		dst.FocusContinuous = canon.FocusContinuous(int16(settings[31])) // [32]
-	}
-	if len(settings) > 32 {
-		dst.AESetting = canon.AESetting(int16(settings[32])) // [33]
-	}
-	if len(settings) > 33 {
-		dst.ImageStabilization = canon.ImageStabilization(int16(settings[33])) // [34]
-	}
-	if len(settings) > 34 {
-		dst.DisplayAperture = parseCanonDisplayAperture(settings[34]) // [35]
-	}
-	if len(settings) > 35 {
-		dst.ZoomSourceWidth = settings[35] // [36]
-	}
-	if len(settings) > 36 {
-		dst.ZoomTargetWidth = settings[36] // [37]
-	}
-	if len(settings) > 38 {
-		dst.SpotMeteringMode = canon.SpotMeteringMode(int16(settings[38])) // [39]
-	}
-	if len(settings) > 39 {
-		dst.PhotoEffect = canon.PhotoEffect(int16(settings[39])) // [40]
-	}
-	if len(settings) > 40 {
-		dst.ManualFlashOutput = canon.ManualFlashOutput(int16(settings[40])) // [41]
-	}
-	if len(settings) > 41 {
-		dst.ColorTone = int16(settings[41]) // [42]
-	}
-	if len(settings) > 45 {
-		dst.SRAWQuality = canon.SRAWQuality(int16(settings[45])) // [46]
-	}
-	if len(settings) > 49 {
-		dst.FocusBracketing = canon.FocusBracketing(int16(settings[49])) // [50]
-	}
-	if len(settings) > 50 {
-		dst.Clarity = int16(settings[50]) // [51]
-	}
-	if len(settings) > 51 {
-		dst.HDRPQ = canon.HDRPQ(settings[51]) // [52]
-	}
-	return dst
 }
 
 // parseCanonShotInfo parses tag 0x0004 (CanonShotInfo).
 func (r *Reader) parseCanonShotInfo(t tag.Entry) canon.ShotInfo {
 	var raw [64]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	if n == 0 {
-		r.warnCanonShortRead(t, "parseCanonShotInfo", n, 1)
+	settings, ok := r.parseCanonSizedUint16Payload(t, "parseCanonShotInfo", raw[:])
+	if !ok {
 		return canon.ShotInfo{}
 	}
-	declaredSizeBytes := uint32(raw[0])
-	if declaredSizeBytes != t.Size() {
-		if r.warnEnabled() {
-			r.warn().
-				Str("parser", "parseCanonShotInfo").
-				Uint16("tagID", uint16(t.ID)).
-				Str("tagName", t.Name()).
-				Stringer("tagType", t.Type).
-				Uint32("unitCount", t.UnitCount).
-				Uint32("declaredSizeBytes", declaredSizeBytes).
-				Uint32("actualSizeBytes", t.Size()).
-				Msg("invalid canon shot info payload length")
-		}
-		return canon.ShotInfo{}
+	dst := canon.ShotInfo{
+		AutoISO:                settings.i16(1),
+		BaseISO:                settings.i16(2),
+		MeasuredEV:             settings.i16(3),
+		TargetAperture:         settings.i16(4),
+		TargetExposureTime:     settings.i16(5),
+		ExposureCompensation:   settings.i16(6),
+		WhiteBalance:           canon.WhiteBalance(settings.i16(7)),
+		SlowShutter:            canon.SlowShutter(settings.i16(8)),
+		SequenceNumber:         settings.i16(9),
+		OpticalZoomCode:        settings.i16(10),
+		CameraTemperature:      settings.i16(12),
+		FlashGuideNumber:       settings.i16(13),
+		AFPointsInFocus:        settings.u16(14),
+		FlashExposureComp:      settings.i16(15),
+		AutoExposureBracketing: settings.i16(16),
+		AEBBracketValue:        settings.i16(17),
+		ControlMode:            settings.i16(18),
+		FNumber:                settings.i16(21),
+		ExposureTime:           settings.i16(22),
+		MeasuredEV2:            settings.i16(23),
+		BulbDuration:           settings.i16(24),
+		CameraType:             canon.CameraType(settings.i16(26)),
+		AutoRotate:             canon.AutoRotate(settings.i16(27)),
+		NDFilter:               canon.NDFilter(settings.i16(28)),
+		SelfTimer2:             settings.i16(29),
+		FlashOutput:            settings.i16(33),
 	}
-	if n < 2 {
-		return canon.ShotInfo{}
-	}
-	// Canon ShotInfo stores a 16-bit size word first. The remaining words map
-	// directly to ExifTool's documented sequence numbers, so sequence N lives
-	// at settings[N-1].
-	settings := raw[1:n]
-	var dst canon.ShotInfo
-
-	dst.AutoISO = int16(settings[0]) // [1]
 	dst.AutoISOValue = canonShotISO(dst.AutoISO)
-	dst.BaseISO = int16(settings[1]) // [2]
 	dst.BaseISOValue = canonShotISO(dst.BaseISO)
 	dst.ActualISO = canonShotActualISO(dst.AutoISOValue, dst.BaseISOValue)
-
-	if len(settings) > 2 {
-		dst.MeasuredEV = int16(settings[2]) // [3]
+	dst.TargetApertureValue = canonShotAperture(dst.TargetAperture)
+	dst.TargetExposureTimeValue = canonShotExposureTime(dst.TargetExposureTime, false)
+	dst.CameraTemperatureC = canonShotCameraTemperature(dst.CameraTemperature, r.canonModelName())
+	dst.FlashGuideNumberMeters = canonShotFlashGuideNumber(dst.FlashGuideNumber)
+	if settings.present(20) && settings.u16(19) != 0 {
+		dst.FocusDistance = canon.NewFocusDistance(settings.u16(19), settings.u16(20))
 	}
-	if len(settings) > 3 {
-		dst.TargetAperture = int16(settings[3]) // [4]
-		dst.TargetApertureValue = canonShotAperture(dst.TargetAperture)
-	}
-	if len(settings) > 4 {
-		dst.TargetExposureTime = int16(settings[4]) // [5]
-		dst.TargetExposureTimeValue = canonShotExposureTime(dst.TargetExposureTime, false)
-	}
-	if len(settings) > 5 {
-		dst.ExposureCompensation = int16(settings[5]) // [6]
-	}
-	if len(settings) > 6 {
-		dst.WhiteBalance = canon.WhiteBalance(int16(settings[6])) // [7]
-	}
-	if len(settings) > 7 {
-		dst.SlowShutter = canon.SlowShutter(int16(settings[7])) // [8]
-	}
-	if len(settings) > 8 {
-		dst.SequenceNumber = int16(settings[8]) // [9]
-	}
-	if len(settings) > 9 {
-		dst.OpticalZoomCode = int16(settings[9]) // [10]
-	}
-	if len(settings) > 11 {
-		dst.CameraTemperature = int16(settings[11]) // [12]
-		dst.CameraTemperatureC = canonShotCameraTemperature(dst.CameraTemperature, r.canonModelName())
-	}
-	if len(settings) > 12 {
-		dst.FlashGuideNumber = int16(settings[12]) // [13]
-		dst.FlashGuideNumberMeters = canonShotFlashGuideNumber(dst.FlashGuideNumber)
-	}
-	if len(settings) > 13 {
-		dst.AFPointsInFocus = settings[13] // [14]
-	}
-	if len(settings) > 14 {
-		dst.FlashExposureComp = int16(settings[14]) // [15]
-	}
-	if len(settings) > 15 {
-		dst.AutoExposureBracketing = int16(settings[15]) // [16]
-	}
-	if len(settings) > 16 {
-		dst.AEBBracketValue = int16(settings[16]) // [17]
-	}
-	if len(settings) > 17 {
-		dst.ControlMode = int16(settings[17]) // [18]
-	}
-	if len(settings) > 19 && settings[18] != 0 {
-		dst.FocusDistance = canon.NewFocusDistance(settings[18], settings[19]) // [19-20]
-	}
-	if len(settings) > 20 {
-		dst.FNumber = int16(settings[20]) // [21]
-		dst.FNumberValue = canonShotAperture(dst.FNumber)
-	}
-	if len(settings) > 21 {
-		dst.ExposureTime = int16(settings[21]) // [22]
-		dst.ExposureTimeValue = canonShotExposureTime(dst.ExposureTime, r.canonShotInfoLegacyExposureTime())
-	}
-	if len(settings) > 22 {
-		dst.MeasuredEV2 = int16(settings[22]) // [23]
-	}
-	if len(settings) > 23 {
-		dst.BulbDuration = int16(settings[23]) // [24]
-	}
-	if len(settings) > 25 {
-		dst.CameraType = canon.CameraType(int16(settings[25])) // [26]
-	}
-	if len(settings) > 26 {
-		dst.AutoRotate = canon.AutoRotate(int16(settings[26])) // [27]
-	}
-	if len(settings) > 27 {
-		dst.NDFilter = canon.NDFilter(int16(settings[27])) // [28]
-	}
-	if len(settings) > 28 {
-		dst.SelfTimer2 = int16(settings[28]) // [29]
-	}
-	if len(settings) > 32 {
-		dst.FlashOutput = int16(settings[32]) // [33]
-	}
+	dst.FNumberValue = canonShotAperture(dst.FNumber)
+	dst.ExposureTimeValue = canonShotExposureTime(dst.ExposureTime, r.canonShotInfoLegacyExposureTime())
 	return dst
 }
 
@@ -977,54 +816,11 @@ func (r *Reader) parseCanonAFInfo(t tag.Entry) canon.AFInfo {
 		r.warnCanonShortRead(t, "parseCanonAFInfo", n, 1)
 		return canon.AFInfo{Source: source}
 	}
-	var dst canon.AFInfo
-	fillCanonAFInfo(&dst, words[:n], r.canonModelName(), int(t.UnitCount))
-	return dst
+	return canon.DecodeAFInfo(words[:n], canonModelIsEOS(r.canonModelName()), int(t.UnitCount))
 }
 
 func fillCanonAFInfo(dst *canon.AFInfo, words []uint16, model string, afInfoCount int) {
-	n := len(words)
-	*dst = canon.AFInfo{
-		Source:           canon.AFInfoSourceAFInfo,
-		NumAFPoints:      canonU16At(words, n, 0),
-		ValidAFPoints:    canonU16At(words, n, 1),
-		CanonImageWidth:  canonU16At(words, n, 2),
-		CanonImageHeight: canonU16At(words, n, 3),
-		AFImageWidth:     canonU16At(words, n, 4),
-		AFImageHeight:    canonU16At(words, n, 5),
-		AFAreaWidth:      canonU16At(words, n, 6),
-		AFAreaHeight:     canonU16At(words, n, 7),
-	}
-
-	isEOS := canonModelIsEOS(model)
-	num := int(dst.NumAFPoints)
-	if num <= 0 {
-		return
-	}
-
-	xStart := 8
-	yStart := xStart + num
-
-	bitWords := canonBitWordCount(num)
-	inFocusStart := yStart + num
-	dst.AFPointsInFocusBits = canonDecodeBitWordsRange(words, n, inFocusStart, bitWords)
-
-	if !isEOS {
-		dst.PrimaryAFPoint = canonLegacyAFInfoPrimary(words, n, inFocusStart+bitWords, afInfoCount)
-	}
-
-	areas := canonDecodeUniformAFArea(
-		words,
-		n,
-		xStart,
-		yStart,
-		num,
-		int16(dst.AFAreaWidth),
-		int16(dst.AFAreaHeight),
-	)
-	dst.AFArea = areas
-	// AFInfo (0x0012) stores width/height/x/y directly in the AF area tuples.
-	dst.AFPoints = areas
+	*dst = canon.DecodeAFInfo(words, canonModelIsEOS(model), afInfoCount)
 }
 
 // parseCanonAFInfo2 parses tags 0x0026 and 0x003c (AFInfo2/AFInfo3).
@@ -1042,138 +838,15 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) canon.AFInfo {
 	}
 	model := r.canonModelName()
 	isAFInfo3 := canon.MakerNoteTag(t.ID) == canon.AFInfo3
-	dst := canon.AFInfo{
-		Source:           source,
-		AFAreaWidth:      0,
-		AFAreaHeight:     0,
-		AFAreaMode:       canon.AFAreaMode(canonU16At(words, n, 1)),
-		NumAFPoints:      canonU16At(words, n, 2),
-		ValidAFPoints:    canonU16At(words, n, 3),
-		CanonImageWidth:  canonU16At(words, n, 4),
-		CanonImageHeight: canonU16At(words, n, 5),
-		AFImageWidth:     canonU16At(words, n, 6),
-		AFImageHeight:    canonU16At(words, n, 7),
-	}
-
-	isEOS := canonModelIsEOS(model)
-	num := int(dst.NumAFPoints)
-	if num <= 0 {
-		return dst
-	}
-
-	widthStart := 8
-	heightStart := widthStart + num
-	xStart := heightStart + num
-	yStart := xStart + num
-	bitsStart := yStart + num
-	maskWordCount := canonBitWordCount(num)
-	selectedStart := bitsStart + maskWordCount
-
-	widthLen := canonRangeLen(n, widthStart, num)
-	heightLen := canonRangeLen(n, heightStart, num)
-	xLen := canonRangeLen(n, xStart, num)
-	yLen := canonRangeLen(n, yStart, num)
-
-	decodeCoords := r.afInfoDecodeOptions.has(AFInfoDecodeCoords)
-	decodePoints := r.afInfoDecodeOptions.has(AFInfoDecodePoints)
-	decodeInFocus := r.afInfoDecodeOptions.has(AFInfoDecodeInFocus)
-	decodeSelected := r.afInfoDecodeOptions.has(AFInfoDecodeSelected)
-	areaCount := min(yLen, min(xLen, min(heightLen, widthLen)))
-	var pts []canon.AFPoint
-
-	if decodeCoords {
-		if areaCount == 0 {
-			dst.AFArea = nil
-		} else {
-			if decodePoints {
-				combined := make([]canon.AFPoint, areaCount*2)
-				dst.AFArea = combined[:areaCount]
-				pts = combined[areaCount:]
-			} else {
-				dst.AFArea = make([]canon.AFPoint, areaCount)
-			}
-			for i := 0; i < len(dst.AFArea); i++ {
-				dst.AFArea[i] = canon.NewAFPoint(
-					int16(words[widthStart+i]),
-					int16(words[heightStart+i]),
-					int16(words[xStart+i]),
-					int16(words[yStart+i]),
-				)
-			}
-		}
-	} else {
-		dst.AFArea = nil
-	}
-
-	wantSelected := isEOS && decodeSelected
-	if decodeInFocus || wantSelected {
-		totalBits := 0
-		if decodeInFocus {
-			totalBits += canonCountBitWordsRange(words, n, bitsStart, maskWordCount)
-		}
-		if wantSelected {
-			totalBits += canonCountBitWordsRange(words, n, selectedStart, maskWordCount)
-		}
-		combinedBits := make([]int, 0, totalBits)
-
-		if decodeInFocus {
-			startIdx := len(combinedBits)
-			combinedBits = canonAppendBitWordsRange(combinedBits, words, n, bitsStart, maskWordCount)
-			dst.AFPointsInFocusBits = combinedBits[startIdx:]
-		} else {
-			dst.AFPointsInFocusBits = nil
-		}
-
-		if wantSelected {
-			// ExifTool only decodes AFPointsSelected for EOS models.
-			startIdx := len(combinedBits)
-			combinedBits = canonAppendBitWordsRange(combinedBits, words, n, selectedStart, maskWordCount)
-			dst.AFPointsSelectedBits = combinedBits[startIdx:]
-		} else {
-			dst.AFPointsSelectedBits = nil
-		}
-	} else {
-		dst.AFPointsInFocusBits = nil
-		dst.AFPointsSelectedBits = nil
-	}
-	dst.PrimaryAFPoint = 0
-	if !(isEOS && decodeSelected) && !isAFInfo3 {
-		// Non-EOS AFInfo2 uses an unknown field of maskWordCount+1 at seq 13.
-		dst.PrimaryAFPoint = canonU16At(words, n, selectedStart+maskWordCount+1)
-	}
-
-	if !decodePoints {
-		dst.AFPoints = nil
-		return dst
-	}
-
-	if areaCount <= 0 {
-		dst.AFPoints = nil
-		return dst
-	}
-
-	if pts == nil {
-		pts = make([]canon.AFPoint, areaCount)
-	}
-	xAdjust := int16(dst.CanonImageWidth / 2)
-	yAdjust := int16(dst.CanonImageHeight / 2)
-	for i := 0; i < areaCount; i++ {
-		var w, h, x, y int16
-		if decodeCoords {
-			area := dst.AFArea[i]
-			w, h, x, y = area[0], area[1], area[2], area[3]
-		} else {
-			w = int16(words[widthStart+i])
-			h = int16(words[heightStart+i])
-			x = int16(words[xStart+i])
-			y = int16(words[yStart+i])
-		}
-		x += xAdjust - (w / 2)
-		y += yAdjust - (h / 2)
-		pts[i] = canon.NewAFPoint(w, h, x, y)
-	}
-	dst.AFPoints = pts
-	return dst
+	return canon.DecodeAFInfo2(words[:n], canon.AFInfo2DecodeConfig{
+		Source:         source,
+		EOS:            canonModelIsEOS(model),
+		AFInfo3:        isAFInfo3,
+		DecodeCoords:   r.afInfoDecodeOptions.has(AFInfoDecodeCoords),
+		DecodePoints:   r.afInfoDecodeOptions.has(AFInfoDecodePoints),
+		DecodeInFocus:  r.afInfoDecodeOptions.has(AFInfoDecodeInFocus),
+		DecodeSelected: r.afInfoDecodeOptions.has(AFInfoDecodeSelected),
+	})
 }
 
 func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want int) {
@@ -1203,4 +876,19 @@ func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
 		Int("gotUnits", got).
 		Int("wantUnits", want).
 		Msg("canon maker-note payload too short")
+}
+
+func (r *Reader) warnCanonInvalidSize(t tag.Entry, parser string, declaredSizeBytes uint32) {
+	if !r.warnEnabled() {
+		return
+	}
+	r.warn().
+		Str("parser", parser).
+		Uint16("tagID", uint16(t.ID)).
+		Str("tagName", t.Name()).
+		Stringer("tagType", t.Type).
+		Uint32("unitCount", t.UnitCount).
+		Uint32("declaredSizeBytes", declaredSizeBytes).
+		Uint32("actualSizeBytes", t.Size()).
+		Msg("invalid canon maker-note payload length")
 }
