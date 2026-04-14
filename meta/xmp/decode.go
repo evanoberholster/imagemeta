@@ -68,6 +68,11 @@ func Parse(r io.Reader) (XMP, error) {
 // ParseWithOptions reads XMP metadata from sidecar files and embedded image payloads
 // with additional parser options.
 func ParseWithOptions(r io.Reader, opts ParseOptions) (XMP, error) {
+	var readerAt io.ReaderAt
+	if ra, ok := r.(io.ReaderAt); ok {
+		readerAt = ra
+	}
+
 	br, pooled := asBufferedReader(r)
 	if pooled {
 		defer releaseBufferedReader(br)
@@ -80,7 +85,7 @@ func ParseWithOptions(r io.Reader, opts ParseOptions) (XMP, error) {
 
 	switch fileType {
 	case imagetype.ImageJPEG:
-		return parseJPEG(br, opts)
+		return parseJPEG(br, readerAt, opts)
 	case imagetype.ImageCR3, imagetype.ImageHEIC, imagetype.ImageHEIF, imagetype.ImageAVIF:
 		return parseISOBMFF(br, opts)
 	case imagetype.ImageJXL:
@@ -92,23 +97,26 @@ func ParseWithOptions(r io.Reader, opts ParseOptions) (XMP, error) {
 	}
 }
 
-func parseJPEG(r io.Reader, opts ParseOptions) (XMP, error) {
+func parseJPEG(r io.Reader, readerAt io.ReaderAt, opts ParseOptions) (XMP, error) {
 	var out XMP
 	found := false
 
-	err := jpeg.ScanJPEG(
-		r,
-		nil,
-		func(packet io.Reader) error {
-			x, err := ParseXmpWithOptions(packet, opts)
-			if err != nil {
-				return err
-			}
-			out = x
-			found = true
-			return nil
-		},
-	)
+	xmpReader := func(packet io.Reader) error {
+		x, err := ParseXmpWithOptions(packet, opts)
+		if err != nil {
+			return err
+		}
+		out = x
+		found = true
+		return nil
+	}
+
+	var err error
+	if readerAt != nil {
+		err = jpeg.ScanJPEGWithReaderAt(r, readerAt, nil, xmpReader)
+	} else {
+		err = jpeg.ScanJPEG(r, nil, xmpReader)
+	}
 	if err != nil {
 		return XMP{}, err
 	}

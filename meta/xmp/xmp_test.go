@@ -370,8 +370,8 @@ func makeJPEGWithXMP(packet []byte) []byte {
 	out = append(out, xmpPrefix...)
 	out = append(out, packet...)
 
-	// The jpeg scanner stops at DQT and peeks 64 bytes per iteration.
-	out = append(out, 0xFF, 0xDB, 0x00, 0x04, 0x00, 0x00)
+	// The jpeg scanner stops at SOS and peeks 64 bytes per iteration.
+	out = append(out, 0xFF, 0xDA, 0x00, 0x04, 0x00, 0x00)
 	out = append(out, make([]byte, 64)...)
 	return out
 }

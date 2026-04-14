@@ -17,6 +17,10 @@ import (
 // model shared by the Exif result.
 // Canon maker-note tag IDs from ExifTool Canon::Main are defined in
 // makernote_tags.go.
+//
+// TODO(canon): Continue Canon maker-note parity work against ExifTool, including
+// CanonCustom, VRD, sensor/camera-temperature variants, preview offsets and
+// newer model/lens fields.
 type Canon struct {
 	ImageType            string    // 16 bytes
 	FirmwareVersion      string    // 16 bytes
