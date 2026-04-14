@@ -65,6 +65,8 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	case canon.ImageUniqueID:
 		dst.ImageUniqueID = r.parseCanonImageUniqueID(t)
 	case canon.CanonCustomFunctions:
+		// TODO(canon): Expand Canon maker-note parity with ExifTool's
+		// CanonCustom tables and remaining Canon-specific fields.
 		// intentionally not parsed
 	case canon.CanonAspectInfo:
 		dst.AspectInfo = r.parseCanonAspectInfo(t)

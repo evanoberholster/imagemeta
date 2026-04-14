@@ -58,7 +58,7 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	ir.Exif.ImageType = it
 	switch it {
 	case imagetype.ImageJPEG:
-		if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
+		if err = scanJPEG(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
 			return exif.Exif{}, err
 		}
 	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF:
@@ -202,7 +202,7 @@ func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
-	if err = jpeg.ScanJPEG(rr, ir.DecodeJPEGIfd, nil); err != nil {
+	if err = scanJPEG(rr, r, ir.DecodeJPEGIfd, nil); err != nil {
 		return exif.Exif{}, err
 	}
 	ir.Exif.ImageType = it
@@ -262,4 +262,11 @@ func readMetadataUntilDone(r *isobmff.Reader) error {
 		}
 		return err
 	}
+}
+
+func scanJPEG(stream io.Reader, source io.Reader, exifReader func(io.Reader, meta.ExifHeader) error, xmpReader func(io.Reader) error) error {
+	if ra, ok := source.(io.ReaderAt); ok {
+		return jpeg.ScanJPEGWithReaderAt(stream, ra, exifReader, xmpReader)
+	}
+	return jpeg.ScanJPEG(stream, exifReader, xmpReader)
 }
