@@ -10,6 +10,7 @@ import (
 
 	metacanon "github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -174,7 +175,7 @@ func BenchmarkFillCanonAFInfo2(b *testing.B) {
 	)
 
 	run := func(b *testing.B, opt ReaderOption) {
-		r := NewReader(Logger, opt)
+		r := NewReader(metalog.Logger, opt)
 		defer r.Close()
 		var br bytes.Reader
 		var dst metacanon.AFInfo
@@ -212,7 +213,7 @@ func BenchmarkParseStringAllowUndefined(b *testing.B) {
 			utils.LittleEndian,
 		)
 
-		r := NewReader(Logger)
+		r := NewReader(metalog.Logger)
 		defer r.Close()
 		var br bytes.Reader
 
@@ -237,7 +238,7 @@ func BenchmarkParseStringAllowUndefined(b *testing.B) {
 			utils.LittleEndian,
 		)
 
-		r := NewReader(Logger)
+		r := NewReader(metalog.Logger)
 		defer r.Close()
 		var br bytes.Reader
 
@@ -267,7 +268,7 @@ func BenchmarkParseCanonInt32List(b *testing.B) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	var br bytes.Reader
 	var dst [64]int32

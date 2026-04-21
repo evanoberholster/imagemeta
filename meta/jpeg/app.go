@@ -12,9 +12,7 @@ import (
 func (jr *jpegReader) readAPP0() {
 	// Is JFIF Marker
 	if isJFIFPrefix(jr.buf) || isJFIFPrefixExt(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP0 JFIF")
-		}
+		jr.logMarker("APP0 JFIF")
 		if jr.metadata != nil && isJFIFPrefix(jr.buf) {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
@@ -30,9 +28,7 @@ func (jr *jpegReader) readAPP0() {
 			return
 		}
 		if isCIFFPayload(payload) {
-			if logInfo() {
-				jr.logMarker("APP0 CIFF")
-			}
+			jr.logMarker("APP0 CIFF")
 			jr.metadata.CIFF, jr.err = ParseCIFF(payload)
 		}
 		return
@@ -44,26 +40,20 @@ func (jr *jpegReader) readAPP0() {
 func (jr *jpegReader) readAPP1() {
 	// APP1 Exif Marker
 	if isExifPrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP1 Exif")
-		}
+		jr.logMarker("APP1 Exif")
 		jr.err = jr.readExif()
 		return
 	}
 
 	// APP1 XMP Marker
 	if isXMPPrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP1 XMP")
-		}
+		jr.logMarker("APP1 XMP")
 		jr.err = jr.readXMP()
 		return
 	}
 
 	if isXMPPrefixExt(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP1 XMP Extension")
-		}
+		jr.logMarker("APP1 XMP Extension")
 		jr.err = jr.readExtendedXMP()
 		return
 	}
@@ -73,9 +63,7 @@ func (jr *jpegReader) readAPP1() {
 // readAPP2 handles APP2 markers.
 func (jr *jpegReader) readAPP2() {
 	if isICCProfilePrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP2 ICC Profile")
-		}
+		jr.logMarker("APP2 ICC Profile")
 		if jr.metadata != nil {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
@@ -86,9 +74,7 @@ func (jr *jpegReader) readAPP2() {
 		}
 	}
 	if isMPFPrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP2 MPF")
-		}
+		jr.logMarker("APP2 MPF")
 		if jr.metadata != nil {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
@@ -104,9 +90,7 @@ func (jr *jpegReader) readAPP2() {
 // readAPP13 handles APP13 Photoshop markers.
 func (jr *jpegReader) readAPP13() {
 	if isPhotoshopPrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP13 Photoshop")
-		}
+		jr.logMarker("APP13 Photoshop")
 		if jr.metadata != nil {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
@@ -121,9 +105,7 @@ func (jr *jpegReader) readAPP13() {
 
 func (jr *jpegReader) readAPP14() {
 	if isAdobePrefix(jr.buf) {
-		if logInfo() {
-			jr.logMarker("APP14 Adobe")
-		}
+		jr.logMarker("APP14 Adobe")
 		if jr.metadata != nil {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
@@ -150,9 +132,7 @@ func (jr *jpegReader) readAPPMarker() {
 	case markerAPP14:
 		jr.readAPP14()
 	default:
-		if logInfo() {
-			jr.logMarker("")
-		}
+		jr.logMarker("")
 		jr.ignoreMarker()
 	}
 }
@@ -207,12 +187,14 @@ func (jr *jpegReader) readExif() (err error) {
 
 	// Read Exif
 	if jr.ExifReader != nil {
+		payloadLength := remain
 		remain, err = jr.readCallbackPayload(remain, func(r io.Reader) error {
 			return jr.ExifReader(r, exifHeader)
 		})
 		if err != nil {
 			return err
 		}
+		jr.logDecodedItem("exif", payloadLength)
 	}
 
 	// Discard remaining bytes
@@ -234,10 +216,12 @@ func (jr *jpegReader) readXMP() (err error) {
 	}
 	// Read XMP Decode Function here
 	if jr.XMPReader != nil {
+		payloadLength := remain
 		remain, err = jr.readCallbackPayload(remain, jr.XMPReader)
 		if err != nil {
 			return err
 		}
+		jr.logDecodedItem("xmp", payloadLength)
 	}
 	// Discard remaining bytes
 	return jr.discard(remain)

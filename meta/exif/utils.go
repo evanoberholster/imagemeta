@@ -179,6 +179,7 @@ func rationalDuration(num uint32, den uint32, unit time.Duration) time.Duration 
 // readTagBytes reads data from the underlying stream or parser buffers.
 func (r *Reader) readTagBytes(t tag.Entry, max uint32) (buf []byte, truncated bool, err error) {
 	if err = r.seekToTag(t); err != nil {
+		r.warnTagReadError(t, err, "failed seeking to tag payload")
 		return nil, false, err
 	}
 
@@ -197,6 +198,7 @@ func (r *Reader) readTagBytes(t tag.Entry, max uint32) (buf []byte, truncated bo
 
 	buf, err = r.fastRead(int(size))
 	if err != nil {
+		r.warnTagReadError(t, err, "failed reading tag payload")
 		return nil, false, err
 	}
 
@@ -204,6 +206,7 @@ func (r *Reader) readTagBytes(t tag.Entry, max uint32) (buf []byte, truncated bo
 	if remaining > 0 {
 		truncated = true
 		if discardErr := r.discard(remaining); discardErr != nil {
+			r.warnTagReadError(t, discardErr, "failed discarding unread tag payload")
 			return nil, true, discardErr
 		}
 	}

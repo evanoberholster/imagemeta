@@ -11,6 +11,7 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -39,7 +40,7 @@ func parseAFInfo2ForTest(t *testing.T, words []uint16, model string, isAFInfo3 b
 	if len(opts) > 0 {
 		readerOpts = append(readerOpts, WithAFInfoDecodeOptions(opts[0]))
 	}
-	r := NewReader(Logger, readerOpts...)
+	r := NewReader(metalog.Logger, readerOpts...)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -62,7 +63,7 @@ func parseShotInfoForTest(t *testing.T, words []uint16, model string, focalUnits
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -352,7 +353,7 @@ func TestParseCanonBatteryType(t *testing.T) {
 				0,
 				utils.LittleEndian,
 			)
-			r := NewReader(Logger)
+			r := NewReader(metalog.Logger)
 			defer r.Close()
 
 			var br bytes.Reader
@@ -378,7 +379,7 @@ func TestParseCanonLensModelTerminatedAtNUL(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -406,7 +407,7 @@ func TestParseCanonBatteryTypeTag(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -436,7 +437,7 @@ func TestParseCanonImageUniqueIDFromByte(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -464,7 +465,7 @@ func TestParseCanonImageUniqueIDAllZeroIsNilUUID(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -840,7 +841,7 @@ func TestParseCanonCameraSettingsIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	var br bytes.Reader
 	br.Reset(raw)
@@ -895,7 +896,7 @@ func TestParseCanonCameraSettingsShortInputProgressive(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	var br bytes.Reader
 	br.Reset(raw)
@@ -935,7 +936,7 @@ func TestParseCanonCameraSettingsApertureConversions(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	var br bytes.Reader
 	br.Reset(raw)
@@ -966,7 +967,7 @@ func TestParseCanonCameraSettingsInvalidLengthReturnsZero(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	var br bytes.Reader
 	br.Reset(raw)
@@ -1141,7 +1142,7 @@ func TestParseCanonTimeInfo(t *testing.T) {
 				tc.bo,
 			)
 
-			r := NewReader(Logger)
+			r := NewReader(metalog.Logger)
 			defer r.Close()
 			var br bytes.Reader
 			br.Reset(raw)
@@ -1198,7 +1199,7 @@ func TestParseCanonFileInfoIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1280,7 +1281,7 @@ func TestParseCanonFaceDetect1IndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1314,7 +1315,7 @@ func TestParseCanonFaceDetect2IndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1343,7 +1344,7 @@ func TestParseCanonFaceDetect3IndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1386,7 +1387,7 @@ func TestParseCanonLightingOptIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1430,7 +1431,7 @@ func TestParseCanonLightingOptShortPayload(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1468,7 +1469,7 @@ func TestParseCanonMultiExpIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1500,7 +1501,7 @@ func TestParseCanonHDRInfoIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1547,7 +1548,7 @@ func TestParseCanonProcessingInfoIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader
@@ -1597,7 +1598,7 @@ func TestParseCanonAFMicroAdjIndexMapping(t *testing.T) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader

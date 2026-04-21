@@ -23,7 +23,7 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 	}
 	ht = hdlrFromBuf(buf[4:8])
 	if logLevelInfo() {
-		logInfoBox(b).Str("hdlr", ht.String()).Send()
+		logInfoBox(b).Str("handler", ht.String()).Msg("read handler box")
 	}
 	return ht, b.close()
 }
@@ -100,7 +100,7 @@ func readPitm(b *box) (id itemID, err error) {
 		return invalidItemID, err
 	}
 	if logLevelInfo() {
-		logInfoBox(b).Uint32("pitm", uint32(id)).Send()
+		logInfoBox(b).Uint32("primaryItemID", uint32(id)).Msg("read primary item box")
 	}
 	return id, b.close()
 }
@@ -170,7 +170,7 @@ func (r *Reader) readIref(b *box) (err error) {
 		return fmt.Errorf("readIref: unsupported version %d", b.flags.version())
 	}
 	if logLevelInfo() {
-		logInfoBox(b).Send()
+		logInfoBox(b).Msg("read item reference box")
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		if isSupportedItemReferenceType(inner.boxType) {
@@ -180,7 +180,7 @@ func (r *Reader) readIref(b *box) (err error) {
 			}
 		}
 		if logLevelInfo() {
-			logInfoBox(inner).Send()
+			logInfoBox(inner).Msg("processed item reference entry")
 		}
 		return nil
 	})
@@ -239,7 +239,7 @@ func (r *Reader) readIrefEntry(b *box, itemIDSize uint8) error {
 // readIprp walks item property boxes and parses ipco/ipma payloads.
 func (r *Reader) readIprp(b *box) (err error) {
 	if logLevelInfo() {
-		logInfoBox(b).Send()
+		logInfoBox(b).Msg("read item properties box")
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
@@ -249,7 +249,7 @@ func (r *Reader) readIprp(b *box) (err error) {
 			return r.readIpco(inner)
 		default:
 			if logLevelInfo() {
-				logInfoBox(inner).Send()
+				logInfoBox(inner).Msg("skipping unsupported item property box")
 			}
 			return nil
 		}
@@ -260,7 +260,7 @@ func (r *Reader) readIprp(b *box) (err error) {
 // readIpco reads item properties and stores property order/index metadata.
 func (r *Reader) readIpco(b *box) (err error) {
 	if logLevelInfo() {
-		logInfoBox(b).Send()
+		logInfoBox(b).Msg("read item property container")
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		prop := itemProperty{boxType: inner.boxType}
@@ -302,7 +302,7 @@ func (r *Reader) readIpma(b *box) (err error) {
 	}
 	extendedIndex := b.flags.flags()&1 != 0
 	if logLevelInfo() {
-		logInfoBox(b).Uint32("entries", count).Send()
+		logInfoBox(b).Uint32("entries", count).Msg("read item property associations")
 	}
 	for i := uint32(0); i < count; i++ {
 		id32, readErr := readUint16Or32(b, b.flags.version() >= 1)

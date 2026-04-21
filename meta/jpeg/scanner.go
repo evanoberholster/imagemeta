@@ -90,26 +90,18 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 				if err = jr.processExtendedXMP(); err != nil {
 					return err
 				}
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				return nil
 			case markerDHT:
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				// Ignore DHT Markers
 				jr.ignoreMarker()
 			case markerSOI:
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				jr.pos++
 				jr.err = jr.discard(2)
 			case markerEOI:
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				if err = jr.processExtendedXMP(); err != nil {
 					return err
 				}
@@ -119,16 +111,12 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 				}
 				return nil
 			case markerDQT:
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				jr.ignoreMarker()
 			case markerDRI:
 				jr.err = jr.discard(6)
 			default: // unknown marker
-				if logInfo() {
-					jr.logMarker("")
-				}
+				jr.logMarker("")
 				jr.ignoreMarker()
 			}
 		}

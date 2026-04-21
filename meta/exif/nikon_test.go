@@ -9,6 +9,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -25,7 +26,7 @@ func parseNikonBlockForTest(t *testing.T, tagID tag.ID, raw []byte, model string
 		utils.LittleEndian,
 	)
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var br bytes.Reader

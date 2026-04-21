@@ -63,19 +63,21 @@ func (r *Reader) addTag(t tag.Entry) {
 
 // warnTagContext logs tag metadata with a caller-supplied message.
 func (r *Reader) warnTagContext(t tag.Entry, msg string, includeQueueMax bool) {
-	e := r.warn().
-		Uint16("tagID", uint16(t.ID)).
-		Str("tagName", tag.NameFor(t.IfdType, t.ID)).
-		Uint16("tagType", uint16(t.Type)).
-		Str("ifd", t.IfdType.String()).
-		Int8("ifdIndex", t.IfdIndex).
-		Uint32("units", t.UnitCount).
-		Uint32("tagOffset", t.ValueOffset).
-		Uint32("readerOffset", r.po)
+	e := r.tagLogContext(r.warn(), t)
 	if includeQueueMax {
 		e.Int("tagQueueMax", tagQueueMax)
 	}
 	e.Msg(msg)
+}
+
+// warnTagReadError logs tag payload read failures from value parsers.
+func (r *Reader) warnTagReadError(t tag.Entry, err error, msg string) {
+	if !r.warnEnabled() {
+		return
+	}
+	r.tagLogContext(r.warn(), t).
+		Err(err).
+		Msg(msg)
 }
 
 // warnTagAdd logs dropped-tag context while keeping warning-path overhead small.
@@ -258,6 +260,12 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 		r.Exif.CameraMakeID, r.Exif.IFD0.Make = r.parseMakeTag(t)
 	case tag.TagModel:
 		r.Exif.IFD0.Model = r.parseString(t)
+		if r.infoEnabled() && r.Exif.IFD0.Model != "" {
+			r.info().
+				Str("cameraModel", r.Exif.IFD0.Model).
+				Uint32("tagOffset", t.ValueOffset).
+				Msg("parsed camera model")
+		}
 	case tag.TagArtist:
 		r.Exif.IFD0.Artist = r.parseStringTrimRightSpaceNewline(t)
 	case tag.TagCopyright:
@@ -312,9 +320,17 @@ func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, makeNam
 
 	if makeID == makernote.CameraMakeUnknown {
 		makeName = string(raw)
-		return
+	} else {
+		makeName = makeID.String()
 	}
-	return makeID, makeID.String()
+	if r.infoEnabled() {
+		r.info().
+			Str("cameraMake", makeName).
+			Str("cameraMakeID", makeID.String()).
+			Uint32("tagOffset", t.ValueOffset).
+			Msg("parsed camera make")
+	}
+	return makeID, makeName
 }
 
 // parseIFD0ImageTag parses IFD0 image geometry and layout tags.
@@ -535,7 +551,12 @@ func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
 	child := tag.NewDirectory(byteOrder, tag.MakerNoteIFD, 0, dirStart, dirStart-originalOffset)
 	queueStart := r.state.len
 	if err := r.readMakerNoteDirectory(parent, child); err != nil && r.warnEnabled() {
-		r.warn().Err(err).Uint32("tagOffset", recordStart).Msg("failed parsing DNG Adobe maker notes")
+		r.tagLogContext(r.warn(), parent).
+			Err(err).
+			Uint32("recordStart", recordStart).
+			Uint32("recordSize", recordSize).
+			Uint32("makerNoteOriginalOffset", originalOffset).
+			Msg("failed parsing DNG Adobe maker notes")
 	}
 	r.parseQueuedMakerNoteRange(queueStart)
 }
@@ -562,7 +583,10 @@ func (r *Reader) parseQueuedMakerNoteRange(start uint32) {
 					continue
 				}
 				if err := r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
-					r.warn().Err(err).Uint16("tagID", uint16(t.ID)).Msg("failed parsing nested maker-note ifd")
+					r.tagLogContext(r.warn(), t).
+						Err(err).
+						Str("childIFD", child.String()).
+						Msg("failed parsing nested maker-note ifd")
 				}
 			}
 			continue

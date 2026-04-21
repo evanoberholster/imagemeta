@@ -3,7 +3,6 @@ package xmp
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -54,7 +53,7 @@ func (xmp *XMP) parser(p property, debug bool) (err error) {
 		// unknown/unhandled properties must not fail packet parsing.
 		// In debug mode, surface non-ErrPropertyNotSet parse failures.
 		if debug && !errors.Is(err, ErrPropertyNotSet) {
-			fmt.Println("XMP parse warning:", err, p)
+			logPropertyParseWarning(err, p)
 		}
 		return nil
 	}

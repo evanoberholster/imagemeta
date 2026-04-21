@@ -1,9 +1,14 @@
 package exif
 
 import (
+	"bytes"
 	"io"
+	"strings"
 	"testing"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -130,5 +135,93 @@ func TestLoggerMixinSetLoggerRefreshesChecks(t *testing.T) {
 	m.setLogger(zerolog.New(io.Discard).Level(zerolog.DebugLevel))
 	if !m.debugEnabled() || !m.warnEnabled() || !m.errorEnabled() {
 		t.Fatalf("setLogger did not refresh checks: debug=%v warn=%v error=%v", m.debugEnabled(), m.warnEnabled(), m.errorEnabled())
+	}
+}
+
+func TestLoggerMixinInfoEvent(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	m := newLoggerMixin(zerolog.New(&buf).Level(zerolog.InfoLevel))
+	if !m.infoEnabled() {
+		t.Fatal("info logging should be enabled")
+	}
+
+	m.info().Str("phase", "decode").Msg("starting exif decode")
+
+	out := buf.String()
+	if !strings.Contains(out, `"level":"info"`) || !strings.Contains(out, `"phase":"decode"`) {
+		t.Fatalf("info log output = %q", out)
+	}
+}
+
+func TestTagLogContextIncludesDecodeFields(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	r := &Reader{loggerMixin: newLoggerMixin(zerolog.New(&buf).Level(zerolog.WarnLevel))}
+	r.po = 42
+	r.firstIFDOffset = 8
+	r.exifLength = 512
+	r.Exif.ImageType = imagetype.ImageJPEG
+	r.Exif.IFD0.Make = "Canon"
+	r.Exif.IFD0.Model = "EOS R5"
+
+	entry := tag.NewEntry(tag.TagMakerNote, tag.TypeUndefined, 128, 256, tag.ExifIFD, 0, utils.LittleEndian)
+	r.tagLogContext(r.warn(), entry).Msg("tag failed")
+
+	out := buf.String()
+	for _, want := range []string{
+		`"level":"warn"`,
+		`"readerOffset":42`,
+		`"firstIFDOffset":8`,
+		`"exifLength":512`,
+		`"imageType":"image/jpeg"`,
+		`"cameraMake":"Canon"`,
+		`"cameraModel":"EOS R5"`,
+		`"tagID":37500`,
+		`"tagName":"MakerNote"`,
+		`"tagType":7`,
+		`"tagTypeName":"UNDEFINED"`,
+		`"tagSize":128`,
+		`"tagOffset":256`,
+		`"tagEmbedded":false`,
+		`"byteOrder":"LittleEndian"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("log output missing %s: %q", want, out)
+		}
+	}
+}
+
+func TestRawTagHeaderLogContextIncludesInvalidHeaderFields(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	r := &Reader{loggerMixin: newLoggerMixin(zerolog.New(&buf).Level(zerolog.WarnLevel))}
+	r.po = 14
+	r.Exif.ImageType = imagetype.ImageTiff
+	directory := tag.NewDirectory(utils.BigEndian, tag.IFD0, 0, 8, 0)
+
+	r.rawTagHeaderLogContext(r.warn(), directory, 3, tag.TagModel, tag.Type(99), 2, 24).
+		Msg("invalid exif tag header")
+
+	out := buf.String()
+	for _, want := range []string{
+		`"ifdType":"IFD0"`,
+		`"ifdIndex":0`,
+		`"ifdOffset":8`,
+		`"tagIndex":3`,
+		`"tagID":272`,
+		`"tagName":"Model"`,
+		`"tagType":99`,
+		`"tagTypeName":"UNKNOWN"`,
+		`"units":2`,
+		`"rawValueOffset":24`,
+		`"byteOrder":"BigEndian"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("log output missing %s: %q", want, out)
+		}
 	}
 }

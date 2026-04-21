@@ -68,6 +68,16 @@ func (p property) String() string {
 	return fmt.Sprintf("(%s) %s \t Val:%s", p.parent.String(), p.self.String(), string(p.val))
 }
 
+func (p property) valuePreview(limit int) string {
+	if len(p.val) == 0 || limit <= 0 {
+		return ""
+	}
+	if len(p.val) <= limit {
+		return string(p.val)
+	}
+	return string(p.val[:limit]) + "..."
+}
+
 // Tag is an xmp Tag
 type Tag struct {
 	property

@@ -145,7 +145,7 @@ func identifyCameraMakeNormalized(normalized []byte) CameraMake {
 		return CameraMakeBlackmagicDesign
 	case "canon":
 		return CameraMakeCanon
-	case "canoninc.":
+	case "canonincc.":
 		return CameraMakeCanon
 	case "casio":
 		return CameraMakeCasio

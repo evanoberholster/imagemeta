@@ -30,7 +30,7 @@ func (r *Reader) ReadMetadata() (err error) {
 		}
 		keepScanning, boxErr := r.readMetadataBox(&b)
 		if boxErr != nil && logLevelError() {
-			logError().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size).Err(boxErr).Send()
+			logErrorBox(&b).Err(boxErr).Msg("failed reading metadata box")
 		}
 		if boxErr == nil && r.goalsInitialized && r.hasMetadataGoals() && r.metadataGoalsSatisfied() {
 			r.stopAfterMetadata = true
@@ -61,7 +61,7 @@ func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
 		return err == nil, err
 	default:
 		if logLevelInfo() {
-			logInfo().Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size).Send()
+			logInfoBox(b).Msg("skipping unsupported metadata box")
 		}
 		return false, b.close()
 	}
@@ -69,7 +69,7 @@ func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
 
 func (r *Reader) readMdat(b *box) (err error) {
 	if logLevelInfo() {
-		logInfo().Object("box", b).Send()
+		logInfoBox(b).Msg("read media data box")
 	}
 
 	type mdatItemKind uint8
@@ -121,7 +121,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 		inner, openErr := newMdatExtentBox(b, payloadStart, items[i].offset, items[i].itemType)
 		if openErr != nil {
 			if logLevelDebug() {
-				logDebug().Object("box", b).Err(openErr).Uint64("offset", items[i].offset.offset).Int("length", items[i].offset.length).Msg("skip unresolved mdat extent")
+				logDebugBox(b).Err(openErr).Uint64("extentOffset", items[i].offset.offset).Int("extentLength", items[i].offset.length).Msg("skipping unresolved mdat extent")
 			}
 			continue
 		}
@@ -130,7 +130,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 		case mdatItemExif:
 			if err = seekExifTIFFHeader(&inner); err != nil {
 				if logLevelDebug() {
-					logDebug().Object("box", inner).Err(err).Msg("skip non-TIFF mdat exif candidate")
+					logDebugBox(&inner).Err(err).Msg("skipping non-TIFF mdat exif candidate")
 				}
 				if closeErr := inner.close(); closeErr != nil {
 					return closeErr
@@ -141,7 +141,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 			header, headerErr := readExifHeader(&inner, exiftag.IFD0, imageType)
 			if headerErr != nil {
 				if logLevelDebug() {
-					logDebug().Object("box", inner).Err(headerErr).Msg("skip invalid mdat exif header")
+					logDebugBox(&inner).Err(headerErr).Msg("skipping invalid mdat exif header")
 				}
 				if closeErr := inner.close(); closeErr != nil {
 					return closeErr
@@ -165,7 +165,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 		}
 
 		if logLevelInfo() {
-			logInfo().Object("box", inner).Int("remain", inner.remain).Send()
+			logInfoBox(&inner).Int("remain", inner.remain).Msg("processed mdat metadata extent")
 		}
 		if closeErr := inner.close(); closeErr != nil {
 			return closeErr
@@ -270,8 +270,8 @@ func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (h
 	}
 	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampIntToUint32(b.remain), it)
 	header.FirstIfd = firstIfd
-	if logLevelInfo() {
-		logInfo().Object("box", b).Object("header", header).Send()
+	if logLevelDebug() {
+		logDebugBox(b).Object("header", header).Msg("read exif header")
 	}
 	_, err = b.Discard(8)
 	return header, err
@@ -453,7 +453,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 	}
 	parseCR3ItemGraph := r.ftyp.MajorBrand == brandCrx
 	if logLevelInfo() {
-		logInfo().Object("box", b).Send()
+		logInfoBox(b).Msg("read meta box")
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
@@ -493,7 +493,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 			return r.readIloc(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
+				logInfoBox(inner).Msg("skipping unsupported meta child box")
 			}
 			return nil
 		}
@@ -507,7 +507,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if logLevelInfo() {
-		logInfo().Object("box", b).Send()
+		logInfoBox(b).Msg("read movie box")
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
@@ -517,7 +517,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 			return readCrxTrakBox(inner)
 		default:
 			if logLevelInfo() {
-				logInfo().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
+				logInfoBox(inner).Msg("skipping unsupported movie child box")
 			}
 			return nil
 		}
@@ -530,7 +530,7 @@ func (r *Reader) readMoovBox(b *box) (err error) {
 func finalizeInnerBox(inner *box, parseErr error) error {
 	if parseErr != nil {
 		if logLevelError() && inner != nil {
-			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Err(parseErr).Send()
+			logErrorBox(inner).Err(parseErr).Msg("failed parsing inner box")
 		}
 		return parseErr
 	}
@@ -539,7 +539,7 @@ func finalizeInnerBox(inner *box, parseErr error) error {
 	}
 	if err := inner.close(); err != nil {
 		if logLevelError() {
-			logError().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Err(err).Send()
+			logErrorBox(inner).Err(err).Msg("failed closing inner box")
 		}
 		return err
 	}
@@ -555,9 +555,9 @@ func handleCallbackError(b *box, err error) error {
 	}
 	if logLevelError() {
 		if b == nil {
-			logError().Err(err).Send()
+			logError().Err(err).Msg("metadata callback error")
 		} else {
-			logError().Object("box", b).Err(err).Send()
+			logErrorBox(b).Err(err).Msg("metadata callback error")
 		}
 	}
 	return nil

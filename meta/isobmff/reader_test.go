@@ -5,11 +5,14 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/rs/zerolog"
 )
 
 func TestReadBoxEightByteHeader(t *testing.T) {
@@ -33,6 +36,50 @@ func TestReadBoxEightByteHeader(t *testing.T) {
 	}
 	if b.remain != 0 {
 		t.Fatalf("remain = %d, want 0", b.remain)
+	}
+}
+
+func TestCallbackLogsDecodedMetadataItems(t *testing.T) {
+	var buf bytes.Buffer
+	oldLogger := metalog.Logger
+	metalog.Logger = zerolog.New(&buf).Level(zerolog.InfoLevel)
+	t.Cleanup(func() { metalog.Logger = oldLogger })
+
+	r := NewReader(bytes.NewReader(nil),
+		func(io.Reader, meta.ExifHeader) error { return nil },
+		func(io.Reader, meta.XPacketHeader) error { return nil },
+		func(io.Reader, meta.PreviewHeader) error { return nil },
+	)
+	t.Cleanup(r.Close)
+
+	b := box{boxType: typeExif, offset: 12, size: 24}
+	if err := r.callExifReader(&b, meta.NewExifHeader(utils.LittleEndian, 8, 0, 16, imagetype.ImageJXL)); err != nil {
+		t.Fatalf("callExifReader error: %v", err)
+	}
+	if err := r.callXMPReader(&b, meta.XPacketHeader{Offset: 4, Length: 12, HasXPacketPI: true, HasXMPMeta: true}); err != nil {
+		t.Fatalf("callXMPReader error: %v", err)
+	}
+	if err := r.callPreviewReader(&b, meta.PreviewHeader{Size: 10, Width: 2, Height: 3, ImageType: imagetype.ImageJPEG, Source: meta.PreviewSourcePRVW}, metadataKindPRVW); err != nil {
+		t.Fatalf("callPreviewReader error: %v", err)
+	}
+
+	out := buf.String()
+	for _, want := range []string{
+		`"message":"decoded metadata item"`,
+		`"component":"isobmff"`,
+		`"metadataKind":"exif"`,
+		`"metadataKind":"xmp"`,
+		`"metadataKind":"preview"`,
+		`"header":{"firstIfd":"IFD0","firstIfdOffset":8`,
+		`"header":{"offset":4,"length":12,"hasXPacketPI":true,"hasXMPMeta":true}`,
+		`"header":{"size":10,"width":2,"height":3,"imageType":"image/jpeg","source":"PRVW"}`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("log output missing %s: %q", want, out)
+		}
+	}
+	if got := strings.Count(out, `"message":"decoded metadata item"`); got != 3 {
+		t.Fatalf("decoded item log count = %d, want 3: %q", got, out)
 	}
 }
 

@@ -5,11 +5,13 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/rs/zerolog"
 )
@@ -31,7 +33,7 @@ var (
 	pooledEOFReader = eofReader{}
 	parseReaderPool = sync.Pool{
 		New: func() any {
-			return &Reader{loggerMixin: newLoggerMixin(Logger)}
+			return &Reader{loggerMixin: newLoggerMixin(metalog.Logger)}
 		},
 	}
 	isobmffReaderPool = sync.Pool{
@@ -176,7 +178,7 @@ func ParseWithReaderOptions(rs io.ReadSeeker, opts ...ReaderOption) (Exif, error
 		return parseCR3FromReader(br, opts...)
 	}
 
-	reader := acquirePooledReader(Logger)
+	reader := acquirePooledReader(metalog.Logger)
 	defer releasePooledReader(reader)
 	applyReaderOptions(reader, opts)
 
@@ -237,7 +239,7 @@ func scanParseProbe(br *bufio.Reader) parseProbeInfo {
 }
 
 func parseCR3FromReader(src io.Reader, opts ...ReaderOption) (Exif, error) {
-	reader := acquirePooledReader(Logger)
+	reader := acquirePooledReader(metalog.Logger)
 	defer releasePooledReader(reader)
 	applyReaderOptions(reader, opts)
 
@@ -306,7 +308,11 @@ func (r *Reader) rootDirectory(header meta.ExifHeader) (tag.Directory, bool) {
 	rootType := header.FirstIfd
 	if !rootType.IsValid() {
 		if r.warnEnabled() {
-			r.warn().Str("ifd", header.FirstIfd.String()).Uint8("ifdID", uint8(header.FirstIfd)).Msg("unsupported root ifd type")
+			r.readerLogContext(r.warn()).
+				Object("header", header).
+				Str("ifd", header.FirstIfd.String()).
+				Uint8("ifdID", uint8(header.FirstIfd)).
+				Msg("unsupported root ifd type")
 		}
 		return tag.Directory{}, false
 	}
@@ -314,18 +320,53 @@ func (r *Reader) rootDirectory(header meta.ExifHeader) (tag.Directory, bool) {
 }
 
 // decodeRootIFD decodes a root IFD with optional pre-positioned reader state.
-func (r *Reader) decodeRootIFD(reader io.Reader, header meta.ExifHeader, resetExif bool, positioned bool) error {
+func (r *Reader) decodeRootIFD(reader io.Reader, header meta.ExifHeader, resetExif bool, positioned bool) (err error) {
 	r.initDecode(reader, header, resetExif)
+	infoEnabled := r.infoEnabled()
+	var start time.Time
+	if infoEnabled {
+		start = time.Now()
+		r.info().
+			Object("header", header).
+			Bool("append", !resetExif).
+			Bool("positioned", positioned).
+			Msg("starting exif decode")
+		defer func() {
+			ev := r.info().
+				Str("imageType", r.Exif.ImageType.String()).
+				Uint32("readerOffset", r.po).
+				Dur("elapsed", time.Since(start))
+			if err != nil {
+				ev.Err(err)
+			}
+			ev.Msg("finished exif decode")
+		}()
+	}
 	if positioned {
 		r.po = header.FirstIfdOffset
-	} else if err := r.discard(int(header.FirstIfdOffset)); err != nil {
+	} else if err = r.discard(int(header.FirstIfdOffset)); err != nil {
+		if r.warnEnabled() {
+			r.readerLogContext(r.warn()).
+				Err(err).
+				Object("header", header).
+				Msg("failed seeking to root ifd")
+		}
 		return err
 	}
 	root, ok := r.rootDirectory(header)
 	if !ok {
 		return nil
 	}
-	return r.readDirectory(root, true)
+	if err = r.readDirectory(root, true); err != nil {
+		if r.warnEnabled() {
+			r.directoryLogContext(r.warn(), root).
+				Err(err).
+				Object("header", header).
+				Msg("failed reading root ifd")
+		}
+		return err
+	}
+	return nil
 }
 
 // DecodeTiff parses EXIF from a TIFF-like stream.
@@ -356,23 +397,43 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 	if !directory.Type.IsValid() {
 		return nil
 	}
+	infoEnabled := r.infoEnabled()
 	tagCount, err := r.readUint16(directory)
 	if err != nil {
+		if r.warnEnabled() {
+			r.directoryLogContext(r.warn(), directory).
+				Err(err).
+				Msg("failed reading exif tag count")
+		}
 		return err
 	}
 	if tagCount > maxTagCount {
 		if r.warnEnabled() {
-			r.warn().Str("ifd", directory.String()).Uint16("tagCount", tagCount).Msg("exif tag count exceeds parser limit")
+			r.directoryLogContext(r.warn(), directory).
+				Uint16("tagCount", tagCount).
+				Uint16("tagCountMax", maxTagCount).
+				Msg("exif tag count exceeds parser limit")
 		}
 		return nil
 	}
 
 	if err = r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount); err != nil {
+		if r.warnEnabled() {
+			r.directoryLogContext(r.warn(), directory).
+				Err(err).
+				Uint16("tagCount", tagCount).
+				Msg("failed reading exif tag headers")
+		}
 		return err
 	}
 
 	nextIFDOffset, err := r.readUint32(directory)
 	if err != nil {
+		if r.warnEnabled() {
+			r.directoryLogContext(r.warn(), directory).
+				Err(err).
+				Msg("failed reading next ifd offset")
+		}
 		return err
 	}
 	if _, ok := directory.Type.NextRootIFD(); ok && nextIFDOffset != 0 {
@@ -380,6 +441,12 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 	}
 
 	if !drainQueue {
+		if infoEnabled {
+			r.infoDirectoryLogContext(r.info(), directory).
+				Uint16("tagCount", tagCount).
+				Uint32("nextIFDOffset", nextIFDOffset).
+				Msg("queued exif directory tags")
+		}
 		return nil
 	}
 
@@ -403,7 +470,10 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			child := t.ChildDirectory()
 			if child.Type == tag.MakerNoteIFD {
 				if err = r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
-					r.warn().Err(err).Str("ifd", child.String()).Msg("failed parsing maker-note ifd")
+					r.tagLogContext(r.warn(), t).
+						Err(err).
+						Str("childIFD", child.String()).
+						Msg("failed parsing maker-note ifd")
 				}
 				r.state.sortUnread()
 				continue
@@ -411,7 +481,10 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			if child.Type.IsValid() {
 				if err = r.readDirectory(child, false); err != nil {
 					if r.warnEnabled() {
-						r.warn().Err(err).Str("ifd", child.String()).Msg("failed parsing child ifd")
+						r.tagLogContext(r.warn(), t).
+							Err(err).
+							Str("childIFD", child.String()).
+							Msg("failed parsing child ifd")
 					}
 				}
 			}
@@ -424,16 +497,18 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			r.state.sortUnread()
 		}
 	}
+	if infoEnabled {
+		r.infoDirectoryLogContext(r.info(), directory).
+			Uint16("tagCount", tagCount).
+			Uint32("nextIFDOffset", nextIFDOffset).
+			Msg("parsed exif directory")
+	}
 	return nil
 }
 
 // parseDirectoryTagHeadersPerEntry decodes tag headers by reading 12 bytes per entry.
 func (r *Reader) parseDirectoryTagHeadersPerEntry(directory tag.Directory, tagCount uint16) error {
 	warnEnabled := r.warnEnabled()
-	ifdName := ""
-	if warnEnabled {
-		ifdName = directory.String()
-	}
 	for i := 0; i < int(tagCount); i++ {
 		headerBuf, readErr := r.fastRead(12)
 		if readErr != nil {
@@ -445,7 +520,13 @@ func (r *Reader) parseDirectoryTagHeadersPerEntry(directory tag.Directory, tagCo
 		t, parseErr := tagFromBuffer(directory, headerBuf)
 		if parseErr != nil {
 			if warnEnabled {
-				r.warn().Err(parseErr).Str("ifd", ifdName).Send()
+				tagID := tag.ID(directory.ByteOrder.Uint16(headerBuf[:2]))
+				tagType := tag.Type(directory.ByteOrder.Uint16(headerBuf[2:4]))
+				unitCount := directory.ByteOrder.Uint32(headerBuf[4:8])
+				valueOffset := directory.ByteOrder.Uint32(headerBuf[8:12])
+				r.rawTagHeaderLogContext(r.warn(), directory, i, tagID, tagType, unitCount, valueOffset).
+					Err(parseErr).
+					Msg("invalid exif tag header")
 			}
 			continue
 		}
@@ -486,10 +567,6 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, ta
 	}
 
 	warnEnabled := r.warnEnabled()
-	ifdName := ""
-	if warnEnabled {
-		ifdName = directory.String()
-	}
 
 	byteOrder := directory.ByteOrder
 	directoryType := directory.Type
@@ -497,6 +574,7 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, ta
 	baseOffset := directory.BaseOffset
 
 	for pos := 0; pos < total; pos += 12 {
+		index := pos / 12
 		h := raw[pos : pos+12]
 		tagID := tag.ID(byteOrder.Uint16(h[:2]))
 		tagType := tag.Type(byteOrder.Uint16(h[2:4]))
@@ -509,7 +587,9 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, ta
 
 		if !tagType.IsValid() {
 			if warnEnabled {
-				r.warn().Err(tag.ErrTagTypeNotValid).Str("ifd", ifdName).Send()
+				r.rawTagHeaderLogContext(r.warn(), directory, index, tagID, tagType, unitCount, valueOffset).
+					Err(tag.ErrTagTypeNotValid).
+					Msg("invalid exif tag header")
 			}
 			continue
 		}

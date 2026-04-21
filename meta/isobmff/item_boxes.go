@@ -30,7 +30,7 @@ func (r *Reader) readIinf(b *box) (err error) {
 	}
 
 	if logLevelInfo() {
-		logInfo().Object("box", b).Uint32("count", count).Send()
+		logInfoBox(b).Uint32("count", count).Msg("read item info box")
 	}
 
 	var parsed uint32
@@ -45,7 +45,7 @@ func (r *Reader) readIinf(b *box) (err error) {
 		return err
 	}
 	if logLevelDebug() && parsed != count {
-		logDebug().Object("box", b).Uint32("declared", count).Uint32("parsed", parsed).Msg("iinf entry count mismatch")
+		logDebugBox(b).Uint32("declared", count).Uint32("parsed", parsed).Msg("item info entry count mismatch")
 	}
 	return nil
 }
@@ -67,7 +67,7 @@ func (r *Reader) readInfe(b *box) (err error) {
 		idSize = 4
 	default:
 		if logLevelDebug() {
-			logDebug().Object("box", b).Uint8("version", b.flags.version()).Msg("skipping unsupported infe version")
+			logDebugBox(b).Uint8("version", b.flags.version()).Msg("skipping unsupported item info entry version")
 		}
 		return nil
 	}
@@ -122,16 +122,14 @@ func (r *Reader) readInfe(b *box) (err error) {
 	}
 
 	if logLevelDebug() {
-		ev := logDebug().
-			Object("box", b).
-			Object("flags", b.flags).
+		ev := logDebugBox(b).
 			Uint32("itemID", uint32(id)).
 			Str("itemType", string(itemTypeBuf[:])).
-			Uint16("idx", protectionIndex)
+			Uint16("protectionIndex", protectionIndex)
 		if itemType == itemTypeMime {
 			ev.Str("contentType", contentType)
 		}
-		ev.Send()
+		ev.Msg("read item info entry")
 	}
 	return nil
 }
@@ -257,7 +255,11 @@ type ilocEntry struct {
 
 // MarshalZerologObject is a zerolog interface for logging
 func (ie ilocEntry) MarshalZerologObject(e *zerolog.Event) {
-	e.Uint32("itemID", uint32(ie.id)).Object("extent", ie.firstExtent).Uint16("count", ie.count).Uint16("dri", ie.dataReferenceIndex).Uint8("cmeth", ie.constructionMethod)
+	e.Uint32("itemID", uint32(ie.id)).
+		Object("extent", ie.firstExtent).
+		Uint16("extentCount", ie.count).
+		Uint16("dataReferenceIndex", ie.dataReferenceIndex).
+		Uint8("constructionMethod", ie.constructionMethod)
 }
 
 // offsetLength contains an offset and length
@@ -352,12 +354,12 @@ func (r *Reader) readIloc(b *box) (err error) {
 		if logLevelDebug() {
 			logDebug().
 				Uint32("itemID", uint32(ent.id)).
-				Uint64("offset", ent.firstExtent.offset).
-				Int("length", ent.firstExtent.length).
-				Uint16("count", ent.count).
-				Uint16("dri", ent.dataReferenceIndex).
-				Uint8("cmeth", ent.constructionMethod).
-				Send()
+				Uint64("extentOffset", ent.firstExtent.offset).
+				Int("extentLength", ent.firstExtent.length).
+				Uint16("extentCount", ent.count).
+				Uint16("dataReferenceIndex", ent.dataReferenceIndex).
+				Uint8("constructionMethod", ent.constructionMethod).
+				Msg("read item location entry")
 		}
 
 		switch ent.id {
@@ -377,7 +379,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 func (r *Reader) resolveIlocExtentOffset(ent ilocEntry, extentOffset uint64) (uint64, bool) {
 	if ent.dataReferenceIndex != 0 {
 		if logLevelDebug() {
-			logDebug().Uint16("dri", ent.dataReferenceIndex).Msg("skip iloc entry with external data reference")
+			logDebug().Uint16("dataReferenceIndex", ent.dataReferenceIndex).Msg("skipping iloc entry with external data reference")
 		}
 		return 0, false
 	}
@@ -392,7 +394,7 @@ func (r *Reader) resolveIlocExtentOffset(ent ilocEntry, extentOffset uint64) (ui
 	case 1:
 		if r.heic.idatData.length == 0 {
 			if logLevelDebug() {
-				logDebug().Uint32("itemID", uint32(ent.id)).Msg("skip iloc idat method without idat payload")
+				logDebug().Uint32("itemID", uint32(ent.id)).Msg("skipping iloc idat method without idat payload")
 			}
 			return 0, false
 		}
@@ -409,7 +411,7 @@ func (r *Reader) resolveIlocExtentOffset(ent ilocEntry, extentOffset uint64) (ui
 		return r.heic.idatData.offset + rel, true
 	default:
 		if logLevelDebug() {
-			logDebug().Uint8("cmeth", ent.constructionMethod).Uint32("itemID", uint32(ent.id)).Msg("skip unsupported iloc construction method")
+			logDebug().Uint8("constructionMethod", ent.constructionMethod).Uint32("itemID", uint32(ent.id)).Msg("skipping unsupported iloc construction method")
 		}
 		return 0, false
 	}
@@ -451,7 +453,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	}
 
 	if logLevelInfo() {
-		logInfoBox(b).Object("ItemLocation", ilb).Send()
+		logInfoBox(b).Object("itemLocation", ilb).Msg("read item location box")
 	}
 	return ilb, nil
 }

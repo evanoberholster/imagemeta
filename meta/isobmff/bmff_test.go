@@ -11,12 +11,13 @@ import (
 	"strings"
 	"testing"
 
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 func init() {
-	Logger = log.Level(zerolog.PanicLevel)
+	metalog.Logger = log.Level(zerolog.PanicLevel)
 }
 
 func BenchmarkISOBMFFSamples(b *testing.B) {

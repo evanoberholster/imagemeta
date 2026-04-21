@@ -38,7 +38,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 		return err
 	}
 	if logLevelInfo() {
-		logInfoBox(b).Str("uuid", uuid.String()).Send()
+		logInfoBox(b).Str("uuid", uuid.String()).Msg("read uuid box")
 	}
 	switch uuid {
 	case cr3XPacketUUID:
@@ -51,7 +51,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 				Bool("hasXPacketPI", header.HasXPacketPI).
 				Bool("hasXMPMeta", header.HasXMPMeta).
 				Int("xpacketLength", header.Length).
-				Send()
+				Msg("read xpacket header")
 		}
 		if err = r.callXMPReader(b, header); err != nil {
 			return err
@@ -66,7 +66,7 @@ func (r *Reader) readUUIDBox(b *box) error {
 		}
 	default:
 		if logLevelDebug() {
-			logDebug().Object("box", b).Send()
+			logDebugBox(b).Msg("skipping unsupported uuid box")
 		}
 	}
 	return b.close()
@@ -97,7 +97,7 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 			return r.readTHMBBox(inner)
 		default:
 			if logLevelDebug() {
-				logDebug().Str("boxType", inner.boxType.String()).Int64("offset", inner.offset).Int("size", inner.size).Send()
+				logDebugBox(inner).Msg("skipping unsupported cr3 metadata box")
 			}
 			return nil
 		}
@@ -149,7 +149,7 @@ func readCNCVBox(b *box) (err error) {
 		return err
 	}
 	copy(cncv.version[:], buf[:30])
-	logInfo().Object("box", b).Str("CNCV", string(cncv.version[:])).Send()
+	logInfoBox(b).Str("cncv", string(cncv.version[:])).Msg("read canon version box")
 	return nil
 }
 
@@ -211,7 +211,7 @@ func readCCTPBox(b *box) (err error) {
 		}
 		cctp.entries = append(cctp.entries, ent)
 	}
-	logInfo().Object("box", b).Array("tracks", cctp).Send()
+	logInfoBox(b).Array("tracks", cctp).Msg("read canon track table")
 	return nil
 }
 
@@ -259,7 +259,7 @@ func readCTBOBox(b *box) (err error) {
 	if len(ctbo.items) > int(ctbo.count) {
 		ctbo.items = ctbo.items[:ctbo.count]
 	}
-	logInfo().Object("box", b).Array("items", ctbo).Send()
+	logInfoBox(b).Array("items", ctbo).Msg("read canon track byte offsets")
 	return nil
 }
 
@@ -366,7 +366,7 @@ func readCrxTrakBox(b *box) (err error) {
 	//	inner.close()
 	//}
 	if logLevelInfo() {
-		logInfo().Object("box", b).Send()
+		logInfoBox(b).Msg("read cr3 track box")
 	}
 	return nil
 }
