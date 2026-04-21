@@ -12,6 +12,7 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/png"
 	"github.com/evanoberholster/imagemeta/preview"
 	"github.com/pkg/errors"
@@ -47,7 +48,7 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)
@@ -106,7 +107,7 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
@@ -137,7 +138,7 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 	if err != nil {
 		return exif.Exif{}, err
 	}
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	if err := ir.DecodeTiff(rr, header); err != nil {
@@ -191,7 +192,7 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
@@ -214,7 +215,7 @@ func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	it, err := imagetype.ScanBuf(rr)
@@ -239,7 +240,7 @@ func DecodePng(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, err
 	}
 
-	ir := exif.NewReader(exif.Logger)
+	ir := exif.NewReader(metalog.Logger)
 	defer ir.Close()
 
 	if err := ir.DecodeTiff(r, header); err != nil {

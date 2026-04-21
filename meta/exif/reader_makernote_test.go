@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -42,7 +43,7 @@ func TestIsCanonMakerNotePrefix(t *testing.T) {
 func TestMakerNoteAccessorsLazyAllocation(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(Logger)
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	info := r.makerNoteInfo()

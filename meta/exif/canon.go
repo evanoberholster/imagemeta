@@ -267,13 +267,9 @@ func (r *Reader) parseCanonBlockPreview(t tag.Entry) canon.BlockPreview {
 	buf, _, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		if r.warnEnabled() {
-			r.warn().
+			r.tagLogContext(r.warn(), t).
 				Err(err).
 				Str("parser", "parseCanonBlockPreview").
-				Uint16("tagID", uint16(t.ID)).
-				Str("tagName", t.Name()).
-				Stringer("tagType", t.Type).
-				Uint32("unitCount", t.UnitCount).
 				Msg("failed reading canon maker-note payload")
 		}
 		return dst
@@ -776,13 +772,10 @@ const (
 func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
 	if t.Size() != canonBatteryTypePayloadSize {
 		if r.warnEnabled() {
-			r.warn().
+			r.tagLogContext(r.warn(), t).
 				Str("parser", "parseCanonBatteryType").
-				Uint16("tagID", uint16(t.ID)).
-				Str("tagName", t.Name()).
-				Stringer("tagType", t.Type).
-				Uint32("unitCount", t.UnitCount).
 				Uint32("sizeBytes", t.Size()).
+				Uint32("wantSizeBytes", canonBatteryTypePayloadSize).
 				Msg("invalid canon battery type payload length")
 		}
 		return ""
@@ -853,11 +846,8 @@ func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want i
 	if !r.warnEnabled() {
 		return
 	}
-	r.warn().
+	r.tagLogContext(r.warn(), t).
 		Str("parser", parser).
-		Uint16("tagID", uint16(t.ID)).
-		Str("tagName", t.Name()).
-		Stringer("tagType", t.Type).
 		Int("wordsDecoded", got).
 		Int("wordsRequested", want).
 		Msg("canon AF payload truncated to parser word cap")
@@ -867,12 +857,8 @@ func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
 	if !r.warnEnabled() {
 		return
 	}
-	r.warn().
+	r.tagLogContext(r.warn(), t).
 		Str("parser", parser).
-		Uint16("tagID", uint16(t.ID)).
-		Str("tagName", t.Name()).
-		Stringer("tagType", t.Type).
-		Uint32("unitCount", t.UnitCount).
 		Int("gotUnits", got).
 		Int("wantUnits", want).
 		Msg("canon maker-note payload too short")
@@ -882,12 +868,8 @@ func (r *Reader) warnCanonInvalidSize(t tag.Entry, parser string, declaredSizeBy
 	if !r.warnEnabled() {
 		return
 	}
-	r.warn().
+	r.tagLogContext(r.warn(), t).
 		Str("parser", parser).
-		Uint16("tagID", uint16(t.ID)).
-		Str("tagName", t.Name()).
-		Stringer("tagType", t.Type).
-		Uint32("unitCount", t.UnitCount).
 		Uint32("declaredSizeBytes", declaredSizeBytes).
 		Uint32("actualSizeBytes", t.Size()).
 		Msg("invalid canon maker-note payload length")

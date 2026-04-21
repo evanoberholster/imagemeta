@@ -1,9 +1,15 @@
 package xmp
 
 import (
+	"bytes"
+	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
+
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
+	"github.com/rs/zerolog"
 )
 
 func TestParseUintBoundaries(t *testing.T) {
@@ -209,5 +215,87 @@ func TestParseDigitsShortInput(t *testing.T) {
 	got, ok := parseDigits([]byte("9"))
 	if ok || got != 0 {
 		t.Fatalf("parseDigits(\"9\") = (%d,%t), want (0,false)", got, ok)
+	}
+}
+
+func TestParserDebugLogsStructuredWarning(t *testing.T) {
+	var buf bytes.Buffer
+	oldLogger := metalog.Logger
+	metalog.Logger = zerolog.New(&buf).Level(zerolog.WarnLevel)
+	t.Cleanup(func() { metalog.Logger = oldLogger })
+
+	x := XMP{}
+	prop := property{
+		parent: NewProperty(XmpNS, MetadataDate),
+		self:   NewProperty(ExifNS, DateTimeOriginal),
+		val:    []byte("not-a-date"),
+	}
+
+	err := x.parser(prop, true)
+	if err != nil {
+		t.Fatalf("parser returned error: %v", err)
+	}
+
+	out := buf.String()
+	for _, want := range []string{
+		`"component":"xmp"`,
+		`"message":"xmp property parse warning"`,
+		`"namespace":"exif"`,
+		`"property":"exif:DateTimeOriginal"`,
+		`"parent":"xmp:MetadataDate"`,
+		`"valueLength":10`,
+		`"valuePreview":"not-a-date"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("log output missing %s: %q", want, out)
+		}
+	}
+	if strings.Contains(out, "XMP parse warning:") {
+		t.Fatalf("log output still contains legacy stdout warning: %q", out)
+	}
+}
+
+func TestParserDebugSuppressesErrPropertyNotSetWarning(t *testing.T) {
+	var buf bytes.Buffer
+	oldLogger := metalog.Logger
+	metalog.Logger = zerolog.New(&buf).Level(zerolog.WarnLevel)
+	t.Cleanup(func() { metalog.Logger = oldLogger })
+
+	x := XMP{}
+	prop := property{
+		parent: NewProperty(XmpNS, MetadataDate),
+		self:   NewProperty(XmpNS, UnknownPropertyName),
+		val:    []byte("value"),
+	}
+
+	err := x.parser(prop, true)
+	if err != nil {
+		t.Fatalf("parser returned error: %v", err)
+	}
+	if buf.Len() != 0 {
+		t.Fatalf("expected no warning output for ErrPropertyNotSet, got %q", buf.String())
+	}
+}
+
+func TestLogPropertyParseWarningTruncatesValuePreview(t *testing.T) {
+	var buf bytes.Buffer
+	oldLogger := metalog.Logger
+	metalog.Logger = zerolog.New(&buf).Level(zerolog.WarnLevel)
+	t.Cleanup(func() { metalog.Logger = oldLogger })
+
+	prop := property{
+		parent: NewProperty(XmpNS, MetadataDate),
+		self:   NewProperty(ExifNS, DateTimeOriginal),
+		val:    bytes.Repeat([]byte("a"), 120),
+	}
+
+	logPropertyParseWarning(errors.New("boom"), prop)
+
+	out := buf.String()
+	if !strings.Contains(out, `"valueLength":120`) {
+		t.Fatalf("log output missing value length: %q", out)
+	}
+	if !strings.Contains(out, `"valuePreview":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..."`) {
+		t.Fatalf("log output missing truncated preview: %q", out)
 	}
 }

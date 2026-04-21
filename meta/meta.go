@@ -113,7 +113,13 @@ func NewExifHeader(byteOrder utils.ByteOrder, firstIfdOffset, tiffHeaderOffset u
 
 // MarshalZerologObject is a zerolog interface for logging
 func (h ExifHeader) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("FirstIfd", h.FirstIfd.String()).Uint32("FirstIfdOffset", h.FirstIfdOffset).Uint32("TiffHeaderOffset", h.TiffHeaderOffset).Uint32("ExifLength", h.ExifLength).Str("Endian", h.ByteOrder.String()).Str("ImageType", h.ImageType.String())
+	e.
+		Str("firstIfd", h.FirstIfd.String()).
+		Uint32("firstIfdOffset", h.FirstIfdOffset).
+		Uint32("tiffHeaderOffset", h.TiffHeaderOffset).
+		Uint32("exifLength", h.ExifLength).
+		Str("byteOrder", h.ByteOrder.String()).
+		Str("imageType", h.ImageType.String())
 }
 
 // XmpHeader is an XMP header of an image file.
@@ -136,12 +142,36 @@ func NewXMPHeader(offset, length uint32) XmpHeader {
 	return XmpHeader{offset, length}
 }
 
+// MarshalZerologObject is a zerolog interface for logging.
+func (h XmpHeader) MarshalZerologObject(e *zerolog.Event) {
+	e.Uint32("offset", h.Offset).Uint32("length", h.Length)
+}
+
+// MarshalZerologObject is a zerolog interface for logging.
+func (h XPacketHeader) MarshalZerologObject(e *zerolog.Event) {
+	e.
+		Uint64("offset", h.Offset).
+		Int("length", h.Length).
+		Bool("hasXPacketPI", h.HasXPacketPI).
+		Bool("hasXMPMeta", h.HasXMPMeta)
+}
+
 type PreviewHeader struct {
 	Size      uint32
 	Width     uint16
 	Height    uint16
 	ImageType imagetype.ImageType
 	Source    PreviewSource
+}
+
+// MarshalZerologObject is a zerolog interface for logging.
+func (h PreviewHeader) MarshalZerologObject(e *zerolog.Event) {
+	e.
+		Uint32("size", h.Size).
+		Uint16("width", h.Width).
+		Uint16("height", h.Height).
+		Str("imageType", h.ImageType.String()).
+		Str("source", h.Source.String())
 }
 
 // PreviewSource identifies where preview image bytes were extracted from.

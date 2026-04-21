@@ -1,54 +1,37 @@
 package isobmff
 
 import (
-	"os"
-	"runtime"
-
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-var (
-	// Logger is a zerolog logger
-	Logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
-)
+const componentName = "isobmff"
 
 // logLevelInfo
 func logLevelInfo() bool {
-	return Logger.GetLevel() <= zerolog.InfoLevel
+	return metalog.LevelEnabled(metalog.Logger, zerolog.InfoLevel)
 }
 
 // logLevelDebug
 func logLevelDebug() bool {
-	return Logger.GetLevel() <= zerolog.DebugLevel
+	return metalog.LevelEnabled(metalog.Logger, zerolog.DebugLevel)
 }
 
 // logLevelError
 func logLevelError() bool {
-	return Logger.GetLevel() <= zerolog.ErrorLevel
-}
-
-// logLevelTrace
-func logLevelTrace() bool {
-	return Logger.GetLevel() == zerolog.TraceLevel
+	return metalog.LevelEnabled(metalog.Logger, zerolog.ErrorLevel)
 }
 
 func logInfo() *zerolog.Event {
-	ev := Logger.WithLevel(zerolog.InfoLevel)
-	logTraceFunction(ev)
-	return ev
+	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.InfoLevel, 2)
 }
 
 func logDebug() *zerolog.Event {
-	ev := Logger.WithLevel(zerolog.DebugLevel)
-	logTraceFunction(ev)
-	return ev
+	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.DebugLevel, 2)
 }
 
 func logError() *zerolog.Event {
-	ev := Logger.WithLevel(zerolog.ErrorLevel)
-	logTraceFunction(ev)
-	return ev
+	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.ErrorLevel, 2)
 }
 func logInfoBox(b *box) *zerolog.Event {
 	ev := logInfo()
@@ -58,20 +41,26 @@ func logInfoBox(b *box) *zerolog.Event {
 	return ev
 }
 
-func (b *box) log(ev *zerolog.Event) {
-	ev.Str("BoxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
-	if b.flags != 0 {
-		ev.Object("flags", b.flags)
+func logDebugBox(b *box) *zerolog.Event {
+	ev := logDebug()
+	if b != nil {
+		b.log(ev)
 	}
+	return ev
 }
 
-func logTraceFunction(ev *zerolog.Event) {
-	if logLevelTrace() {
-		pc, _, _, ok := runtime.Caller(2)
-		details := runtime.FuncForPC(pc)
-		if ok && details != nil {
-			ev.Str("fn", details.Name())
-		}
+func logErrorBox(b *box) *zerolog.Event {
+	ev := logError()
+	if b != nil {
+		b.log(ev)
+	}
+	return ev
+}
+
+func (b *box) log(ev *zerolog.Event) {
+	ev.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
+	if b.flags != 0 {
+		ev.Object("flags", b.flags)
 	}
 }
 

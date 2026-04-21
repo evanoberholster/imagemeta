@@ -6,19 +6,16 @@ import (
 	"os"
 
 	"github.com/evanoberholster/imagemeta"
-	"github.com/evanoberholster/imagemeta/meta/exif"
-	"github.com/evanoberholster/imagemeta/meta/isobmff"
+	"github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/rs/zerolog"
 )
 
 func init() {
-	imagemeta.SetLogger(zerolog.ConsoleWriter{Out: os.Stdout}, zerolog.DebugLevel)
-	exif.Logger = exif.Logger.Level(zerolog.ErrorLevel)
-	isobmff.Logger = isobmff.Logger.Level(zerolog.ErrorLevel)
+	logging.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.InfoLevel)
 }
 
 func main() {
-	path := "1.NEF"
+	path := "2.CR3"
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	}

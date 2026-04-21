@@ -93,7 +93,11 @@ func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {
 		i += fourCCSize
 	}
 	if logLevelInfo() {
-		logInfoBox(b).Str("MajorBrand", ftyp.MajorBrand.String()).Str("MinorVersion", string(ftyp.MinorVersion[:])).Strs("MinorBrands", minorBrandsToString(ftyp)).Send()
+		logInfoBox(b).
+			Str("majorBrand", ftyp.MajorBrand.String()).
+			Str("minorVersion", string(ftyp.MinorVersion[:])).
+			Strs("minorBrands", minorBrandsToString(ftyp)).
+			Msg("read file type box")
 	}
 	return ftyp, b.close()
 }

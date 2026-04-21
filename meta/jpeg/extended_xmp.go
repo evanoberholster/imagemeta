@@ -92,6 +92,7 @@ func (jr *jpegReader) processExtendedXMP() error {
 		if err := jr.XMPReader(bytes.NewReader(assembled)); err != nil {
 			return err
 		}
+		jr.logDecodedItem("xmp", len(assembled))
 	}
 
 	jr.extendedXMP = nil

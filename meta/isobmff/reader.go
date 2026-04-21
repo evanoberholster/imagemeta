@@ -51,6 +51,21 @@ const (
 	metadataKindCount
 )
 
+func (k metadataKind) String() string {
+	switch k {
+	case metadataKindExif:
+		return "exif"
+	case metadataKindXMP:
+		return "xmp"
+	case metadataKindTHMB:
+		return "thumbnail"
+	case metadataKindPRVW:
+		return "preview"
+	default:
+		return "unknown"
+	}
+}
+
 // goalBit returns the bit index used for requested metadata kinds.
 func goalBit(kind metadataKind) uint8 {
 	return uint8(kind)
@@ -342,6 +357,12 @@ func (r *Reader) callExifReader(b *box, h meta.ExifHeader) error {
 		return handleCallbackError(b, err)
 	}
 	r.setHave(metadataKindExif, true)
+	if logLevelInfo() {
+		logInfoBox(b).
+			Str("metadataKind", metadataKindExif.String()).
+			Object("header", h).
+			Msg("decoded metadata item")
+	}
 	return nil
 }
 
@@ -354,6 +375,12 @@ func (r *Reader) callXMPReader(b *box, h meta.XPacketHeader) error {
 		return handleCallbackError(b, err)
 	}
 	r.setHave(metadataKindXMP, true)
+	if logLevelInfo() {
+		logInfoBox(b).
+			Str("metadataKind", metadataKindXMP.String()).
+			Object("header", h).
+			Msg("decoded metadata item")
+	}
 	return nil
 }
 
@@ -369,5 +396,11 @@ func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKi
 		return handleCallbackError(b, err)
 	}
 	r.setHave(kind, true)
+	if logLevelInfo() {
+		logInfoBox(b).
+			Str("metadataKind", kind.String()).
+			Object("header", h).
+			Msg("decoded metadata item")
+	}
 	return nil
 }
