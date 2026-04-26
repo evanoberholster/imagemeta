@@ -2,7 +2,10 @@ package exif
 
 import (
 	"bytes"
+	"math"
+	"strings"
 
+	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
@@ -15,27 +18,27 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	dst := r.Exif.MakerNote.Canon
 	switch canon.MakerNoteTag(t.ID) {
 	case canon.CanonImageType:
-		dst.ImageType = r.parseStringAllowUndefined(t)
+		dst.ImageType = r.parseCanonString(t)
 	case canon.CanonFirmwareVersion:
-		dst.FirmwareVersion = r.parseStringAllowUndefined(t)
+		dst.FirmwareVersion = canonNormalizeFirmwareVersion(r.parseCanonString(t))
 	case canon.CanonFocalLength:
 		dst.CanonFocalLength = r.parseCanonFocalLength(t)
 	case canon.CanonFlashInfo:
 		// dst.FlashInfo = r.parseCanonFlashInfo(t)
 	case canon.CanonCameraInfo:
-		// intentionally not parsed
+		dst.CameraInfo = r.parseCanonCameraInfo(t)
 	case canon.FileNumber:
 		dst.FileNumber = r.parseUint32(t)
 	case canon.OwnerName:
-		dst.OwnerName = r.parseStringAllowUndefined(t)
+		dst.OwnerName = r.parseCanonString(t)
 	case canon.SerialNumber:
 		dst.SerialNumber = r.parseUint32(t)
 	case canon.CanonModelID:
 		dst.ModelID = r.parseUint32(t)
 	case canon.LensModel:
-		dst.LensModel = canonTerminateAtNUL(r.parseStringAllowUndefined(t))
+		dst.LensModel = r.parseCanonString(t)
 	case canon.CanonInternalSerialNumber:
-		dst.InternalSerialNumber = r.parseStringAllowUndefined(t)
+		dst.InternalSerialNumber = r.parseCanonString(t)
 	case canon.CanonCameraSettings:
 		dst.CanonCameraSettings = r.parseCanonCameraSettings(t)
 	case canon.CanonShotInfo:
@@ -51,6 +54,8 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 		if canonShouldReplaceAFInfo(dst.AFInfo, candidate) {
 			dst.AFInfo = candidate
 		}
+	case canon.AFPointsInFocus1D:
+		dst.AFInfo = r.parseCanonAFPointsInFocus1D(t, dst.AFInfo)
 	case canon.CanonAFInfo2, canon.AFInfo3:
 		candidate := r.parseCanonAFInfo2(t)
 		if canonShouldReplaceAFInfo(dst.AFInfo, candidate) {
@@ -83,7 +88,7 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	case canon.CanonPictureStylePC:
 		// intentionally not parsed
 	case canon.CanonCustomPictureStyleFileName:
-		dst.CustomPictureStyleFileName = r.parseStringAllowUndefined(t)
+		dst.CustomPictureStyleFileName = r.parseCanonString(t)
 	case canon.CanonAFMicroAdj:
 		dst.AFMicroAdj = r.parseCanonAFMicroAdj(t)
 	case canon.CanonLightingOpt:
@@ -102,6 +107,801 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 		return false
 	}
 	return true
+}
+
+type canonCameraInfoLayout uint8
+
+const (
+	canonCameraInfoLayoutUnknown canonCameraInfoLayout = iota
+	canonCameraInfoLayout5D
+	canonCameraInfoLayout5DmkII
+	canonCameraInfoLayout5DmkIII
+	canonCameraInfoLayout6D
+	canonCameraInfoLayout7D
+	canonCameraInfoLayout40D
+	canonCameraInfoLayout50D
+	canonCameraInfoLayout60D
+	canonCameraInfoLayout70D
+	canonCameraInfoLayout80D
+	canonCameraInfoLayout450D
+	canonCameraInfoLayout500D
+	canonCameraInfoLayout550D
+	canonCameraInfoLayout600D
+	canonCameraInfoLayout650D
+	canonCameraInfoLayout700D
+	canonCameraInfoLayout750D
+	canonCameraInfoLayout1000D
+	canonCameraInfoLayoutPowerShot
+	canonCameraInfoLayoutPowerShot2
+	canonCameraInfoLayoutUnknown32
+	canonCameraInfoLayoutR6
+	canonCameraInfoLayoutR6m2
+	canonCameraInfoLayoutR6m3
+)
+
+type canonCameraInfoSpec struct {
+	fNumberOff               int
+	exposureTimeOff          int
+	isoOff                   int
+	highlightTonePriorityOff int
+	flashMeteringModeOff     int
+	measuredEV2Off           int
+	cameraTemperatureOff     int
+	macroMagnificationOff    int
+	focalLengthOff           int
+	cameraOrientationOff     int
+	whiteBalanceOff          int
+	colorTemperatureOff      int
+	lensTypeOff              int
+	minFocalLengthOff        int
+	maxFocalLengthOff        int
+	jpegQualityOff           int
+	pictureStyleOff          int
+	firmwareVersionOff       int
+	firmwareVersionLen       int
+	fileIndexOff             int
+	directoryIndexOff        int
+}
+
+func (r *Reader) parseCanonCameraInfo(t tag.Entry) canon.CameraInfo {
+	layout := r.canonCameraInfoLayout(t)
+	switch layout {
+	case canonCameraInfoLayout5D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:            0x03,
+			exposureTimeOff:       0x04,
+			isoOff:                0x06,
+			cameraTemperatureOff:  0x17,
+			macroMagnificationOff: 0x1b,
+			focalLengthOff:        0x28,
+			cameraOrientationOff:  0x27,
+			whiteBalanceOff:       0x54,
+			colorTemperatureOff:   0x58,
+			pictureStyleOff:       0x6c,
+			lensTypeOff:           0x97,
+			minFocalLengthOff:     0x93,
+			maxFocalLengthOff:     0x95,
+			firmwareVersionOff:    0xa4,
+			firmwareVersionLen:    8,
+			fileIndexOff:          0xd0,
+			directoryIndexOff:     0xcc,
+		})
+	case canonCameraInfoLayout5DmkII:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			macroMagnificationOff:    0x1b,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x31,
+			whiteBalanceOff:          0x6f,
+			colorTemperatureOff:      0x73,
+			pictureStyleOff:          0xa7,
+			lensTypeOff:              0xe6,
+			minFocalLengthOff:        0xe8,
+			maxFocalLengthOff:        0xea,
+			firmwareVersionOff:       0x17e,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1bb,
+			directoryIndexOff:        0x1c7,
+		})
+	case canonCameraInfoLayout5DmkIII:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x7d,
+			whiteBalanceOff:      0xbc,
+			colorTemperatureOff:  0xc0,
+			pictureStyleOff:      0xf4,
+			lensTypeOff:          0x153,
+			minFocalLengthOff:    0x155,
+			maxFocalLengthOff:    0x157,
+			firmwareVersionOff:   0x23c,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x28c,
+			directoryIndexOff:    0x298,
+		})
+	case canonCameraInfoLayout6D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x83,
+			whiteBalanceOff:      0xc2,
+			colorTemperatureOff:  0xc6,
+			pictureStyleOff:      0xfa,
+			lensTypeOff:          0x161,
+			minFocalLengthOff:    0x163,
+			maxFocalLengthOff:    0x165,
+			firmwareVersionOff:   0x256,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x2aa,
+			directoryIndexOff:    0x2b6,
+		})
+	case canonCameraInfoLayout7D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			measuredEV2Off:           0x08,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x35,
+			whiteBalanceOff:          0x77,
+			colorTemperatureOff:      0x7b,
+			pictureStyleOff:          0xaf,
+			lensTypeOff:              0x112,
+			minFocalLengthOff:        0x114,
+			maxFocalLengthOff:        0x116,
+			firmwareVersionOff:       0x1ac,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1eb,
+			directoryIndexOff:        0x1f7,
+		})
+	case canonCameraInfoLayout40D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:            0x03,
+			exposureTimeOff:       0x04,
+			isoOff:                0x06,
+			flashMeteringModeOff:  0x15,
+			cameraTemperatureOff:  0x18,
+			macroMagnificationOff: 0x1b,
+			focalLengthOff:        0x1d,
+			cameraOrientationOff:  0x30,
+			whiteBalanceOff:       0x6f,
+			colorTemperatureOff:   0x73,
+			lensTypeOff:           0xd6,
+			minFocalLengthOff:     0xd8,
+			maxFocalLengthOff:     0xda,
+			firmwareVersionOff:    0xff,
+			firmwareVersionLen:    6,
+			fileIndexOff:          0x133,
+			directoryIndexOff:     0x13f,
+		})
+	case canonCameraInfoLayout50D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x31,
+			whiteBalanceOff:          0x6f,
+			colorTemperatureOff:      0x73,
+			pictureStyleOff:          0xa7,
+			lensTypeOff:              0xea,
+			minFocalLengthOff:        0xec,
+			maxFocalLengthOff:        0xee,
+			firmwareVersionOff:       0x15e,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x19b,
+			directoryIndexOff:        0x1a7,
+		})
+	case canonCameraInfoLayout60D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x38,
+			whiteBalanceOff:          0x7b,
+			colorTemperatureOff:      0x7f,
+			pictureStyleOff:          0xb3,
+			lensTypeOff:              0xea,
+			minFocalLengthOff:        0xec,
+			maxFocalLengthOff:        0xee,
+			firmwareVersionOff:       0x19b,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1db,
+			directoryIndexOff:        0x1e7,
+		})
+	case canonCameraInfoLayout70D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x84,
+			colorTemperatureOff:  0xc7,
+			lensTypeOff:          0x166,
+			minFocalLengthOff:    0x168,
+			maxFocalLengthOff:    0x16a,
+			firmwareVersionOff:   0x25e,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x2b3,
+			directoryIndexOff:    0x2bf,
+		})
+	case canonCameraInfoLayout80D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x96,
+			colorTemperatureOff:  0x13a,
+			lensTypeOff:          0x189,
+			minFocalLengthOff:    0x18b,
+			maxFocalLengthOff:    0x18d,
+			firmwareVersionOff:   0x45a,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x4ae,
+			directoryIndexOff:    0x4ba,
+		})
+	case canonCameraInfoLayout450D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:            0x03,
+			exposureTimeOff:       0x04,
+			isoOff:                0x06,
+			flashMeteringModeOff:  0x15,
+			cameraTemperatureOff:  0x18,
+			macroMagnificationOff: 0x1b,
+			focalLengthOff:        0x1d,
+			cameraOrientationOff:  0x30,
+			whiteBalanceOff:       0x6f,
+			colorTemperatureOff:   0x73,
+			lensTypeOff:           0xde,
+			firmwareVersionOff:    0x107,
+			firmwareVersionLen:    6,
+			fileIndexOff:          0x13f,
+			directoryIndexOff:     0x133,
+		})
+	case canonCameraInfoLayout500D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x31,
+			whiteBalanceOff:          0x73,
+			colorTemperatureOff:      0x77,
+			pictureStyleOff:          0xab,
+			lensTypeOff:              0xf6,
+			minFocalLengthOff:        0xf8,
+			maxFocalLengthOff:        0xfa,
+			firmwareVersionOff:       0x190,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1d3,
+			directoryIndexOff:        0x1df,
+		})
+	case canonCameraInfoLayout550D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x35,
+			whiteBalanceOff:          0x78,
+			colorTemperatureOff:      0x7c,
+			pictureStyleOff:          0xb0,
+			lensTypeOff:              0xff,
+			minFocalLengthOff:        0x101,
+			maxFocalLengthOff:        0x103,
+			firmwareVersionOff:       0x1a4,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1e4,
+			directoryIndexOff:        0x1f0,
+		})
+	case canonCameraInfoLayout600D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:               0x03,
+			exposureTimeOff:          0x04,
+			isoOff:                   0x06,
+			highlightTonePriorityOff: 0x07,
+			flashMeteringModeOff:     0x15,
+			cameraTemperatureOff:     0x19,
+			focalLengthOff:           0x1e,
+			cameraOrientationOff:     0x38,
+			whiteBalanceOff:          0x7b,
+			colorTemperatureOff:      0x7f,
+			pictureStyleOff:          0xb3,
+			lensTypeOff:              0xea,
+			minFocalLengthOff:        0xec,
+			maxFocalLengthOff:        0xee,
+			firmwareVersionOff:       0x19b,
+			firmwareVersionLen:       6,
+			fileIndexOff:             0x1db,
+			directoryIndexOff:        0x1e7,
+		})
+	case canonCameraInfoLayout650D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x7d,
+			whiteBalanceOff:      0xbc,
+			colorTemperatureOff:  0xc0,
+			pictureStyleOff:      0xf4,
+			lensTypeOff:          0x127,
+			minFocalLengthOff:    0x129,
+			maxFocalLengthOff:    0x12b,
+			firmwareVersionOff:   0x21b,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x270,
+			directoryIndexOff:    0x27c,
+		})
+	case canonCameraInfoLayout700D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x7d,
+			whiteBalanceOff:      0xbc,
+			colorTemperatureOff:  0xc0,
+			pictureStyleOff:      0xf4,
+			lensTypeOff:          0x127,
+			minFocalLengthOff:    0x129,
+			maxFocalLengthOff:    0x12b,
+			firmwareVersionOff:   0x220,
+			firmwareVersionLen:   6,
+			fileIndexOff:         0x274,
+			directoryIndexOff:    0x280,
+		})
+	case canonCameraInfoLayout750D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:           0x03,
+			exposureTimeOff:      0x04,
+			isoOff:               0x06,
+			cameraTemperatureOff: 0x1b,
+			focalLengthOff:       0x23,
+			cameraOrientationOff: 0x96,
+			whiteBalanceOff:      0x131,
+			colorTemperatureOff:  0x135,
+			pictureStyleOff:      0x169,
+			lensTypeOff:          0x184,
+			minFocalLengthOff:    0x186,
+			maxFocalLengthOff:    0x188,
+			firmwareVersionOff:   0x43d,
+			firmwareVersionLen:   6,
+		})
+	case canonCameraInfoLayout1000D:
+		return r.parseCanonCameraInfoBytes(t, canonCameraInfoSpec{
+			fNumberOff:            0x03,
+			exposureTimeOff:       0x04,
+			isoOff:                0x06,
+			flashMeteringModeOff:  0x15,
+			cameraTemperatureOff:  0x18,
+			macroMagnificationOff: 0x1b,
+			focalLengthOff:        0x1d,
+			cameraOrientationOff:  0x30,
+			whiteBalanceOff:       0x6f,
+			colorTemperatureOff:   0x73,
+			lensTypeOff:           0xe2,
+			minFocalLengthOff:     0xe4,
+			maxFocalLengthOff:     0xe6,
+			firmwareVersionOff:    0x10b,
+			firmwareVersionLen:    6,
+			fileIndexOff:          0x143,
+			directoryIndexOff:     0x137,
+		})
+	case canonCameraInfoLayoutPowerShot:
+		return r.parseCanonCameraInfoPowerShot(t)
+	case canonCameraInfoLayoutPowerShot2:
+		return r.parseCanonCameraInfoPowerShot2(t)
+	case canonCameraInfoLayoutUnknown32:
+		return r.parseCanonCameraInfoUnknown32(t)
+	case canonCameraInfoLayoutR6:
+		return r.parseCanonCameraInfoOffsetUint32(t, 0x0af1, func(v uint32) canon.CameraInfo {
+			return canon.CameraInfo{ShutterCount: v}
+		})
+	case canonCameraInfoLayoutR6m2:
+		return r.parseCanonCameraInfoOffsetUint32(t, 0x0d29, func(v uint32) canon.CameraInfo {
+			return canon.CameraInfo{ShutterCount: v}
+		})
+	case canonCameraInfoLayoutR6m3:
+		return r.parseCanonCameraInfoOffsetUint16(t, 0x086d, func(v uint16) canon.CameraInfo {
+			return canon.CameraInfo{ImageCount: uint32(v)}
+		})
+	default:
+		return canon.CameraInfo{}
+	}
+}
+
+func (r *Reader) canonCameraInfoLayout(t tag.Entry) canonCameraInfoLayout {
+	if layout, ok := canonCameraInfoLayoutForModelID(r.canonCameraInfoModelID()); ok {
+		return layout
+	}
+	if t.Type != tag.TypeLong {
+		return canonCameraInfoLayoutUnknown
+	}
+	switch t.UnitCount {
+	case 138, 148:
+		return canonCameraInfoLayoutPowerShot
+	case 156, 162, 167, 171, 264:
+		return canonCameraInfoLayoutPowerShot2
+	default:
+		return canonCameraInfoLayoutUnknown32
+	}
+}
+
+func (r *Reader) canonCameraInfoModelID() canon.CanonCameraModel {
+	if modelID := r.canonModelID(); modelID != canon.CanonModelUnknown {
+		return modelID
+	}
+	// Model ID is based on Exif and not Makernote.
+	return canon.CanonModelUnknown
+}
+
+func canonCameraInfoLayoutForModelID(modelID canon.CanonCameraModel) (canonCameraInfoLayout, bool) {
+	switch modelID {
+	case canon.CanonModelEOS5D:
+		return canonCameraInfoLayout5D, true
+	case canon.CanonModelEOS5DMarkII:
+		return canonCameraInfoLayout5DmkII, true
+	case canon.CanonModelEOS5DMarkIII:
+		return canonCameraInfoLayout5DmkIII, true
+	case canon.CanonModelEOS6D:
+		return canonCameraInfoLayout6D, true
+	case canon.CanonModelEOS7D:
+		return canonCameraInfoLayout7D, true
+	case canon.CanonModelEOS40D:
+		return canonCameraInfoLayout40D, true
+	case canon.CanonModelEOS50D:
+		return canonCameraInfoLayout50D, true
+	case canon.CanonModelEOS60D, canon.CanonModelEOSRebelT5:
+		return canonCameraInfoLayout60D, true
+	case canon.CanonModelEOS70D:
+		return canonCameraInfoLayout70D, true
+	case canon.CanonModelEOS80D:
+		return canonCameraInfoLayout80D, true
+	case canon.CanonModelEOSDigitalRebelXSi:
+		return canonCameraInfoLayout450D, true
+	case canon.CanonModelEOSRebelT1i:
+		return canonCameraInfoLayout500D, true
+	case canon.CanonModelEOSRebelT2i:
+		return canonCameraInfoLayout550D, true
+	case canon.CanonModelEOSRebelT3i, canon.CanonModelEOSRebelT3:
+		return canonCameraInfoLayout600D, true
+	case canon.CanonModelEOSRebelT4i:
+		return canonCameraInfoLayout650D, true
+	case canon.CanonModelEOSRebelT5i:
+		return canonCameraInfoLayout700D, true
+	case canon.CanonModelEOSRebelT6i, canon.CanonModelEOSRebelT6s:
+		return canonCameraInfoLayout750D, true
+	case canon.CanonModelEOSRebelXS:
+		return canonCameraInfoLayout1000D, true
+	case canon.CanonModelEOSR5, canon.CanonModelEOSR6:
+		return canonCameraInfoLayoutR6, true
+	case canon.CanonModelEOSR50, canon.CanonModelEOSR6MarkII, canon.CanonModelEOSR8:
+		return canonCameraInfoLayoutR6m2, true
+	case canon.CanonModelEOSR6MarkIII:
+		return canonCameraInfoLayoutR6m3, true
+	default:
+		return canonCameraInfoLayoutUnknown, false
+	}
+}
+
+func (r *Reader) parseCanonCameraInfoBytes(t tag.Entry, spec canonCameraInfoSpec) canon.CameraInfo {
+	buf, _, err := r.readTagBytes(t, t.Size())
+	if err != nil || len(buf) == 0 {
+		return canon.CameraInfo{}
+	}
+	dst := canon.CameraInfo{}
+	if spec.fNumberOff >= 0 {
+		dst.FNumber = canonCameraInfoFNumber(canonByteAt(buf, spec.fNumberOff))
+	}
+	if spec.exposureTimeOff >= 0 {
+		dst.ExposureTime = canonCameraInfoExposureTime(canonByteAt(buf, spec.exposureTimeOff))
+	}
+	if spec.isoOff >= 0 {
+		dst.ISO = canonCameraInfoISO(canonByteAt(buf, spec.isoOff))
+	}
+	if spec.highlightTonePriorityOff >= 0 {
+		dst.HighlightTonePriority = int16(canonByteAt(buf, spec.highlightTonePriorityOff))
+	}
+	if spec.flashMeteringModeOff >= 0 {
+		dst.FlashMeteringMode = int16(canonByteAt(buf, spec.flashMeteringModeOff))
+	}
+	if spec.measuredEV2Off >= 0 {
+		dst.MeasuredEV2 = canonCameraInfoMeasuredEV2(canonByteAt(buf, spec.measuredEV2Off))
+	}
+	if spec.cameraTemperatureOff >= 0 {
+		dst.CameraTemperature = canonCameraInfoTemperature(canonByteAt(buf, spec.cameraTemperatureOff))
+	}
+	if spec.macroMagnificationOff >= 0 {
+		dst.MacroMagnification = canonCameraInfoMacroMagnification(canonByteAt(buf, spec.macroMagnificationOff))
+	}
+	if spec.focalLengthOff >= 0 {
+		dst.FocalLength = canonCameraInfoFocalLength(canonU16BEAt(buf, spec.focalLengthOff))
+	}
+	if spec.cameraOrientationOff >= 0 {
+		dst.CameraOrientation = canonByteAt(buf, spec.cameraOrientationOff)
+		if dst.CameraOrientation == 0 && spec.cameraOrientationOff == 0x36 {
+			alt := canonByteAt(buf, 0x3a)
+			if alt != 0 {
+				dst.CameraOrientation = alt
+			}
+		}
+	}
+	if spec.whiteBalanceOff >= 0 {
+		dst.WhiteBalance = canon.WhiteBalance(canonU16LEAt(buf, spec.whiteBalanceOff))
+	}
+	if spec.colorTemperatureOff >= 0 {
+		dst.ColorTemperature = canonU16LEAt(buf, spec.colorTemperatureOff)
+	}
+	if spec.lensTypeOff >= 0 {
+		dst.LensType = canon.CanonLensType(canonU16BEAt(buf, spec.lensTypeOff))
+	}
+	if spec.minFocalLengthOff >= 0 {
+		dst.MinFocalLength = canonCameraInfoFocalLength(canonU16BEAt(buf, spec.minFocalLengthOff))
+	}
+	if spec.maxFocalLengthOff >= 0 {
+		dst.MaxFocalLength = canonCameraInfoFocalLength(canonU16BEAt(buf, spec.maxFocalLengthOff))
+	}
+	if spec.jpegQualityOff >= 0 {
+		dst.JPEGQuality = canonByteAt(buf, spec.jpegQualityOff)
+	}
+	if spec.pictureStyleOff >= 0 {
+		dst.PictureStyle = int16(canonByteAt(buf, spec.pictureStyleOff))
+	}
+	if spec.firmwareVersionOff >= 0 && spec.firmwareVersionLen > 0 {
+		dst.FirmwareVersion = exifASCIIText(canonBytesAt(buf, spec.firmwareVersionOff, spec.firmwareVersionLen))
+	}
+	if spec.fileIndexOff >= 0 {
+		if v := canonU32LEAt(buf, spec.fileIndexOff); v > 0 {
+			dst.FileIndex = v + 1
+		}
+	}
+	if spec.directoryIndexOff >= 0 {
+		if v := canonU32LEAt(buf, spec.directoryIndexOff); v > 0 {
+			dst.DirectoryIndex = v - 1
+		}
+	}
+	return dst
+}
+
+func (r *Reader) parseCanonCameraInfoPowerShot(t tag.Entry) canon.CameraInfo {
+	count := int(t.UnitCount)
+	tempIndex := -1
+	switch count {
+	case 138:
+		tempIndex = 135
+	case 148:
+		tempIndex = 145
+	}
+	if tempIndex < 0 {
+		return canon.CameraInfo{}
+	}
+	return r.parseCanonCameraInfoOffsetInt32(t, tempIndex*4, func(v int32) canon.CameraInfo {
+		return canon.CameraInfo{CameraTemperature: int16(v)}
+	})
+}
+
+func (r *Reader) parseCanonCameraInfoPowerShot2(t tag.Entry) canon.CameraInfo {
+	count := int(t.UnitCount)
+	tempIndex := -1
+	switch count {
+	case 156:
+		tempIndex = 153
+	case 162:
+		tempIndex = 159
+	case 167:
+		tempIndex = 164
+	case 171:
+		tempIndex = 168
+	case 264:
+		tempIndex = 261
+	}
+	if tempIndex < 0 {
+		return canon.CameraInfo{}
+	}
+	return r.parseCanonCameraInfoOffsetInt32(t, tempIndex*4, func(v int32) canon.CameraInfo {
+		return canon.CameraInfo{CameraTemperature: int16(v)}
+	})
+}
+
+func (r *Reader) parseCanonCameraInfoUnknown32(t tag.Entry) canon.CameraInfo {
+	count := int(t.UnitCount)
+	var tempIndex int
+	switch count {
+	case 72:
+		tempIndex = 71
+	case 85:
+		tempIndex = 83
+	case 93, 94:
+		tempIndex = 91
+	case 96:
+		tempIndex = 92
+	case 104:
+		tempIndex = 100
+	default:
+		if count > 400 {
+			tempIndex = count - 3
+		} else {
+			return canon.CameraInfo{}
+		}
+	}
+	return r.parseCanonCameraInfoOffsetInt32(t, tempIndex*4, func(v int32) canon.CameraInfo {
+		return canon.CameraInfo{CameraTemperature: int16(v)}
+	})
+}
+
+func (r *Reader) parseCanonCameraInfoOffsetUint32(t tag.Entry, off int, build func(uint32) canon.CameraInfo) canon.CameraInfo {
+	b, err := r.readCanonTagOffsetBytes(t, off, 4)
+	if err != nil || len(b) < 4 {
+		return canon.CameraInfo{}
+	}
+	return build(canonU32LEAt(b, 0))
+}
+
+func (r *Reader) parseCanonCameraInfoOffsetUint16(t tag.Entry, off int, build func(uint16) canon.CameraInfo) canon.CameraInfo {
+	b, err := r.readCanonTagOffsetBytes(t, off, 2)
+	if err != nil || len(b) < 2 {
+		return canon.CameraInfo{}
+	}
+	return build(canonU16LEAt(b, 0))
+}
+
+func (r *Reader) parseCanonCameraInfoOffsetInt32(t tag.Entry, off int, build func(int32) canon.CameraInfo) canon.CameraInfo {
+	b, err := r.readCanonTagOffsetBytes(t, off, 4)
+	if err != nil || len(b) < 4 {
+		return canon.CameraInfo{}
+	}
+	return build(canonI32LEAt(b, 0))
+}
+
+func (r *Reader) readCanonTagOffsetBytes(t tag.Entry, off, n int) ([]byte, error) {
+	if off < 0 || n <= 0 || uint32(off+n) > t.Size() {
+		return nil, imagetype.ErrDataLength
+	}
+	if err := r.seekToTag(t); err != nil {
+		return nil, err
+	}
+	if err := r.discard(off); err != nil {
+		return nil, err
+	}
+	buf, err := r.fastRead(n)
+	if err != nil {
+		return nil, err
+	}
+	remaining := int(t.Size()) - off - len(buf)
+	if remaining > 0 {
+		if err := r.discard(remaining); err != nil {
+			return nil, err
+		}
+	}
+	return buf, nil
+}
+
+func canonBytesAt(buf []byte, off, n int) []byte {
+	if off < 0 || n <= 0 || off >= len(buf) {
+		return nil
+	}
+	end := off + n
+	if end > len(buf) {
+		end = len(buf)
+	}
+	return buf[off:end]
+}
+
+func canonByteAt(buf []byte, off int) uint8 {
+	if off < 0 || off >= len(buf) {
+		return 0
+	}
+	return buf[off]
+}
+
+func canonU16LEAt(buf []byte, off int) uint16 {
+	b := canonBytesAt(buf, off, 2)
+	if len(b) < 2 {
+		return 0
+	}
+	return uint16(b[0]) | uint16(b[1])<<8
+}
+
+func canonU16BEAt(buf []byte, off int) uint16 {
+	b := canonBytesAt(buf, off, 2)
+	if len(b) < 2 {
+		return 0
+	}
+	return uint16(b[0])<<8 | uint16(b[1])
+}
+
+func canonU32LEAt(buf []byte, off int) uint32 {
+	b := canonBytesAt(buf, off, 4)
+	if len(b) < 4 {
+		return 0
+	}
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
+func canonI32LEAt(buf []byte, off int) int32 {
+	return int32(canonU32LEAt(buf, off))
+}
+
+func canonCameraInfoFNumber(v uint8) meta.Aperture {
+	if v == 0 {
+		return 0
+	}
+	return meta.Aperture(math.Exp2(float64(int(v)-8) / 16.0))
+}
+
+func canonCameraInfoExposureTime(v uint8) meta.ExposureTime {
+	if v == 0 {
+		return 0
+	}
+	return meta.ExposureTime(math.Exp2(4.0 * (1.0 - canonEV(int16(v)-24))))
+}
+
+func canonCameraInfoISO(v uint8) uint32 {
+	if v == 0 {
+		return 0
+	}
+	return uint32(math.Round(100.0 * math.Exp2(float64(v)/8.0-9.0)))
+}
+
+func canonCameraInfoTemperature(v uint8) int16 {
+	if v == 0 {
+		return 0
+	}
+	return int16(v) - 128
+}
+
+func canonCameraInfoMeasuredEV2(v uint8) float32 {
+	if v == 0 {
+		return 0
+	}
+	return float32(v)/8.0 - 6.0
+}
+
+func canonCameraInfoMacroMagnification(v uint8) float32 {
+	if v == 0 {
+		return 0
+	}
+	return float32(math.Exp((75.0 - float64(v)) * math.Ln2 * 3.0 / 40.0))
+}
+
+func canonCameraInfoFocalLength(v uint16) meta.FocalLength {
+	if v == 0 {
+		return 0
+	}
+	return meta.FocalLength(float32(v))
 }
 
 func (r *Reader) parseCanonUint16List(t tag.Entry, dst []uint16) int {
@@ -289,18 +1089,27 @@ func (r *Reader) parseCanonBlockPreview(t tag.Entry) canon.BlockPreview {
 
 func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) canon.PreviewImageInfo {
 	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 5 {
+	n := r.parseCanonInt32List(t, raw[:])
+	start := 0
+	if n >= 6 && (raw[0] == int32(t.Size()) || (raw[0] > 5 && raw[1] >= 0 && raw[1] <= 5 && raw[2] > 0xffff)) {
+		start = 1
+	}
+	if n-start < 5 {
 		r.warnCanonShortRead(t, "parseCanonPreviewImageInfo", n, 5)
 		return canon.PreviewImageInfo{}
 	}
 
-	return canon.PreviewImageInfo{
-		PreviewQuality:     canon.Quality(int16(raw[0])),
-		PreviewImageLength: uint32(raw[1]),
-		PreviewImageWidth:  uint32(raw[2]),
-		PreviewImageHeight: uint32(raw[3]),
-		PreviewImageStart:  uint32(raw[4]),
+	dst := canon.PreviewImageInfo{
+		PreviewQuality:     canon.Quality(int16(raw[start])),
+		PreviewImageLength: uint32(raw[start+1]),
+		PreviewImageWidth:  uint32(raw[start+2]),
+		PreviewImageHeight: uint32(raw[start+3]),
+		PreviewImageStart:  uint32(raw[start+4]),
 	}
+	if start == 1 && dst.PreviewImageStart != 0 {
+		dst.PreviewImageStart += r.tiffHeaderOffset
+	}
+	return dst
 }
 
 func (r *Reader) parseCanonSensorInfo(t tag.Entry) canon.SensorInfo {
@@ -449,8 +1258,8 @@ func (r *Reader) parseCanonFocalLength(t tag.Entry) canon.FocalLengthInfo {
 	return canon.FocalLengthInfo{
 		FocalType:       raw[0],
 		FocalLength:     raw[1],
-		FocalPlaneXSize: raw[2],
-		FocalPlaneYSize: raw[3],
+		FocalPlaneXSize: canonFocalPlaneSizeMM(raw[2]),
+		FocalPlaneYSize: canonFocalPlaneSizeMM(raw[3]),
 	}
 }
 
@@ -624,10 +1433,10 @@ func (r *Reader) parseCanonCameraSettings(t tag.Entry) canon.CameraSettings {
 		CanonImageSize:    canon.CanonImageSize(settings.i16(10)),
 		EasyMode:          canon.EasyMode(settings.i16(11)),
 		DigitalZoom:       canon.DigitalZoom(settings.i16(12)),
-		Contrast:          settings.i16(13),
-		Saturation:        settings.i16(14),
-		Sharpness:         settings.i16(15),
-		CameraISO:         canon.CameraISO(settings.i16(16)),
+		Contrast:          canonCameraSettingValue(settings.i16(13)),
+		Saturation:        canonCameraSettingValue(settings.i16(14)),
+		Sharpness:         canonCameraSettingValue(settings.i16(15)),
+		CameraISO:         canonCameraSettingISO(settings.i16(16)),
 		MeteringMode:      canon.MeteringMode(settings.i16(17)),
 		FocusRange:        canon.FocusRange(settings.i16(18)),
 		AFPoint:           settings.u16(19),
@@ -666,27 +1475,40 @@ func (r *Reader) parseCanonShotInfo(t tag.Entry) canon.ShotInfo {
 	if !ok {
 		return canon.ShotInfo{}
 	}
+	autoISO := settings.i16(1)
+	baseISO := settings.i16(2)
+	measuredEV := settings.i16(3)
+	targetAperture := settings.i16(4)
+	targetExposureTime := settings.i16(5)
+	exposureCompensation := settings.i16(6)
+	cameraTemperature := settings.i16(12)
+	flashGuideNumber := settings.i16(13)
+	fNumber := settings.i16(21)
+	exposureTime := settings.i16(22)
+	measuredEV2 := settings.i16(23)
+	modelID := r.canonModelID()
+
 	dst := canon.ShotInfo{
-		AutoISO:                settings.i16(1),
-		BaseISO:                settings.i16(2),
-		MeasuredEV:             settings.i16(3),
-		TargetAperture:         settings.i16(4),
-		TargetExposureTime:     settings.i16(5),
-		ExposureCompensation:   settings.i16(6),
+		AutoISO:                canonShotISO(autoISO),
+		BaseISO:                canonShotISO(baseISO),
+		MeasuredEV:             canonShotMeasuredEV(measuredEV),
+		TargetAperture:         canonShotAperture(targetAperture),
+		TargetExposureTime:     canonShotExposureTime(targetExposureTime, false),
+		ExposureCompensation:   canonShotExposureCompensation(exposureCompensation),
 		WhiteBalance:           canon.WhiteBalance(settings.i16(7)),
 		SlowShutter:            canon.SlowShutter(settings.i16(8)),
 		SequenceNumber:         settings.i16(9),
 		OpticalZoomCode:        settings.i16(10),
-		CameraTemperature:      settings.i16(12),
-		FlashGuideNumber:       settings.i16(13),
+		CameraTemperature:      canonShotCameraTemperature(cameraTemperature, modelID),
+		FlashGuideNumber:       canonShotFlashGuideNumber(flashGuideNumber),
 		AFPointsInFocus:        settings.u16(14),
 		FlashExposureComp:      settings.i16(15),
 		AutoExposureBracketing: settings.i16(16),
 		AEBBracketValue:        settings.i16(17),
 		ControlMode:            settings.i16(18),
-		FNumber:                settings.i16(21),
-		ExposureTime:           settings.i16(22),
-		MeasuredEV2:            settings.i16(23),
+		FNumber:                canonShotAperture(fNumber),
+		ExposureTime:           canonShotExposureTime(exposureTime, r.canonShotInfoLegacyExposureTime()),
+		MeasuredEV2:            canonShotMeasuredEV2(measuredEV2),
 		BulbDuration:           settings.i16(24),
 		CameraType:             canon.CameraType(settings.i16(26)),
 		AutoRotate:             canon.AutoRotate(settings.i16(27)),
@@ -694,18 +1516,10 @@ func (r *Reader) parseCanonShotInfo(t tag.Entry) canon.ShotInfo {
 		SelfTimer2:             settings.i16(29),
 		FlashOutput:            settings.i16(33),
 	}
-	dst.AutoISOValue = canonShotISO(dst.AutoISO)
-	dst.BaseISOValue = canonShotISO(dst.BaseISO)
-	dst.ActualISO = canonShotActualISO(dst.AutoISOValue, dst.BaseISOValue)
-	dst.TargetApertureValue = canonShotAperture(dst.TargetAperture)
-	dst.TargetExposureTimeValue = canonShotExposureTime(dst.TargetExposureTime, false)
-	dst.CameraTemperatureC = canonShotCameraTemperature(dst.CameraTemperature, r.canonModelName())
-	dst.FlashGuideNumberMeters = canonShotFlashGuideNumber(dst.FlashGuideNumber)
+	dst.ActualISO = canonShotActualISO(dst.AutoISO, dst.BaseISO)
 	if settings.present(20) && settings.u16(19) != 0 {
 		dst.FocusDistance = canon.NewFocusDistance(settings.u16(19), settings.u16(20))
 	}
-	dst.FNumberValue = canonShotAperture(dst.FNumber)
-	dst.ExposureTimeValue = canonShotExposureTime(dst.ExposureTime, r.canonShotInfoLegacyExposureTime())
 	return dst
 }
 
@@ -720,7 +1534,7 @@ func (r *Reader) parseCanonFileInfo(t tag.Entry) canon.FileInfo {
 
 	// Tag 0x0093 index 1 is model-dependent (FileNumber or ShutterCount).
 	// Preserve raw 32-bit representation for both fields.
-	return canon.FileInfo{
+	dst := canon.FileInfo{
 		FileNumber:                  uint32(canonU16At(raw[:], n, 1)) | (uint32(canonU16At(raw[:], n, 2)) << 16),
 		BracketMode:                 canon.BracketMode(canonI16At(raw[:], n, 3)),
 		BracketValue:                canonI16At(raw[:], n, 4),
@@ -741,6 +1555,11 @@ func (r *Reader) parseCanonFileInfo(t tag.Entry) canon.FileInfo {
 		AntiFlicker:                 canon.OnOffAuto(canonU16At(raw[:], n, 32)),
 		RFLensType:                  canon.CanonRFLensType(canonU16At(raw[:], n, 61)),
 	}
+	if canonModelUsesLegacyShutterCount(r.canonModelID()) {
+		dst.ShutterCount = uint32(canonU16At(raw[:], n, 2))
+		dst.FileNumber = 0
+	}
+	return dst
 }
 
 // parseCanonTimeInfo parses tag 0x0035 (TimeInfo).
@@ -796,6 +1615,20 @@ func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
 	return string(payload[:i])
 }
 
+func (r *Reader) parseCanonAFPointsInFocus1D(t tag.Entry, current canon.AFInfo) canon.AFInfo {
+	var raw [4]uint16
+	n := r.parseCanonUint16List(t, raw[:])
+	if n < 1 {
+		r.warnCanonShortRead(t, "parseCanonAFPointsInFocus1D", n, 1)
+		return current
+	}
+	if current.Source == canon.AFInfoSourceUnknown {
+		current.Source = canon.AFInfoSourceAFInfo
+	}
+	current.AFPointsInFocusBits = canonBitsetWords(raw[:n])
+	return current
+}
+
 // parseCanonAFInfo parses tag 0x0012 (AFInfo).
 func (r *Reader) parseCanonAFInfo(t tag.Entry) canon.AFInfo {
 	var wordsStack [2048]uint16
@@ -809,11 +1642,11 @@ func (r *Reader) parseCanonAFInfo(t tag.Entry) canon.AFInfo {
 		r.warnCanonShortRead(t, "parseCanonAFInfo", n, 1)
 		return canon.AFInfo{Source: source}
 	}
-	return canon.DecodeAFInfo(words[:n], canonModelIsEOS(r.canonModelName()), int(t.UnitCount))
+	return canon.DecodeAFInfo(words[:n], canonModelIsEOS(r.canonModelID()), int(t.UnitCount))
 }
 
-func fillCanonAFInfo(dst *canon.AFInfo, words []uint16, model string, afInfoCount int) {
-	*dst = canon.DecodeAFInfo(words, canonModelIsEOS(model), afInfoCount)
+func fillCanonAFInfo(dst *canon.AFInfo, words []uint16, modelID canon.CanonCameraModel, afInfoCount int) {
+	*dst = canon.DecodeAFInfo(words, canonModelIsEOS(modelID), afInfoCount)
 }
 
 // parseCanonAFInfo2 parses tags 0x0026 and 0x003c (AFInfo2/AFInfo3).
@@ -829,17 +1662,55 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) canon.AFInfo {
 		r.warnCanonShortRead(t, "parseCanonAFInfo2", n, 1)
 		return canon.AFInfo{Source: source}
 	}
-	model := r.canonModelName()
+	modelID := r.canonModelID()
 	isAFInfo3 := canon.MakerNoteTag(t.ID) == canon.AFInfo3
 	return canon.DecodeAFInfo2(words[:n], canon.AFInfo2DecodeConfig{
 		Source:         source,
-		EOS:            canonModelIsEOS(model),
+		EOS:            canonModelIsEOS(modelID),
 		AFInfo3:        isAFInfo3,
 		DecodeCoords:   r.afInfoDecodeOptions.has(AFInfoDecodeCoords),
 		DecodePoints:   r.afInfoDecodeOptions.has(AFInfoDecodePoints),
 		DecodeInFocus:  r.afInfoDecodeOptions.has(AFInfoDecodeInFocus),
 		DecodeSelected: r.afInfoDecodeOptions.has(AFInfoDecodeSelected),
 	})
+}
+
+func (r *Reader) parseCanonString(t tag.Entry) string {
+	raw := r.parseOpaqueBytes(t, min(t.Size(), 512))
+	if len(raw) == 0 {
+		return ""
+	}
+	return canonString(raw)
+}
+
+func canonString(raw []byte) string {
+	raw = trimASCIIWhitespace(trimAtNUL(raw))
+	if len(raw) == 0 {
+		return ""
+	}
+	out := make([]byte, len(raw))
+	for i, b := range raw {
+		if b >= 0x20 && b <= 0x7e {
+			out[i] = b
+			continue
+		}
+		out[i] = '.'
+	}
+	return strings.Trim(strings.TrimSpace(string(out)), ".")
+}
+
+func canonBitsetWords(vals []uint16) []int {
+	var out []int
+	base := 0
+	for _, word := range vals {
+		for i := 0; i < 16; i++ {
+			if word&(1<<uint(i)) != 0 {
+				out = append(out, base+i)
+			}
+		}
+		base += 16
+	}
+	return out
 }
 
 func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want int) {

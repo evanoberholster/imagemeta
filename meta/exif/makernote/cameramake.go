@@ -7,61 +7,119 @@ type CameraMake uint8
 // CameraMake values.
 const (
 	CameraMakeUnknown CameraMake = iota
+	CameraMakeAcer
 	CameraMakeAgfa
+	CameraMakeAgfaPhoto
+	CameraMakeAiptek
 	CameraMakeAmazon
 	CameraMakeApple
 	CameraMakeARRI
 	CameraMakeAsahiOpticalCoLtd
 	CameraMakeASUS
 	CameraMakeAutelRobotics
+	CameraMakeBenQ
+	CameraMakeBlackBerry
 	CameraMakeBlackmagicDesign
+	CameraMakeBushnell
 	CameraMakeCanon
 	CameraMakeCasio
+	CameraMakeConcord
 	CameraMakeContax
 	CameraMakeCosina
+	CameraMakeCreative
+	CameraMakeDaisy
 	CameraMakeDJI
+	CameraMakeDigiLife
+	CameraMakeDoCoMo
 	CameraMakeDXO
+	CameraMakeFLIR
+	CameraMakeFly
 	CameraMakeFujifilm
+	CameraMakeGarmin
+	CameraMakeGateway
+	CameraMakeGeneralImaging
+	CameraMakeGenius
 	CameraMakeGoogle
 	CameraMakeGoPro
 	CameraMakeHasselblad
 	CameraMakeHewlettPackard
+	CameraMakeHitachi
 	CameraMakeHonor
 	CameraMakeHTC
 	CameraMakeHuawei
 	CameraMakeInsta360
 	CameraMakeJKImagingLtd
+	CameraMakeJVC
+	CameraMakeJenoptik
+	CameraMakeKDDI
 	CameraMakeKodak
+	CameraMakeKonica
 	CameraMakeKonicaMinolta
 	CameraMakeKyocera
+	CameraMakeLegend
 	CameraMakeLeica
 	CameraMakeLGElectronics
+	CameraMakeLogitech
+	CameraMakeLumicron
+	CameraMakeMaginon
 	CameraMakeMamiya
+	CameraMakeMedion
+	CameraMakeMercury
+	CameraMakeMicrosoft
 	CameraMakeMinoltaCoLtd
 	CameraMakeMotorola
+	CameraMakeMoultrie
+	CameraMakeMustek
+	CameraMakeNEC
 	CameraMakeNikon
+	CameraMakeNintendo
 	CameraMakeNokia
+	CameraMakeNoritsu
+	CameraMakeODYS
+	CameraMakeOMG
 	CameraMakeOlympusCorporation
 	CameraMakeOMDigitalSolutions
 	CameraMakeOnePlus
 	CameraMakeOppo
+	CameraMakeOregonScientific
+	CameraMakePackardBell
 	CameraMakePanasonic
+	CameraMakePantech
 	CameraMakeParrot
+	CameraMakePentacon
 	CameraMakePhaseOne
 	CameraMakePentax
 	CameraMakePolaroid
+	CameraMakePraktica
 	CameraMakeRealme
 	CameraMakeRED
+	CameraMakeReconyx
+	CameraMakeResearchInMotion
 	CameraMakeRicoh
 	CameraMakeRollei
+	CameraMakeSagem
 	CameraMakeSamsung
+	CameraMakeSanyo
 	CameraMakeSeaLife
 	CameraMakeSeikoEpsonCorp
+	CameraMakeSharp
 	CameraMakeSigma
+	CameraMakeSipix
+	CameraMakeSkanhex
 	CameraMakeSkydio
 	CameraMakeSony
+	CameraMakeSprint
+	CameraMakeSunplus
+	CameraMakeToshiba
+	CameraMakeTraveler
+	CameraMakeTrust
+	CameraMakeUMAX
+	CameraMakeUniden
 	CameraMakeVivo
 	CameraMakeVivitar
+	CameraMakeVistaQuest
+	CameraMakeVodafone
+	CameraMakeWWL
 	CameraMakeXiaomi
 	CameraMakeXiaoyi
 	CameraMakeYashica
@@ -70,17 +128,136 @@ const (
 	CameraMakeZTE
 )
 
-const _CameraMake_name = "UnknownAgfaAmazonAppleARRIAsahi OpticalASUSAutel RoboticsBlackmagic DesignCanonCasioContaxCosinaDJIDxOFujifilmGoogleGoProHasselbladHPHonorHTCHuaweiInsta360JK ImagingKodakKonica MinoltaKyoceraLeicaLGMamiyaMinoltaMotorolaNikonNokiaOlympusOM Digital SolutionsOnePlusOPPOPanasonicParrotPhase OnePentaxPolaroidRealmeREDRicohRolleiSamsungSeaLifeEpsonSigmaSkydioSonyvivoVivitarXiaomiXiaoyiYashicaYuneecZeissZTE"
-
-var _CameraMake_index = [...]uint16{0, 7, 11, 17, 22, 26, 39, 43, 57, 74, 79, 84, 90, 96, 99, 102, 110, 116, 121, 131, 133, 138, 141, 147, 155, 165, 170, 184, 191, 196, 198, 204, 211, 219, 224, 229, 236, 256, 263, 267, 276, 282, 291, 297, 305, 311, 314, 319, 325, 332, 339, 344, 349, 355, 359, 363, 370, 376, 382, 389, 395, 400, 403}
+var cameraMakeNames = [...]string{
+	"Unknown",
+	"Acer",
+	"Agfa",
+	"AgfaPhoto",
+	"Aiptek",
+	"Amazon",
+	"Apple",
+	"ARRI",
+	"Asahi Optical",
+	"ASUS",
+	"Autel Robotics",
+	"BenQ",
+	"BlackBerry",
+	"Blackmagic Design",
+	"Bushnell",
+	"Canon",
+	"Casio",
+	"Concord",
+	"Contax",
+	"Cosina",
+	"Creative",
+	"Daisy",
+	"DJI",
+	"DigiLife",
+	"DoCoMo",
+	"DxO",
+	"FLIR",
+	"Fly",
+	"Fujifilm",
+	"Garmin",
+	"Gateway",
+	"General Imaging",
+	"Genius",
+	"Google",
+	"GoPro",
+	"Hasselblad",
+	"HP",
+	"Hitachi",
+	"Honor",
+	"HTC",
+	"Huawei",
+	"Insta360",
+	"JK Imaging",
+	"JVC",
+	"Jenoptik",
+	"KDDI",
+	"Kodak",
+	"Konica",
+	"Konica Minolta",
+	"Kyocera",
+	"Legend",
+	"Leica",
+	"LG",
+	"Logitech",
+	"Lumicron",
+	"Maginon",
+	"Mamiya",
+	"Medion",
+	"Mercury",
+	"Microsoft",
+	"Minolta",
+	"Motorola",
+	"Moultrie",
+	"Mustek",
+	"NEC",
+	"Nikon",
+	"Nintendo",
+	"Nokia",
+	"Noritsu",
+	"ODYS",
+	"OMG",
+	"Olympus",
+	"OM Digital Solutions",
+	"OnePlus",
+	"OPPO",
+	"Oregon Scientific",
+	"Packard Bell",
+	"Panasonic",
+	"Pantech",
+	"Parrot",
+	"Pentacon",
+	"Phase One",
+	"Pentax",
+	"Polaroid",
+	"Praktica",
+	"Realme",
+	"RED",
+	"Reconyx",
+	"Research In Motion",
+	"Ricoh",
+	"Rollei",
+	"Sagem",
+	"Samsung",
+	"Sanyo",
+	"SeaLife",
+	"Epson",
+	"Sharp",
+	"Sigma",
+	"Sipix",
+	"Skanhex",
+	"Skydio",
+	"Sony",
+	"Sprint",
+	"Sunplus",
+	"Toshiba",
+	"Traveler",
+	"Trust",
+	"UMAX",
+	"Uniden",
+	"vivo",
+	"Vivitar",
+	"VistaQuest",
+	"Vodafone",
+	"WWL",
+	"Xiaomi",
+	"Xiaoyi",
+	"Yashica",
+	"Yuneec",
+	"Zeiss",
+	"ZTE",
+}
 
 // String returns the display name for the camera make value.
 func (m CameraMake) String() string {
 	i := int(m)
-	if i < 0 || i >= len(_CameraMake_index)-1 {
-		return CameraMakeUnknown.String()
+	if i < 0 || i >= len(cameraMakeNames) {
+		return cameraMakeNames[CameraMakeUnknown]
 	}
-	return _CameraMake_name[_CameraMake_index[i]:_CameraMake_index[i+1]]
+	return cameraMakeNames[i]
 }
 
 // IdentifyCameraMake maps in-place IFD0 Make bytes to a normalized CameraMake.
@@ -125,107 +302,149 @@ func IdentifyCameraMakeString(raw string) CameraMake {
 
 func identifyCameraMakeNormalized(normalized []byte) CameraMake {
 	switch string(normalized) {
-	case "agfa":
+	case "acer", "acercorporation", "acerinc":
+		return CameraMakeAcer
+	case "agfa", "agfagevaert":
 		return CameraMakeAgfa
+	case "agfaphoto":
+		return CameraMakeAgfaPhoto
+	case "aiptek", "aiptekinternationalinc":
+		return CameraMakeAiptek
 	case "amazon":
 		return CameraMakeAmazon
 	case "apple":
 		return CameraMakeApple
 	case "arri":
 		return CameraMakeARRI
-	case "asahioptical":
-		return CameraMakeAsahiOpticalCoLtd
-	case "asahiopticalcoltd":
+	case "asahioptical", "asahiopticalcoltd":
 		return CameraMakeAsahiOpticalCoLtd
 	case "asus":
 		return CameraMakeASUS
 	case "autelrobotics":
 		return CameraMakeAutelRobotics
+	case "benq", "benqcorporation", "benq-siemens", "benq_e72":
+		return CameraMakeBenQ
+	case "blackberry":
+		return CameraMakeBlackBerry
 	case "blackmagicdesign":
 		return CameraMakeBlackmagicDesign
-	case "canon":
+	case "bushnell":
+		return CameraMakeBushnell
+	case "canon", "canoninc":
 		return CameraMakeCanon
-	case "canonincc.":
-		return CameraMakeCanon
-	case "casio":
+	case "casio", "casiocomputercoltd":
 		return CameraMakeCasio
-	case "casiocomputercoltd":
-		return CameraMakeCasio
+	case "concordcameracorp", "concordcameragmbh", "concordcorporation":
+		return CameraMakeConcord
 	case "contax":
 		return CameraMakeContax
 	case "cosina":
 		return CameraMakeCosina
+	case "creative", "creativelabs", "creativetechnologyltd":
+		return CameraMakeCreative
+	case "daisymultimedia", "daisymultimedialtd":
+		return CameraMakeDaisy
 	case "dji":
 		return CameraMakeDJI
+	case "digilife":
+		return CameraMakeDigiLife
+	case "docomo", "nttdocomo":
+		return CameraMakeDoCoMo
 	case "dxo":
 		return CameraMakeDXO
-	case "eastmankodakcompany":
+	case "eastmankodak", "eastmankodakcompany", "kodak":
 		return CameraMakeKodak
-	case "epson":
+	case "epson", "seikoepsoncorp":
 		return CameraMakeSeikoEpsonCorp
-	case "fujifilm":
+	case "flir", "flirsystems", "flirsystemsab", "teledyneflir":
+		return CameraMakeFLIR
+	case "fly":
+		return CameraMakeFly
+	case "fujifilm", "fujiphotofilmcoltd":
 		return CameraMakeFujifilm
+	case "garmin":
+		return CameraMakeGarmin
+	case "gateway", "(c)2003gatewayinc":
+		return CameraMakeGateway
+	case "ge", "gedscimagingcorp", "generalimagingco":
+		return CameraMakeGeneralImaging
+	case "genius", "kyesystemscorp":
+		return CameraMakeGenius
 	case "google":
 		return CameraMakeGoogle
 	case "gopro":
 		return CameraMakeGoPro
 	case "hasselblad":
 		return CameraMakeHasselblad
-	case "hewlett-packard":
+	case "hewlettpackard", "hewlett-packard", "hewlett-packardco", "hewlett-packardcompany", "hp", "hpphotosmart120":
 		return CameraMakeHewlettPackard
+	case "hitachi", "hitachilivingsystemsltd":
+		return CameraMakeHitachi
 	case "honor":
 		return CameraMakeHonor
-	case "hp":
-		return CameraMakeHewlettPackard
-	case "htc":
+	case "ht", "htc", "htc-8900", "htc-p4600":
 		return CameraMakeHTC
 	case "huawei":
 		return CameraMakeHuawei
-	case "insta360":
+	case "arashivision", "insta360":
 		return CameraMakeInsta360
-	case "jkimaging":
+	case "jkimaging", "jkimagingltd":
 		return CameraMakeJKImagingLtd
-	case "jkimagingltd":
-		return CameraMakeJKImagingLtd
-	case "kodak":
-		return CameraMakeKodak
-	case "konicaminolta":
-		return CameraMakeKonicaMinolta
-	case "konicaminoltacamerainc":
+	case "jvc", "victor":
+		return CameraMakeJVC
+	case "jenimage", "jenimageeuropegmbh", "jenoptified", "jenoptik", "jenoptikcameragmbh", "jenoptikopticalcoltd":
+		return CameraMakeJenoptik
+	case "kddi-aa", "kddi-ca", "kddi-hi", "kddi-kc", "kddi-ma", "kddi-sa", "kddi-se", "kddi-sh", "kddi-sn", "kddi-st", "kddi-ts":
+		return CameraMakeKDDI
+	case "konica", "konicacoltd", "konicacorporation":
+		return CameraMakeKonica
+	case "konicaminolta", "konicaminoltacamerainc", "konicaminoltaphotoimaginginc":
 		return CameraMakeKonicaMinolta
 	case "kyocera":
 		return CameraMakeKyocera
-	case "leica":
+	case "legend", "legenddsc", "legendgrouplimited":
+		return CameraMakeLegend
+	case "leica", "leicacameraag":
 		return CameraMakeLeica
-	case "leicacameraag":
-		return CameraMakeLeica
-	case "lg":
+	case "lg", "lgcyon", "lgelec", "lge", "lgelectronics", "lgelectronicsinc", "lgmobile", "lg_electronics":
 		return CameraMakeLGElectronics
-	case "lge":
-		return CameraMakeLGElectronics
-	case "lgelectronics":
-		return CameraMakeLGElectronics
-	case "mamiya":
+	case "logitechinc":
+		return CameraMakeLogitech
+	case "lumicron", "lumicrontechnologyinc":
+		return CameraMakeLumicron
+	case "maginon", "maginonopticalcoltd":
+		return CameraMakeMaginon
+	case "mamiya", "mamiya-opcoltd":
 		return CameraMakeMamiya
-	case "minolta":
+	case "medion", "medion5mpdigitcam", "medionag", "medionopticalcoltd":
+		return CameraMakeMedion
+	case "mercuryperipheralsinc":
+		return CameraMakeMercury
+	case "microsoft", "microsoftmobile":
+		return CameraMakeMicrosoft
+	case "minolta", "minoltacoltd":
 		return CameraMakeMinoltaCoLtd
-	case "minoltacoltd":
-		return CameraMakeMinoltaCoLtd
-	case "motorola":
+	case "motorola", "motorol", "motorolakoreainc", "motorolamobility":
 		return CameraMakeMotorola
-	case "nikon":
+	case "moultrie":
+		return CameraMakeMoultrie
+	case "mustek":
+		return CameraMakeMustek
+	case "nec":
+		return CameraMakeNEC
+	case "fs-nikon", "nikon", "nikoncorporation":
 		return CameraMakeNikon
-	case "nikoncorporation":
-		return CameraMakeNikon
-	case "nokia":
+	case "nintendo":
+		return CameraMakeNintendo
+	case "hmdglobal", "nokia":
 		return CameraMakeNokia
-	case "olympus":
-		return CameraMakeOlympusCorporation
-	case "olympuscorporation":
-		return CameraMakeOlympusCorporation
-	case "olympusimagingcorp":
-		return CameraMakeOlympusCorporation
-	case "olympusopticalcoltd":
+	case "noritsu", "noritsukoki":
+		return CameraMakeNoritsu
+	case "odys", "odyscorp":
+		return CameraMakeODYS
+	case "omglife":
+		return CameraMakeOMG
+	case "olympus", "olympuscorp", "olympuscorporation", "olympusimagingcorp", "olympusopticalcoltd", "olympus_imaging_corp":
 		return CameraMakeOlympusCorporation
 	case "omdigitalsolutions":
 		return CameraMakeOMDigitalSolutions
@@ -233,48 +452,82 @@ func identifyCameraMakeNormalized(normalized []byte) CameraMake {
 		return CameraMakeOnePlus
 	case "oppo":
 		return CameraMakeOppo
+	case "oregonscientific":
+		return CameraMakeOregonScientific
+	case "packardbell":
+		return CameraMakePackardBell
 	case "panasonic":
 		return CameraMakePanasonic
+	case "pantech", "pantechwirelessinc":
+		return CameraMakePantech
 	case "parrot":
 		return CameraMakeParrot
-	case "pentax":
-		return CameraMakePentax
-	case "pentaxcorporation":
-		return CameraMakePentax
-	case "pentaxricohimaging":
-		return CameraMakePentax
+	case "pentacon", "pentacongermany":
+		return CameraMakePentacon
 	case "phaseone":
 		return CameraMakePhaseOne
-	case "polaroid":
+	case "pentax", "pentaxcorporation", "pentaxricohimaging":
+		return CameraMakePentax
+	case "madebypolaroid", "polaroid", "polaroidpdc1050", "polaroidpdc6350":
 		return CameraMakePolaroid
+	case "praktica":
+		return CameraMakePraktica
 	case "realme":
 		return CameraMakeRealme
 	case "red":
 		return CameraMakeRED
-	case "ricoh":
+	case "reconyx":
+		return CameraMakeReconyx
+	case "researchinmotion":
+		return CameraMakeResearchInMotion
+	case "ricoh", "ricohimaging", "ricohimagingcompanyltd":
 		return CameraMakeRicoh
-	case "ricohimagingcompanyltd":
-		return CameraMakeRicoh
-	case "rollei":
+	case "rollei", "rolleifototechnicgmbh":
 		return CameraMakeRollei
-	case "samsung":
+	case "sagem":
+		return CameraMakeSagem
+	case "samsung", "samsunganycall", "samsungcorporation", "samsungelec", "samsungelectronics", "samsungelectronicscoltd", "samsungopticalcoltd", "samsungtechwin", "samsungtechwinco", "samsungtechwincoltd":
 		return CameraMakeSamsung
-	case "samsungtechwin":
-		return CameraMakeSamsung
+	case "sanyo", "sanyoelectriccoltd":
+		return CameraMakeSanyo
 	case "sealife":
 		return CameraMakeSeaLife
-	case "seikoepsoncorp":
-		return CameraMakeSeikoEpsonCorp
+	case "sharp":
+		return CameraMakeSharp
 	case "sigma":
 		return CameraMakeSigma
+	case "sipixcorporation":
+		return CameraMakeSipix
+	case "skanhex", "skanhexopticalcoltd", "skanhextech", "skanhextechnologyinc", "skanhextechwincoltd":
+		return CameraMakeSkanhex
 	case "skydio":
 		return CameraMakeSkydio
-	case "sony":
+	case "semc", "sony", "sonycomputerentertainmentinc", "sonyericsson", "sonycorporation":
 		return CameraMakeSony
+	case "sprint":
+		return CameraMakeSprint
+	case "sunplus", "sunplustechnologycoltd":
+		return CameraMakeSunplus
+	case "toshiba", "toshibacorporation":
+		return CameraMakeToshiba
+	case "traveler", "traveleropticalcoltd":
+		return CameraMakeTraveler
+	case "trust", "trustcomputerproducts":
+		return CameraMakeTrust
+	case "umax":
+		return CameraMakeUMAX
+	case "unidencorporation":
+		return CameraMakeUniden
 	case "vivo":
 		return CameraMakeVivo
-	case "vivitar":
+	case "vivitar", "vivicam", "vivitarcorporation":
 		return CameraMakeVivitar
+	case "viewquest", "vistaquest":
+		return CameraMakeVistaQuest
+	case "t-mobile(r)", "t-mobileshadow", "vodafone", "vodafonegroup", "vodafone710", "vodafonev720", "vodafonev810":
+		return CameraMakeVodafone
+	case "wwl", "wwlltd", "wwlcorporation":
+		return CameraMakeWWL
 	case "xiaomi":
 		return CameraMakeXiaomi
 	case "xiaoyi":

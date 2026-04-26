@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
@@ -136,91 +137,202 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	}
 }
 
-func TestTimeTagsBitsetAndSelection(t *testing.T) {
+func TestGPSInfoVersionIDFormatting(t *testing.T) {
+	t.Parallel()
+
+	if got := (GPSInfo{}).VersionID(); got != "" {
+		t.Fatalf("VersionID() zero = %q, want empty", got)
+	}
+
+	g := GPSInfo{versionID: [4]byte{2, 3, 0, 0}}
+	if got := g.VersionID(); got != "2 3 0 0" {
+		t.Fatalf("VersionID() = %q, want %q", got, "2 3 0 0")
+	}
+}
+
+func TestIFD0AndExifIFDTimeTagsBitsetAndSelection(t *testing.T) {
 	t.Parallel()
 
 	base := time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
 	orig := time.Date(2024, time.January, 3, 4, 5, 6, 0, time.UTC)
 	create := time.Date(2024, time.January, 4, 5, 6, 7, 0, time.UTC)
 
-	var tt TimeTags
-	tt.ModifyDate = base
-	tt.DateTimeOriginal = orig
-	tt.CreateDate = create
-	tt.SubSecTime = 125
-	tt.SubSecTimeOriginal = 50
-	tt.SubSecTimeDigitized = 75
-	tt.markTagParsed(tag.TagDateTime)
-	tt.markTagParsed(tag.TagSubSecTime)
-	tt.markTagParsed(tag.TagSubSecTimeOriginal)
-	tt.markTagParsed(tag.TagSubSecTimeDigitized)
+	var ifd0 IFD0TimeTags
+	ifd0.setDate(base)
+	ifd0.setSubSec("125", 125)
+	ifd0.markTagParsed(tag.TagDateTime)
+	ifd0.markTagParsed(tag.TagSubSecTime)
 
-	if !tt.HasTagParsed(tag.TagDateTime) {
+	var exifTime ExifIFDTimeTags
+	exifTime.setDate(tag.TagDateTimeOriginal, orig)
+	exifTime.setDate(tag.TagDateTimeDigitized, create)
+	exifTime.setSubSec(tag.TagSubSecTimeOriginal, "50", 50)
+	exifTime.setSubSec(tag.TagSubSecTimeDigitized, "75", 75)
+	exifTime.markTagParsed(tag.TagSubSecTimeOriginal)
+	exifTime.markTagParsed(tag.TagSubSecTimeDigitized)
+
+	if !ifd0.HasTagParsed(tag.TagDateTime) {
 		t.Fatal("HasTagParsed(DateTime) should be true")
 	}
-	if !tt.HasSubSecTime() || !tt.HasSubSecTimeOriginal() || !tt.HasSubSecTimeDigitized() {
-		t.Fatal("HasSubSec* methods should all be true")
+	if !ifd0.HasSubSecTime() {
+		t.Fatal("HasSubSecTime should be true")
 	}
-	if tt.HasTagParsed(tag.TagOffsetTime) {
+	if !exifTime.HasSubSecTimeOriginal() || !exifTime.HasSubSecTimeDigitized() {
+		t.Fatal("ExifIFD HasSubSec* methods should both be true")
+	}
+	if ifd0.HasTagParsed(tag.TagOffsetTime) {
 		t.Fatal("HasTagParsed(OffsetTime) should be false")
 	}
 
-	if got, want := tt.GetModifyDate(), base.Add(125*time.Millisecond); !got.Equal(want) {
+	if got, want := ifd0.GetModifyDate(), base.Add(125*time.Millisecond); !got.Equal(want) {
 		t.Fatalf("GetModifyDate() = %v, want %v", got, want)
 	}
-	if got, want := tt.GetDateTimeOriginal(), orig.Add(50*time.Millisecond); !got.Equal(want) {
+	if got, want := exifTime.GetDateTimeOriginal(), orig.Add(500*time.Millisecond); !got.Equal(want) {
 		t.Fatalf("GetDateTimeOriginal() = %v, want %v", got, want)
 	}
-	if got, want := tt.GetCreateDate(), create.Add(75*time.Millisecond); !got.Equal(want) {
+	if got, want := exifTime.GetCreateDate(), create.Add(750*time.Millisecond); !got.Equal(want) {
 		t.Fatalf("GetCreateDate() = %v, want %v", got, want)
 	}
 
-	if got, want := tt.GetSelectedDate(), orig.Add(50*time.Millisecond); !got.Equal(want) {
-		t.Fatalf("GetSelectedDate() = %v, want %v", got, want)
+	ex := Exif{
+		IFD0:    IFD0Tag{IFD0TimeTags: ifd0},
+		ExifIFD: ExifIFDTags{ExifIFDTimeTags: exifTime},
 	}
-	tt.DateTimeOriginal = time.Time{}
-	if got, want := tt.GetSelectedDate(), create.Add(75*time.Millisecond); !got.Equal(want) {
-		t.Fatalf("GetSelectedDate() fallback create = %v, want %v", got, want)
+	if got, want := ex.SelectedDate(), orig.Add(500*time.Millisecond); !got.Equal(want) {
+		t.Fatalf("SelectedDate() = %v, want %v", got, want)
 	}
-	tt.CreateDate = time.Time{}
-	if got, want := tt.GetSelectedDate(), base.Add(125*time.Millisecond); !got.Equal(want) {
-		t.Fatalf("GetSelectedDate() fallback modify = %v, want %v", got, want)
+	ex.ExifIFD.DateTimeOriginal = time.Time{}
+	if got, want := ex.SelectedDate(), create.Add(750*time.Millisecond); !got.Equal(want) {
+		t.Fatalf("SelectedDate() fallback create = %v, want %v", got, want)
+	}
+	ex.ExifIFD.CreateDate = time.Time{}
+	if got, want := ex.SelectedDate(), base.Add(125*time.Millisecond); !got.Equal(want) {
+		t.Fatalf("SelectedDate() fallback modify = %v, want %v", got, want)
 	}
 }
 
 func TestApplyTimeParts(t *testing.T) {
 	t.Parallel()
 
-	if got := applyTimeParts(time.Time{}, 123, nil); !got.IsZero() {
+	if got := applyTimeParts(time.Time{}, "123", nil); !got.IsZero() {
 		t.Fatalf("applyTimeParts(zero) = %v, want zero", got)
 	}
 
 	base := time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
 	tz := time.FixedZone("+02:00", 2*60*60)
-	got := applyTimeParts(base, 250, tz)
-	want := base.Add(250*time.Millisecond - 2*time.Hour)
+	got := applyTimeParts(base, "250", tz)
+	want := time.Date(2024, time.January, 2, 3, 4, 5, 250000000, tz)
 	if !got.Equal(want) {
 		t.Fatalf("applyTimeParts() = %v, want %v", got, want)
 	}
 }
 
-func TestTimeTagsMarshalJSONOffsetStrings(t *testing.T) {
+func TestExifIFDTimeTagsMarshalJSONOffsetStrings(t *testing.T) {
 	t.Parallel()
 
-	tt := TimeTags{
-		ModifyDate:         time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC),
+	tt := ExifIFDTimeTags{
+		DateTimeOriginal:   time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC),
 		OffsetTimeOriginal: time.FixedZone("+01:00", 60*60),
 	}
 
 	buf, err := json.Marshal(tt)
 	if err != nil {
-		t.Fatalf("json.Marshal(TimeTags): %v", err)
+		t.Fatalf("json.Marshal(ExifIFDTimeTags): %v", err)
 	}
 	got := string(buf)
 	if !strings.Contains(got, `"OffsetTimeOriginal":"+01:00"`) {
 		t.Fatalf("OffsetTimeOriginal JSON = %s", got)
 	}
-	if !strings.Contains(got, `"OffsetTime":null`) {
-		t.Fatalf("OffsetTime nil should marshal as null: %s", got)
+	if !strings.Contains(got, `"OffsetTimeDigitized":null`) {
+		t.Fatalf("OffsetTimeDigitized nil should marshal as null: %s", got)
+	}
+}
+
+func TestExifIFDExifToolDisplayHelpers(t *testing.T) {
+	t.Parallel()
+
+	exif := ExifIFDTags{
+		DigitalZoomRatio:           tag.RationalU{Numerator: 3, Denominator: 2},
+		FocalPlaneXResolution:      5152000.0 / 243.0,
+		FocalPlaneYResolution:      3864000.0 / 183.0,
+		FocalPlaneResolutionUnit:   meta.ResolutionUnitInches,
+		SubjectDistance:            0.53,
+		ExposureIndex:              160,
+		focalPlaneXResolutionState: rationalStateValue,
+		focalPlaneYResolutionState: rationalStateValue,
+		subjectDistanceState:       rationalStateValue,
+		exposureIndexState:         rationalStateValue,
+	}
+
+	if got, want := exif.ExifToolDigitalZoomRatio(), "1.5"; got != want {
+		t.Fatalf("ExifToolDigitalZoomRatio() = %q, want %q", got, want)
+	}
+	if got, want := exif.ExifToolFocalPlaneXResolution(), "21201.64609"; got != want {
+		t.Fatalf("ExifToolFocalPlaneXResolution() = %q, want %q", got, want)
+	}
+	if got, want := exif.ExifToolFocalPlaneYResolution(), "21114.7541"; got != want {
+		t.Fatalf("ExifToolFocalPlaneYResolution() = %q, want %q", got, want)
+	}
+	if got, want := exif.ExifToolExposureIndex(), "160"; got != want {
+		t.Fatalf("ExifToolExposureIndex() = %q, want %q", got, want)
+	}
+	if got, want := exif.ExifToolFocalPlaneResolutionUnit(), "inches"; got != want {
+		t.Fatalf("ExifToolFocalPlaneResolutionUnit() = %q, want %q", got, want)
+	}
+	if got, want := exif.ExifToolSubjectDistance(), "0.53 m"; got != want {
+		t.Fatalf("ExifToolSubjectDistance() = %q, want %q", got, want)
+	}
+
+	exif.DigitalZoomRatio = tag.RationalU{Numerator: 1, Denominator: 0}
+	if got, want := exif.ExifToolDigitalZoomRatio(), "inf"; got != want {
+		t.Fatalf("ExifToolDigitalZoomRatio() inf = %q, want %q", got, want)
+	}
+
+	exif.SubjectDistance = 0
+	exif.subjectDistanceState = rationalStateInfinite
+	if got, want := exif.ExifToolSubjectDistance(), "undef"; got != want {
+		t.Fatalf("ExifToolSubjectDistance() undef = %q, want %q", got, want)
+	}
+
+	exif.SubjectDistance = 0
+	exif.subjectDistanceState = rationalStateMissing
+	if got := exif.ExifToolSubjectDistance(); got != "" {
+		t.Fatalf("ExifToolSubjectDistance() zero = %q, want empty", got)
+	}
+}
+
+func TestExifMarshalJSONIncludesSiblingFieldsAlongsideFlattenedTime(t *testing.T) {
+	t.Parallel()
+
+	ex := Exif{}
+	ex.IFD0.Make = "Canon"
+	ex.IFD0.Model = "EOS R6"
+	ex.IFD0.ModifyDate = time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
+	ex.ExifIFD.LensModel = "RF24-70mm F2.8 L IS USM"
+	ex.ExifIFD.DateTimeOriginal = time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
+	ex.IFD1.ImageWidth = 160
+
+	buf, err := json.Marshal(ex)
+	if err != nil {
+		t.Fatalf("json.Marshal(Exif): %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(buf, &got); err != nil {
+		t.Fatalf("json.Unmarshal(Exif JSON): %v", err)
+	}
+
+	ifd0, _ := got["IFD0"].(map[string]any)
+	if ifd0["Make"] != "Canon" || ifd0["Model"] != "EOS R6" || ifd0["ModifyDate"] != "2024-01-02T03:04:05Z" {
+		t.Fatalf("IFD0 JSON = %#v", ifd0)
+	}
+
+	exifIFD, _ := got["ExifIFD"].(map[string]any)
+	if exifIFD["LensModel"] != "RF24-70mm F2.8 L IS USM" || exifIFD["DateTimeOriginal"] != "2024-01-02T03:04:05Z" {
+		t.Fatalf("ExifIFD JSON = %#v", exifIFD)
+	}
+
+	ifd1, _ := got["IFD1"].(map[string]any)
+	if ifd1["ImageWidth"] != float64(160) || ifd1["ModifyDate"] != "0001-01-01T00:00:00Z" {
+		t.Fatalf("IFD1 JSON = %#v", ifd1)
 	}
 }

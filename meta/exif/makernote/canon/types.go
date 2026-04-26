@@ -50,47 +50,69 @@ type CameraSettings struct {
 	HDRPQ              HDRPQ              // [52] HDR_PQ
 }
 
+// CameraInfo stores selected Canon CameraInfo values from MakerNote tag 0x000d
+// (CanonCameraInfo).
+//
+// ExifTool uses many model-specific tables for this tag. This struct captures
+// the stable subset currently parsed across those layouts.
+type CameraInfo struct {
+	FNumber               meta.Aperture     // ExifTool CameraInfo FNumber
+	ExposureTime          meta.ExposureTime // ExifTool CameraInfo ExposureTime
+	ISO                   uint32            // ExifTool CameraInfo ISO
+	HighlightTonePriority int16             // ExifTool HighlightTonePriority
+	FlashMeteringMode     int16             // ExifTool FlashMeteringMode
+	MeasuredEV2           float32           // ExifTool MeasuredEV2
+	CameraTemperature     int16             // ExifTool CameraTemperature (C)
+	MacroMagnification    float32           // ExifTool MacroMagnification
+	FocalLength           meta.FocalLength  // ExifTool CameraInfo FocalLength
+	CameraOrientation     uint8             // ExifTool CameraOrientation
+	WhiteBalance          WhiteBalance      // ExifTool WhiteBalance
+	ColorTemperature      uint16            // ExifTool ColorTemperature
+	LensType              CanonLensType     // ExifTool LensType
+	MinFocalLength        meta.FocalLength  // ExifTool MinFocalLength
+	MaxFocalLength        meta.FocalLength  // ExifTool MaxFocalLength
+	JPEGQuality           uint8             // ExifTool JPEGQuality
+	PictureStyle          int16             // ExifTool PictureStyle raw code
+	FirmwareVersion       string            // ExifTool FirmwareVersion
+	FileIndex             uint32            // ExifTool FileIndex
+	DirectoryIndex        uint32            // ExifTool DirectoryIndex
+	ShutterCount          uint32            // ExifTool ShutterCount
+	ImageCount            uint32            // ExifTool ImageCount
+}
+
 // ShotInfo stores selected Canon ShotInfo values from MakerNote tag 0x0004
 // (CanonShotInfo).
 //
 // Field comments use ExifTool sequence indices for this table.
 type ShotInfo struct {
-	AutoISO                 int16             // [1] AutoISO raw code
-	AutoISOValue            float32           // [1] ExifTool-converted AutoISO
-	ActualISO               float32           // [1-2] ExifTool: BaseISO * AutoISO / 100
-	BaseISO                 int16             // [2] BaseISO raw code
-	BaseISOValue            float32           // [2] ExifTool-converted BaseISO
-	MeasuredEV              int16             // [3] MeasuredEV
-	TargetAperture          int16             // [4] TargetAperture
-	TargetApertureValue     meta.Aperture     // [4] ExifTool CanonEv-converted aperture
-	TargetExposureTime      int16             // [5] TargetExposureTime
-	TargetExposureTimeValue meta.ExposureTime // [5] ExifTool-converted exposure time
-	ExposureCompensation    int16             // [6] ExposureCompensation
-	WhiteBalance            WhiteBalance      // [7] WhiteBalance
-	SlowShutter             SlowShutter       // [8] SlowShutter
-	SequenceNumber          int16             // [9] SequenceNumber
-	OpticalZoomCode         int16             // [10] OpticalZoomCode
-	CameraTemperature       int16             // [12] CameraTemperature raw code
-	CameraTemperatureC      int16             // [12] ExifTool-converted Celsius
-	FlashGuideNumber        int16             // [13] FlashGuideNumber raw code
-	FlashGuideNumberMeters  float32           // [13] ExifTool-converted meters
-	AFPointsInFocus         uint16            // [14] AFPointsInFocus bitset
-	FlashExposureComp       int16             // [15] FlashExposureCompensation
-	AutoExposureBracketing  int16             // [16] AutoExposureBracketing
-	AEBBracketValue         int16             // [17] AEBBracketValue
-	ControlMode             int16             // [18] ControlMode
-	FocusDistance           FocusDistance     // [19-20] FocusDistanceUpper/Lower
-	FNumber                 int16             // [21] FNumber raw code
-	FNumberValue            meta.Aperture     // [21] ExifTool CanonEv-converted aperture
-	ExposureTime            int16             // [22] ExposureTime raw code
-	ExposureTimeValue       meta.ExposureTime // [22] ExifTool-converted exposure time
-	MeasuredEV2             int16             // [23] MeasuredEV2
-	BulbDuration            int16             // [24] BulbDuration (deci-seconds)
-	CameraType              CameraType        // [26] CameraType
-	AutoRotate              AutoRotate        // [27] AutoRotate
-	NDFilter                NDFilter          // [28] NDFilter
-	SelfTimer2              int16             // [29] SelfTimer2 (deci-seconds)
-	FlashOutput             int16             // [33] FlashOutput
+	AutoISO                float32           // [1] ExifTool-converted AutoISO
+	ActualISO              float32           // [1-2] ExifTool: BaseISO * AutoISO / 100
+	BaseISO                float32           // [2] ExifTool-converted BaseISO
+	MeasuredEV             float32           // [3] ExifTool-converted MeasuredEV
+	TargetAperture         meta.Aperture     // [4] ExifTool CanonEv-converted aperture
+	TargetExposureTime     meta.ExposureTime // [5] ExifTool-converted exposure time
+	ExposureCompensation   float32           // [6] ExifTool CanonEv-converted EV
+	WhiteBalance           WhiteBalance      // [7] WhiteBalance
+	SlowShutter            SlowShutter       // [8] SlowShutter
+	SequenceNumber         int16             // [9] SequenceNumber
+	OpticalZoomCode        int16             // [10] OpticalZoomCode
+	CameraTemperature      int16             // [12] ExifTool-converted Celsius
+	FlashGuideNumber       float32           // [13] ExifTool-converted meters
+	AFPointsInFocus        uint16            // [14] AFPointsInFocus bitset
+	FlashExposureComp      int16             // [15] FlashExposureCompensation
+	AutoExposureBracketing int16             // [16] AutoExposureBracketing
+	AEBBracketValue        int16             // [17] AEBBracketValue
+	ControlMode            int16             // [18] ControlMode
+	FocusDistance          FocusDistance     // [19-20] FocusDistanceUpper/Lower
+	FNumber                meta.Aperture     // [21] ExifTool CanonEv-converted aperture
+	ExposureTime           meta.ExposureTime // [22] ExifTool-converted exposure time
+	MeasuredEV2            float32           // [23] ExifTool-converted MeasuredEV2
+	BulbDuration           int16             // [24] BulbDuration (deci-seconds)
+	CameraType             CameraType        // [26] CameraType
+	AutoRotate             AutoRotate        // [27] AutoRotate
+	NDFilter               NDFilter          // [28] NDFilter
+	SelfTimer2             int16             // [29] SelfTimer2 (deci-seconds)
+	FlashOutput            int16             // [33] FlashOutput
 }
 
 // FileInfo stores selected Canon FileInfo values from MakerNote tag 0x0093
@@ -291,10 +313,10 @@ type RawBurstInfo struct {
 // FocalLengthInfo stores Canon MakerNote tag 0x0002 (CanonFocalLength).
 // Field comments use ExifTool sequence indices.
 type FocalLengthInfo struct {
-	FocalType       uint16 // [0] FocalType (1=fixed, 2=zoom)
-	FocalLength     uint16 // [1] FocalLength (raw units)
-	FocalPlaneXSize uint16 // [2] FocalPlaneXSize
-	FocalPlaneYSize uint16 // [3] FocalPlaneYSize
+	FocalType       uint16  // [0] FocalType (1=fixed, 2=zoom)
+	FocalLength     uint16  // [1] FocalLength (raw units)
+	FocalPlaneXSize float32 // [2] ExifTool-converted FocalPlaneXSize (mm)
+	FocalPlaneYSize float32 // [3] ExifTool-converted FocalPlaneYSize (mm)
 }
 
 // AspectInfo stores Canon MakerNote tag 0x009a (AspectInfo).

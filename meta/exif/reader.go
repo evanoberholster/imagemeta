@@ -55,9 +55,10 @@ type Reader struct {
 
 	afInfoDecodeOptions AFInfoDecodeOptions
 
-	po             uint32
-	exifLength     uint32
-	firstIFDOffset uint32
+	po               uint32
+	exifLength       uint32
+	firstIFDOffset   uint32
+	tiffHeaderOffset uint32
 }
 
 // NewReader creates an EXIF reader. Call Close when done.
@@ -80,6 +81,7 @@ func (r *Reader) resetOffsets() {
 	r.po = 0
 	r.exifLength = 0
 	r.firstIFDOffset = 0
+	r.tiffHeaderOffset = 0
 }
 
 func (r *Reader) resetDecodeState(resetExif bool) {
@@ -273,6 +275,7 @@ func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif 
 
 	r.Exif.ImageType = header.ImageType
 	r.firstIFDOffset = header.FirstIfdOffset
+	r.tiffHeaderOffset = header.TiffHeaderOffset
 	if header.ExifLength == 0 {
 		r.exifLength = defaultExifLength
 	} else {

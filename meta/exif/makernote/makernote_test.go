@@ -20,6 +20,14 @@ func TestIdentifyCameraMakeString(t *testing.T) {
 		{name: "nikon nul", in: "NIKON CORPORATION\x00", want: CameraMakeNikon},
 		{name: "apple", in: "Apple", want: CameraMakeApple},
 		{name: "panasonic", in: "Panasonic", want: CameraMakePanasonic},
+		{name: "acer corporation", in: "Acer Corporation", want: CameraMakeAcer},
+		{name: "agfaphoto", in: "AgfaPhoto", want: CameraMakeAgfaPhoto},
+		{name: "general imaging", in: "GEDSC IMAGING CORP.", want: CameraMakeGeneralImaging},
+		{name: "insta360 alias", in: "Arashi Vision", want: CameraMakeInsta360},
+		{name: "lg variant", in: "LG Electronics, Inc.", want: CameraMakeLGElectronics},
+		{name: "medion optical", in: "MEDION OPTICAL CO,LTD", want: CameraMakeMedion},
+		{name: "olympus underscore", in: "OLYMPUS_IMAGING_CORP.", want: CameraMakeOlympusCorporation},
+		{name: "vodafone model-like", in: "VODAFONE V720", want: CameraMakeVodafone},
 	}
 	for _, tt := range tests {
 		tt := tt

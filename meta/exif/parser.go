@@ -18,11 +18,11 @@ func tagFromBuffer(directory tag.Directory, buf []byte) (tag.Entry, error) {
 	unitCount := directory.ByteOrder.Uint32(buf[4:8])
 	valueOffset := directory.ByteOrder.Uint32(buf[8:12])
 	tagType = tagTypeFor(directory.Type, tagID, tagType)
-	if !tag.NewEntry(tagID, tagType, unitCount, valueOffset, directory.Type, directory.Index, directory.ByteOrder).IsEmbedded() {
-		valueOffset += directory.BaseOffset
-	}
-
 	entry := tag.NewEntry(tagID, tagType, unitCount, valueOffset, directory.Type, directory.Index, directory.ByteOrder)
+
+	if !entry.IsEmbedded() {
+		entry.ValueOffset += directory.BaseOffset
+	}
 	if !tagType.IsValid() {
 		return entry, tag.ErrTagTypeNotValid
 	}
@@ -38,11 +38,11 @@ func tagTypeFor(directoryType tag.IfdType, id tag.ID, typ tag.Type) tag.Type {
 }
 
 func tagUsesIfdType(directoryType tag.IfdType, id tag.ID) bool {
-	switch directoryType {
-	case tag.IFD0:
-		return id == tag.TagExifIFDPointer || id == tag.TagGPSIFDPointer
-	case tag.ExifIFD:
-		return id == tag.TagMakerNote
+	switch id {
+	case tag.TagExifIFDPointer, tag.TagGPSIFDPointer:
+		return directoryType == tag.IFD0
+	case tag.TagMakerNote:
+		return directoryType == tag.ExifIFD
 	default:
 		return false
 	}
@@ -59,15 +59,6 @@ func (r *Reader) addTag(t tag.Entry) {
 	if !r.state.addTag(t) && r.warnEnabled() {
 		r.warnTagQueueFull(t)
 	}
-}
-
-// warnTagContext logs tag metadata with a caller-supplied message.
-func (r *Reader) warnTagContext(t tag.Entry, msg string, includeQueueMax bool) {
-	e := r.tagLogContext(r.warn(), t)
-	if includeQueueMax {
-		e.Int("tagQueueMax", tagQueueMax)
-	}
-	e.Msg(msg)
 }
 
 // warnTagReadError logs tag payload read failures from value parsers.
@@ -113,12 +104,7 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 
 	maxEntries := int(t.UnitCount)
 	queueRemaining := int(tagQueueMax - r.state.len)
-	if maxEntries > queueRemaining {
-		maxEntries = queueRemaining
-	}
-	if maxEntries > offsetRemaining {
-		maxEntries = offsetRemaining
-	}
+	maxEntries = min(maxEntries, queueRemaining, offsetRemaining)
 	if maxEntries <= 0 {
 		return
 	}
@@ -184,17 +170,20 @@ func (r *Reader) appendSubIFDOffset(offset uint32) {
 
 // parseTag parses the requested value from EXIF metadata.
 func (r *Reader) parseTag(t tag.Entry) {
+	if r.logLevelDebug() {
+		r.tagLogContext(r.debug(), t).Msg("parse tag")
+	}
 	switch t.IfdType {
 	case tag.IFD0:
 		if !r.parseIFD0Tag(t) {
 			return
 		}
 	case tag.IFD1:
-		if !r.parseImageIFDTag(t, &r.Exif.IFD1) {
+		if !r.parseImageIFDTag(t, r.Exif.IFD1) {
 			return
 		}
 	case tag.IFD2:
-		if !r.parseImageIFDTag(t, &r.Exif.IFD2) {
+		if !r.parseImageIFDTag(t, r.Exif.IFD2) {
 			return
 		}
 	case tag.GPSIFD:
@@ -249,13 +238,12 @@ func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagDateTime:
 		modifyDate := r.parseDate(t)
-		r.Exif.Time.ModifyDate = modifyDate
-		r.Exif.IFD0.ModifyDate = modifyDate
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.IFD0.setDate(modifyDate)
+		r.Exif.IFD0.markTagParsed(t.ID)
 	case tag.TagDateTimeOriginal:
 		dateTimeOriginal := r.parseDate(t)
-		r.Exif.Time.DateTimeOriginal = dateTimeOriginal
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.ExifIFD.setDate(t.ID, dateTimeOriginal)
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagMake:
 		r.Exif.CameraMakeID, r.Exif.IFD0.Make = r.parseMakeTag(t)
 	case tag.TagModel:
@@ -361,9 +349,9 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	case tag.TagPlanarConfiguration:
 		// ingnore tag
 	case tag.TagXResolution:
-		r.Exif.IFD0.XResolution = r.parseRationalValue(t)
+		r.Exif.IFD0.XResolution = r.parseRationalValue(t).Float64()
 	case tag.TagYResolution:
-		r.Exif.IFD0.YResolution = r.parseRationalValue(t)
+		r.Exif.IFD0.YResolution = r.parseRationalValue(t).Float64()
 	case tag.TagResolutionUnit:
 		r.Exif.IFD0.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagImageWidth:
@@ -384,34 +372,35 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 
 // parseIFD0DNGTag parses IFD0 DNG extension fields.
 func (r *Reader) parseIFD0DNGTag(t tag.Entry) bool {
+	dst := r.dngMakerNote()
 	switch t.ID {
 	case tag.TagDNGAdobeData:
 		r.parseDNGAdobeData(t)
 	case tag.TagDNGVersion:
-		r.Exif.DNG.DNGVersionCount = uint8(r.parseByteList(t, r.Exif.DNG.DNGVersion[:]))
+		dst.DNGVersionCount = uint8(r.parseByteList(t, dst.DNGVersion[:]))
 		if r.Exif.ImageType == imagetype.ImageTiff {
 			r.Exif.ImageType = imagetype.ImageDNG
 		}
 	case tag.TagDNGBackwardVersion:
-		r.Exif.DNG.DNGBackwardVersionCount = uint8(r.parseByteList(t, r.Exif.DNG.DNGBackwardVersion[:]))
+		dst.DNGBackwardVersionCount = uint8(r.parseByteList(t, dst.DNGBackwardVersion[:]))
 	case tag.TagUniqueCameraModel, tag.TagLocalizedCameraModel:
-		if r.Exif.DNG.CameraModel != "" {
+		if dst.CameraModel != "" {
 			return true
 		}
 		v := r.parseStringAllowUndefined(t)
 		if v != "" {
-			r.Exif.DNG.CameraModel = v
+			dst.CameraModel = v
 		}
 	case tag.TagOriginalRawFileName:
-		r.Exif.DNG.OriginalRawFileName = r.parseStringAllowUndefined(t)
+		dst.OriginalRawFileName = r.parseStringAllowUndefined(t)
 	case tag.TagProfileName:
-		r.Exif.DNG.ProfileName = r.parseStringAllowUndefined(t)
+		dst.ProfileName = r.parseStringAllowUndefined(t)
 	case tag.TagCameraSerial:
 		if r.Exif.CameraSerial == "" {
 			r.Exif.CameraSerial = r.parseString(t)
 		}
 	case tag.TagBestQualityScale:
-		r.Exif.DNG.BestQualityScale = r.parseRationalValue(t)
+		dst.BestQualityScale = r.parseRationalValue(t)
 	default:
 		return false
 	}
@@ -487,7 +476,7 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 	if recordCount > 0xff {
 		recordCount = 0xff
 	}
-	r.Exif.DNG.AdobeData.RecordCount = uint8(recordCount)
+	r.dngMakerNote().AdobeData.RecordCount = uint8(recordCount)
 	if recordBytesRemaining > 0 {
 		_ = r.discard(int(recordBytesRemaining))
 	}
@@ -544,8 +533,9 @@ func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
 		return
 	}
 
-	r.Exif.DNG.AdobeData.MakerNoteOriginalOffset = originalOffset
-	r.Exif.DNG.AdobeData.MakerNoteRecordLength = recordSize
+	dng := r.dngMakerNote()
+	dng.AdobeData.MakerNoteOriginalOffset = originalOffset
+	dng.AdobeData.MakerNoteRecordLength = recordSize
 
 	parent := tag.NewEntry(tag.TagMakerNote, tag.TypeUndefined, recordSize, recordStart, tag.ExifIFD, 0, byteOrder)
 	child := tag.NewDirectory(byteOrder, tag.MakerNoteIFD, 0, dirStart, dirStart-originalOffset)
@@ -611,29 +601,32 @@ func (r *Reader) parseExifTag(t tag.Entry) bool {
 func (r *Reader) parseExifTimeTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagDateTimeOriginal:
-		r.Exif.Time.DateTimeOriginal = r.parseDate(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.ExifIFD.setDate(t.ID, r.parseDate(t))
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagDateTimeDigitized:
-		r.Exif.Time.CreateDate = r.parseDate(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.ExifIFD.setDate(t.ID, r.parseDate(t))
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagSubSecTime:
-		r.Exif.Time.SubSecTime = r.parseSubSecTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		value, raw := r.parseSubSecTimeParts(t)
+		r.Exif.IFD0.setSubSec(raw, value)
+		r.Exif.IFD0.markTagParsed(t.ID)
 	case tag.TagSubSecTimeOriginal:
-		r.Exif.Time.SubSecTimeOriginal = r.parseSubSecTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		value, raw := r.parseSubSecTimeParts(t)
+		r.Exif.ExifIFD.setSubSec(t.ID, raw, value)
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagSubSecTimeDigitized:
-		r.Exif.Time.SubSecTimeDigitized = r.parseSubSecTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		value, raw := r.parseSubSecTimeParts(t)
+		r.Exif.ExifIFD.setSubSec(t.ID, raw, value)
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagOffsetTime:
-		r.Exif.Time.OffsetTime = r.parseOffsetTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.IFD0.setOffset(r.parseOffsetTime(t))
+		r.Exif.IFD0.markTagParsed(t.ID)
 	case tag.TagOffsetTimeOriginal:
-		r.Exif.Time.OffsetTimeOriginal = r.parseOffsetTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.ExifIFD.setOffset(t.ID, r.parseOffsetTime(t))
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	case tag.TagOffsetTimeDigitized:
-		r.Exif.Time.OffsetTimeDigitized = r.parseOffsetTime(t)
-		r.Exif.Time.markTagParsed(t.ID)
+		r.Exif.ExifIFD.setOffset(t.ID, r.parseOffsetTime(t))
+		r.Exif.ExifIFD.markTagParsed(t.ID)
 	default:
 		return false
 	}
@@ -643,7 +636,7 @@ func (r *Reader) parseExifTimeTag(t tag.Entry) bool {
 func (r *Reader) parseExifTextTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagExifVersion:
-		r.Exif.ExifIFD.ExifVersion = r.parseStringAllowUndefined(t)
+		r.Exif.ExifIFD.ExifVersion = r.parseExifVersion(t)
 	case tag.TagLensMake:
 		r.Exif.ExifIFD.LensMake = r.parseString(t)
 	case tag.TagLensModel:
@@ -694,11 +687,11 @@ func (r *Reader) parseExifImageTag(t tag.Entry) bool {
 	case tag.TagComponentsConfiguration:
 		r.parseByteList(t, r.Exif.ExifIFD.ComponentsConfiguration[:])
 	case tag.TagCompressedBitsPerPixel:
-		r.Exif.ExifIFD.CompressedBitsPerPixel = r.parseRationalValue(t)
+		r.Exif.ExifIFD.CompressedBitsPerPixel = r.parseRationalValue(t).Float64()
 	case tag.TagFocalPlaneXResolution:
-		r.Exif.ExifIFD.FocalPlaneXResolution = r.parseRationalValue(t)
+		r.Exif.ExifIFD.FocalPlaneXResolution, r.Exif.ExifIFD.focalPlaneXResolutionState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagFocalPlaneYResolution:
-		r.Exif.ExifIFD.FocalPlaneYResolution = r.parseRationalValue(t)
+		r.Exif.ExifIFD.FocalPlaneYResolution, r.Exif.ExifIFD.focalPlaneYResolutionState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagFocalPlaneResolutionUnit:
 		r.Exif.ExifIFD.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagSubjectArea:
@@ -725,7 +718,7 @@ func (r *Reader) parseExifExposureTag(t tag.Entry) bool {
 	case tag.TagMaxApertureValue:
 		r.Exif.ExifIFD.MaxApertureValue = r.parseApexAperture(t)
 	case tag.TagSubjectDistance:
-		r.Exif.ExifIFD.SubjectDistance = r.parseRationalValue(t)
+		r.Exif.ExifIFD.SubjectDistance, r.Exif.ExifIFD.subjectDistanceState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagBrightnessValue:
 		r.Exif.ExifIFD.BrightnessValue = r.parseSignedRationalFloat32(t)
 	case tag.TagExposureProgram:
@@ -751,7 +744,7 @@ func (r *Reader) parseExifExposureTag(t tag.Entry) bool {
 	case tag.TagFocalLengthIn35mmFilm:
 		r.Exif.ExifIFD.FocalLengthIn35mmFormat = r.parseFocalLength(t)
 	case tag.TagExposureIndex:
-		r.Exif.ExifIFD.ExposureIndex = r.parseRationalValue(t)
+		r.Exif.ExifIFD.ExposureIndex, r.Exif.ExifIFD.exposureIndexState = r.parseUnsignedRationalFloat64(t)
 	default:
 		return false
 	}
@@ -866,6 +859,9 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 
 // parseImageIFDTag parses the requested value from EXIF metadata.
 func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
+	if dst == nil {
+		dst = &ImageIFD{}
+	}
 	switch t.ID {
 	case tag.TagSubfileType:
 		dst.SubfileType = meta.SubfileType(r.parseUint32(t))
@@ -874,9 +870,9 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 	case tag.TagCompression:
 		dst.Compression = meta.Compression(r.parseUint16(t))
 	case tag.TagXResolution:
-		dst.XResolution = r.parseRationalValue(t)
+		dst.XResolution = r.parseRationalValue(t).Float64()
 	case tag.TagYResolution:
-		dst.YResolution = r.parseRationalValue(t)
+		dst.YResolution = r.parseRationalValue(t).Float64()
 	case tag.TagResolutionUnit:
 		dst.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagImageWidth:
@@ -892,7 +888,8 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 	case tag.TagSoftware:
 		dst.Software = r.parseString(t)
 	case tag.TagDateTime:
-		dst.ModifyDate = r.parseDate(t)
+		dst.setDate(r.parseDate(t))
+		dst.markTagParsed(t.ID)
 	case tag.TagStripOffsets, tag.TagThumbnailOffset:
 		dst.ImageOffset = r.parseFirstUint32(t)
 	case tag.TagStripByteCounts, tag.TagThumbnailLength:
@@ -907,20 +904,28 @@ func (r *Reader) parseImageIFDTag(t tag.Entry, dst *ImageIFD) bool {
 
 // parseSubSecTime parses the requested value from EXIF metadata.
 func (r *Reader) parseSubSecTime(t tag.Entry) uint16 {
+	value, _ := r.parseSubSecTimeParts(t)
+	return value
+}
+
+func (r *Reader) parseSubSecTimeParts(t tag.Entry) (uint16, string) {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
 	default:
-		return 0
+		return 0, ""
 	}
+	var raw []byte
 	if t.IsEmbedded() {
 		t.EmbeddedValue(r.state.buf[:4])
-		return uint16(parseStrUint(trimNULBuffer(r.state.buf[:4])))
+		raw = trimASCIIWhitespace(trimNULBuffer(r.state.buf[:4]))
+		return uint16(parseStrUint(raw)), string(raw)
 	}
 	buf, _, err := r.readTagBytes(t, 16)
 	if err != nil {
-		return 0
+		return 0, ""
 	}
-	return uint16(parseStrUint(trimNULBuffer(buf)))
+	raw = trimASCIIWhitespace(trimNULBuffer(buf))
+	return uint16(parseStrUint(raw)), string(raw)
 }
 
 func apertureIsFinite(v meta.Aperture) bool {
