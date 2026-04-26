@@ -37,6 +37,7 @@ type Canon struct {
 
 	// Structured Canon maker-note tables (ExifTool Canon.pm mappings).
 	CanonCameraSettings        CameraSettings     // 88 bytes
+	CameraInfo                 CameraInfo         // selected Canon CameraInfo fields
 	CanonFocalLength           FocalLengthInfo    // 8 bytes
 	CanonShotInfo              ShotInfo           // 100 bytes
 	CanonFileInfo              FileInfo           // 48 bytes

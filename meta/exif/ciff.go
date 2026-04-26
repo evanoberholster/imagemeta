@@ -20,7 +20,9 @@ func FromCIFF(c *jpeg.CIFF, it imagetype.ImageType) Exif {
 	out.IFD0.ImageHeight = c.ImageHeight
 	out.IFD0.ImageDescription = c.CanonFileDescription
 	out.IFD0.ModifyDate = c.DateTimeOriginal
-	out.Time.DateTimeOriginal = c.DateTimeOriginal
+	out.IFD0.modifyDateRaw = c.DateTimeOriginal
+	out.ExifIFD.DateTimeOriginal = c.DateTimeOriginal
+	out.ExifIFD.dateTimeOriginalRaw = c.DateTimeOriginal
 	out.ExifIFD.PixelXDimension = c.ImageWidth
 	out.ExifIFD.PixelYDimension = c.ImageHeight
 	out.ExifIFD.ISOSpeedRatings = uint32(c.BaseISO)

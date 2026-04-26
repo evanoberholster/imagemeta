@@ -22,6 +22,15 @@ func (r *Reader) appleMakerNote() *makernote.Apple {
 	return info.Apple
 }
 
+func (r *Reader) dngMakerNote() *makernote.DNG {
+	info := r.makerNoteInfo()
+	if info.DNG == nil {
+		info.DNG = &makernote.DNG{}
+	}
+	r.Exif.DNG = info.DNG
+	return info.DNG
+}
+
 func (r *Reader) nikonMakerNote() *nikon.Nikon {
 	info := r.makerNoteInfo()
 	if info.Nikon == nil {

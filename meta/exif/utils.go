@@ -104,6 +104,15 @@ func exifASCIIText(buf []byte) string {
 	return string(trimmed)
 }
 
+func trimAtNUL(buf []byte) []byte {
+	for i, b := range buf {
+		if b == 0 {
+			return buf[:i]
+		}
+	}
+	return buf
+}
+
 func exifUTF16Text(buf []byte, bo binary.ByteOrder) string {
 	if len(buf) < 2 {
 		return ""
@@ -387,13 +396,109 @@ func (r *Reader) canonModelName() string {
 	return ""
 }
 
-func canonModelIsEOS(model string) bool {
-	return strings.Contains(model, "EOS")
+func (r *Reader) canonModelID() metacanon.CanonCameraModel {
+	if r.Exif.MakerNote.Canon == nil {
+		return metacanon.CanonModelUnknown
+	}
+	return metacanon.CanonCameraModel(r.Exif.MakerNote.Canon.ModelID)
+}
+
+func canonModelIsEOS(modelID metacanon.CanonCameraModel) bool {
+	switch modelID {
+	case metacanon.CanonModelEOSD30,
+		metacanon.CanonModelEOSD60,
+		metacanon.CanonModelEOSM3,
+		metacanon.CanonModelEOSM10,
+		metacanon.CanonModelEOSM5,
+		metacanon.CanonModelEOSM100,
+		metacanon.CanonModelEOSM6,
+		metacanon.CanonModelEOSM50,
+		metacanon.CanonModelEOSC50,
+		metacanon.CanonModelEOSC300,
+		metacanon.CanonModelEOSC200,
+		metacanon.CanonModelEOS1D,
+		metacanon.CanonModelEOS1DS,
+		metacanon.CanonModelEOS10D,
+		metacanon.CanonModelEOS1DMarkIII,
+		metacanon.CanonModelEOSDigitalRebel,
+		metacanon.CanonModelEOS1DMarkII,
+		metacanon.CanonModelEOS20D,
+		metacanon.CanonModelEOSDigitalRebelXSi,
+		metacanon.CanonModelEOS1DsMarkII,
+		metacanon.CanonModelEOSDigitalRebelXT,
+		metacanon.CanonModelEOS40D,
+		metacanon.CanonModelEOS5D,
+		metacanon.CanonModelEOS1DsMarkIII,
+		metacanon.CanonModelEOS5DMarkII,
+		metacanon.CanonModelEOS1DMarkIIN,
+		metacanon.CanonModelEOS30D,
+		metacanon.CanonModelEOSDigitalRebelXTi,
+		metacanon.CanonModelEOS7D,
+		metacanon.CanonModelEOSRebelT1i,
+		metacanon.CanonModelEOSRebelXS,
+		metacanon.CanonModelEOS50D,
+		metacanon.CanonModelEOS1DX,
+		metacanon.CanonModelEOSRebelT2i,
+		metacanon.CanonModelEOS1DMarkIV,
+		metacanon.CanonModelEOS5DMarkIII,
+		metacanon.CanonModelEOSRebelT3i,
+		metacanon.CanonModelEOS60D,
+		metacanon.CanonModelEOSRebelT3,
+		metacanon.CanonModelEOS7DMarkII,
+		metacanon.CanonModelEOSRebelT4i,
+		metacanon.CanonModelEOS6D,
+		metacanon.CanonModelEOS1DC,
+		metacanon.CanonModelEOS70D,
+		metacanon.CanonModelEOSRebelT5i,
+		metacanon.CanonModelEOSRebelT5,
+		metacanon.CanonModelEOS1DXMarkII,
+		metacanon.CanonModelEOSM,
+		metacanon.CanonModelEOS80D,
+		metacanon.CanonModelEOSM2,
+		metacanon.CanonModelEOSRebelSL1,
+		metacanon.CanonModelEOSRebelT6s,
+		metacanon.CanonModelEOS5DMarkIV,
+		metacanon.CanonModelEOS5DS,
+		metacanon.CanonModelEOSRebelT6i,
+		metacanon.CanonModelEOS5DSR,
+		metacanon.CanonModelEOSRebelT6,
+		metacanon.CanonModelEOSRebelT7i,
+		metacanon.CanonModelEOS6DMarkII,
+		metacanon.CanonModelEOS77D,
+		metacanon.CanonModelEOSRebelSL2,
+		metacanon.CanonModelEOSR5,
+		metacanon.CanonModelEOSRebelT100,
+		metacanon.CanonModelEOSR,
+		metacanon.CanonModelEOS1DXMarkIII,
+		metacanon.CanonModelEOSRebelT7,
+		metacanon.CanonModelEOSRP,
+		metacanon.CanonModelEOSRebelT8i,
+		metacanon.CanonModelEOSSL3,
+		metacanon.CanonModelEOS90D,
+		metacanon.CanonModelEOSR3,
+		metacanon.CanonModelEOSR6,
+		metacanon.CanonModelEOSR7,
+		metacanon.CanonModelEOSR10,
+		metacanon.CanonModelEOSM50MarkII,
+		metacanon.CanonModelEOSR50,
+		metacanon.CanonModelEOSR6MarkII,
+		metacanon.CanonModelEOSR8,
+		metacanon.CanonModelEOSR1,
+		metacanon.CanonModelEOSR5MarkII,
+		metacanon.CanonModelEOSR100,
+		metacanon.CanonModelEOSR50V,
+		metacanon.CanonModelEOSR6MarkIII,
+		metacanon.CanonModelEOSD2000C,
+		metacanon.CanonModelEOSD6000C:
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *Reader) canonShotInfoLegacyExposureTime() bool {
-	model := r.canonModelName()
-	if !strings.Contains(model, "EOS 20D") && !strings.Contains(model, "EOS 350D") {
+	modelID := r.canonModelID()
+	if modelID != metacanon.CanonModelEOS20D && modelID != metacanon.CanonModelEOSDigitalRebelXT {
 		return false
 	}
 	if r.Exif.MakerNote.Canon == nil {
@@ -407,6 +512,13 @@ func canonShotISO(code int16) float32 {
 		return 100
 	}
 	return float32(100.0 * math.Exp2(float64(code-160)/32.0))
+}
+
+func canonShotMeasuredEV(code int16) float32 {
+	if code == 0 {
+		return 0
+	}
+	return float32(canonEV(code) + 5.0)
 }
 
 func canonShotActualISO(autoISO, baseISO float32) float32 {
@@ -433,8 +545,15 @@ func canonShotExposureTime(code int16, legacy20D350D bool) meta.ExposureTime {
 	return meta.ExposureTime(math.Exp2(-canonEV(code)))
 }
 
-func canonShotCameraTemperature(raw int16, model string) int16 {
-	if raw == 0 || !canonModelIsEOS(model) {
+func canonShotExposureCompensation(code int16) float32 {
+	if code == 0 {
+		return 0
+	}
+	return float32(canonEV(code))
+}
+
+func canonShotCameraTemperature(raw int16, modelID metacanon.CanonCameraModel) int16 {
+	if raw == 0 || !canonModelIsEOS(modelID) || canonModelUsesLegacyShotInfo(modelID) {
 		return 0
 	}
 	return raw - 128
@@ -445,6 +564,61 @@ func canonShotFlashGuideNumber(raw int16) float32 {
 		return 0
 	}
 	return float32(raw) / 32.0
+}
+
+func canonShotMeasuredEV2(raw int16) float32 {
+	if raw == 0 {
+		return 0
+	}
+	return float32(raw)/8.0 - 6.0
+}
+
+func canonCameraSettingValue(v int16) int16 {
+	if v == math.MaxInt16 {
+		return 0
+	}
+	return v
+}
+
+func canonCameraSettingISO(v int16) metacanon.CameraISO {
+	if v == math.MaxInt16 {
+		return 0
+	}
+	return metacanon.CameraISO(v)
+}
+
+func canonNormalizeFirmwareVersion(s string) string {
+	s = strings.TrimSpace(s)
+	return strings.TrimPrefix(s, "Firmware Version ")
+}
+
+func canonFocalPlaneSizeMM(raw uint16) float32 {
+	if raw == 0 {
+		return 0
+	}
+	return float32(raw) * 25.4 / 1000.0
+}
+
+func canonModelUsesLegacyShotInfo(modelID metacanon.CanonCameraModel) bool {
+	switch modelID {
+	case metacanon.CanonModelEOS1D,
+		metacanon.CanonModelEOS1DS,
+		metacanon.CanonModelEOSD30,
+		metacanon.CanonModelEOSD60:
+		return true
+	default:
+		return false
+	}
+}
+
+func canonModelUsesLegacyShutterCount(modelID metacanon.CanonCameraModel) bool {
+	switch modelID {
+	case metacanon.CanonModelEOS1D,
+		metacanon.CanonModelEOS1DS:
+		return true
+	default:
+		return false
+	}
 }
 
 // parseCanonMaxAperture converts Canon CameraSettings MaxAperture/MinAperture

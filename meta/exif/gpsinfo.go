@@ -135,13 +135,15 @@ func (g GPSInfo) Altitude() float32 {
 func (g GPSInfo) VersionID() string {
 	switch g.versionID {
 	case [4]byte{2, 0, 0, 0}:
-		return "2.0.0.0"
+		return "2 0 0 0"
 	case [4]byte{2, 1, 0, 0}:
-		return "2.1.0.0"
+		return "2 1 0 0"
 	case [4]byte{2, 2, 0, 0}:
-		return "2.2.0.0"
+		return "2 2 0 0"
 	case [4]byte{2, 3, 0, 0}:
-		return "2.3.0.0"
+		return "2 3 0 0"
+	case [4]byte{}:
+		return ""
 	default:
 		s := [...]byte{g.versionID[0], '.', g.versionID[1], '.', g.versionID[2], '.', g.versionID[3]}
 		return string(s[:])

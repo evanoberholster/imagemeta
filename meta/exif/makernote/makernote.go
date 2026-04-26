@@ -12,6 +12,7 @@ type Info struct {
 	Make      CameraMake
 	Apple     *Apple
 	Canon     *canon.Canon
+	DNG       *DNG
 	Nikon     *nikon.Nikon
 	Panasonic *panasonic.Panasonic
 	Sony      *sony.Sony

@@ -41,7 +41,7 @@ func (r *Reader) parseString(t tag.Entry) string {
 	if len(buf) == 0 {
 		return ""
 	}
-	return string(buf)
+	return string(trimAtNUL(buf))
 }
 
 // parseStringTrimRightSpaceNewline parses ASCII EXIF text and removes trailing
@@ -58,7 +58,7 @@ func (r *Reader) parseStringTrimRightSpaceNewline(t tag.Entry) string {
 func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
-		buf := trimASCIIWhitespace(r.parseASCIIValueBytes(t))
+		buf := trimASCIIWhitespace(trimAtNUL(r.parseASCIIValueBytes(t)))
 		if len(buf) == 0 {
 			return ""
 		}
@@ -107,6 +107,67 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 		return ""
 	}
 	return string(out)
+}
+
+// parseExifVersion parses EXIF version bytes without allocating.
+//
+// ExifVersion is a fixed 4-byte value in practice, so we can decode the common
+// values directly from the raw bytes and return string literals.
+func (r *Reader) parseExifVersion(t tag.Entry) string {
+	switch t.Type {
+	case tag.TypeASCII, tag.TypeASCIINoNul:
+		buf := trimNULBuffer(r.parseASCIIValueBytes(t))
+		if len(buf) != 4 {
+			return ""
+		}
+		key := [4]byte{buf[0], buf[1], buf[2], buf[3]}
+		switch key {
+		case [4]byte{'0', '2', '0', '0'}:
+			return "0200"
+		case [4]byte{'0', '2', '1', '0'}:
+			return "0210"
+		case [4]byte{'0', '2', '2', '0'}:
+			return "0220"
+		case [4]byte{'0', '2', '2', '1'}:
+			return "0221"
+		case [4]byte{'0', '2', '3', '0'}:
+			return "0230"
+		case [4]byte{'0', '2', '3', '1'}:
+			return "0231"
+		case [4]byte{'0', '2', '3', '2'}:
+			return "0232"
+		case [4]byte{'0', '3', '0', '0'}:
+			return "0300"
+		default:
+			return string(key[:])
+		}
+	case tag.TypeUndefined:
+	default:
+		return ""
+	}
+	buf := trimNULBuffer(r.parseUndefinedBytes(t, 4))
+	if len(buf) != 4 {
+		return ""
+	}
+	key := [4]byte{buf[0], buf[1], buf[2], buf[3]}
+	switch key {
+	case [4]byte{'0', '2', '0', '0'}:
+		return "0200"
+	case [4]byte{'0', '2', '1', '0'}:
+		return "0210"
+	case [4]byte{'0', '2', '2', '0'}:
+		return "0220"
+	case [4]byte{'0', '2', '2', '1'}:
+		return "0221"
+	case [4]byte{'0', '2', '3', '0'}:
+		return "0230"
+	case [4]byte{'0', '2', '3', '1'}:
+		return "0231"
+	case [4]byte{'0', '2', '3', '2'}:
+		return "0232"
+	default:
+		return ""
+	}
 }
 
 type displayTrimMode uint8
@@ -373,6 +434,18 @@ func (r *Reader) parseRationalU(t tag.Entry) [2]uint32 {
 func (r *Reader) parseRationalValue(t tag.Entry) tag.RationalU {
 	parts := r.parseRationalU(t)
 	return tag.RationalU{Numerator: parts[0], Denominator: parts[1]}
+}
+
+func (r *Reader) parseUnsignedRationalFloat64(t tag.Entry) (float64, unsignedRationalState) {
+	rat := r.parseRationalU(t)
+	switch {
+	case rat[1] == 0 && rat[0] == 0:
+		return 0, rationalStateMissing
+	case rat[1] == 0:
+		return 0, rationalStateInfinite
+	default:
+		return float64(rat[0]) / float64(rat[1]), rationalStateValue
+	}
 }
 
 // parseUint16List parses the requested value from EXIF metadata.
@@ -875,15 +948,15 @@ func (r *Reader) parseFocalLength(t tag.Entry) meta.FocalLength {
 }
 
 // parseLensInfo parses the requested value from EXIF metadata.
-func (r *Reader) parseLensInfo(t tag.Entry) *LensInfo {
+func (r *Reader) parseLensInfo(t tag.Entry) LensInfo {
 	if t.IsEmbedded() {
-		return nil
+		return LensInfo{}
 	}
 	buf, _, err := r.readTagBytes(t, 32)
 	if err != nil || len(buf) < 32 {
-		return nil
+		return LensInfo{}
 	}
-	return &LensInfo{
+	return LensInfo{
 		MinFocalLength:        tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[:4]), Denominator: t.ByteOrder.Uint32(buf[4:8])},
 		MaxFocalLength:        tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[8:12]), Denominator: t.ByteOrder.Uint32(buf[12:16])},
 		MaxApertureAtMinFocal: tag.RationalU{Numerator: t.ByteOrder.Uint32(buf[16:20]), Denominator: t.ByteOrder.Uint32(buf[20:24])},

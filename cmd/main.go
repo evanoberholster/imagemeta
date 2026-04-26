@@ -8,14 +8,15 @@ import (
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/rs/zerolog"
+	"github.com/tidwall/pretty"
 )
 
 func init() {
-	logging.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.InfoLevel)
+	logging.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
 }
 
 func main() {
-	path := "2.CR3"
+	path := "1.cr3"
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	}
@@ -39,6 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	//colored := pretty.Color(pretty.Pretty(buf), nil)
-	fmt.Printf("%s\n", string(buf))
+	colored := pretty.Pretty(buf)
+	fmt.Println(string(colored))
+	//fmt.Printf("%s\n", string(buf))
 }

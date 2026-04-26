@@ -115,11 +115,8 @@ func (r *Reader) tagLogContext(ev *zerolog.Event, t tag.Entry) *zerolog.Event {
 	return ev.
 		Uint16("tagID", uint16(t.ID)).
 		Str("tagName", t.Name()).
-		Uint16("tagType", uint16(t.Type)).
 		Str("tagTypeName", t.Type.String()).
 		Str("ifd", t.IfdType.String()).
-		Int8("ifdIndex", t.IfdIndex).
-		Uint32("units", t.UnitCount).
 		Uint32("tagSize", t.Size()).
 		Uint32("tagOffset", t.ValueOffset).
 		Bool("tagEmbedded", t.IsEmbedded()).
@@ -151,4 +148,13 @@ func (r *Reader) infoDirectoryLogContext(ev *zerolog.Event, d tag.Directory) *ze
 		ev.Uint32("ifdBaseOffset", d.BaseOffset)
 	}
 	return ev
+}
+
+// logTagContext logs tag metadata with a caller-supplied message.
+func (r *Reader) warnTagContext(t tag.Entry, msg string, includeQueueMax bool) {
+	e := r.tagLogContext(r.warn(), t)
+	if includeQueueMax {
+		e.Int("tagQueueMax", tagQueueMax)
+	}
+	e.Msg(msg)
 }

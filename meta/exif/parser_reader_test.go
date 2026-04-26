@@ -167,6 +167,50 @@ func TestParseDirectoryTagHeadersBulkMatchesPerEntry(t *testing.T) {
 	}
 }
 
+func TestParseExifVersion(t *testing.T) {
+	t.Parallel()
+
+	r := &Reader{state: &state{}}
+
+	tests := []struct {
+		name  string
+		entry tag.Entry
+		want  string
+	}{
+		{
+			name:  "undefined-0231",
+			entry: tag.NewEntry(tag.TagExifVersion, tag.TypeUndefined, 4, 0x31333230, tag.ExifIFD, 0, utils.LittleEndian),
+			want:  "0231",
+		},
+		{
+			name:  "ascii-0220",
+			entry: tag.NewEntry(tag.TagExifVersion, tag.TypeASCII, 4, 0x30323230, tag.ExifIFD, 0, utils.LittleEndian),
+			want:  "0220",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := r.parseExifVersion(tc.entry); got != tc.want {
+				t.Fatalf("parseExifVersion() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestParseExifVersionAllocations(t *testing.T) {
+	r := &Reader{state: &state{}}
+	entry := tag.NewEntry(tag.TagExifVersion, tag.TypeUndefined, 4, 0x31333230, tag.ExifIFD, 0, utils.LittleEndian)
+
+	if allocs := testing.AllocsPerRun(1000, func() {
+		_ = r.parseExifVersion(entry)
+	}); allocs != 0 {
+		t.Fatalf("parseExifVersion allocations = %v, want 0", allocs)
+	}
+}
+
 func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 	t.Parallel()
 
@@ -234,14 +278,17 @@ func TestParseDNGAdobeDataSample(t *testing.T) {
 		t.Fatalf("parse %s: %v", samplePath, err)
 	}
 
-	if got := parsed.DNG.AdobeData.RecordCount; got != 1 {
-		t.Fatalf("DNG.AdobeData.RecordCount = %d, want 1", got)
+	if parsed.MakerNote.DNG == nil {
+		t.Fatalf("DNG maker-note missing for %s", samplePath)
 	}
-	if got := parsed.DNG.AdobeData.MakerNoteOriginalOffset; got != 0x03e4 {
-		t.Fatalf("DNG.AdobeData.MakerNoteOriginalOffset = 0x%x, want 0x3e4", got)
+	if got := parsed.MakerNote.DNG.AdobeData.RecordCount; got != 1 {
+		t.Fatalf("MakerNote.DNG.AdobeData.RecordCount = %d, want 1", got)
 	}
-	if got := parsed.DNG.AdobeData.MakerNoteRecordLength; got != 68242 {
-		t.Fatalf("DNG.AdobeData.MakerNoteRecordLength = %d, want 68242", got)
+	if got := parsed.MakerNote.DNG.AdobeData.MakerNoteOriginalOffset; got != 0x03e4 {
+		t.Fatalf("MakerNote.DNG.AdobeData.MakerNoteOriginalOffset = 0x%x, want 0x3e4", got)
+	}
+	if got := parsed.MakerNote.DNG.AdobeData.MakerNoteRecordLength; got != 68242 {
+		t.Fatalf("MakerNote.DNG.AdobeData.MakerNoteRecordLength = %d, want 68242", got)
 	}
 	if parsed.MakerNote.Canon == nil {
 		t.Fatalf("Canon maker-note missing for %s", samplePath)
