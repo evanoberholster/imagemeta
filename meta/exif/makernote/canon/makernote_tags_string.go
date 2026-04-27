@@ -2,9 +2,7 @@
 
 package canon
 
-import (
-	"strconv"
-)
+import "strconv"
 
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
@@ -29,6 +27,7 @@ func _() {
 	_ = x[CanonAFInfo-18]
 	_ = x[ThumbnailImageValidArea-19]
 	_ = x[SerialNumberFormat-21]
+	_ = x[Canon0x0019-25]
 	_ = x[SuperMacro-26]
 	_ = x[DateStampMode-28]
 	_ = x[MyColors-29]
@@ -41,9 +40,13 @@ func _() {
 	_ = x[ImageUniqueID-40]
 	_ = x[WBInfo-41]
 	_ = x[FaceDetect3-47]
+	_ = x[Canon0x0032-50]
+	_ = x[Canon0x0033-51]
 	_ = x[TimeInfo-53]
 	_ = x[BatteryType-56]
 	_ = x[AFInfo3-60]
+	_ = x[Canon0x003d-61]
+	_ = x[Canon0x003f-63]
 	_ = x[RawDataOffset-129]
 	_ = x[RawDataLength-130]
 	_ = x[OriginalDecisionDataOffset-131]
@@ -53,17 +56,24 @@ func _() {
 	_ = x[CanonFileInfo-147]
 	_ = x[AFPointsInFocus1D-148]
 	_ = x[LensModel-149]
+	_ = x[CanonSerialInfo-150]
 	_ = x[CanonInternalSerialNumber-150]
 	_ = x[CanonDustRemovalData-151]
 	_ = x[CanonCropInfo-152]
 	_ = x[CanonCustomFunctions-153]
 	_ = x[CanonAspectInfo-154]
 	_ = x[CanonProcessingInfo-160]
+	_ = x[CanonToneCurveTable-161]
+	_ = x[CanonSharpnessTable-162]
+	_ = x[CanonSharpnessFreqTable-163]
+	_ = x[CanonWhiteBalanceTable-164]
 	_ = x[CanonColorBalance-169]
 	_ = x[CanonMeasuredColor-170]
 	_ = x[CanonColorTemperature-174]
 	_ = x[CanonCanonFlags-176]
 	_ = x[CanonModifiedInfo-177]
+	_ = x[CanonToneCurveMatching-178]
+	_ = x[CanonWhiteBalanceMatching-179]
 	_ = x[CanonColorSpace-180]
 	_ = x[CanonPreviewImageInfo-182]
 	_ = x[CanonVRDOffset-208]
@@ -75,9 +85,13 @@ func _() {
 	_ = x[CanonPictureStyleUserDef-16392]
 	_ = x[CanonPictureStylePC-16393]
 	_ = x[CanonCustomPictureStyleFileName-16400]
+	_ = x[Canon0x4011-16401]
+	_ = x[Canon0x4012-16402]
 	_ = x[CanonAFMicroAdj-16403]
+	_ = x[Canon0x4014-16404]
 	_ = x[CanonVignettingCorr-16405]
 	_ = x[CanonVignettingCorr2-16406]
+	_ = x[Canon0x4017-16407]
 	_ = x[CanonLightingOpt-16408]
 	_ = x[CanonLensInfo-16409]
 	_ = x[CanonAmbienceInfo-16416]
@@ -85,12 +99,37 @@ func _() {
 	_ = x[CanonFilterInfo-16420]
 	_ = x[CanonHDRInfo-16421]
 	_ = x[CanonLogInfo-16422]
+	_ = x[Canon0x4027-16423]
 	_ = x[CanonAFConfig-16424]
+	_ = x[Canon0x402c-16428]
+	_ = x[Canon0x402e-16430]
+	_ = x[Canon0x4031-16433]
+	_ = x[Canon0x4033-16435]
+	_ = x[Canon0x4035-16437]
+	_ = x[Canon0x4037-16439]
+	_ = x[Canon0x4039-16441]
+	_ = x[Canon0x403a-16442]
+	_ = x[Canon0x403b-16443]
+	_ = x[Canon0x403c-16444]
 	_ = x[CanonRawBurstModeRoll-16447]
+	_ = x[Canon0x4040-16448]
+	_ = x[Canon0x4045-16453]
+	_ = x[Canon0x4049-16457]
+	_ = x[Canon0x404a-16458]
+	_ = x[Canon0x404b-16459]
+	_ = x[Canon0x404e-16462]
+	_ = x[Canon0x404f-16463]
+	_ = x[Canon0x4051-16465]
+	_ = x[Canon0x4053-16467]
+	_ = x[Canon0x4054-16468]
+	_ = x[Canon0x4055-16469]
+	_ = x[Canon0x4056-16470]
+	_ = x[Canon0x4058-16472]
 	_ = x[CanonLevelInfo-16473]
+	_ = x[Canon0x405b-16475]
 }
 
-const _MakerNoteTag_name = "CanonCameraSettingsCanonFocalLengthCanonFlashInfoCanonShotInfoCanonPanoramaCanonImageTypeCanonFirmwareVersionFileNumberOwnerNameUnknownD30SerialNumberCanonCameraInfoCanonFileLengthCustomFunctionsCanonModelIDMovieInfoCanonAFInfoThumbnailImageValidAreaSerialNumberFormatSuperMacroDateStampModeMyColorsFirmwareRevisionCategoriesFaceDetect1FaceDetect2CanonAFInfo2ContrastInfoImageUniqueIDWBInfoFaceDetect3TimeInfoBatteryTypeAFInfo3RawDataOffsetRawDataLengthOriginalDecisionDataOffsetCustomFunctions1DPersonalFunctionsPersonalFunctionValuesCanonFileInfoAFPointsInFocus1DLensModelInternalSerialNumberDustRemovalDataCropInfoCustomFunctions2AspectInfoProcessingInfoColorBalanceMeasuredColorColorTemperatureCanonFlagsModifiedInfoColorSpacePreviewImageInfoVRDOffsetSensorInfoColorDataCRWParamColorInfoFlavorPictureStyleUserDefPictureStylePCCustomPictureStyleFileNameAFMicroAdjVignettingCorrVignettingCorr2LightingOptLensInfoAmbienceInfoMultiExpFilterInfoHDRInfoLogInfoAFConfigRawBurstModeRollLevelInfo"
+const _MakerNoteTag_name = "CanonCameraSettingsCanonFocalLengthCanonFlashInfoCanonShotInfoCanonPanoramaCanonImageTypeCanonFirmwareVersionFileNumberOwnerNameUnknownD30SerialNumberCanonCameraInfoCanonFileLengthCustomFunctionsCanonModelIDMovieInfoCanonAFInfoThumbnailImageValidAreaSerialNumberFormatCanon_0x0019SuperMacroDateStampModeMyColorsFirmwareRevisionCategoriesFaceDetect1FaceDetect2CanonAFInfo2ContrastInfoImageUniqueIDWBInfoFaceDetect3Canon_0x0032Canon_0x0033TimeInfoBatteryTypeAFInfo3Canon_0x003dCanon_0x003fRawDataOffsetRawDataLengthOriginalDecisionDataOffsetCustomFunctions1DPersonalFunctionsPersonalFunctionValuesCanonFileInfoAFPointsInFocus1DLensModelSerialInfoDustRemovalDataCropInfoCustomFunctions2AspectInfoProcessingInfoToneCurveTableSharpnessTableSharpnessFreqTableWhiteBalanceTableColorBalanceMeasuredColorColorTemperatureCanonFlagsModifiedInfoToneCurveMatchingWhiteBalanceMatchingColorSpacePreviewImageInfoVRDOffsetSensorInfoColorDataCRWParamColorInfoFlavorPictureStyleUserDefPictureStylePCCustomPictureStyleFileNameCanon_0x4011Canon_0x4012AFMicroAdjCanon_0x4014VignettingCorrVignettingCorr2Canon_0x4017LightingOptLensInfoAmbienceInfoMultiExpFilterInfoHDRInfoLogInfoCanon_0x4027AFConfigCanon_0x402cCanon_0x402eCanon_0x4031Canon_0x4033Canon_0x4035Canon_0x4037Canon_0x4039Canon_0x403aCanon_0x403bCanon_0x403cRawBurstModeRollCanon_0x4040Canon_0x4045Canon_0x4049Canon_0x404aCanon_0x404bCanon_0x404eCanon_0x404fCanon_0x4051Canon_0x4053Canon_0x4054Canon_0x4055Canon_0x4056Canon_0x4058LevelInfoCanon_0x405b"
 
 var _MakerNoteTag_map = map[MakerNoteTag]string{
 	1:     _MakerNoteTag_name[0:19],
@@ -112,65 +151,105 @@ var _MakerNoteTag_map = map[MakerNoteTag]string{
 	18:    _MakerNoteTag_name[216:227],
 	19:    _MakerNoteTag_name[227:250],
 	21:    _MakerNoteTag_name[250:268],
-	26:    _MakerNoteTag_name[268:278],
-	28:    _MakerNoteTag_name[278:291],
-	29:    _MakerNoteTag_name[291:299],
-	30:    _MakerNoteTag_name[299:315],
-	35:    _MakerNoteTag_name[315:325],
-	36:    _MakerNoteTag_name[325:336],
-	37:    _MakerNoteTag_name[336:347],
-	38:    _MakerNoteTag_name[347:359],
-	39:    _MakerNoteTag_name[359:371],
-	40:    _MakerNoteTag_name[371:384],
-	41:    _MakerNoteTag_name[384:390],
-	47:    _MakerNoteTag_name[390:401],
-	53:    _MakerNoteTag_name[401:409],
-	56:    _MakerNoteTag_name[409:420],
-	60:    _MakerNoteTag_name[420:427],
-	129:   _MakerNoteTag_name[427:440],
-	130:   _MakerNoteTag_name[440:453],
-	131:   _MakerNoteTag_name[453:479],
-	144:   _MakerNoteTag_name[479:496],
-	145:   _MakerNoteTag_name[496:513],
-	146:   _MakerNoteTag_name[513:535],
-	147:   _MakerNoteTag_name[535:548],
-	148:   _MakerNoteTag_name[548:565],
-	149:   _MakerNoteTag_name[565:574],
-	150:   _MakerNoteTag_name[574:594],
-	151:   _MakerNoteTag_name[594:609],
-	152:   _MakerNoteTag_name[609:617],
-	153:   _MakerNoteTag_name[617:633],
-	154:   _MakerNoteTag_name[633:643],
-	160:   _MakerNoteTag_name[643:657],
-	169:   _MakerNoteTag_name[657:669],
-	170:   _MakerNoteTag_name[669:682],
-	174:   _MakerNoteTag_name[682:698],
-	176:   _MakerNoteTag_name[698:708],
-	177:   _MakerNoteTag_name[708:720],
-	180:   _MakerNoteTag_name[720:730],
-	182:   _MakerNoteTag_name[730:746],
-	208:   _MakerNoteTag_name[746:755],
-	224:   _MakerNoteTag_name[755:765],
-	16385: _MakerNoteTag_name[765:774],
-	16386: _MakerNoteTag_name[774:782],
-	16387: _MakerNoteTag_name[782:791],
-	16389: _MakerNoteTag_name[791:797],
-	16392: _MakerNoteTag_name[797:816],
-	16393: _MakerNoteTag_name[816:830],
-	16400: _MakerNoteTag_name[830:856],
-	16403: _MakerNoteTag_name[856:866],
-	16405: _MakerNoteTag_name[866:880],
-	16406: _MakerNoteTag_name[880:895],
-	16408: _MakerNoteTag_name[895:906],
-	16409: _MakerNoteTag_name[906:914],
-	16416: _MakerNoteTag_name[914:926],
-	16417: _MakerNoteTag_name[926:934],
-	16420: _MakerNoteTag_name[934:944],
-	16421: _MakerNoteTag_name[944:951],
-	16422: _MakerNoteTag_name[951:958],
-	16424: _MakerNoteTag_name[958:966],
-	16447: _MakerNoteTag_name[966:982],
-	16473: _MakerNoteTag_name[982:991],
+	25:    _MakerNoteTag_name[268:280],
+	26:    _MakerNoteTag_name[280:290],
+	28:    _MakerNoteTag_name[290:303],
+	29:    _MakerNoteTag_name[303:311],
+	30:    _MakerNoteTag_name[311:327],
+	35:    _MakerNoteTag_name[327:337],
+	36:    _MakerNoteTag_name[337:348],
+	37:    _MakerNoteTag_name[348:359],
+	38:    _MakerNoteTag_name[359:371],
+	39:    _MakerNoteTag_name[371:383],
+	40:    _MakerNoteTag_name[383:396],
+	41:    _MakerNoteTag_name[396:402],
+	47:    _MakerNoteTag_name[402:413],
+	50:    _MakerNoteTag_name[413:425],
+	51:    _MakerNoteTag_name[425:437],
+	53:    _MakerNoteTag_name[437:445],
+	56:    _MakerNoteTag_name[445:456],
+	60:    _MakerNoteTag_name[456:463],
+	61:    _MakerNoteTag_name[463:475],
+	63:    _MakerNoteTag_name[475:487],
+	129:   _MakerNoteTag_name[487:500],
+	130:   _MakerNoteTag_name[500:513],
+	131:   _MakerNoteTag_name[513:539],
+	144:   _MakerNoteTag_name[539:556],
+	145:   _MakerNoteTag_name[556:573],
+	146:   _MakerNoteTag_name[573:595],
+	147:   _MakerNoteTag_name[595:608],
+	148:   _MakerNoteTag_name[608:625],
+	149:   _MakerNoteTag_name[625:634],
+	150:   _MakerNoteTag_name[634:644],
+	151:   _MakerNoteTag_name[644:659],
+	152:   _MakerNoteTag_name[659:667],
+	153:   _MakerNoteTag_name[667:683],
+	154:   _MakerNoteTag_name[683:693],
+	160:   _MakerNoteTag_name[693:707],
+	161:   _MakerNoteTag_name[707:721],
+	162:   _MakerNoteTag_name[721:735],
+	163:   _MakerNoteTag_name[735:753],
+	164:   _MakerNoteTag_name[753:770],
+	169:   _MakerNoteTag_name[770:782],
+	170:   _MakerNoteTag_name[782:795],
+	174:   _MakerNoteTag_name[795:811],
+	176:   _MakerNoteTag_name[811:821],
+	177:   _MakerNoteTag_name[821:833],
+	178:   _MakerNoteTag_name[833:850],
+	179:   _MakerNoteTag_name[850:870],
+	180:   _MakerNoteTag_name[870:880],
+	182:   _MakerNoteTag_name[880:896],
+	208:   _MakerNoteTag_name[896:905],
+	224:   _MakerNoteTag_name[905:915],
+	16385: _MakerNoteTag_name[915:924],
+	16386: _MakerNoteTag_name[924:932],
+	16387: _MakerNoteTag_name[932:941],
+	16389: _MakerNoteTag_name[941:947],
+	16392: _MakerNoteTag_name[947:966],
+	16393: _MakerNoteTag_name[966:980],
+	16400: _MakerNoteTag_name[980:1006],
+	16401: _MakerNoteTag_name[1006:1018],
+	16402: _MakerNoteTag_name[1018:1030],
+	16403: _MakerNoteTag_name[1030:1040],
+	16404: _MakerNoteTag_name[1040:1052],
+	16405: _MakerNoteTag_name[1052:1066],
+	16406: _MakerNoteTag_name[1066:1081],
+	16407: _MakerNoteTag_name[1081:1093],
+	16408: _MakerNoteTag_name[1093:1104],
+	16409: _MakerNoteTag_name[1104:1112],
+	16416: _MakerNoteTag_name[1112:1124],
+	16417: _MakerNoteTag_name[1124:1132],
+	16420: _MakerNoteTag_name[1132:1142],
+	16421: _MakerNoteTag_name[1142:1149],
+	16422: _MakerNoteTag_name[1149:1156],
+	16423: _MakerNoteTag_name[1156:1168],
+	16424: _MakerNoteTag_name[1168:1176],
+	16428: _MakerNoteTag_name[1176:1188],
+	16430: _MakerNoteTag_name[1188:1200],
+	16433: _MakerNoteTag_name[1200:1212],
+	16435: _MakerNoteTag_name[1212:1224],
+	16437: _MakerNoteTag_name[1224:1236],
+	16439: _MakerNoteTag_name[1236:1248],
+	16441: _MakerNoteTag_name[1248:1260],
+	16442: _MakerNoteTag_name[1260:1272],
+	16443: _MakerNoteTag_name[1272:1284],
+	16444: _MakerNoteTag_name[1284:1296],
+	16447: _MakerNoteTag_name[1296:1312],
+	16448: _MakerNoteTag_name[1312:1324],
+	16453: _MakerNoteTag_name[1324:1336],
+	16457: _MakerNoteTag_name[1336:1348],
+	16458: _MakerNoteTag_name[1348:1360],
+	16459: _MakerNoteTag_name[1360:1372],
+	16462: _MakerNoteTag_name[1372:1384],
+	16463: _MakerNoteTag_name[1384:1396],
+	16465: _MakerNoteTag_name[1396:1408],
+	16467: _MakerNoteTag_name[1408:1420],
+	16468: _MakerNoteTag_name[1420:1432],
+	16469: _MakerNoteTag_name[1432:1444],
+	16470: _MakerNoteTag_name[1444:1456],
+	16472: _MakerNoteTag_name[1456:1468],
+	16473: _MakerNoteTag_name[1468:1477],
+	16475: _MakerNoteTag_name[1477:1489],
 }
 
 func (i MakerNoteTag) String() string {

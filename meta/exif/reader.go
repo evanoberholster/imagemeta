@@ -94,7 +94,8 @@ func (r *Reader) resetDecodeState(resetExif bool) {
 	r.resetOffsets()
 }
 
-func acquirePooledReader(l zerolog.Logger) *Reader {
+// AcquirePooledReader gets a Reader from the shared pool.
+func AcquirePooledReader(l zerolog.Logger) *Reader {
 	r, ok := parseReaderPool.Get().(*Reader)
 	if !ok || r == nil {
 		r = &Reader{}
@@ -114,7 +115,16 @@ func acquirePooledReader(l zerolog.Logger) *Reader {
 	return r
 }
 
+func acquirePooledReader(l zerolog.Logger) *Reader {
+	return AcquirePooledReader(l)
+}
+
 func releasePooledReader(r *Reader) {
+	ReleasePooledReader(r)
+}
+
+// ReleasePooledReader returns a Reader to the shared pool.
+func ReleasePooledReader(r *Reader) {
 	if r == nil {
 		return
 	}
@@ -455,6 +465,20 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 
 	r.state.sortAll()
 
+	if err = r.drainQueuedTags(); err != nil {
+		return err
+	}
+
+	if infoEnabled {
+		r.infoDirectoryLogContext(r.info(), directory).
+			Uint16("tagCount", tagCount).
+			Uint32("nextIFDOffset", nextIFDOffset).
+			Msg("parsed exif directory")
+	}
+	return nil
+}
+
+func (r *Reader) drainQueuedTags() error {
 	for t := r.state.currentTag(); r.state.validTag(); t = r.state.advanceTag() {
 		switch {
 		case t.IsIfd():
@@ -466,29 +490,21 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 					r.Exif.IFD0.gpsIfdPointer = t.ValueOffset
 				}
 			}
-			if err = r.seekToTag(t); err != nil {
+			if err := r.seekToTag(t); err != nil {
 				return err
 			}
 			r.state.resetPosition()
 			child := t.ChildDirectory()
 			if child.Type == tag.MakerNoteIFD {
-				if err = r.readMakerNoteDirectory(t, child); err != nil && r.warnEnabled() {
-					r.tagLogContext(r.warn(), t).
-						Err(err).
-						Str("childIFD", child.String()).
-						Msg("failed parsing maker-note ifd")
+				if err := r.readMakerNoteDirectory(t, child); err != nil {
+					return err
 				}
 				r.state.sortUnread()
 				continue
 			}
 			if child.Type.IsValid() {
-				if err = r.readDirectory(child, false); err != nil {
-					if r.warnEnabled() {
-						r.tagLogContext(r.warn(), t).
-							Err(err).
-							Str("childIFD", child.String()).
-							Msg("failed parsing child ifd")
-					}
+				if err := r.readDirectory(child, false); err != nil {
+					return err
 				}
 			}
 			r.state.sortUnread()
@@ -499,12 +515,6 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 			r.parseTag(t)
 			r.state.sortUnread()
 		}
-	}
-	if infoEnabled {
-		r.infoDirectoryLogContext(r.info(), directory).
-			Uint16("tagCount", tagCount).
-			Uint32("nextIFDOffset", nextIFDOffset).
-			Msg("parsed exif directory")
 	}
 	return nil
 }

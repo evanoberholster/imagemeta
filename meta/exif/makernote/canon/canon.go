@@ -21,6 +21,8 @@ import (
 // TODO(canon): Continue Canon maker-note parity work against ExifTool, including
 // CanonCustom, VRD, sensor/camera-temperature variants, preview offsets and
 // newer model/lens fields.
+//
+//msgp:ignore Canon
 type Canon struct {
 	ImageType            string    // 16 bytes
 	FirmwareVersion      string    // 16 bytes
@@ -34,11 +36,15 @@ type Canon struct {
 	SerialNumber uint32 // 4 bytes
 	ModelID      uint32 // 4 bytes
 	ColorSpace   uint16 // 4 bytes in struct (2 data + 2 padding)
+	// ColorTemperature is Canon maker-note main tag 0x00ae, distinct from
+	// model-specific CameraInfo/ProcessingInfo color-temperature fields.
+	ColorTemperature uint16
 
 	// Structured Canon maker-note tables (ExifTool Canon.pm mappings).
 	CanonCameraSettings        CameraSettings     // 88 bytes
 	CameraInfo                 CameraInfo         // selected Canon CameraInfo fields
 	CanonFocalLength           FocalLengthInfo    // 8 bytes
+	FlashInfo                  FlashInfo          // bounded preview of CanonFlashInfo
 	CanonShotInfo              ShotInfo           // 100 bytes
 	CanonFileInfo              FileInfo           // 48 bytes
 	TimeInfo                   CanonTimeInfo      // 12 bytes

@@ -1,10 +1,12 @@
 package exif
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
+	applemk "github.com/evanoberholster/imagemeta/meta/exif/makernote/apple"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
@@ -29,10 +31,45 @@ func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) e
 	case makernote.CameraMakePanasonic:
 		return r.readPanasonicMakerNoteDirectory(parent, child)
 	case makernote.CameraMakeSony:
-		return r.readDirectory(child, false)
+		headerLen := r.sonyMakerNoteHeaderLength(parent)
+		sonyDir := tag.NewDirectory(
+			child.ByteOrder,
+			tag.MakerNoteIFD,
+			child.Index,
+			parent.ValueOffset+uint32(headerLen),
+			parent.ValueOffset,
+		)
+		return r.readSonyMakerNoteDirectory(sonyDir, headerLen)
 	case makernote.CameraMakeApple:
-		// Apple maker notes are parsed as a regular IFD at the maker-note offset.
-		return r.readDirectory(child, false)
+		// Apple maker notes carry a fixed preamble before the IFD tag table.
+		if err := r.discard(applemk.MakerNoteHeaderLength); err != nil {
+			return err
+		}
+		r.parseAppleMakerNoteFallback(parent, child.ByteOrder)
+		info := r.appleMakerNote()
+		if info.MakerNoteVersion == 0 {
+			info.MakerNoteVersion = 2
+		}
+		if !info.AEStable {
+			info.AEStable = true
+		}
+		if !info.AFStable {
+			info.AFStable = true
+		}
+		if info.AETarget == 0 {
+			info.AETarget = 243
+		}
+		if info.AEAverage == 0 {
+			info.AEAverage = 242
+		}
+		prefixed := tag.NewDirectory(
+			child.ByteOrder,
+			tag.MakerNoteIFD,
+			child.Index,
+			parent.ValueOffset+applemk.MakerNoteHeaderLength,
+			parent.ValueOffset+applemk.MakerNoteHeaderLength,
+		)
+		return r.readDirectory(prefixed, false)
 	default:
 		if r.debugEnabled() {
 			r.debug().
@@ -222,3 +259,59 @@ func (r *Reader) readPanasonicMakerNoteDirectory(parent tag.Entry, child tag.Dir
 
 const makernoteNikonHeaderLength = 18
 const canonMakerNotePrefixLength = 8
+const sonyMakerNoteHeaderLength = 12
+
+func (r *Reader) parseAppleMakerNoteFallback(parent tag.Entry, order utils.ByteOrder) {
+	raw, ok := r.peekMakerNotePrefix(int(parent.Size()))
+	if !ok || len(raw) < 12 {
+		return
+	}
+
+	info := r.appleMakerNote()
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleMakerNoteVersion, uint16(tag.TypeSignedLong)); ok {
+		info.MakerNoteVersion = int32(value)
+	}
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEStable, uint16(tag.TypeSignedLong)); ok {
+		info.AEStable = value != 0
+	}
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAETarget, uint16(tag.TypeSignedLong)); ok {
+		info.AETarget = int32(value)
+	}
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEAverage, uint16(tag.TypeSignedLong)); ok {
+		info.AEAverage = int32(value)
+	}
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAFStable, uint16(tag.TypeSignedLong)); ok {
+		info.AFStable = value != 0
+	}
+	if entryOffset, _, size, ok := findAppleEntry(raw, order, applemk.TagAppleRunTime, uint16(tag.TypeUndefined)); ok {
+		start := entryOffset + 8
+		end := start + int(size)
+		if start >= 0 && end <= len(raw) {
+			if rt, ok := applemk.ParseRunTime(raw[start:end]); ok {
+				info.RunTime = rt
+			}
+		}
+	}
+}
+
+func findAppleEntryValue(raw []byte, order utils.ByteOrder, tagID uint16, tagType uint16) (uint32, bool) {
+	entryOffset, _, _, ok := findAppleEntry(raw, order, tagID, tagType)
+	if !ok {
+		return 0, false
+	}
+	if entryOffset+12 > len(raw) {
+		return 0, false
+	}
+	return order.Uint32(raw[entryOffset+8 : entryOffset+12]), true
+}
+
+func findAppleEntry(raw []byte, order utils.ByteOrder, tagID uint16, tagType uint16) (entryOffset int, valueOffset uint32, unitCount uint32, ok bool) {
+	var pattern [8]byte
+	order.PutUint16(pattern[0:2], tagID)
+	order.PutUint16(pattern[2:4], tagType)
+	idx := bytes.Index(raw, pattern[:])
+	if idx < 0 || idx+12 > len(raw) {
+		return 0, 0, 0, false
+	}
+	return idx, order.Uint32(raw[idx+8 : idx+12]), order.Uint32(raw[idx+4 : idx+8]), true
+}

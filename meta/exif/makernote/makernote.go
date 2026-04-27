@@ -1,6 +1,7 @@
 package makernote
 
 import (
+	"github.com/evanoberholster/imagemeta/meta/exif/makernote/apple"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/canon"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/panasonic"
@@ -10,7 +11,7 @@ import (
 // Info contains parsed maker-note values for supported vendors.
 type Info struct {
 	Make      CameraMake
-	Apple     *Apple
+	Apple     *apple.Apple
 	Canon     *canon.Canon
 	DNG       *DNG
 	Nikon     *nikon.Nikon

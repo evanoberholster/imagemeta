@@ -48,8 +48,8 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
@@ -63,7 +63,7 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 		}
 	case imagetype.ImageCRW:
 		return DecodeCRW(r)
-	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF:
+	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF, imagetype.ImageARW:
 		header, err := exif.ScanTiffHeader(rr, it)
 		if err != nil {
 			return exif.Exif{}, err
@@ -92,7 +92,13 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 			return ir.Exif, err
 		}
 	default:
-		return exif.Exif{}, ErrMetadataNotSupported
+		header, err := exif.ScanTiffHeader(rr, it)
+		if err != nil {
+			return exif.Exif{}, err
+		}
+		if err := ir.DecodeTiff(rr, header); err != nil {
+			return ir.Exif, err
+		}
 	}
 
 	return ir.Exif, nil
@@ -107,8 +113,8 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
@@ -138,8 +144,8 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 	if err != nil {
 		return exif.Exif{}, err
 	}
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	if err := ir.DecodeTiff(rr, header); err != nil {
 		return ir.Exif, err
@@ -149,6 +155,11 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 
 // DecodeCR2 decodes a CR2 file from an io.Reader returning Exif or an error.
 func DecodeCR2(r io.ReadSeeker) (exif.Exif, error) {
+	return DecodeTiff(r)
+}
+
+// DecodeARW decodes a Sony ARW file from an io.Reader returning Exif or an error.
+func DecodeARW(r io.ReadSeeker) (exif.Exif, error) {
 	return DecodeTiff(r)
 }
 
@@ -192,8 +203,8 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
@@ -215,8 +226,8 @@ func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	it, err := imagetype.ScanBuf(rr)
 	if err != nil {
@@ -240,8 +251,8 @@ func DecodePng(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, err
 	}
 
-	ir := exif.NewReader(metalog.Logger)
-	defer ir.Close()
+	ir := exif.AcquirePooledReader(metalog.Logger)
+	defer exif.ReleasePooledReader(ir)
 
 	if err := ir.DecodeTiff(r, header); err != nil {
 		return ir.Exif, err

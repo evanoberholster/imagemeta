@@ -193,6 +193,63 @@ func TestCanonCameraInfoLayoutForModelIDExpanded(t *testing.T) {
 	}
 }
 
+func TestParseCanonMainColorTemperature(t *testing.T) {
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	r.parseCanonTag(tag.NewEntry(
+		tag.ID(canon.CanonColorTemperature),
+		tag.TypeShort,
+		1,
+		5200,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	))
+
+	if r.Exif.MakerNote.Canon == nil {
+		t.Fatal("Canon maker-note missing")
+	}
+	if got := r.Exif.MakerNote.Canon.ColorTemperature; got != 5200 {
+		t.Fatalf("ColorTemperature = %d, want 5200", got)
+	}
+}
+
+func TestParseCanonFlashInfoStoresBoundedPreview(t *testing.T) {
+	raw := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	entry := tag.NewEntry(
+		tag.ID(canon.CanonFlashInfo),
+		tag.TypeUndefined,
+		uint32(len(raw)),
+		0,
+		tag.MakerNoteIFD,
+		0,
+		utils.LittleEndian,
+	)
+
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	var br bytes.Reader
+	br.Reset(raw)
+	r.Reset(&br)
+	r.parseCanonTag(entry)
+
+	if r.Exif.MakerNote.Canon == nil {
+		t.Fatal("Canon maker-note missing")
+	}
+	got := r.Exif.MakerNote.Canon.FlashInfo.Raw
+	if got.Size != uint32(len(raw)) {
+		t.Fatalf("FlashInfo.Raw.Size = %d, want %d", got.Size, len(raw))
+	}
+	if got.PreviewCount != uint8(len(raw)) {
+		t.Fatalf("FlashInfo.Raw.PreviewCount = %d, want %d", got.PreviewCount, len(raw))
+	}
+	if !bytes.Equal(got.Preview[:got.PreviewCount], raw) {
+		t.Fatalf("FlashInfo.Raw.Preview = %v, want %v", got.Preview[:got.PreviewCount], raw)
+	}
+}
+
 func TestFillCanonAFInfoEOS(t *testing.T) {
 	words := make([]uint16, 19)
 	words[0] = 5 // NumAFPoints

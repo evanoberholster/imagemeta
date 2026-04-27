@@ -115,6 +115,7 @@ func (r *Reader) tagLogContext(ev *zerolog.Event, t tag.Entry) *zerolog.Event {
 	return ev.
 		Uint16("tagID", uint16(t.ID)).
 		Str("tagName", t.Name()).
+		Uint16("tagType", uint16(t.Type)).
 		Str("tagTypeName", t.Type.String()).
 		Str("ifd", t.IfdType.String()).
 		Uint32("tagSize", t.Size()).

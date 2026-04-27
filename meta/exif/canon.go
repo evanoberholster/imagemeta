@@ -24,7 +24,7 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 	case canon.CanonFocalLength:
 		dst.CanonFocalLength = r.parseCanonFocalLength(t)
 	case canon.CanonFlashInfo:
-		// dst.FlashInfo = r.parseCanonFlashInfo(t)
+		dst.FlashInfo = r.parseCanonFlashInfo(t)
 	case canon.CanonCameraInfo:
 		dst.CameraInfo = r.parseCanonCameraInfo(t)
 	case canon.FileNumber:
@@ -77,6 +77,8 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 		dst.AspectInfo = r.parseCanonAspectInfo(t)
 	case canon.CanonProcessingInfo:
 		dst.ProcessingInfo = r.parseCanonProcessingInfo(t)
+	case canon.CanonColorTemperature:
+		dst.ColorTemperature = r.parseUint16(t)
 	case canon.CanonColorSpace:
 		dst.ColorSpace = r.parseUint16(t)
 	case canon.CanonPreviewImageInfo:
@@ -547,6 +549,9 @@ func (r *Reader) canonCameraInfoLayout(t tag.Entry) canonCameraInfoLayout {
 	if layout, ok := canonCameraInfoLayoutForModelID(r.canonCameraInfoModelID()); ok {
 		return layout
 	}
+	if layout, ok := canonCameraInfoLayoutForModelName(r.canonModelName()); ok {
+		return layout
+	}
 	if t.Type != tag.TypeLong {
 		return canonCameraInfoLayoutUnknown
 	}
@@ -566,6 +571,15 @@ func (r *Reader) canonCameraInfoModelID() canon.CanonCameraModel {
 	}
 	// Model ID is based on Exif and not Makernote.
 	return canon.CanonModelUnknown
+}
+
+func canonCameraInfoLayoutForModelName(model string) (canonCameraInfoLayout, bool) {
+	switch {
+	case strings.Contains(model, "Kiss X70"), strings.Contains(model, "Rebel T5"), strings.Contains(model, "1200D"):
+		return canonCameraInfoLayout60D, true
+	default:
+		return canonCameraInfoLayoutUnknown, false
+	}
 }
 
 func canonCameraInfoLayoutForModelID(modelID canon.CanonCameraModel) (canonCameraInfoLayout, bool) {
@@ -1261,6 +1275,10 @@ func (r *Reader) parseCanonFocalLength(t tag.Entry) canon.FocalLengthInfo {
 		FocalPlaneXSize: canonFocalPlaneSizeMM(raw[2]),
 		FocalPlaneYSize: canonFocalPlaneSizeMM(raw[3]),
 	}
+}
+
+func (r *Reader) parseCanonFlashInfo(t tag.Entry) canon.FlashInfo {
+	return canon.FlashInfo{Raw: r.parseCanonBlockPreview(t)}
 }
 
 // parseCanonAspectInfo parses tag 0x009a (AspectInfo).

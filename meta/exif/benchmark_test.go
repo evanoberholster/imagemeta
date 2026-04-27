@@ -75,6 +75,7 @@ func BenchmarkParseFormats(b *testing.B) {
 		{name: "JPG-2", glob: "*.jpg", matchIdx: 1},
 		{name: "JXL", glob: "*.jxl"},
 		{name: "HEI", glob: "*.heic"},
+		{name: "ARW", glob: "*.ARW"},
 	}
 
 	benchmarkParseSamples(b, samples)
@@ -104,13 +105,14 @@ func nthMatch(pattern string, idx int) (string, error) {
 	return paths[idx], nil
 }
 
-// BenchmarkParseFormats/Canon_EOS_6D/CR2-2   	  141033	      8127 ns/op	2633377.29 MB/s	    1544 B/op	      18 allocs/op
-// BenchmarkParseFormats/Canon_EOS_R/CR3-2    	   93792	     11411 ns/op	2775657.62 MB/s	    3729 B/op	      20 allocs/op
-// BenchmarkParseFormats/HERO6_Black/GPR-2    	  328492	      3794 ns/op	1174922.25 MB/s	     184 B/op	       8 allocs/op
-// BenchmarkParseFormats/NIKON_D300S/NEF-2    	  144343	      7871 ns/op	1737803.63 MB/s	     736 B/op	      18 allocs/op
-// BenchmarkParseFormats/JPG-1-2              	 1316133	       964.6 ns/op	1253088.14 MB/s	      68 B/op	       3 allocs/op
-// BenchmarkParseFormats/Canon_EOS_6D/JPG-2-2 	  420878	      2755 ns/op	1326597.08 MB/s	     208 B/op	       8 allocs/op
-// BenchmarkParseFormats/Canon_EOS_R6/JXL-2   	  398570	      2909 ns/op	131304.96 MB/s	     232 B/op	      10 allocs/op
-// BenchmarkParseFormats/iPhone_8/HEI-2       	   57021	     20159 ns/op	28533.38 MB/s	     419 B/op	      14 allocs/op
-// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_6D/CR2-2         	  146234	      7979 ns/op	2682219.44 MB/s	    1368 B/op	      17 allocs/op
-// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_R/CR3-2          	   94360	     11061 ns/op	2863413.30 MB/s	    1424 B/op	      19 allocs/op
+// BenchmarkParseFormats/Canon_EOS_6D/CR2-2   	  118957	      9075 ns/op	2358490.69 MB/s	    1592 B/op	      20 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R/CR3-2    	   93140	     12421 ns/op	2549865.16 MB/s	    3704 B/op	      21 allocs/op
+// BenchmarkParseFormats/HERO6_Black/GPR-2    	  268288	      4212 ns/op	1058341.14 MB/s	     112 B/op	       4 allocs/op
+// BenchmarkParseFormats/NIKON_D300S/NEF-2    	  133698	      8673 ns/op	1577125.12 MB/s	     752 B/op	      21 allocs/op
+// BenchmarkParseFormats/JPG-1-2              	 1143925	       993.7 ns/op	1216424.78 MB/s	      64 B/op	       2 allocs/op
+// BenchmarkParseFormats/Canon_EOS_6D/JPG-2-2 	  414728	      2884 ns/op	1267275.98 MB/s	     176 B/op	       8 allocs/op
+// BenchmarkParseFormats/Canon_EOS_R6/JXL-2   	  374104	      3468 ns/op	110154.00 MB/s	     200 B/op	      10 allocs/op
+// BenchmarkParseFormats/iPhone_8/HEI-2       	   58581	     20369 ns/op	28239.76 MB/s	     833 B/op	      16 allocs/op
+// BenchmarkParseFormats/SLT-A55V/ARW-2       	  163225	      7035 ns/op	2459388.31 MB/s	    1472 B/op	      10 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_6D/CR2-2         	  116385	      8856 ns/op	2416727.39 MB/s	    1416 B/op	      19 allocs/op
+// BenchmarkParseFormatsAFInfoBitsetsOnly/Canon_EOS_R/CR3-2          	  110014	     10455 ns/op	3029547.42 MB/s	    1400 B/op	      20 allocs/op

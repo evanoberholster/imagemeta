@@ -109,65 +109,61 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 	return string(out)
 }
 
+type ExifVersion [4]byte
+
+var (
+	ExifVersionUnknown = ExifVersion{}
+	ExifVersion0200    = ExifVersion{'0', '2', '0', '0'}
+	ExifVersion0210    = ExifVersion{'0', '2', '1', '0'}
+	ExifVersion0220    = ExifVersion{'0', '2', '2', '0'}
+	ExifVersion0221    = ExifVersion{'0', '2', '2', '1'}
+	ExifVersion0230    = ExifVersion{'0', '2', '3', '0'}
+	ExifVersion0231    = ExifVersion{'0', '2', '3', '1'}
+	ExifVersion0232    = ExifVersion{'0', '2', '3', '2'}
+	ExifVersion0300    = ExifVersion{'0', '3', '0', '0'}
+)
+
+func (v ExifVersion) String() string {
+	switch v {
+	case ExifVersion0200:
+		return "0200"
+	case ExifVersion0210:
+		return "0210"
+	case ExifVersion0220:
+		return "0220"
+	case ExifVersion0221:
+		return "0221"
+	case ExifVersion0230:
+		return "0230"
+	case ExifVersion0231:
+		return "0231"
+	case ExifVersion0232:
+		return "0232"
+	case ExifVersion0300:
+		return "0300"
+	default:
+		key := [...]byte{v[0], v[1], v[2], v[3]}
+		return string(key[:])
+	}
+}
+
 // parseExifVersion parses EXIF version bytes without allocating.
 //
 // ExifVersion is a fixed 4-byte value in practice, so we can decode the common
 // values directly from the raw bytes and return string literals.
-func (r *Reader) parseExifVersion(t tag.Entry) string {
+func (r *Reader) parseExifVersion(t tag.Entry) ExifVersion {
 	switch t.Type {
 	case tag.TypeASCII, tag.TypeASCIINoNul:
-		buf := trimNULBuffer(r.parseASCIIValueBytes(t))
-		if len(buf) != 4 {
-			return ""
+		if buf := trimNULBuffer(r.parseASCIIValueBytes(t)); len(buf) == 4 {
+			return [4]byte{buf[0], buf[1], buf[2], buf[3]}
 		}
-		key := [4]byte{buf[0], buf[1], buf[2], buf[3]}
-		switch key {
-		case [4]byte{'0', '2', '0', '0'}:
-			return "0200"
-		case [4]byte{'0', '2', '1', '0'}:
-			return "0210"
-		case [4]byte{'0', '2', '2', '0'}:
-			return "0220"
-		case [4]byte{'0', '2', '2', '1'}:
-			return "0221"
-		case [4]byte{'0', '2', '3', '0'}:
-			return "0230"
-		case [4]byte{'0', '2', '3', '1'}:
-			return "0231"
-		case [4]byte{'0', '2', '3', '2'}:
-			return "0232"
-		case [4]byte{'0', '3', '0', '0'}:
-			return "0300"
-		default:
-			return string(key[:])
-		}
+
 	case tag.TypeUndefined:
-	default:
-		return ""
+		if buf := trimNULBuffer(r.parseUndefinedBytes(t, 4)); len(buf) == 4 {
+			return [4]byte{buf[0], buf[1], buf[2], buf[3]}
+		}
 	}
-	buf := trimNULBuffer(r.parseUndefinedBytes(t, 4))
-	if len(buf) != 4 {
-		return ""
-	}
-	key := [4]byte{buf[0], buf[1], buf[2], buf[3]}
-	switch key {
-	case [4]byte{'0', '2', '0', '0'}:
-		return "0200"
-	case [4]byte{'0', '2', '1', '0'}:
-		return "0210"
-	case [4]byte{'0', '2', '2', '0'}:
-		return "0220"
-	case [4]byte{'0', '2', '2', '1'}:
-		return "0221"
-	case [4]byte{'0', '2', '3', '0'}:
-		return "0230"
-	case [4]byte{'0', '2', '3', '1'}:
-		return "0231"
-	case [4]byte{'0', '2', '3', '2'}:
-		return "0232"
-	default:
-		return ""
-	}
+	return ExifVersionUnknown
 }
 
 type displayTrimMode uint8

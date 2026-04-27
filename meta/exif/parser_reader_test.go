@@ -193,7 +193,7 @@ func TestParseExifVersion(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := r.parseExifVersion(tc.entry); got != tc.want {
+			if got := r.parseExifVersion(tc.entry).String(); got != tc.want {
 				t.Fatalf("parseExifVersion() = %q, want %q", got, tc.want)
 			}
 		})
