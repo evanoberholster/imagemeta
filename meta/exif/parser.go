@@ -50,7 +50,7 @@ func tagUsesIfdType(directoryType tag.IfdType, id tag.ID) bool {
 
 // addTag appends a tag to parser state while preserving parse order constraints.
 func (r *Reader) addTag(t tag.Entry) {
-	if t.ValueOffset < r.po {
+	if t.IfdType != tag.MakerNoteIFD && t.ValueOffset < r.po {
 		if r.warnEnabled() {
 			r.warnTagAdd(t, "ignoring reverse-offset tag")
 		}
@@ -213,7 +213,7 @@ func (r *Reader) parseTag(t tag.Entry) {
 // case branch below. These tags are treated as handled for coverage/reporting
 // parity but are not mapped into the Exif model.
 func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
-	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0DNGTag(t) {
+	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || (r.parseIFD0DNGTags() && r.parseIFD0DNGTag(t)) {
 		return true
 	}
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
@@ -227,6 +227,15 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 		tag.TagCFALayout, tag.TagBayerGreenSplit, tag.TagBaselineSharpness, tag.TagLinearResponseLimit,
 		tag.TagAntiAliasStrength, tag.TagShadowScale, tag.TagCalibrationIlluminant1, tag.TagCalibrationIlluminant2,
 		tag.TagProfileEmbedPolicy, tag.TagNoiseProfile, tag.TagOpcodeList2, tag.TagLensSpecification:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *Reader) parseIFD0DNGTags() bool {
+	switch r.Exif.ImageType {
+	case imagetype.ImageDNG, imagetype.ImageTiff:
 		return true
 	default:
 		return false
@@ -409,6 +418,9 @@ func (r *Reader) parseIFD0DNGTag(t tag.Entry) bool {
 
 func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 	if t.Type != tag.TypeUndefined && t.Type != tag.TypeByte {
+		return
+	}
+	if t.IsEmbedded() {
 		return
 	}
 	if err := r.seekToTag(t); err != nil {
@@ -679,7 +691,7 @@ func (r *Reader) parseExifImageTag(t tag.Entry) bool {
 			r.Exif.IFD0.ImageHeight = r.Exif.ExifIFD.PixelYDimension
 		}
 	case tag.TagInteropIFDPointer:
-		r.Exif.ExifIFD.InteropIFDPointer = r.parseUint32(t)
+		r.Exif.ExifIFD.interopIFDPointer = r.parseUint32(t)
 	case tag.TagColorSpace:
 		r.Exif.ExifIFD.ColorSpace = r.parseUint16(t)
 	case tag.TagLensSpecification:
@@ -764,7 +776,7 @@ func (r *Reader) parseExifCaptureTag(t tag.Entry) bool {
 	case tag.TagWhiteBalance:
 		r.Exif.ExifIFD.WhiteBalance = r.parseUint16(t)
 	case tag.TagDigitalZoomRatio:
-		r.Exif.ExifIFD.DigitalZoomRatio = r.parseRationalValue(t)
+		r.Exif.ExifIFD.DigitalZoomRatio = float32(r.parseRationalValue(t).Float64())
 	case tag.TagSceneCaptureType:
 		r.Exif.ExifIFD.SceneCaptureType = r.parseUint16(t)
 	case tag.TagGainControl:
@@ -779,78 +791,6 @@ func (r *Reader) parseExifCaptureTag(t tag.Entry) bool {
 		r.Exif.ExifIFD.SubjectDistanceRange = r.parseUint16(t)
 	case tag.TagCompositeImage:
 		r.Exif.ExifIFD.CompositeImage = r.parseUint16(t)
-	default:
-		return false
-	}
-	return true
-}
-
-// parseGPSTag parses GPS IFD tags into typed model fields.
-//
-// Non-parsed GPS tags are currently handled by falling through to
-// the default path (`return false`) when there is no modeled parser mapping.
-func (r *Reader) parseGPSTag(t tag.Entry) bool {
-	switch t.ID {
-	case tag.TagGPSVersionID:
-		r.parseByteList(t, r.Exif.GPS.versionID[:])
-	case tag.TagGPSDifferential:
-		r.Exif.GPS.differential = r.parseUint16(t)
-	case tag.TagGPSAltitudeRef:
-		r.Exif.GPS.altitudeRef = r.parseGPSRef(t)
-	case tag.TagGPSLatitudeRef:
-		r.Exif.GPS.latitudeRef = r.parseGPSRef(t)
-	case tag.TagGPSLongitudeRef:
-		r.Exif.GPS.longitudeRef = r.parseGPSRef(t)
-	case tag.TagGPSDestLatitudeRef:
-		r.Exif.GPS.destLatitudeRef = r.parseGPSRef(t)
-	case tag.TagGPSDestLongitudeRef:
-		r.Exif.GPS.destLongitudeRef = r.parseGPSRef(t)
-	case tag.TagGPSSpeedRef:
-		r.Exif.GPS.speedRef = r.parseGPSRef(t)
-	case tag.TagGPSTrackRef:
-		r.Exif.GPS.trackRef = r.parseGPSRef(t)
-	case tag.TagGPSImgDirectionRef:
-		r.Exif.GPS.imgDirectionRef = r.parseGPSRef(t)
-	case tag.TagGPSDestBearingRef:
-		r.Exif.GPS.destBearingRef = r.parseGPSRef(t)
-	case tag.TagGPSDestDistanceRef:
-		r.Exif.GPS.destDistanceRef = r.parseGPSRef(t)
-	case tag.TagGPSAltitude:
-		r.Exif.GPS.altitude = r.parseGPSAltitude(t)
-	case tag.TagGPSLatitude:
-		r.Exif.GPS.latitude = r.parseGPSCoord(t)
-	case tag.TagGPSLongitude:
-		r.Exif.GPS.longitude = r.parseGPSCoord(t)
-	case tag.TagGPSDestLatitude:
-		r.Exif.GPS.destLatitude = r.parseGPSCoord(t)
-	case tag.TagGPSDestLongitude:
-		r.Exif.GPS.destLongitude = r.parseGPSCoord(t)
-	case tag.TagGPSSatellites:
-		r.Exif.GPS.satellites = r.parseString(t)
-	case tag.TagGPSStatus:
-		r.Exif.GPS.status = r.parseString(t)
-	case tag.TagGPSMeasureMode:
-		r.Exif.GPS.measureMode = r.parseString(t)
-	case tag.TagGPSMapDatum:
-		r.Exif.GPS.mapDatum = r.parseString(t)
-	case tag.TagGPSDOP:
-		r.Exif.GPS.dop = r.parseRationalValue(t)
-	case tag.TagGPSSpeed:
-		r.Exif.GPS.speed = r.parseRationalValue(t)
-	case tag.TagGPSTrack:
-		r.Exif.GPS.track = r.parseRationalValue(t)
-	case tag.TagGPSImgDirection:
-		r.Exif.GPS.imgDirection = r.parseRationalValue(t)
-	case tag.TagGPSDestBearing:
-		r.Exif.GPS.destBearing = r.parseRationalValue(t)
-	case tag.TagGPSDestDistance:
-		r.Exif.GPS.destDistance = r.parseRationalValue(t)
-	case tag.TagGPSHPositioningError:
-		r.Exif.GPS.hPositioningError = r.parseRationalValue(t)
-	case tag.TagGPSTimeStamp:
-		r.Exif.GPS.setTime(r.parseGPSTimeStamp(t))
-	case tag.TagGPSDateStamp:
-		r.Exif.GPS.setDate(r.parseGPSDateStamp(t))
 	default:
 		return false
 	}

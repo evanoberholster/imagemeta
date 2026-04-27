@@ -85,22 +85,22 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	t.Parallel()
 
 	g := GPSInfo{
-		latitude:         33.9,
+		latitude:         -33.9,
 		longitude:        18.4,
-		altitude:         123.4,
+		altitude:         -123.4,
 		latitudeRef:      tag.GPSRefSouth,
 		longitudeRef:     tag.GPSRefEast,
 		altitudeRef:      tag.GPSRefBelowSeaLevel,
 		speedRef:         tag.GPSRefKilometersPerHour,
-		speed:            tag.RationalU{Numerator: 90, Denominator: 1},
+		speed:            tag.RationalU{Numerator: 90, Denominator: 1}.Float64(),
 		trackRef:         tag.GPSRefTrueDirection,
-		track:            tag.RationalU{Numerator: 123, Denominator: 1},
+		track:            tag.RationalU{Numerator: 123, Denominator: 1}.Float64(),
 		destLatitude:     45.5,
 		destLongitude:    9.1,
 		destLatitudeRef:  tag.GPSRefSouth,
 		destLongitudeRef: tag.GPSRefEast,
 		destDistanceRef:  tag.GPSRefKilometers,
-		destDistance:     tag.RationalU{Numerator: 12, Denominator: 1},
+		destDistance:     tag.RationalU{Numerator: 12, Denominator: 1}.Float64(),
 		mapDatum:         "WGS-84",
 		differential:     1,
 	}
@@ -120,8 +120,8 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	if got := g.TrackWithRef(); got.Ref != "T" || got.Value.Numerator != 123 || got.Value.Denominator != 1 {
 		t.Fatalf("TrackWithRef() = %+v", got)
 	}
-	if got := g.DestLatitude(); got != -45.5 {
-		t.Fatalf("DestLatitude() = %v, want -45.5", got)
+	if got := g.DestLatitude(); got != 45.5 {
+		t.Fatalf("DestLatitude() = %v, want 45.5", got)
 	}
 	if got := g.DestLongitude(); got != 9.1 {
 		t.Fatalf("DestLongitude() = %v, want 9.1", got)
@@ -140,13 +140,13 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 func TestGPSInfoVersionIDFormatting(t *testing.T) {
 	t.Parallel()
 
-	if got := (GPSInfo{}).VersionID(); got != "" {
-		t.Fatalf("VersionID() zero = %q, want empty", got)
+	if got := (GPSInfo{}).GPSVersion.String(); got != "" {
+		t.Fatalf("GPSVersion() zero = %q, want empty", got)
 	}
 
-	g := GPSInfo{versionID: [4]byte{2, 3, 0, 0}}
-	if got := g.VersionID(); got != "2 3 0 0" {
-		t.Fatalf("VersionID() = %q, want %q", got, "2 3 0 0")
+	g := GPSInfo{GPSVersion: GPSVersion{2, 3, 0, 0}}
+	if got := g.GPSVersion.String(); got != "2300" {
+		t.Fatalf("GPSVersion() = %q, want %q", got, "2300")
 	}
 }
 
@@ -252,7 +252,7 @@ func TestExifIFDExifToolDisplayHelpers(t *testing.T) {
 	t.Parallel()
 
 	exif := ExifIFDTags{
-		DigitalZoomRatio:           tag.RationalU{Numerator: 3, Denominator: 2},
+		DigitalZoomRatio:           float32(tag.RationalU{Numerator: 3, Denominator: 2}.Float64()),
 		FocalPlaneXResolution:      5152000.0 / 243.0,
 		FocalPlaneYResolution:      3864000.0 / 183.0,
 		FocalPlaneResolutionUnit:   meta.ResolutionUnitInches,
@@ -283,11 +283,6 @@ func TestExifIFDExifToolDisplayHelpers(t *testing.T) {
 		t.Fatalf("ExifToolSubjectDistance() = %q, want %q", got, want)
 	}
 
-	exif.DigitalZoomRatio = tag.RationalU{Numerator: 1, Denominator: 0}
-	if got, want := exif.ExifToolDigitalZoomRatio(), "inf"; got != want {
-		t.Fatalf("ExifToolDigitalZoomRatio() inf = %q, want %q", got, want)
-	}
-
 	exif.SubjectDistance = 0
 	exif.subjectDistanceState = rationalStateInfinite
 	if got, want := exif.ExifToolSubjectDistance(), "undef"; got != want {
@@ -310,7 +305,7 @@ func TestExifMarshalJSONIncludesSiblingFieldsAlongsideFlattenedTime(t *testing.T
 	ex.IFD0.ModifyDate = time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
 	ex.ExifIFD.LensModel = "RF24-70mm F2.8 L IS USM"
 	ex.ExifIFD.DateTimeOriginal = time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
-	ex.IFD1.ImageWidth = 160
+	ex.IFD1 = &ImageIFD{ImageWidth: 160}
 
 	buf, err := json.Marshal(ex)
 	if err != nil {

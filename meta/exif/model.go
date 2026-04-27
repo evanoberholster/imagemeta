@@ -52,7 +52,6 @@ type IFD0Tag struct {
 	Orientation    meta.Orientation
 	ResolutionUnit meta.ResolutionUnit
 	Rating         uint16
-	RatingPercent  uint16
 
 	exifIfdPointer    uint32
 	gpsIfdPointer     uint32
@@ -68,8 +67,8 @@ type ExifIFDTags struct {
 	LensInfo LensInfo // 0xa432 LensInfo (LensSpecification)
 	// TODO: ExifVersion and FlashpixVersion are UNDEFINED in spec.
 	// Keep canonical text form for parity with exiftool output.
-	ExifVersion     string // 0x9000 ExifVersion
-	FlashpixVersion string // 0xa000 FlashpixVersion
+	ExifVersion     ExifVersion // 0x9000 ExifVersion
+	FlashpixVersion string      // 0xa000 FlashpixVersion
 
 	FocalPlaneXResolution  float64 // 0xa20e FocalPlaneXResolution
 	FocalPlaneYResolution  float64 // 0xa20f FocalPlaneYResolution
@@ -101,7 +100,6 @@ type ExifIFDTags struct {
 	RecommendedExposureIndex uint32               // 0x8832 RecommendedExposureIndex
 	PixelXDimension          uint32               // 0xa002 ExifImageWidth
 	PixelYDimension          uint32               // 0xa003 ExifImageHeight
-	InteropIFDPointer        uint32               // 0xa005 InteropOffset
 	FocalPlaneResolutionUnit meta.ResolutionUnit  // 0xa210 FocalPlaneResolutionUnit
 	ColorSpace               uint16               // 0xa001 ColorSpace
 	LightSource              uint16               // 0x9208 LightSource
@@ -119,14 +117,17 @@ type ExifIFDTags struct {
 	CompositeImage           uint16               // 0xa460 CompositeImage
 	SensitivityType          uint16               // 0x8830 SensitivityType
 
-	DigitalZoomRatio        tag.RationalU // 0xa404 DigitalZoomRatio
-	SubjectArea             [4]uint16     // 0x9214 SubjectArea
-	ComponentsConfiguration [4]byte       // 0x9101 ComponentsConfiguration
+	DigitalZoomRatio        float32   // 0xa404 DigitalZoomRatio
+	SubjectArea             [4]uint16 // 0x9214 SubjectArea
+	ComponentsConfiguration [4]byte   // 0x9101 ComponentsConfiguration
 
 	focalPlaneXResolutionState unsignedRationalState
 	focalPlaneYResolutionState unsignedRationalState
 	subjectDistanceState       unsignedRationalState
 	exposureIndexState         unsignedRationalState
+
+	// IfdPointers
+	interopIFDPointer uint32 // 0xa005 InteropOffset
 }
 
 // ImageIFD stores the core image-bearing tags from non-primary root IFDs.
@@ -230,14 +231,8 @@ func exifToolUnsignedFloat64(v float64, state unsignedRationalState) string {
 	}
 }
 
-func exifToolUnsignedRationalValue(v tag.RationalU) string {
-	if v.Denominator == 0 {
-		if v.Numerator == 0 {
-			return ""
-		}
-		return "inf"
-	}
-	return exifToolFloatString(v.Float64())
+func exifToolUnsignedRationalValue(v float32) string {
+	return exifToolFloatString(float64(v))
 }
 
 func exifToolDistanceFloat64(v float64, state unsignedRationalState) string {
@@ -325,7 +320,6 @@ type ifd0JSON struct {
 	Orientation      meta.Orientation    `json:"Orientation"`
 	ResolutionUnit   meta.ResolutionUnit `json:"ResolutionUnit"`
 	Rating           uint16              `json:"Rating"`
-	RatingPercent    uint16              `json:"RatingPercent"`
 }
 
 type exifIFDJSON struct {
@@ -368,7 +362,6 @@ type exifIFDJSON struct {
 	RecommendedExposureIndex uint32               `json:"RecommendedExposureIndex"`
 	PixelXDimension          uint32               `json:"PixelXDimension"`
 	PixelYDimension          uint32               `json:"PixelYDimension"`
-	InteropIFDPointer        uint32               `json:"InteropIFDPointer"`
 	FocalPlaneResolutionUnit meta.ResolutionUnit  `json:"FocalPlaneResolutionUnit"`
 	ColorSpace               uint16               `json:"ColorSpace"`
 	LightSource              uint16               `json:"LightSource"`
@@ -385,7 +378,7 @@ type exifIFDJSON struct {
 	SceneCaptureType         uint16               `json:"SceneCaptureType"`
 	CompositeImage           uint16               `json:"CompositeImage"`
 	SensitivityType          uint16               `json:"SensitivityType"`
-	DigitalZoomRatio         tag.RationalU        `json:"DigitalZoomRatio"`
+	DigitalZoomRatio         float32              `json:"DigitalZoomRatio"`
 	SubjectArea              [4]uint16            `json:"SubjectArea"`
 	ComponentsConfiguration  [4]byte              `json:"ComponentsConfiguration"`
 }
@@ -530,7 +523,6 @@ func (t IFD0Tag) MarshalJSON() ([]byte, error) {
 		Orientation:      t.Orientation,
 		ResolutionUnit:   t.ResolutionUnit,
 		Rating:           t.Rating,
-		RatingPercent:    t.RatingPercent,
 	})
 }
 
@@ -557,7 +549,7 @@ func (t ExifIFDTags) MarshalJSON() ([]byte, error) {
 		SubSecTimeOriginal:       t.SubSecTimeOriginal,
 		SubSecTimeDigitized:      t.SubSecTimeDigitized,
 		LensInfo:                 t.LensInfo,
-		ExifVersion:              t.ExifVersion,
+		ExifVersion:              t.ExifVersion.String(),
 		FlashpixVersion:          t.FlashpixVersion,
 		FocalPlaneXResolution:    t.FocalPlaneXResolution,
 		FocalPlaneYResolution:    t.FocalPlaneYResolution,
@@ -587,7 +579,6 @@ func (t ExifIFDTags) MarshalJSON() ([]byte, error) {
 		RecommendedExposureIndex: t.RecommendedExposureIndex,
 		PixelXDimension:          t.PixelXDimension,
 		PixelYDimension:          t.PixelYDimension,
-		InteropIFDPointer:        t.InteropIFDPointer,
 		FocalPlaneResolutionUnit: t.FocalPlaneResolutionUnit,
 		ColorSpace:               t.ColorSpace,
 		LightSource:              t.LightSource,
