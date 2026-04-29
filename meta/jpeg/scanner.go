@@ -2,6 +2,7 @@ package jpeg
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"sync"
 
@@ -36,6 +37,7 @@ type jpegReader struct {
 
 	extendedXMP map[string]*extendedXMP
 	metadata    *Metadata
+	foundExif   bool
 }
 
 var bufferPool = sync.Pool{
@@ -57,7 +59,11 @@ func scanMetadata(r io.Reader, readerAt io.ReaderAt) (m Metadata, err error) {
 func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error, metadata *Metadata) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
-			err = state.(error)
+			if recoveredErr, ok := state.(error); ok {
+				err = recoveredErr
+				return
+			}
+			err = fmt.Errorf("jpeg panic: %v", state)
 		}
 	}()
 
@@ -120,6 +126,11 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 				jr.ignoreMarker()
 			}
 		}
+		// When only EXIF is requested, return immediately after decoding it.
+		// This avoids walking potentially malformed trailing marker streams.
+		if jr.err == nil && jr.foundExif && jr.ExifReader != nil && jr.XMPReader == nil && jr.metadata == nil {
+			return nil
+		}
 	}
 	if jr.err != nil {
 		return jr.err
@@ -175,6 +186,15 @@ func (jr *jpegReader) nextMarker() bool {
 				return false
 			}
 			jr.size = jpegEndian.Uint16(jr.buf[2:4])
+			if jr.size < 2 {
+				// Invalid marker payload length. Attempt a byte-wise resync instead
+				// of trusting this segment length and desynchronizing further.
+				jr.err = jr.discard(1)
+				if jr.err != nil {
+					return false
+				}
+				continue
+			}
 			peekLen := int(jr.size) + 2
 			if peekLen > 64 {
 				peekLen = 64

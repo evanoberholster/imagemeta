@@ -195,6 +195,7 @@ func (jr *jpegReader) readExif() (err error) {
 			return err
 		}
 		jr.logDecodedItem("exif", payloadLength)
+		jr.foundExif = true
 	}
 
 	// Discard remaining bytes
