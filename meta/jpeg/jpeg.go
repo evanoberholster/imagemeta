@@ -14,9 +14,10 @@ import (
 
 // Errors
 var (
-	ErrNoExif       = meta.ErrNoExif
-	ErrNoJPEGMarker = errors.New("no JPEG Marker")
-	ErrEndOfImage   = errors.New("end of Image")
+	ErrNoExif            = meta.ErrNoExif
+	ErrNoJPEGMarker      = errors.New("no JPEG Marker")
+	ErrEndOfImage        = errors.New("end of Image")
+	ErrInvalidMarkerSize = errors.New("invalid jpeg marker size")
 )
 
 // ScanJPEG scans a reader for JPEG Image markers. exifReader and xmpReader are run at their respective

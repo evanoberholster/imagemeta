@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/rs/zerolog"
-	"github.com/tidwall/pretty"
 )
 
 func init() {
@@ -23,24 +24,24 @@ func main() {
 
 	f, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "open %q: %v\n", path, err)
+		os.Exit(1)
 	}
 	defer func() {
-		if err = f.Close(); err != nil {
-			panic(err)
+		if closeErr := f.Close(); closeErr != nil && !errors.Is(closeErr, io.EOF) {
+			fmt.Fprintf(os.Stderr, "close %q: %v\n", path, closeErr)
 		}
 	}()
 
 	e, err := imagemeta.Decode(f)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "decode %q: %v\n", path, err)
+		os.Exit(1)
 	}
-	buf, err := json.Marshal(e)
+	buf, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "json %q: %v\n", path, err)
+		os.Exit(1)
 	}
-
-	colored := pretty.Pretty(buf)
-	fmt.Println(string(colored))
-	//fmt.Printf("%s\n", string(buf))
+	fmt.Println(string(buf))
 }

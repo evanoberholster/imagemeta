@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	defaultExifLength    = 4 * 1024 * 1024
 	maxTagCount          = 256
 	parseProbeReaderSize = 64
 	parseTiffReaderSize  = 4096
@@ -286,11 +285,10 @@ func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif 
 	r.Exif.ImageType = header.ImageType
 	r.firstIFDOffset = header.FirstIfdOffset
 	r.tiffHeaderOffset = header.TiffHeaderOffset
-	if header.ExifLength == 0 {
-		r.exifLength = defaultExifLength
-	} else {
-		r.exifLength = header.ExifLength
-	}
+	// ExifLength == 0 means unknown length (for full TIFF/RAW streams).
+	// Keep parsing unbounded by length in that case to avoid false short-read
+	// failures on large maker-note offsets.
+	r.exifLength = header.ExifLength
 }
 
 func (r *Reader) setReader(reader io.Reader) {

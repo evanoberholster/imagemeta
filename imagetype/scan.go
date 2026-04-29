@@ -36,7 +36,10 @@ func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 
 	// Peek into the bufio.Reader for the length of scanHeaderLength bytes
 	if buf, err = br.Peek(scanHeaderLength); err != nil {
-		return ImageUnknown, err
+		if len(buf) == 0 {
+			return ImageUnknown, err
+		}
+		return detectShortBuffer(buf)
 	}
 
 	return Buf(buf[:])
@@ -47,11 +50,52 @@ func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 // identified.
 func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
 	buf := [scanHeaderLength]byte{}
-	if _, err = r.ReadAt(buf[:], 0); err != nil {
-		return ImageUnknown, err
+	n, err := r.ReadAt(buf[:], 0)
+	if err != nil {
+		if n == 0 {
+			return ImageUnknown, err
+		}
+		return detectShortBuffer(buf[:n])
 	}
 
 	return Buf(buf[:])
+}
+
+func detectShortBuffer(buf []byte) (FileType, error) {
+	if len(buf) >= 2 && buf[0] == 0xFF && buf[1] == 0xD8 {
+		return ImageJPEG, nil
+	}
+	if len(buf) >= 4 {
+		switch {
+		case buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00:
+			return ImageTiff, nil
+		case buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A:
+			return ImageTiff, nil
+		}
+	}
+	if len(buf) >= 8 {
+		if isPNG(buf) {
+			return ImagePNG, nil
+		}
+		if isCRW(buf) {
+			return ImageCRW, nil
+		}
+	}
+	if len(buf) >= 12 {
+		if it := isobmffSubtype(buf); it != ImageUnknown {
+			return it, nil
+		}
+		if isWebP(buf) {
+			return ImageWebP, nil
+		}
+	}
+	if len(buf) >= 6 && isGIF(buf) {
+		return ImageGIF, nil
+	}
+	if len(buf) >= 2 && isBMP(buf) {
+		return ImageBMP, nil
+	}
+	return ImageUnknown, ErrImageTypeNotFound
 }
 
 // Buf parses a []byte for image magic numbers that identify the file type.
