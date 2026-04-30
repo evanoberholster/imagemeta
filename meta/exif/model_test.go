@@ -79,6 +79,12 @@ func TestGPSInfoSetDateAndTimeOrder(t *testing.T) {
 	if got := b.GPSTime(); !got.Equal(want) {
 		t.Fatalf("time->date GPSTime = %v, want %v", got, want)
 	}
+
+	var c GPSInfo
+	c.setTime(0)
+	if got := c.GPSTime(); !got.IsZero() {
+		t.Fatalf("zero-delta GPSTime = %v, want zero", got)
+	}
 }
 
 func TestGPSInfoAccessorsAndBitset(t *testing.T) {
@@ -102,6 +108,8 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 		destDistanceRef:  tag.GPSRefKilometers,
 		destDistance:     tag.RationalU{Numerator: 12, Denominator: 1}.Float64(),
 		mapDatum:         "WGS-84",
+		processingMethod: "GPS",
+		areaInformation:  "Cape Town",
 		differential:     1,
 	}
 
@@ -123,14 +131,28 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	if got := g.DestLatitude(); got != 45.5 {
 		t.Fatalf("DestLatitude() = %v, want 45.5", got)
 	}
+	g.destLatitudeRef = tag.GPSRefNorth
+	if got := g.DestLatitudeSigned(); got != 45.5 {
+		t.Fatalf("DestLatitudeSigned() with north ref = %v, want 45.5", got)
+	}
 	if got := g.DestLongitude(); got != 9.1 {
 		t.Fatalf("DestLongitude() = %v, want 9.1", got)
+	}
+	g.destLongitudeRef = tag.GPSRefEast
+	if got := g.DestLongitudeSigned(); got != 9.1 {
+		t.Fatalf("DestLongitudeSigned() with east ref = %v, want 9.1", got)
 	}
 	if got := g.DestDistanceWithRef(); got.Ref != "K" || got.Value.Numerator != 12 || got.Value.Denominator != 1 {
 		t.Fatalf("DestDistanceWithRef() = %+v", got)
 	}
 	if got := g.MapDatum(); got != "WGS-84" {
 		t.Fatalf("MapDatum() = %q, want %q", got, "WGS-84")
+	}
+	if got := g.ProcessingMethod(); got != "GPS" {
+		t.Fatalf("ProcessingMethod() = %q, want %q", got, "GPS")
+	}
+	if got := g.AreaInformation(); got != "Cape Town" {
+		t.Fatalf("AreaInformation() = %q, want %q", got, "Cape Town")
 	}
 	if got := g.Differential(); got != 1 {
 		t.Fatalf("Differential() = %d, want 1", got)
@@ -147,6 +169,84 @@ func TestGPSInfoVersionIDFormatting(t *testing.T) {
 	g := GPSInfo{GPSVersion: GPSVersion{2, 3, 0, 0}}
 	if got := g.GPSVersion.String(); got != "2300" {
 		t.Fatalf("GPSVersion() = %q, want %q", got, "2300")
+	}
+	if got := (GPSInfo{GPSVersion: GPSVersion{2, 0, 0, 0}}).GPSVersion.String(); got != "2000" {
+		t.Fatalf("GPSVersion(2000) = %q, want %q", got, "2000")
+	}
+	if got := (GPSInfo{GPSVersion: GPSVersion{2, 1, 0, 0}}).GPSVersion.String(); got != "2100" {
+		t.Fatalf("GPSVersion(2100) = %q, want %q", got, "2100")
+	}
+	if got := (GPSInfo{GPSVersion: GPSVersion{2, 2, 0, 0}}).GPSVersion.String(); got != "2200" {
+		t.Fatalf("GPSVersion(2200) = %q, want %q", got, "2200")
+	}
+	if got := (GPSInfo{GPSVersion: GPSVersion{9, 9, 9, 9}}).GPSVersion.String(); got == "" {
+		t.Fatal("GPSVersion(custom) should not be empty")
+	}
+}
+
+func TestGPSPendingDeltaNonSentinel(t *testing.T) {
+	t.Parallel()
+
+	if d, ok := gpsPendingDelta(time.Time{}); ok || d != 0 {
+		t.Fatalf("gpsPendingDelta(zero) = (%v,%v), want (0,false)", d, ok)
+	}
+	nonSentinel := time.Date(2024, time.March, 1, 12, 0, 0, 0, time.UTC)
+	if d, ok := gpsPendingDelta(nonSentinel); ok || d != 0 {
+		t.Fatalf("gpsPendingDelta(non-sentinel) = (%v,%v), want (0,false)", d, ok)
+	}
+	nonSentinelDay := time.Date(1, time.January, 2, 12, 0, 0, 0, time.UTC)
+	if d, ok := gpsPendingDelta(nonSentinelDay); ok || d != 0 {
+		t.Fatalf("gpsPendingDelta(non-sentinel day) = (%v,%v), want (0,false)", d, ok)
+	}
+}
+
+func TestGPSInfoMarshalJSON(t *testing.T) {
+	t.Parallel()
+
+	g := GPSInfo{
+		date:              time.Date(2024, time.March, 1, 12, 34, 56, 0, time.UTC),
+		latitude:          1.23,
+		longitude:         4.56,
+		altitude:          7.8,
+		destLatitude:      9.1,
+		destLongitude:     2.3,
+		dop:               1.5,
+		speed:             42,
+		track:             180,
+		imgDirection:      270,
+		destBearing:       90,
+		destDistance:      1000,
+		hPositioningError: 0.9,
+		satellites:        "7/12",
+		status:            "A",
+		measureMode:       "3",
+		mapDatum:          "WGS-84",
+		processingMethod:  "GPS",
+		areaInformation:   "Cape Town",
+		differential:      1,
+		GPSVersion:        GPSVersion2300,
+		speedRef:          tag.GPSRefKilometersPerHour,
+		trackRef:          tag.GPSRefTrueDirection,
+		imgDirectionRef:   tag.GPSRefMagneticDirection,
+		destBearingRef:    tag.GPSRefTrueDirection,
+		destDistanceRef:   tag.GPSRefKilometers,
+	}
+	g.destLatitudeRef = tag.GPSRefSouth
+	g.destLongitudeRef = tag.GPSRefWest
+
+	buf, err := json.Marshal(g)
+	if err != nil {
+		t.Fatalf("json.Marshal(GPSInfo): %v", err)
+	}
+	got := string(buf)
+	if !strings.Contains(got, `"ProcessingMethod":"GPS"`) {
+		t.Fatalf("ProcessingMethod missing in JSON: %s", got)
+	}
+	if !strings.Contains(got, `"AreaInformation":"Cape Town"`) {
+		t.Fatalf("AreaInformation missing in JSON: %s", got)
+	}
+	if !strings.Contains(got, `"GPSVersion":"2300"`) {
+		t.Fatalf("GPSVersion missing in JSON: %s", got)
 	}
 }
 

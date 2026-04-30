@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 func TestParseIFD0ImageReferenceFromStripArrays(t *testing.T) {
@@ -19,7 +19,7 @@ func TestParseIFD0ImageReferenceFromStripArrays(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 4096)
 	utils.LittleEndian.PutUint32(payload[12:16], 8192)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 
@@ -49,7 +49,7 @@ func TestParseImageIFDReferenceFromStripArrays(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 1024)
 	utils.LittleEndian.PutUint32(payload[12:16], 2048)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 

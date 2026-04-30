@@ -2,18 +2,18 @@ package preview
 
 import (
 	"io"
+	"log/slog"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/rs/zerolog"
 )
 
 type previewReader struct {
-	logger zerolog.Logger
+	logger *slog.Logger
 
 	PreviewImage []byte
 }
 
-func NewPreviewReader(l zerolog.Logger) previewReader {
+func NewPreviewReader(l *slog.Logger) previewReader {
 	ir := previewReader{
 		logger: l,
 	}

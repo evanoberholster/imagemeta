@@ -8,8 +8,8 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 // Common Errors
@@ -111,8 +111,8 @@ func NewExifHeader(byteOrder utils.ByteOrder, firstIfdOffset, tiffHeaderOffset u
 	}
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (h ExifHeader) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (h ExifHeader) MarshalLogObject(e *metalog.Event) {
 	e.
 		Str("firstIfd", h.FirstIfd.String()).
 		Uint32("firstIfdOffset", h.FirstIfdOffset).
@@ -142,13 +142,13 @@ func NewXMPHeader(offset, length uint32) XmpHeader {
 	return XmpHeader{offset, length}
 }
 
-// MarshalZerologObject is a zerolog interface for logging.
-func (h XmpHeader) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface.
+func (h XmpHeader) MarshalLogObject(e *metalog.Event) {
 	e.Uint32("offset", h.Offset).Uint32("length", h.Length)
 }
 
-// MarshalZerologObject is a zerolog interface for logging.
-func (h XPacketHeader) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface.
+func (h XPacketHeader) MarshalLogObject(e *metalog.Event) {
 	e.
 		Uint64("offset", h.Offset).
 		Int("length", h.Length).
@@ -164,8 +164,8 @@ type PreviewHeader struct {
 	Source    PreviewSource
 }
 
-// MarshalZerologObject is a zerolog interface for logging.
-func (h PreviewHeader) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface.
+func (h PreviewHeader) MarshalLogObject(e *metalog.Event) {
 	e.
 		Uint32("size", h.Size).
 		Uint16("width", h.Width).

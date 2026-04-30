@@ -1,26 +1,27 @@
 package jpeg
 
 import (
+	"log/slog"
+
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
 )
 
 const componentName = "jpeg"
 
 func logInfo() bool {
-	return metalog.LevelEnabled(metalog.Logger, zerolog.InfoLevel)
+	return metalog.LevelEnabled(metalog.Logger, slog.LevelInfo)
 }
 
 func logDebug() bool {
-	return metalog.LevelEnabled(metalog.Logger, zerolog.DebugLevel)
+	return metalog.LevelEnabled(metalog.Logger, slog.LevelDebug)
 }
 
-func logInfoEvent() *zerolog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.InfoLevel, 2)
+func logInfoEvent() *metalog.Event {
+	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelInfo, 2)
 }
 
-func logDebugEvent() *zerolog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.DebugLevel, 2)
+func logDebugEvent() *metalog.Event {
+	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelDebug, 2)
 }
 
 func (jr *jpegReader) logMarker(str string) {

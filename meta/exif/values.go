@@ -444,6 +444,34 @@ func (r *Reader) parseUnsignedRationalFloat64(t tag.Entry) (float64, unsignedRat
 	}
 }
 
+// parseRationalFloat64List decodes RATIONAL pairs into dst and returns count.
+func (r *Reader) parseRationalFloat64List(t tag.Entry, dst []float64) int {
+	if len(dst) == 0 || t.UnitCount == 0 || !t.IsType(tag.TypeRational) {
+		return 0
+	}
+	n := min(int(t.UnitCount), len(dst))
+	if n == 0 {
+		return 0
+	}
+	buf, _, err := r.readTagBytes(t, uint32(n*8))
+	if err != nil {
+		return 0
+	}
+	if got := len(buf) / 8; got < n {
+		n = got
+	}
+	for i, j := 0, 0; i < n; i, j = i+1, j+8 {
+		num := t.ByteOrder.Uint32(buf[j : j+4])
+		den := t.ByteOrder.Uint32(buf[j+4 : j+8])
+		if den == 0 {
+			dst[i] = 0
+			continue
+		}
+		dst[i] = float64(num) / float64(den)
+	}
+	return n
+}
+
 // parseUint16List parses the requested value from EXIF metadata.
 func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 	if len(dst) == 0 || t.UnitCount == 0 {

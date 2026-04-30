@@ -1,16 +1,17 @@
 package xmp
 
 import (
+	"log/slog"
+
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
 )
 
-func componentLogger() zerolog.Logger {
+func componentLogger() *slog.Logger {
 	return metalog.ComponentLogger("xmp")
 }
 
-func logWarn() *zerolog.Event {
-	return metalog.Event(componentLogger(), zerolog.WarnLevel, 2)
+func logWarn() *metalog.Event {
+	return metalog.NewEvent(componentLogger(), slog.LevelWarn, 2)
 }
 
 func logPropertyParseWarning(err error, p property) {

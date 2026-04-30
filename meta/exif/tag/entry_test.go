@@ -271,6 +271,15 @@ func TestEntryChildDirectory(t *testing.T) {
 			wantByteOrder: utils.LittleEndian,
 		},
 		{
+			name:          "exif interop pointer",
+			entry:         NewEntry(TagInteropIFDPointer, TypeIfd, 1, 0x560, ExifIFD, 2, utils.LittleEndian),
+			wantType:      ExifIFD,
+			wantIndex:     2,
+			wantOffset:    0x560,
+			wantBase:      0,
+			wantByteOrder: utils.LittleEndian,
+		},
+		{
 			name:          "subifd passthrough",
 			entry:         NewEntry(TagExposureTime, TypeLong, 1, 0x620, SubIFD3, 3, utils.LittleEndian),
 			wantType:      SubIFD3,

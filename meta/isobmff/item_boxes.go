@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/rs/zerolog"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 )
 
 const mimeContentTypeMaxLen = 64
@@ -238,8 +238,8 @@ type itemLocationBox struct {
 	offsetSize, lengthSize, baseOffsetSize, indexSize uint8 // actually uint4
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (ilb itemLocationBox) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (ilb itemLocationBox) MarshalLogObject(e *metalog.Event) {
 	e.Uint32("items", ilb.count).Uint8("offsetSize", ilb.offsetSize).Uint8("lengthSize", ilb.lengthSize).Uint8("baseOffsetSize", ilb.baseOffsetSize).Uint8("indexSize", ilb.indexSize)
 }
 
@@ -253,8 +253,8 @@ type ilocEntry struct {
 	constructionMethod uint8  // cmeth actually uint4
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (ie ilocEntry) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (ie ilocEntry) MarshalLogObject(e *metalog.Event) {
 	e.Uint32("itemID", uint32(ie.id)).
 		Object("extent", ie.firstExtent).
 		Uint16("extentCount", ie.count).
@@ -268,8 +268,8 @@ type offsetLength struct {
 	length int
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (ol offsetLength) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (ol offsetLength) MarshalLogObject(e *metalog.Event) {
 	e.Int("length", ol.length).Uint64("offset", ol.offset)
 }
 
