@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/evanoberholster/imagemeta/meta"
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 func TestReadBoxEightByteHeader(t *testing.T) {
@@ -42,7 +42,7 @@ func TestReadBoxEightByteHeader(t *testing.T) {
 func TestCallbackLogsDecodedMetadataItems(t *testing.T) {
 	var buf bytes.Buffer
 	oldLogger := metalog.Logger
-	metalog.Logger = zerolog.New(&buf).Level(zerolog.InfoLevel)
+	metalog.Logger = metalog.New(&buf, slog.LevelInfo)
 	t.Cleanup(func() { metalog.Logger = oldLogger })
 
 	r := NewReader(bytes.NewReader(nil),

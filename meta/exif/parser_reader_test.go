@@ -13,8 +13,8 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 func TestTagTypeFor(t *testing.T) {
@@ -28,6 +28,9 @@ func TestTagTypeFor(t *testing.T) {
 	}
 	if got := tagTypeFor(tag.ExifIFD, tag.TagMakerNote, tag.TypeLong); got != tag.TypeIfd {
 		t.Fatalf("tagTypeFor(exif, makernote, long) = %v, want %v", got, tag.TypeIfd)
+	}
+	if got := tagTypeFor(tag.ExifIFD, tag.TagInteropIFDPointer, tag.TypeLong); got != tag.TypeIfd {
+		t.Fatalf("tagTypeFor(exif, interop ptr, long) = %v, want %v", got, tag.TypeIfd)
 	}
 	if got := tagTypeFor(tag.IFD0, tag.TagMake, tag.TypeLong); got != tag.TypeLong {
 		t.Fatalf("tagTypeFor(ifd0, make, long) = %v, want %v", got, tag.TypeLong)
@@ -48,6 +51,9 @@ func TestTagUsesIfdType(t *testing.T) {
 	}
 	if !tagUsesIfdType(tag.ExifIFD, tag.TagMakerNote) {
 		t.Fatal("tagUsesIfdType(exif, makernote) = false, want true")
+	}
+	if !tagUsesIfdType(tag.ExifIFD, tag.TagInteropIFDPointer) {
+		t.Fatal("tagUsesIfdType(exif, interop ptr) = false, want true")
 	}
 	if tagUsesIfdType(tag.IFD0, tag.TagMake) {
 		t.Fatal("tagUsesIfdType(ifd0, make) = true, want false")
@@ -134,7 +140,7 @@ func TestParseDirectoryTagHeadersBulkMatchesPerEntry(t *testing.T) {
 
 	directory := tag.NewDirectory(utils.LittleEndian, tag.IFD0, 0, 0, 0)
 
-	perEntry := NewReader(zerolog.Nop())
+	perEntry := NewReader(metalog.Logger)
 	defer perEntry.Close()
 	perEntryRaw := bytes.NewReader(payload[:])
 	perEntry.Reset(bufio.NewReaderSize(perEntryRaw, len(payload)))
@@ -142,7 +148,7 @@ func TestParseDirectoryTagHeadersBulkMatchesPerEntry(t *testing.T) {
 		t.Fatalf("parseDirectoryTagHeadersPerEntry() error = %v", err)
 	}
 
-	bulk := NewReader(zerolog.Nop())
+	bulk := NewReader(metalog.Logger)
 	defer bulk.Close()
 	bulkRaw := bytes.NewReader(payload[:])
 	bulk.Reset(bufio.NewReaderSize(bulkRaw, len(payload)))
@@ -221,7 +227,7 @@ func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 	copy(payload[8:12], []byte("0211"))
 
 	directory := tag.NewDirectory(utils.LittleEndian, tag.MakerNoteIFD, 0, 0, 0x853a)
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 	r.Exif.CameraMakeID = makernote.CameraMakeNikon
@@ -238,7 +244,7 @@ func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 func TestParseSubSecTimeEmbedded(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	var raw [4]byte
@@ -307,7 +313,7 @@ func TestParseDNGAdobeDataSample(t *testing.T) {
 func TestParseIFD0MakeTagTrimsAndNormalizesKnownMake(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	raw := append([]byte("NIKON CORPORATION\x00"), bytes.Repeat([]byte{'x'}, 48)...)
@@ -327,7 +333,7 @@ func TestParseIFD0MakeTagTrimsAndNormalizesKnownMake(t *testing.T) {
 func TestParseSubIFDsSingleTypeIFDUsesValueOffset(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 
 	tg := tag.NewEntry(tag.TagSubIFDs, tag.TypeIfd, 1, 0x1234, tag.IFD0, 0, utils.LittleEndian)
@@ -364,7 +370,7 @@ func TestParseSubIFDsClampsToQueueCapacity(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 0x30)
 	utils.LittleEndian.PutUint32(payload[12:16], 0x40)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 	r.state.len = tagQueueMax - 1
@@ -395,7 +401,7 @@ func TestParseSubIFDsClampsToOffsetCapacity(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 0x30)
 	utils.LittleEndian.PutUint32(payload[12:16], 0x40)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 	r.Exif.IFD0.subIFDOffsetCount = uint8(len(r.Exif.IFD0.subIFDOffsets) - 1)
@@ -440,7 +446,7 @@ func TestParseExposureBiasSignedRational(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[:4], uint32(num))
 	utils.LittleEndian.PutUint32(payload[4:8], 3)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 
@@ -464,7 +470,7 @@ func TestParseIFD0TagApplicationNotesSkipped(t *testing.T) {
 
 	const payload = "application notes payload"
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader([]byte(payload)))
 
@@ -486,12 +492,185 @@ func TestParseIFD0TagApplicationNotesSkipped(t *testing.T) {
 	}
 }
 
+func TestParseIFD0ColorAndSamplingTags(t *testing.T) {
+	t.Parallel()
+
+	// WhitePoint [2] rationals, PrimaryChromaticities [6], YCbCrCoefficients [3].
+	whitePoint := []byte{
+		55, 12, 0, 0, 16, 39, 0, 0, // 3127/10000
+		218, 12, 0, 0, 16, 39, 0, 0, // 3290/10000
+	}
+	primary := []byte{
+		0x80, 0x19, 0, 0, 0x10, 0x27, 0, 0, // 0.64
+		0xE4, 0x0C, 0, 0, 0x10, 0x27, 0, 0, // 0.33
+		0xB8, 0x0B, 0, 0, 0x10, 0x27, 0, 0, // 0.30
+		0x70, 0x17, 0, 0, 0x10, 0x27, 0, 0, // 0.60
+		0xDC, 0x05, 0, 0, 0x10, 0x27, 0, 0, // 0.15
+		0x58, 0x02, 0, 0, 0x10, 0x27, 0, 0, // 0.06
+	}
+	coeff := []byte{
+		0x2B, 0x01, 0, 0, 0xE8, 0x03, 0, 0, // 0.299
+		0x4B, 0x02, 0, 0, 0xE8, 0x03, 0, 0, // 0.587
+		0x72, 0x00, 0, 0, 0xE8, 0x03, 0, 0, // 0.114
+	}
+
+	tests := []struct {
+		name  string
+		entry tag.Entry
+		data  []byte
+		check func(t *testing.T, r *Reader)
+	}{
+		{
+			name:  "PhotometricInterpretation",
+			entry: tag.NewEntry(tag.TagPhotometricInterpretation, tag.TypeShort, 1, 2, tag.IFD0, 0, utils.LittleEndian),
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.PhotometricInterpretation; got != 2 {
+					t.Fatalf("PhotometricInterpretation = %d, want 2", got)
+				}
+			},
+		},
+		{
+			name:  "SamplesPerPixel",
+			entry: tag.NewEntry(tag.TagSamplesPerPixel, tag.TypeShort, 1, 3, tag.IFD0, 0, utils.LittleEndian),
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.SamplesPerPixel; got != 3 {
+					t.Fatalf("SamplesPerPixel = %d, want 3", got)
+				}
+			},
+		},
+		{
+			name:  "PlanarConfiguration",
+			entry: tag.NewEntry(tag.TagPlanarConfiguration, tag.TypeShort, 1, 1, tag.IFD0, 0, utils.LittleEndian),
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.PlanarConfiguration; got != 1 {
+					t.Fatalf("PlanarConfiguration = %d, want 1", got)
+				}
+			},
+		},
+		{
+			name:  "BitsPerSample",
+			entry: tag.NewEntry(tag.TagBitsPerSample, tag.TypeShort, 1, 8, tag.IFD0, 0, utils.LittleEndian),
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.BitsPerSample[0]; got != 8 {
+					t.Fatalf("BitsPerSample[0] = %d, want 8", got)
+				}
+			},
+		},
+		{
+			name:  "YCbCrPositioning",
+			entry: tag.NewEntry(tag.TagYCbCrPositioning, tag.TypeShort, 1, 2, tag.IFD0, 0, utils.LittleEndian),
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.YCbCrPositioning; got != 2 {
+					t.Fatalf("YCbCrPositioning = %d, want 2", got)
+				}
+			},
+		},
+		{
+			name:  "WhitePoint",
+			entry: tag.NewEntry(tag.TagWhitePoint, tag.TypeRational, 2, 0, tag.IFD0, 0, utils.LittleEndian),
+			data:  whitePoint,
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.WhitePoint[0]; math.Abs(got-0.3127) > 0.00001 {
+					t.Fatalf("WhitePoint[0] = %f, want ~0.3127", got)
+				}
+			},
+		},
+		{
+			name:  "PrimaryChromaticities",
+			entry: tag.NewEntry(tag.TagPrimaryChromaticities, tag.TypeRational, 6, 0, tag.IFD0, 0, utils.LittleEndian),
+			data:  primary,
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.PrimaryChromaticities[5]; math.Abs(got-0.06) > 0.00001 {
+					t.Fatalf("PrimaryChromaticities[5] = %f, want ~0.06", got)
+				}
+			},
+		},
+		{
+			name:  "YCbCrCoefficients",
+			entry: tag.NewEntry(tag.TagYCbCrCoefficients, tag.TypeRational, 3, 0, tag.IFD0, 0, utils.LittleEndian),
+			data:  coeff,
+			check: func(t *testing.T, r *Reader) {
+				if got := r.Exif.IFD0.YCbCrCoefficients[1]; math.Abs(got-0.587) > 0.00001 {
+					t.Fatalf("YCbCrCoefficients[1] = %f, want ~0.587", got)
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewReader(metalog.Logger)
+			defer r.Close()
+			if tc.data == nil {
+				r.Reset(bytes.NewReader(nil))
+			} else {
+				r.Reset(bytes.NewReader(tc.data))
+			}
+			if ok := r.parseIFD0Tag(tc.entry); !ok {
+				t.Fatalf("parseIFD0Tag(%v) = false, want true", tc.entry.ID)
+			}
+			tc.check(t, r)
+		})
+	}
+}
+
+func TestParseExifTagInteropAndGamma(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	// InteropIndex "R98\0"
+	interopRaw := [4]byte{'R', '9', '8', 0}
+	interopVal := utils.LittleEndian.Uint32(interopRaw[:])
+	if ok := r.parseExifTag(tag.NewEntry(tag.TagInteropIndex, tag.TypeASCII, 4, interopVal, tag.ExifIFD, 0, utils.LittleEndian)); !ok {
+		t.Fatal("parseExifTag(TagInteropIndex) = false, want true")
+	}
+	if got := r.Exif.ExifIFD.InteropIndex; got != "R98" {
+		t.Fatalf("InteropIndex = %q, want %q", got, "R98")
+	}
+
+	// InteropVersion "0100"
+	versionRaw := [4]byte{'0', '1', '0', '0'}
+	versionVal := utils.LittleEndian.Uint32(versionRaw[:])
+	if ok := r.parseExifTag(tag.NewEntry(tag.TagInteropVersion, tag.TypeUndefined, 4, versionVal, tag.ExifIFD, 0, utils.LittleEndian)); !ok {
+		t.Fatal("parseExifTag(TagInteropVersion) = false, want true")
+	}
+	if got := r.Exif.ExifIFD.InteropVersion; got != "0100" {
+		t.Fatalf("InteropVersion = %q, want %q", got, "0100")
+	}
+
+	if ok := r.parseExifTag(tag.NewEntry(tag.TagRelatedImageWidth, tag.TypeShort, 1, 6000, tag.ExifIFD, 0, utils.LittleEndian)); !ok {
+		t.Fatal("parseExifTag(TagRelatedImageWidth) = false, want true")
+	}
+	if ok := r.parseExifTag(tag.NewEntry(tag.TagRelatedImageHeight, tag.TypeShort, 1, 4000, tag.ExifIFD, 0, utils.LittleEndian)); !ok {
+		t.Fatal("parseExifTag(TagRelatedImageHeight) = false, want true")
+	}
+	if got := r.Exif.ExifIFD.RelatedImageWidth; got != 6000 {
+		t.Fatalf("RelatedImageWidth = %d, want 6000", got)
+	}
+	if got := r.Exif.ExifIFD.RelatedImageHeight; got != 4000 {
+		t.Fatalf("RelatedImageHeight = %d, want 4000", got)
+	}
+
+	// Gamma 22/10
+	gamma := []byte{22, 0, 0, 0, 10, 0, 0, 0}
+	r.Reset(bytes.NewReader(gamma))
+	if ok := r.parseExifTag(tag.NewEntry(tag.TagGamma, tag.TypeRational, 1, 0, tag.ExifIFD, 0, utils.LittleEndian)); !ok {
+		t.Fatal("parseExifTag(TagGamma) = false, want true")
+	}
+	if got := r.Exif.ExifIFD.Gamma; math.Abs(got-2.2) > 0.00001 {
+		t.Fatalf("Gamma = %f, want 2.2", got)
+	}
+}
+
 func TestParseExifTagUserCommentASCII(t *testing.T) {
 	t.Parallel()
 
 	payload := append([]byte("ASCII\x00\x00\x00"), []byte("hello world\x00")...)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload))
 
@@ -523,7 +702,7 @@ func TestParseExifTagUserCommentUnicode(t *testing.T) {
 		0, 0,
 	}...)
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload))
 
@@ -586,7 +765,7 @@ func TestParseExifTagUserCommentHeaderSpacePadded(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewReader(zerolog.Nop())
+			r := NewReader(metalog.Logger)
 			defer r.Close()
 
 			data := append(append([]byte{}, tc.header...), tc.payload...)

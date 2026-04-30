@@ -2,13 +2,14 @@ package meta
 
 import (
 	"bytes"
+	"log/slog"
 	"strings"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,11 +71,10 @@ func TestMetadata(t *testing.T) {
 
 }
 
-func TestHeaderMarshalZerologObjectUsesLowerCamelKeys(t *testing.T) {
+func TestHeaderMarshalLogObjectUsesLowerCamelKeys(t *testing.T) {
 	var buf bytes.Buffer
-	logger := zerolog.New(&buf)
-
-	logger.Info().
+	logger := metalog.New(&buf, slog.LevelInfo)
+	metalog.NewEvent(logger, slog.LevelInfo, 2).
 		Object("exifHeader", ExifHeader{
 			ByteOrder:        utils.LittleEndian,
 			FirstIfd:         tag.IFD0,

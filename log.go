@@ -2,19 +2,18 @@ package imagemeta
 
 import (
 	"io"
+	"log/slog"
 	"os"
 
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 var (
 	// Logger is the logger
-	logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
+	logger = metalog.New(os.Stdout, metalog.LevelDisabled)
 )
 
-func SetLogger(w io.Writer, level zerolog.Level) {
-	logger = log.Output(w).Level(level)
+func SetLogger(w io.Writer, level slog.Level) {
+	logger = metalog.New(w, level)
 	metalog.Logger = logger
 }

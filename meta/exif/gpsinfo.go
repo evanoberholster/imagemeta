@@ -42,6 +42,8 @@ type GPSInfo struct {
 	status            string
 	measureMode       string
 	mapDatum          string
+	processingMethod  string
+	areaInformation   string
 	latitude          float64
 	longitude         float64
 	destLatitude      float64
@@ -70,59 +72,63 @@ type GPSInfo struct {
 
 // gpsJSON is the JSON-serializable representation of GPSInfo.
 type gpsJSON struct {
-	Date          time.Time `json:"Date,omitempty"`
-	Latitude      float64   `json:"Latitude,omitempty"`
-	Longitude     float64   `json:"Longitude,omitempty"`
-	Altitude      float32   `json:"Altitude,omitempty"`
-	DestLatitude  float64   `json:"DestLatitude,omitempty"`
-	DestLongitude float64   `json:"DestLongitude,omitempty"`
-	DOP           float64   `json:"DOP,omitempty"`
-	SpeedRef      string    `json:"SpeedRef,omitempty"`
-	Speed         float64   `json:"Speed,omitempty"`
-	TrackRef      string    `json:"TrackRef,omitempty"`
-	Track         float64   `json:"Track,omitempty"`
-	ImgDirRef     string    `json:"ImgDirectionRef,omitempty"`
-	ImgDirection  float64   `json:"ImgDirection,omitempty"`
-	DestBearRef   string    `json:"DestBearingRef,omitempty"`
-	DestBearing   float64   `json:"DestBearing,omitempty"`
-	DestDistRef   string    `json:"DestDistanceRef,omitempty"`
-	DestDistance  float64   `json:"DestDistance,omitempty"`
-	HPosErr       float64   `json:"HPositioningError,omitempty"`
-	GPSVersion    string    `json:"GPSVersion,omitempty"`
-	Satellites    string    `json:"Satellites,omitempty"`
-	Status        string    `json:"Status,omitempty"`
-	MeasureMode   string    `json:"MeasureMode,omitempty"`
-	MapDatum      string    `json:"MapDatum,omitempty"`
-	Differential  uint16    `json:"Differential,omitempty"`
+	Date             time.Time `json:"Date,omitempty"`
+	Latitude         float64   `json:"Latitude,omitempty"`
+	Longitude        float64   `json:"Longitude,omitempty"`
+	Altitude         float32   `json:"Altitude,omitempty"`
+	DestLatitude     float64   `json:"DestLatitude,omitempty"`
+	DestLongitude    float64   `json:"DestLongitude,omitempty"`
+	DOP              float64   `json:"DOP,omitempty"`
+	SpeedRef         string    `json:"SpeedRef,omitempty"`
+	Speed            float64   `json:"Speed,omitempty"`
+	TrackRef         string    `json:"TrackRef,omitempty"`
+	Track            float64   `json:"Track,omitempty"`
+	ImgDirRef        string    `json:"ImgDirectionRef,omitempty"`
+	ImgDirection     float64   `json:"ImgDirection,omitempty"`
+	DestBearRef      string    `json:"DestBearingRef,omitempty"`
+	DestBearing      float64   `json:"DestBearing,omitempty"`
+	DestDistRef      string    `json:"DestDistanceRef,omitempty"`
+	DestDistance     float64   `json:"DestDistance,omitempty"`
+	HPosErr          float64   `json:"HPositioningError,omitempty"`
+	GPSVersion       string    `json:"GPSVersion,omitempty"`
+	Satellites       string    `json:"Satellites,omitempty"`
+	Status           string    `json:"Status,omitempty"`
+	MeasureMode      string    `json:"MeasureMode,omitempty"`
+	MapDatum         string    `json:"MapDatum,omitempty"`
+	ProcessingMethod string    `json:"ProcessingMethod,omitempty"`
+	AreaInformation  string    `json:"AreaInformation,omitempty"`
+	Differential     uint16    `json:"Differential,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler for GPSInfo.
 func (g GPSInfo) MarshalJSON() ([]byte, error) {
 	v := gpsJSON{
-		Date:          g.date,
-		Latitude:      g.Latitude(),
-		Longitude:     g.Longitude(),
-		Altitude:      g.Altitude(),
-		DestLatitude:  g.DestLatitudeSigned(),
-		DestLongitude: g.DestLongitudeSigned(),
-		DOP:           g.dop,
-		SpeedRef:      g.speedRef.String(),
-		Speed:         g.speed,
-		TrackRef:      g.trackRef.String(),
-		Track:         g.track,
-		ImgDirRef:     g.imgDirectionRef.String(),
-		ImgDirection:  g.imgDirection,
-		DestBearRef:   g.destBearingRef.String(),
-		DestBearing:   g.destBearing,
-		DestDistRef:   g.destDistanceRef.String(),
-		DestDistance:  g.destDistance,
-		HPosErr:       g.hPositioningError,
-		GPSVersion:    g.GPSVersion.String(),
-		Satellites:    g.satellites,
-		Status:        g.status,
-		MeasureMode:   g.measureMode,
-		MapDatum:      g.mapDatum,
-		Differential:  g.differential,
+		Date:             g.date,
+		Latitude:         g.Latitude(),
+		Longitude:        g.Longitude(),
+		Altitude:         g.Altitude(),
+		DestLatitude:     g.DestLatitudeSigned(),
+		DestLongitude:    g.DestLongitudeSigned(),
+		DOP:              g.dop,
+		SpeedRef:         g.speedRef.String(),
+		Speed:            g.speed,
+		TrackRef:         g.trackRef.String(),
+		Track:            g.track,
+		ImgDirRef:        g.imgDirectionRef.String(),
+		ImgDirection:     g.imgDirection,
+		DestBearRef:      g.destBearingRef.String(),
+		DestBearing:      g.destBearing,
+		DestDistRef:      g.destDistanceRef.String(),
+		DestDistance:     g.destDistance,
+		HPosErr:          g.hPositioningError,
+		GPSVersion:       g.GPSVersion.String(),
+		Satellites:       g.satellites,
+		Status:           g.status,
+		MeasureMode:      g.measureMode,
+		MapDatum:         g.mapDatum,
+		ProcessingMethod: g.processingMethod,
+		AreaInformation:  g.areaInformation,
+		Differential:     g.differential,
 	}
 	return json.Marshal(v)
 }
@@ -245,6 +251,16 @@ func (g GPSInfo) MapDatum() string {
 	return g.mapDatum
 }
 
+// ProcessingMethod returns the GPSProcessingMethod field.
+func (g GPSInfo) ProcessingMethod() string {
+	return g.processingMethod
+}
+
+// AreaInformation returns the GPSAreaInformation field.
+func (g GPSInfo) AreaInformation() string {
+	return g.areaInformation
+}
+
 // Differential returns the GPSDifferential field.
 func (g GPSInfo) Differential() uint16 {
 	return g.differential
@@ -348,6 +364,10 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 		r.Exif.GPS.measureMode = r.parseString(t)
 	case tag.TagGPSMapDatum:
 		r.Exif.GPS.mapDatum = r.parseString(t)
+	case tag.TagGPSProcessingMethod:
+		r.Exif.GPS.processingMethod = r.parseExifUserComment(t)
+	case tag.TagGPSAreaInformation:
+		r.Exif.GPS.areaInformation = r.parseExifUserComment(t)
 	case tag.TagGPSDOP:
 		r.Exif.GPS.dop = r.parseRationalValue(t).Float64()
 	case tag.TagGPSSpeed:

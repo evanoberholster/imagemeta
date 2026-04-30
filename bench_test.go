@@ -10,7 +10,7 @@ import (
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
-	"github.com/rs/zerolog"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 )
 
 var (
@@ -206,7 +206,7 @@ func BenchmarkHeif(b *testing.B) {
 					}
 					rr.Reset(r)
 
-					ir := exif.NewReader(zerolog.Logger{})
+					ir := exif.NewReader(metalog.Logger)
 
 					it, scanErr := imagetype.ScanBuf(rr)
 					if scanErr != nil {
@@ -234,7 +234,7 @@ func BenchmarkHeif(b *testing.B) {
 					if _, err = r.Seek(0, 0); err != nil {
 						b.Fatal(err)
 					}
-					ir := exif.NewReader(zerolog.Logger{})
+					ir := exif.NewReader(metalog.Logger)
 
 					br := isobmff.NewReader(r, ir.DecodeIfdAppend, nil, nil)
 					if err := br.ReadFTYP(); err != nil {

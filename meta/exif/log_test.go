@@ -3,13 +3,14 @@ package exif
 import (
 	"bytes"
 	"io"
+	"log/slog"
 	"strings"
 	"testing"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 func TestLoggerMixinEnabledChecks(t *testing.T) {
@@ -17,7 +18,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		level     zerolog.Level
+		level     slog.Level
 		trace     bool
 		info      bool
 		debug     bool
@@ -26,7 +27,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 	}{
 		{
 			name:      "trace",
-			level:     zerolog.TraceLevel,
+			level:     metalog.LevelTrace,
 			trace:     true,
 			info:      true,
 			debug:     true,
@@ -35,7 +36,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "debug",
-			level:     zerolog.DebugLevel,
+			level:     slog.LevelDebug,
 			trace:     false,
 			info:      true,
 			debug:     true,
@@ -44,7 +45,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "info",
-			level:     zerolog.InfoLevel,
+			level:     slog.LevelInfo,
 			trace:     false,
 			info:      true,
 			debug:     false,
@@ -53,7 +54,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "warn",
-			level:     zerolog.WarnLevel,
+			level:     slog.LevelWarn,
 			trace:     false,
 			info:      false,
 			debug:     false,
@@ -62,7 +63,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "error",
-			level:     zerolog.ErrorLevel,
+			level:     slog.LevelError,
 			trace:     false,
 			info:      false,
 			debug:     false,
@@ -71,7 +72,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "fatal",
-			level:     zerolog.FatalLevel,
+			level:     slog.Level(12),
 			trace:     false,
 			info:      false,
 			debug:     false,
@@ -80,7 +81,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		},
 		{
 			name:      "disabled",
-			level:     zerolog.Disabled,
+			level:     metalog.LevelDisabled,
 			trace:     false,
 			info:      false,
 			debug:     false,
@@ -93,7 +94,7 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			l := zerolog.New(io.Discard).Level(tt.level)
+			l := metalog.New(io.Discard, tt.level)
 			m := newLoggerMixin(l)
 
 			if got := m.traceEnabled(); got != tt.trace {
@@ -127,12 +128,12 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 func TestLoggerMixinSetLoggerRefreshesChecks(t *testing.T) {
 	t.Parallel()
 
-	m := newLoggerMixin(zerolog.New(io.Discard).Level(zerolog.ErrorLevel))
+	m := newLoggerMixin(metalog.New(io.Discard, slog.LevelError))
 	if !m.errorEnabled() || m.warnEnabled() {
 		t.Fatalf("unexpected initial enabled states: error=%v warn=%v", m.errorEnabled(), m.warnEnabled())
 	}
 
-	m.setLogger(zerolog.New(io.Discard).Level(zerolog.DebugLevel))
+	m.setLogger(metalog.New(io.Discard, slog.LevelDebug))
 	if !m.debugEnabled() || !m.warnEnabled() || !m.errorEnabled() {
 		t.Fatalf("setLogger did not refresh checks: debug=%v warn=%v error=%v", m.debugEnabled(), m.warnEnabled(), m.errorEnabled())
 	}
@@ -142,7 +143,7 @@ func TestLoggerMixinInfoEvent(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	m := newLoggerMixin(zerolog.New(&buf).Level(zerolog.InfoLevel))
+	m := newLoggerMixin(metalog.New(&buf, slog.LevelInfo))
 	if !m.infoEnabled() {
 		t.Fatal("info logging should be enabled")
 	}
@@ -159,7 +160,7 @@ func TestTagLogContextIncludesDecodeFields(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	r := &Reader{loggerMixin: newLoggerMixin(zerolog.New(&buf).Level(zerolog.WarnLevel))}
+	r := &Reader{loggerMixin: newLoggerMixin(metalog.New(&buf, slog.LevelWarn))}
 	r.po = 42
 	r.firstIFDOffset = 8
 	r.exifLength = 512
@@ -198,7 +199,7 @@ func TestRawTagHeaderLogContextIncludesInvalidHeaderFields(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	r := &Reader{loggerMixin: newLoggerMixin(zerolog.New(&buf).Level(zerolog.WarnLevel))}
+	r := &Reader{loggerMixin: newLoggerMixin(metalog.New(&buf, slog.LevelWarn))}
 	r.po = 14
 	r.Exif.ImageType = imagetype.ImageTiff
 	directory := tag.NewDirectory(utils.BigEndian, tag.IFD0, 0, 8, 0)

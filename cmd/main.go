@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
 )
 
 func init() {
-	logging.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
+	logging.Logger = logging.New(os.Stdout, slog.LevelDebug)
 }
 
 func main() {

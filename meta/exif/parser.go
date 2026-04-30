@@ -41,7 +41,7 @@ func tagUsesIfdType(directoryType tag.IfdType, id tag.ID) bool {
 	switch id {
 	case tag.TagExifIFDPointer, tag.TagGPSIFDPointer:
 		return directoryType == tag.IFD0
-	case tag.TagMakerNote:
+	case tag.TagMakerNote, tag.TagInteropIFDPointer:
 		return directoryType == tag.ExifIFD
 	default:
 		return false
@@ -213,7 +213,7 @@ func (r *Reader) parseTag(t tag.Entry) {
 // case branch below. These tags are treated as handled for coverage/reporting
 // parity but are not mapped into the Exif model.
 func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
-	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || (r.parseIFD0DNGTags() && r.parseIFD0DNGTag(t)) {
+	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0ColorTag(t) || (r.parseIFD0DNGTags() && r.parseIFD0DNGTag(t)) {
 		return true
 	}
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
@@ -226,7 +226,8 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 		tag.TagDefaultCropOrigin, tag.TagDefaultCropSize, tag.TagDefaultUserCrop, tag.TagNewRawImageDigest,
 		tag.TagCFALayout, tag.TagBayerGreenSplit, tag.TagBaselineSharpness, tag.TagLinearResponseLimit,
 		tag.TagAntiAliasStrength, tag.TagShadowScale, tag.TagCalibrationIlluminant1, tag.TagCalibrationIlluminant2,
-		tag.TagProfileEmbedPolicy, tag.TagNoiseProfile, tag.TagOpcodeList2, tag.TagLensSpecification:
+		tag.TagProfileEmbedPolicy, tag.TagNoiseProfile, tag.TagOpcodeList2, tag.TagLensSpecification,
+		tag.TagIPTCNAA:
 		return true
 	default:
 		return false
@@ -335,6 +336,8 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	switch t.ID {
 	case tag.TagSubfileType:
 		r.Exif.IFD0.SubfileType = meta.SubfileType(r.parseUint32(t))
+	case tag.TagPhotometricInterpretation:
+		r.Exif.IFD0.PhotometricInterpretation = r.parseUint16(t)
 	case tag.TagTileWidth:
 		// ingnore tag
 	case tag.TagTileLength:
@@ -348,7 +351,7 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	case tag.TagThumbnailLength:
 		r.Exif.IFD0.ThumbnailLength = r.parseFirstUint32(t)
 	case tag.TagBitsPerSample:
-		// ingnore tag
+		r.parseUint16List(t, r.Exif.IFD0.BitsPerSample[:])
 	case tag.TagCompression:
 		r.Exif.IFD0.Compression = meta.Compression(r.parseUint16(t))
 	case tag.TagRowsPerStrip:
@@ -356,13 +359,15 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 	case tag.TagSubIFDs:
 		r.parseSubIFDs(t)
 	case tag.TagPlanarConfiguration:
-		// ingnore tag
+		r.Exif.IFD0.PlanarConfiguration = r.parseUint16(t)
 	case tag.TagXResolution:
 		r.Exif.IFD0.XResolution = r.parseRationalValue(t).Float64()
 	case tag.TagYResolution:
 		r.Exif.IFD0.YResolution = r.parseRationalValue(t).Float64()
 	case tag.TagResolutionUnit:
 		r.Exif.IFD0.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
+	case tag.TagSamplesPerPixel:
+		r.Exif.IFD0.SamplesPerPixel = r.parseUint16(t)
 	case tag.TagImageWidth:
 		r.Exif.IFD0.ImageWidth = r.parseUint32(t)
 	case tag.TagImageLength:
@@ -373,6 +378,22 @@ func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
 		r.Exif.IFD0.ImageLength = r.parseFirstUint32(t)
 	case tag.TagOrientation:
 		r.Exif.IFD0.Orientation = meta.Orientation(r.parseUint16(t))
+	default:
+		return false
+	}
+	return true
+}
+
+func (r *Reader) parseIFD0ColorTag(t tag.Entry) bool {
+	switch t.ID {
+	case tag.TagWhitePoint:
+		r.parseRationalFloat64List(t, r.Exif.IFD0.WhitePoint[:])
+	case tag.TagPrimaryChromaticities:
+		r.parseRationalFloat64List(t, r.Exif.IFD0.PrimaryChromaticities[:])
+	case tag.TagYCbCrCoefficients:
+		r.parseRationalFloat64List(t, r.Exif.IFD0.YCbCrCoefficients[:])
+	case tag.TagYCbCrPositioning:
+		r.Exif.IFD0.YCbCrPositioning = r.parseUint16(t)
 	default:
 		return false
 	}
@@ -692,6 +713,14 @@ func (r *Reader) parseExifImageTag(t tag.Entry) bool {
 		}
 	case tag.TagInteropIFDPointer:
 		r.Exif.ExifIFD.interopIFDPointer = r.parseUint32(t)
+	case tag.TagInteropIndex:
+		r.Exif.ExifIFD.InteropIndex = r.parseStringAllowUndefined(t)
+	case tag.TagInteropVersion:
+		r.Exif.ExifIFD.InteropVersion = r.parseStringAllowUndefined(t)
+	case tag.TagRelatedImageWidth:
+		r.Exif.ExifIFD.RelatedImageWidth = r.parseUint32(t)
+	case tag.TagRelatedImageHeight:
+		r.Exif.ExifIFD.RelatedImageHeight = r.parseUint32(t)
 	case tag.TagColorSpace:
 		r.Exif.ExifIFD.ColorSpace = r.parseUint16(t)
 	case tag.TagLensSpecification:
@@ -708,6 +737,8 @@ func (r *Reader) parseExifImageTag(t tag.Entry) bool {
 		r.Exif.ExifIFD.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagSubjectArea:
 		r.parseUint16List(t, r.Exif.ExifIFD.SubjectArea[:])
+	case tag.TagGamma:
+		r.Exif.ExifIFD.Gamma = r.parseRationalValue(t).Float64()
 	default:
 		return false
 	}

@@ -48,10 +48,18 @@ type IFD0Tag struct {
 	ThumbnailLength uint32
 	SubfileType     meta.SubfileType
 
-	Compression    meta.Compression
-	Orientation    meta.Orientation
-	ResolutionUnit meta.ResolutionUnit
-	Rating         uint16
+	Compression               meta.Compression
+	Orientation               meta.Orientation
+	ResolutionUnit            meta.ResolutionUnit
+	PhotometricInterpretation uint16
+	SamplesPerPixel           uint16
+	PlanarConfiguration       uint16
+	BitsPerSample             [4]uint16
+	WhitePoint                [2]float64
+	PrimaryChromaticities     [6]float64
+	YCbCrCoefficients         [3]float64
+	YCbCrPositioning          uint16
+	Rating                    uint16
 
 	exifIfdPointer    uint32
 	gpsIfdPointer     uint32
@@ -120,6 +128,11 @@ type ExifIFDTags struct {
 	DigitalZoomRatio        float32   // 0xa404 DigitalZoomRatio
 	SubjectArea             [4]uint16 // 0x9214 SubjectArea
 	ComponentsConfiguration [4]byte   // 0x9101 ComponentsConfiguration
+	Gamma                   float64   // 0xa500 Gamma
+	InteropIndex            string    // 0x0001 InteropIndex
+	InteropVersion          string    // 0x0002 InteropVersion
+	RelatedImageWidth       uint32    // 0x1001 RelatedImageWidth
+	RelatedImageHeight      uint32    // 0x1002 RelatedImageHeight
 
 	focalPlaneXResolutionState unsignedRationalState
 	focalPlaneYResolutionState unsignedRationalState
@@ -301,25 +314,33 @@ type ifd0JSON struct {
 	OffsetTime *string   `json:"OffsetTime"`
 	SubSecTime uint16    `json:"SubSecTime"`
 
-	XResolution      float64             `json:"XResolution"`
-	YResolution      float64             `json:"YResolution"`
-	Make             string              `json:"Make"`
-	Model            string              `json:"Model"`
-	Artist           string              `json:"Artist"`
-	Copyright        string              `json:"Copyright"`
-	Software         string              `json:"Software"`
-	ImageDescription string              `json:"ImageDescription"`
-	ImageWidth       uint32              `json:"ImageWidth"`
-	ImageHeight      uint32              `json:"ImageHeight"`
-	ImageOffset      uint32              `json:"ImageOffset"`
-	ImageLength      uint32              `json:"ImageLength"`
-	ThumbnailOffset  uint32              `json:"ThumbnailOffset"`
-	ThumbnailLength  uint32              `json:"ThumbnailLength"`
-	SubfileType      meta.SubfileType    `json:"SubfileType"`
-	Compression      meta.Compression    `json:"Compression"`
-	Orientation      meta.Orientation    `json:"Orientation"`
-	ResolutionUnit   meta.ResolutionUnit `json:"ResolutionUnit"`
-	Rating           uint16              `json:"Rating"`
+	XResolution               float64             `json:"XResolution"`
+	YResolution               float64             `json:"YResolution"`
+	Make                      string              `json:"Make"`
+	Model                     string              `json:"Model"`
+	Artist                    string              `json:"Artist"`
+	Copyright                 string              `json:"Copyright"`
+	Software                  string              `json:"Software"`
+	ImageDescription          string              `json:"ImageDescription"`
+	ImageWidth                uint32              `json:"ImageWidth"`
+	ImageHeight               uint32              `json:"ImageHeight"`
+	ImageOffset               uint32              `json:"ImageOffset"`
+	ImageLength               uint32              `json:"ImageLength"`
+	ThumbnailOffset           uint32              `json:"ThumbnailOffset"`
+	ThumbnailLength           uint32              `json:"ThumbnailLength"`
+	SubfileType               meta.SubfileType    `json:"SubfileType"`
+	Compression               meta.Compression    `json:"Compression"`
+	Orientation               meta.Orientation    `json:"Orientation"`
+	ResolutionUnit            meta.ResolutionUnit `json:"ResolutionUnit"`
+	PhotometricInterpretation uint16              `json:"PhotometricInterpretation"`
+	SamplesPerPixel           uint16              `json:"SamplesPerPixel"`
+	PlanarConfiguration       uint16              `json:"PlanarConfiguration"`
+	BitsPerSample             [4]uint16           `json:"BitsPerSample"`
+	WhitePoint                [2]float64          `json:"WhitePoint"`
+	PrimaryChromaticities     [6]float64          `json:"PrimaryChromaticities"`
+	YCbCrCoefficients         [3]float64          `json:"YCbCrCoefficients"`
+	YCbCrPositioning          uint16              `json:"YCbCrPositioning"`
+	Rating                    uint16              `json:"Rating"`
 }
 
 type exifIFDJSON struct {
@@ -381,6 +402,11 @@ type exifIFDJSON struct {
 	DigitalZoomRatio         float32              `json:"DigitalZoomRatio"`
 	SubjectArea              [4]uint16            `json:"SubjectArea"`
 	ComponentsConfiguration  [4]byte              `json:"ComponentsConfiguration"`
+	Gamma                    float64              `json:"Gamma"`
+	InteropIndex             string               `json:"InteropIndex"`
+	InteropVersion           string               `json:"InteropVersion"`
+	RelatedImageWidth        uint32               `json:"RelatedImageWidth"`
+	RelatedImageHeight       uint32               `json:"RelatedImageHeight"`
 }
 
 type imageIFDJSON struct {
@@ -501,28 +527,36 @@ func (t IFD0TimeTags) MarshalJSON() ([]byte, error) {
 // MarshalJSON merges flattened time fields with the rest of IFD0's exported fields.
 func (t IFD0Tag) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ifd0JSON{
-		ModifyDate:       t.ModifyDate,
-		OffsetTime:       offsetTimeStringPtr(t.OffsetTime),
-		SubSecTime:       t.SubSecTime,
-		XResolution:      t.XResolution,
-		YResolution:      t.YResolution,
-		Make:             t.Make,
-		Model:            t.Model,
-		Artist:           t.Artist,
-		Copyright:        t.Copyright,
-		Software:         t.Software,
-		ImageDescription: t.ImageDescription,
-		ImageWidth:       t.ImageWidth,
-		ImageHeight:      t.ImageHeight,
-		ImageOffset:      t.ImageOffset,
-		ImageLength:      t.ImageLength,
-		ThumbnailOffset:  t.ThumbnailOffset,
-		ThumbnailLength:  t.ThumbnailLength,
-		SubfileType:      t.SubfileType,
-		Compression:      t.Compression,
-		Orientation:      t.Orientation,
-		ResolutionUnit:   t.ResolutionUnit,
-		Rating:           t.Rating,
+		ModifyDate:                t.ModifyDate,
+		OffsetTime:                offsetTimeStringPtr(t.OffsetTime),
+		SubSecTime:                t.SubSecTime,
+		XResolution:               t.XResolution,
+		YResolution:               t.YResolution,
+		Make:                      t.Make,
+		Model:                     t.Model,
+		Artist:                    t.Artist,
+		Copyright:                 t.Copyright,
+		Software:                  t.Software,
+		ImageDescription:          t.ImageDescription,
+		ImageWidth:                t.ImageWidth,
+		ImageHeight:               t.ImageHeight,
+		ImageOffset:               t.ImageOffset,
+		ImageLength:               t.ImageLength,
+		ThumbnailOffset:           t.ThumbnailOffset,
+		ThumbnailLength:           t.ThumbnailLength,
+		SubfileType:               t.SubfileType,
+		Compression:               t.Compression,
+		Orientation:               t.Orientation,
+		ResolutionUnit:            t.ResolutionUnit,
+		PhotometricInterpretation: t.PhotometricInterpretation,
+		SamplesPerPixel:           t.SamplesPerPixel,
+		PlanarConfiguration:       t.PlanarConfiguration,
+		BitsPerSample:             t.BitsPerSample,
+		WhitePoint:                t.WhitePoint,
+		PrimaryChromaticities:     t.PrimaryChromaticities,
+		YCbCrCoefficients:         t.YCbCrCoefficients,
+		YCbCrPositioning:          t.YCbCrPositioning,
+		Rating:                    t.Rating,
 	})
 }
 
@@ -598,6 +632,11 @@ func (t ExifIFDTags) MarshalJSON() ([]byte, error) {
 		DigitalZoomRatio:         t.DigitalZoomRatio,
 		SubjectArea:              t.SubjectArea,
 		ComponentsConfiguration:  t.ComponentsConfiguration,
+		Gamma:                    t.Gamma,
+		InteropIndex:             t.InteropIndex,
+		InteropVersion:           t.InteropVersion,
+		RelatedImageWidth:        t.RelatedImageWidth,
+		RelatedImageHeight:       t.RelatedImageHeight,
 	})
 }
 

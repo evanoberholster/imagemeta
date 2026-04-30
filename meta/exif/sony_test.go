@@ -10,7 +10,7 @@ import (
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	sonymk "github.com/evanoberholster/imagemeta/meta/exif/makernote/sony"
-	"github.com/rs/zerolog"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 )
 
 func TestParseSonyMakerNoteSamples(t *testing.T) {
@@ -189,7 +189,7 @@ func TestDecodeARWSample(t *testing.T) {
 		t.Fatalf("Buf() = %s, want %s", it, imagetype.ImageARW)
 	}
 
-	r := NewReader(zerolog.Nop())
+	r := NewReader(metalog.Logger)
 	defer r.Close()
 	header, err := ScanTiffHeader(bufio.NewReader(bytes.NewReader(data)), it)
 	if err != nil {

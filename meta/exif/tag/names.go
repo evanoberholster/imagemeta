@@ -23,9 +23,13 @@ const (
 	TagXResolution                  ID = 0x011a
 	TagYResolution                  ID = 0x011b
 	TagPlanarConfiguration          ID = 0x011c
+	TagWhitePoint                   ID = 0x013e
+	TagPrimaryChromaticities        ID = 0x013f
 	TagResolutionUnit               ID = 0x0128
 	TagThumbnailOffset              ID = 0x0201
 	TagThumbnailLength              ID = 0x0202
+	TagYCbCrCoefficients            ID = 0x0211
+	TagYCbCrPositioning             ID = 0x0213
 	TagReferenceBlackWhite          ID = 0x0214
 	TagSoftware                     ID = 0x0131
 	TagDateTime                     ID = 0x0132
@@ -36,6 +40,7 @@ const (
 	TagTileByteCounts               ID = 0x0145
 	TagSubIFDs                      ID = 0x014a
 	TagApplicationNotes             ID = 0x02bc
+	TagIPTCNAA                      ID = 0x83bb
 	TagCFARepeatPatternDim          ID = 0x828d
 	TagCFAPattern2                  ID = 0x828e
 	TagCopyright                    ID = 0x8298
@@ -182,6 +187,11 @@ const (
 	TagLensMake                 ID = 0xa433
 	TagLensModel                ID = 0xa434
 	TagLensSerialNumber         ID = 0xa435
+	TagGamma                    ID = 0xa500
+	TagInteropIndex             ID = 0x0001
+	TagInteropVersion           ID = 0x0002
+	TagRelatedImageWidth        ID = 0x1001
+	TagRelatedImageHeight       ID = 0x1002
 
 	// GPS IFD tags (core set).
 	TagGPSVersionID         ID = 0x0000
@@ -231,9 +241,13 @@ var rootNames = map[ID]string{
 	TagSamplesPerPixel:              "SamplesPerPixel",
 	TagRowsPerStrip:                 "RowsPerStrip",
 	TagPlanarConfiguration:          "PlanarConfiguration",
+	TagWhitePoint:                   "WhitePoint",
+	TagPrimaryChromaticities:        "PrimaryChromaticities",
 	TagResolutionUnit:               "ResolutionUnit",
 	TagThumbnailOffset:              "ThumbnailOffset",
 	TagThumbnailLength:              "ThumbnailLength",
+	TagYCbCrCoefficients:            "YCbCrCoefficients",
+	TagYCbCrPositioning:             "YCbCrPositioning",
 	TagStripOffsets:                 "StripOffsets",
 	TagStripByteCounts:              "StripByteCounts",
 	TagMinSampleValue:               "MinSampleValue",
@@ -250,6 +264,7 @@ var rootNames = map[ID]string{
 	TagSubIFDs:                      "SubIFDs",
 	TagTIFFEPStandardID:             "TIFF-EPStandardID",
 	TagApplicationNotes:             "ApplicationNotes",
+	TagIPTCNAA:                      "IPTC-NAA",
 	TagCFARepeatPatternDim:          "CFARepeatPatternDim",
 	TagCFAPattern2:                  "CFAPattern2",
 	TagImageDescription:             "ImageDescription",
@@ -397,6 +412,11 @@ var exifNames = map[ID]string{
 	TagLensMake:                 "LensMake",
 	TagLensModel:                "LensModel",
 	TagLensSerialNumber:         "LensSerialNumber",
+	TagGamma:                    "Gamma",
+	TagInteropIndex:             "InteropIndex",
+	TagInteropVersion:           "InteropVersion",
+	TagRelatedImageWidth:        "RelatedImageWidth",
+	TagRelatedImageHeight:       "RelatedImageHeight",
 }
 
 var gpsNames = map[ID]string{

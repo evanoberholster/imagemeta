@@ -1,9 +1,10 @@
 package exif
 
 import (
+	"log/slog"
+
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
 )
 
 // loggerMixin provides common EXIF parser logging behavior and can be embedded
@@ -13,27 +14,23 @@ type loggerMixin struct {
 }
 
 // newLoggerMixin creates and initializes an internal helper value.
-func newLoggerMixin(l zerolog.Logger) loggerMixin {
+func newLoggerMixin(l *slog.Logger) loggerMixin {
 	return loggerMixin{Mixin: metalog.NewComponentMixin(l, "exif")}
 }
 
 // setLogger sets the internal state value used during parsing.
-func (m *loggerMixin) setLogger(l zerolog.Logger) {
+func (m *loggerMixin) setLogger(l *slog.Logger) {
 	m.SetLogger(l)
-}
-
-func (m loggerMixin) logLevel() zerolog.Level {
-	return m.Level()
 }
 
 // logLevelDebug reports whether debug level logging is enabled.
 func (m loggerMixin) logLevelDebug() bool {
-	return m.logLevel() <= zerolog.DebugLevel
+	return m.Enabled(slog.LevelDebug)
 }
 
 // logLevelWarn reports whether warn level logging is enabled.
 func (m loggerMixin) logLevelWarn() bool {
-	return m.logLevel() <= zerolog.WarnLevel
+	return m.Enabled(slog.LevelWarn)
 }
 
 // traceEnabled reports whether trace logging is enabled.
@@ -43,7 +40,7 @@ func (m loggerMixin) traceEnabled() bool {
 
 // infoEnabled reports whether info logging is enabled.
 func (m loggerMixin) infoEnabled() bool {
-	return m.logLevel() <= zerolog.InfoLevel
+	return m.Enabled(slog.LevelInfo)
 }
 
 // debugEnabled reports whether debug logging is enabled.
@@ -58,7 +55,7 @@ func (m loggerMixin) warnEnabled() bool {
 
 // errorEnabled reports whether error logging is enabled.
 func (m loggerMixin) errorEnabled() bool {
-	return m.logLevel() <= zerolog.ErrorLevel
+	return m.Enabled(slog.LevelError)
 }
 
 // errEnabled reports whether error logging is enabled.
@@ -67,23 +64,23 @@ func (m loggerMixin) errEnabled() bool {
 }
 
 // debug builds a debug-level log event with trace caller context when enabled.
-func (m loggerMixin) debug() *zerolog.Event {
-	return m.Event(zerolog.DebugLevel, 3)
+func (m loggerMixin) debug() *metalog.Event {
+	return m.Event(slog.LevelDebug, 3)
 }
 
 // info builds an info-level log event with trace caller context when enabled.
-func (m loggerMixin) info() *zerolog.Event {
-	return m.Event(zerolog.InfoLevel, 3)
+func (m loggerMixin) info() *metalog.Event {
+	return m.Event(slog.LevelInfo, 3)
 }
 
 // warn builds a warn-level log event with trace caller context when enabled.
-func (m loggerMixin) warn() *zerolog.Event {
-	return m.Event(zerolog.WarnLevel, 3)
+func (m loggerMixin) warn() *metalog.Event {
+	return m.Event(slog.LevelWarn, 3)
 }
 
 // readerLogContext adds decode-scoped fields useful when a stream cannot be
 // identified by filename, such as CR3 item payloads or embedded maker notes.
-func (r *Reader) readerLogContext(ev *zerolog.Event) *zerolog.Event {
+func (r *Reader) readerLogContext(ev *metalog.Event) *metalog.Event {
 	ev.Uint32("readerOffset", r.po).
 		Uint32("firstIFDOffset", r.firstIFDOffset).
 		Uint32("exifLength", r.exifLength).
@@ -98,7 +95,7 @@ func (r *Reader) readerLogContext(ev *zerolog.Event) *zerolog.Event {
 }
 
 // directoryLogContext adds IFD identity and positioning fields to a log event.
-func (r *Reader) directoryLogContext(ev *zerolog.Event, d tag.Directory) *zerolog.Event {
+func (r *Reader) directoryLogContext(ev *metalog.Event, d tag.Directory) *metalog.Event {
 	r.readerLogContext(ev)
 	return ev.
 		Str("ifd", d.String()).
@@ -110,7 +107,7 @@ func (r *Reader) directoryLogContext(ev *zerolog.Event, d tag.Directory) *zerolo
 }
 
 // tagLogContext adds decoded tag identity and positioning fields to a log event.
-func (r *Reader) tagLogContext(ev *zerolog.Event, t tag.Entry) *zerolog.Event {
+func (r *Reader) tagLogContext(ev *metalog.Event, t tag.Entry) *metalog.Event {
 	r.readerLogContext(ev)
 	return ev.
 		Uint16("tagID", uint16(t.ID)).
@@ -126,7 +123,7 @@ func (r *Reader) tagLogContext(ev *zerolog.Event, t tag.Entry) *zerolog.Event {
 
 // rawTagHeaderLogContext adds raw directory-entry fields before tag type
 // normalization. It is used when a tag header is invalid and no Entry exists.
-func (r *Reader) rawTagHeaderLogContext(ev *zerolog.Event, d tag.Directory, index int, id tag.ID, typ tag.Type, unitCount, valueOffset uint32) *zerolog.Event {
+func (r *Reader) rawTagHeaderLogContext(ev *metalog.Event, d tag.Directory, index int, id tag.ID, typ tag.Type, unitCount, valueOffset uint32) *metalog.Event {
 	r.directoryLogContext(ev, d)
 	return ev.
 		Int("tagIndex", index).
@@ -139,7 +136,7 @@ func (r *Reader) rawTagHeaderLogContext(ev *zerolog.Event, d tag.Directory, inde
 }
 
 // infoDirectoryLogContext keeps successful directory progress logs compact.
-func (r *Reader) infoDirectoryLogContext(ev *zerolog.Event, d tag.Directory) *zerolog.Event {
+func (r *Reader) infoDirectoryLogContext(ev *metalog.Event, d tag.Directory) *metalog.Event {
 	ev.Str("ifd", d.Type.String()).
 		Int8("ifdIndex", d.Index).
 		Uint32("ifdOffset", d.Offset).

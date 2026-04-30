@@ -128,6 +128,10 @@ var ifd0ValueNames = map[ID]map[uint32]string{
 		8: "Rotate 270 CW",
 	},
 	TagResolutionUnit: resolutionUnitValueNames,
+	TagYCbCrPositioning: {
+		1: "Centered",
+		2: "Co-sited",
+	},
 	TagCompression: {
 		1:     "Uncompressed",
 		2:     "CCITT 1D",

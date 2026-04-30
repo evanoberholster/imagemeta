@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -61,7 +61,7 @@ type Reader struct {
 }
 
 // NewReader creates an EXIF reader. Call Close when done.
-func NewReader(l zerolog.Logger, opts ...ReaderOption) *Reader {
+func NewReader(l *slog.Logger, opts ...ReaderOption) *Reader {
 	s, ok := statePool.Get().(*state)
 	if !ok || s == nil {
 		s = new(state)
@@ -94,7 +94,7 @@ func (r *Reader) resetDecodeState(resetExif bool) {
 }
 
 // AcquirePooledReader gets a Reader from the shared pool.
-func AcquirePooledReader(l zerolog.Logger) *Reader {
+func AcquirePooledReader(l *slog.Logger) *Reader {
 	r, ok := parseReaderPool.Get().(*Reader)
 	if !ok || r == nil {
 		r = &Reader{}
@@ -114,7 +114,7 @@ func AcquirePooledReader(l zerolog.Logger) *Reader {
 	return r
 }
 
-func acquirePooledReader(l zerolog.Logger) *Reader {
+func acquirePooledReader(l *slog.Logger) *Reader {
 	return AcquirePooledReader(l)
 }
 

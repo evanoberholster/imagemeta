@@ -1,39 +1,40 @@
 package isobmff
 
 import (
+	"log/slog"
+
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
-	"github.com/rs/zerolog"
 )
 
 const componentName = "isobmff"
 
 // logLevelInfo
 func logLevelInfo() bool {
-	return metalog.LevelEnabled(metalog.Logger, zerolog.InfoLevel)
+	return metalog.LevelEnabled(metalog.Logger, slog.LevelInfo)
 }
 
 // logLevelDebug
 func logLevelDebug() bool {
-	return metalog.LevelEnabled(metalog.Logger, zerolog.DebugLevel)
+	return metalog.LevelEnabled(metalog.Logger, slog.LevelDebug)
 }
 
 // logLevelError
 func logLevelError() bool {
-	return metalog.LevelEnabled(metalog.Logger, zerolog.ErrorLevel)
+	return metalog.LevelEnabled(metalog.Logger, slog.LevelError)
 }
 
-func logInfo() *zerolog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.InfoLevel, 2)
+func logInfo() *metalog.Event {
+	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelInfo, 2)
 }
 
-func logDebug() *zerolog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.DebugLevel, 2)
+func logDebug() *metalog.Event {
+	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelDebug, 2)
 }
 
-func logError() *zerolog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, zerolog.ErrorLevel, 2)
+func logError() *metalog.Event {
+	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelError, 2)
 }
-func logInfoBox(b *box) *zerolog.Event {
+func logInfoBox(b *box) *metalog.Event {
 	ev := logInfo()
 	if b != nil {
 		b.log(ev)
@@ -41,7 +42,7 @@ func logInfoBox(b *box) *zerolog.Event {
 	return ev
 }
 
-func logDebugBox(b *box) *zerolog.Event {
+func logDebugBox(b *box) *metalog.Event {
 	ev := logDebug()
 	if b != nil {
 		b.log(ev)
@@ -49,7 +50,7 @@ func logDebugBox(b *box) *zerolog.Event {
 	return ev
 }
 
-func logErrorBox(b *box) *zerolog.Event {
+func logErrorBox(b *box) *metalog.Event {
 	ev := logError()
 	if b != nil {
 		b.log(ev)
@@ -57,15 +58,15 @@ func logErrorBox(b *box) *zerolog.Event {
 	return ev
 }
 
-func (b *box) log(ev *zerolog.Event) {
+func (b *box) log(ev *metalog.Event) {
 	ev.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
 	if b.flags != 0 {
 		ev.Object("flags", b.flags)
 	}
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (e cctpEntry) MarshalZerologObject(ev *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (e cctpEntry) MarshalLogObject(ev *metalog.Event) {
 	ev.Uint32("size", e.size).
 		Str("trackType", fourCCString(e.trackType)).
 		Uint32("mediaType", e.mediaType).
@@ -73,28 +74,28 @@ func (e cctpEntry) MarshalZerologObject(ev *zerolog.Event) {
 		Uint32("index", e.index)
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (c cctpBox) MarshalZerologArray(a *zerolog.Array) {
+// MarshalLogObject is a structured logging interface
+func (c cctpBox) MarshalLogArray(a *metalog.Array) {
 	for i := range c.entries {
 		a.Object(c.entries[i])
 	}
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (b box) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (b box) MarshalLogObject(e *metalog.Event) {
 	e.Str("boxType", b.boxType.String()).Int64("offset", b.offset).Int("size", b.size)
 	if b.flags != 0 {
 		e.Object("flags", b.flags)
 	}
 }
 
-// MarshalZerologObject is a zerolog interface for logging
-func (f flags) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject is a structured logging interface
+func (f flags) MarshalLogObject(e *metalog.Event) {
 	e.Uint8("version", f.version()).Uint32("flags", f.flags())
 }
 
-// MarshalZerologArray is a zerolog interface for logging.
-func (ctbo ctboBox) MarshalZerologArray(a *zerolog.Array) {
+// MarshalLogArray is a structured logging interface.
+func (ctbo ctboBox) MarshalLogArray(a *metalog.Array) {
 	for i := 0; i < len(ctbo.items); i++ {
 		a.Object(ctbo.items[i])
 	}

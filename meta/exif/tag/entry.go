@@ -3,8 +3,8 @@ package tag
 import (
 	"fmt"
 
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
-	"github.com/rs/zerolog"
 )
 
 // Entry is a decoded EXIF tag header.
@@ -137,14 +137,18 @@ func (t Entry) ChildDirectory() Directory {
 		if t.ID == TagMakerNote {
 			return NewDirectory(t.ByteOrder, MakerNoteIFD, t.IfdIndex, t.ValueOffset, 0)
 		}
+		if t.ID == TagInteropIFDPointer {
+			// Parse InteropIFD tags through ExifIFD semantics.
+			return NewDirectory(t.ByteOrder, ExifIFD, t.IfdIndex, t.ValueOffset, 0)
+		}
 	case SubIFD0, SubIFD1, SubIFD2, SubIFD3, SubIFD4, SubIFD5, SubIFD6, SubIFD7:
 		return NewDirectory(t.ByteOrder, t.IfdType, t.IfdIndex, t.ValueOffset, 0)
 	}
 	return NewDirectory(t.ByteOrder, Unknown, t.IfdIndex, t.ValueOffset, 0)
 }
 
-// MarshalZerologObject implements zerolog object marshaling.
-func (t Entry) MarshalZerologObject(e *zerolog.Event) {
+// MarshalLogObject implements structured object marshaling.
+func (t Entry) MarshalLogObject(e *metalog.Event) {
 	e.Stringer("id", t.ID).
 		Str("name", t.Name()).
 		Stringer("type", t.Type).
