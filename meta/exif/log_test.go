@@ -95,31 +95,22 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			l := metalog.New(io.Discard, tt.level)
-			m := newLoggerMixin(l)
+			m := metalog.NewComponentMixin(l, "exif")
 
-			if got := m.traceEnabled(); got != tt.trace {
-				t.Fatalf("traceEnabled() = %v, want %v", got, tt.trace)
+			if got := m.TraceEnabled(); got != tt.trace {
+				t.Fatalf("TraceEnabled() = %v, want %v", got, tt.trace)
 			}
-			if got := m.infoEnabled(); got != tt.info {
-				t.Fatalf("infoEnabled() = %v, want %v", got, tt.info)
+			if got := m.InfoEnabled(); got != tt.info {
+				t.Fatalf("InfoEnabled() = %v, want %v", got, tt.info)
 			}
-			if got := m.debugEnabled(); got != tt.debug {
-				t.Fatalf("debugEnabled() = %v, want %v", got, tt.debug)
+			if got := m.DebugEnabled(); got != tt.debug {
+				t.Fatalf("DebugEnabled() = %v, want %v", got, tt.debug)
 			}
-			if got := m.logLevelDebug(); got != tt.debug {
-				t.Fatalf("logLevelDebug() = %v, want %v", got, tt.debug)
+			if got := m.WarnEnabled(); got != tt.warn {
+				t.Fatalf("WarnEnabled() = %v, want %v", got, tt.warn)
 			}
-			if got := m.warnEnabled(); got != tt.warn {
-				t.Fatalf("warnEnabled() = %v, want %v", got, tt.warn)
-			}
-			if got := m.logLevelWarn(); got != tt.warn {
-				t.Fatalf("logLevelWarn() = %v, want %v", got, tt.warn)
-			}
-			if got := m.errorEnabled(); got != tt.errorable {
-				t.Fatalf("errorEnabled() = %v, want %v", got, tt.errorable)
-			}
-			if got := m.errEnabled(); got != tt.errorable {
-				t.Fatalf("errEnabled() = %v, want %v", got, tt.errorable)
+			if got := m.ErrorEnabled(); got != tt.errorable {
+				t.Fatalf("ErrorEnabled() = %v, want %v", got, tt.errorable)
 			}
 		})
 	}
@@ -128,14 +119,14 @@ func TestLoggerMixinEnabledChecks(t *testing.T) {
 func TestLoggerMixinSetLoggerRefreshesChecks(t *testing.T) {
 	t.Parallel()
 
-	m := newLoggerMixin(metalog.New(io.Discard, slog.LevelError))
-	if !m.errorEnabled() || m.warnEnabled() {
-		t.Fatalf("unexpected initial enabled states: error=%v warn=%v", m.errorEnabled(), m.warnEnabled())
+	m := metalog.NewComponentMixin(metalog.New(io.Discard, slog.LevelError), "exif")
+	if !m.ErrorEnabled() || m.WarnEnabled() {
+		t.Fatalf("unexpected initial enabled states: error=%v warn=%v", m.ErrorEnabled(), m.WarnEnabled())
 	}
 
-	m.setLogger(metalog.New(io.Discard, slog.LevelDebug))
-	if !m.debugEnabled() || !m.warnEnabled() || !m.errorEnabled() {
-		t.Fatalf("setLogger did not refresh checks: debug=%v warn=%v error=%v", m.debugEnabled(), m.warnEnabled(), m.errorEnabled())
+	m.SetLogger(metalog.New(io.Discard, slog.LevelDebug))
+	if !m.DebugEnabled() || !m.WarnEnabled() || !m.ErrorEnabled() {
+		t.Fatalf("SetLogger did not refresh checks: debug=%v warn=%v error=%v", m.DebugEnabled(), m.WarnEnabled(), m.ErrorEnabled())
 	}
 }
 
@@ -143,12 +134,12 @@ func TestLoggerMixinInfoEvent(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	m := newLoggerMixin(metalog.New(&buf, slog.LevelInfo))
-	if !m.infoEnabled() {
+	m := metalog.NewComponentMixin(metalog.New(&buf, slog.LevelInfo), "exif")
+	if !m.InfoEnabled() {
 		t.Fatal("info logging should be enabled")
 	}
 
-	m.info().Str("phase", "decode").Msg("starting exif decode")
+	m.Info(3).Str("phase", "decode").Msg("starting exif decode")
 
 	out := buf.String()
 	if !strings.Contains(out, `"level":"info"`) || !strings.Contains(out, `"phase":"decode"`) {
@@ -160,16 +151,14 @@ func TestTagLogContextIncludesDecodeFields(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	r := &Reader{loggerMixin: newLoggerMixin(metalog.New(&buf, slog.LevelWarn))}
+	r := &Reader{Mixin: metalog.NewComponentMixin(metalog.New(&buf, slog.LevelWarn), "exif")}
 	r.po = 42
 	r.firstIFDOffset = 8
 	r.exifLength = 512
 	r.Exif.ImageType = imagetype.ImageJPEG
-	r.Exif.IFD0.Make = "Canon"
-	r.Exif.IFD0.Model = "EOS R5"
 
 	entry := tag.NewEntry(tag.TagMakerNote, tag.TypeUndefined, 128, 256, tag.ExifIFD, 0, utils.LittleEndian)
-	r.tagLogContext(r.warn(), entry).Msg("tag failed")
+	r.tagLogContext(r.Warn(3), entry).Msg("tag failed")
 
 	out := buf.String()
 	for _, want := range []string{
@@ -178,16 +167,12 @@ func TestTagLogContextIncludesDecodeFields(t *testing.T) {
 		`"firstIFDOffset":8`,
 		`"exifLength":512`,
 		`"imageType":"image/jpeg"`,
-		`"cameraMake":"Canon"`,
-		`"cameraModel":"EOS R5"`,
-		`"tagID":37500`,
+		`"tagID":"0x927C"`,
 		`"tagName":"MakerNote"`,
-		`"tagType":7`,
-		`"tagTypeName":"UNDEFINED"`,
+		`"tagType":"UNDEFINED"`,
 		`"tagSize":128`,
 		`"tagOffset":256`,
 		`"tagEmbedded":false`,
-		`"byteOrder":"LittleEndian"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("log output missing %s: %q", want, out)
@@ -199,12 +184,12 @@ func TestRawTagHeaderLogContextIncludesInvalidHeaderFields(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	r := &Reader{loggerMixin: newLoggerMixin(metalog.New(&buf, slog.LevelWarn))}
+	r := &Reader{Mixin: metalog.NewComponentMixin(metalog.New(&buf, slog.LevelWarn), "exif")}
 	r.po = 14
 	r.Exif.ImageType = imagetype.ImageTiff
 	directory := tag.NewDirectory(utils.BigEndian, tag.IFD0, 0, 8, 0)
 
-	r.rawTagHeaderLogContext(r.warn(), directory, 3, tag.TagModel, tag.Type(99), 2, 24).
+	r.rawTagHeaderLogContext(r.Warn(3), directory, 3, tag.TagModel, tag.Type(99), 2, 24).
 		Msg("invalid exif tag header")
 
 	out := buf.String()
@@ -213,16 +198,46 @@ func TestRawTagHeaderLogContextIncludesInvalidHeaderFields(t *testing.T) {
 		`"ifdIndex":0`,
 		`"ifdOffset":8`,
 		`"tagIndex":3`,
-		`"tagID":272`,
+		`"tagID":"0x0110"`,
 		`"tagName":"Model"`,
-		`"tagType":99`,
-		`"tagTypeName":"UNKNOWN"`,
+		`"tagType":"UNKNOWN"`,
 		`"units":2`,
 		`"rawValueOffset":24`,
-		`"byteOrder":"BigEndian"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("log output missing %s: %q", want, out)
 		}
+	}
+}
+
+func TestInfoDirectoryLogContextIncludesByteOrderWhenSet(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	r := &Reader{Mixin: metalog.NewComponentMixin(metalog.New(&buf, slog.LevelInfo), "exif")}
+	r.po = 31
+	directory := tag.NewDirectory(utils.LittleEndian, tag.IFD0, 0, 8, 0)
+
+	r.infoDirectoryLogContext(r.Info(3), directory).Msg("directory lifecycle")
+
+	out := buf.String()
+	if !strings.Contains(out, `"byteOrder":"LE"`) {
+		t.Fatalf("log output missing byteOrder for known endianness: %q", out)
+	}
+}
+
+func TestInfoDirectoryLogContextOmitsByteOrderWhenUnknown(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	r := &Reader{Mixin: metalog.NewComponentMixin(metalog.New(&buf, slog.LevelInfo), "exif")}
+	r.po = 31
+	directory := tag.NewDirectory(utils.UnknownEndian, tag.IFD0, 0, 8, 0)
+
+	r.infoDirectoryLogContext(r.Info(3), directory).Msg("directory lifecycle")
+
+	out := buf.String()
+	if strings.Contains(out, `"byteOrder":`) {
+		t.Fatalf("log output unexpectedly includes byteOrder for unknown endianness: %q", out)
 	}
 }

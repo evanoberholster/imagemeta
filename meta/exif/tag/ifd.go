@@ -1,7 +1,7 @@
 package tag
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -66,6 +66,15 @@ func (t IfdType) IsSubIFD() bool {
 	return t >= SubIFD0 && t <= SubIFD7
 }
 
+// SubIFDTypeForIndex returns the bounded SubIFD type for a zero-based index.
+// Values outside the explicit SubIFD0..SubIFD7 range collapse to SubIFD0.
+func SubIFDTypeForIndex(i int) IfdType {
+	if i >= 0 && i <= int(SubIFD7-SubIFD0) {
+		return IfdType(uint8(SubIFD0) + uint8(i))
+	}
+	return SubIFD0
+}
+
 func (t IfdType) IsRootIFD() bool {
 	return t == IFD0 || t == IFD1 || t == IFD2
 }
@@ -106,5 +115,13 @@ func NewDirectory(byteOrder utils.ByteOrder, directoryType IfdType, index int8, 
 }
 
 func (d Directory) String() string {
-	return fmt.Sprintf("IFD[%s](%d)@0x%04x", d.Type, d.Index, d.Offset)
+	var b [48]byte
+	out := b[:0]
+	out = append(out, "IFD["...)
+	out = append(out, d.Type.String()...)
+	out = append(out, "]("...)
+	out = strconv.AppendInt(out, int64(d.Index), 10)
+	out = append(out, ")@"...)
+	out = append(out, HexUint32LowerMinWidth(d.Offset, 4)...)
+	return string(out)
 }

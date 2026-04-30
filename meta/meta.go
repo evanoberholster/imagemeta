@@ -3,8 +3,8 @@ package meta
 
 import (
 	"errors"
-	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
@@ -96,7 +96,21 @@ func (h ExifHeader) IsValid() bool {
 }
 
 func (h ExifHeader) String() string {
-	return fmt.Sprintf("ByteOrder: %s, Ifd: %s, Offset: 0x%.4x TiffOffset: 0x%.4x Length: %d Imagetype: %s", h.ByteOrder, h.FirstIfd, h.FirstIfdOffset, h.TiffHeaderOffset, h.ExifLength, h.ImageType)
+	var b [160]byte
+	out := b[:0]
+	out = append(out, "ByteOrder: "...)
+	out = append(out, h.ByteOrder.String()...)
+	out = append(out, ", Ifd: "...)
+	out = append(out, h.FirstIfd.String()...)
+	out = append(out, ", Offset: "...)
+	out = append(out, tag.HexUint32LowerMinWidth(h.FirstIfdOffset, 4)...)
+	out = append(out, " TiffOffset: "...)
+	out = append(out, tag.HexUint32LowerMinWidth(h.TiffHeaderOffset, 4)...)
+	out = append(out, " Length: "...)
+	out = strconv.AppendUint(out, uint64(h.ExifLength), 10)
+	out = append(out, " Imagetype: "...)
+	out = append(out, h.ImageType.String()...)
+	return string(out)
 }
 
 // NewExifHeader returns a new ExifHeader.

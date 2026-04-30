@@ -3,7 +3,6 @@ package jpeg
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 )
 
 // markerType refers to the second byte of a JPEG Marker.
@@ -119,7 +118,13 @@ func (mt markerType) String() string {
 	if ok {
 		return str
 	}
-	return fmt.Sprintf("Unknown marker %x", uint8(mt))
+	const hex = "0123456789abcdef"
+	v := uint8(mt)
+	var out [17]byte
+	copy(out[:], "Unknown marker ")
+	out[15] = hex[v>>4]
+	out[16] = hex[v&0x0f]
+	return string(out[:])
 }
 
 // isSOIMarker returns true if the first 2 bytes match an SOI marker

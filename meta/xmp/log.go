@@ -6,15 +6,20 @@ import (
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 )
 
-func componentLogger() *slog.Logger {
-	return metalog.ComponentLogger("xmp")
-}
+const componentName = "xmp"
 
 func logWarn() *metalog.Event {
-	return metalog.NewEvent(componentLogger(), slog.LevelWarn, 2)
+	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelWarn, 2)
+}
+
+func logWarnEnabled() bool {
+	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelWarn)
 }
 
 func logPropertyParseWarning(err error, p property) {
+	if !logWarnEnabled() {
+		return
+	}
 	ev := logWarn().Err(err).
 		Str("namespace", p.Namespace().String()).
 		Str("property", p.Property().String()).

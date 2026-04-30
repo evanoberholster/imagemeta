@@ -16,8 +16,8 @@ import (
 // readMakerNoteDirectory parses a maker-note directory for the active camera make.
 func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) error {
 	makeID := r.ensureMakerNoteMake()
-	if r.infoEnabled() {
-		r.info().
+	if r.InfoEnabled() {
+		r.Info(3).
 			Str("makerNoteMake", makeID.String()).
 			Uint32("makerNoteOffset", parent.ValueOffset).
 			Uint32("makerNoteSize", parent.Size()).
@@ -71,8 +71,8 @@ func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) e
 		)
 		return r.readDirectory(prefixed, false)
 	default:
-		if r.debugEnabled() {
-			r.debug().
+		if r.DebugEnabled() {
+			r.Debug(3).
 				Str("make", r.Exif.CameraMake()).
 				Str("makerNoteMake", makeID.String()).
 				Msg("skipping maker-note parsing for unsupported make")
@@ -128,8 +128,8 @@ func (r *Reader) readNikonMakerNoteDirectory(parent tag.Entry, child tag.Directo
 	if !ok {
 		// Nikon maker notes without the standard label are not parsed yet.
 		// TODO: support unlabeled Nikon maker-note variants.
-		if r.infoEnabled() {
-			r.info().
+		if r.InfoEnabled() {
+			r.Info(3).
 				Str("makerNoteMake", makernote.CameraMakeNikon.String()).
 				Uint32("makerNoteOffset", parent.ValueOffset).
 				Msg("skipping unsupported Nikon maker-note header")
@@ -176,8 +176,8 @@ func (r *Reader) readCanonMakerNoteDirectory(parent tag.Entry, child tag.Directo
 			)
 			return r.readDirectory(embedded, false)
 		}
-		if r.warnEnabled() {
-			r.tagLogContext(r.warn(), parent).
+		if r.WarnEnabled() {
+			r.tagLogContext(r.Warn(3), parent).
 				Uint32("ifdRelativeOffset", ifdRelOffset).
 				Uint32("makerNoteSize", parent.UnitCount).
 				Msg("ignoring Canon maker-note TIFF prefix with invalid IFD offset")

@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -17,21 +18,32 @@ var (
 	// LevelDisabled disables all logging by setting a very high minimum level.
 	LevelDisabled slog.Level = 12
 	// Logger is a shared slog logger.
+	//
+	// Deprecated: use SetLogger and GetLogger instead of assigning directly.
 	Logger = New(os.Stdout, LevelDisabled)
+	// loggerPtr stores the effective process-wide logger used by meta packages.
+	loggerPtr atomic.Pointer[slog.Logger]
 )
 
-// WithComponent returns a child logger annotated with a stable component name.
-func WithComponent(l *slog.Logger, component string) *slog.Logger {
-	l = resolveLogger(l)
-	if component == "" {
-		return l
-	}
-	return l.With("component", component)
+func init() {
+	loggerPtr.Store(Logger)
 }
 
-// ComponentLogger returns a child logger from the shared package logger.
-func ComponentLogger(component string) *slog.Logger {
-	return WithComponent(Logger, component)
+// SetLogger sets the global logger used by meta packages.
+func SetLogger(l *slog.Logger) {
+	l = normalizeLogger(l)
+	Logger = l
+	loggerPtr.Store(l)
+}
+
+// GetLogger returns the global logger used by meta packages.
+func GetLogger() *slog.Logger {
+	if l := loggerPtr.Load(); l != nil {
+		return l
+	}
+	l := normalizeLogger(Logger)
+	loggerPtr.Store(l)
+	return l
 }
 
 // Mixin provides common logger state and level checks for parser types.
@@ -57,17 +69,64 @@ func (m *Mixin) SetLogger(l *slog.Logger) {
 
 // Enabled reports whether events at level should be emitted.
 func (m Mixin) Enabled(level slog.Level) bool {
-	return LevelEnabled(m.logger, level)
+	return LevelEnabled(m.eventLogger(), level)
 }
 
 // TraceEnabled reports whether trace-level callsite fields should be added.
 func (m Mixin) TraceEnabled() bool {
-	return TraceEnabled(m.logger)
+	return TraceEnabled(m.eventLogger())
 }
 
 // Event builds an event at level and adds trace callsite context when enabled.
 func (m Mixin) Event(level slog.Level, depth int) *Event {
-	return ComponentEvent(m.logger, m.component, level, depth)
+	return ComponentEvent(m.eventLogger(), m.component, level, depth)
+}
+
+// DebugEnabled reports whether debug events should be emitted.
+func (m Mixin) DebugEnabled() bool {
+	return m.Enabled(slog.LevelDebug)
+}
+
+// InfoEnabled reports whether info events should be emitted.
+func (m Mixin) InfoEnabled() bool {
+	return m.Enabled(slog.LevelInfo)
+}
+
+// WarnEnabled reports whether warn events should be emitted.
+func (m Mixin) WarnEnabled() bool {
+	return m.Enabled(slog.LevelWarn)
+}
+
+// ErrorEnabled reports whether error events should be emitted.
+func (m Mixin) ErrorEnabled() bool {
+	return m.Enabled(slog.LevelError)
+}
+
+// Debug builds a debug-level event with optional trace caller context.
+func (m Mixin) Debug(depth int) *Event {
+	return m.Event(slog.LevelDebug, depth)
+}
+
+// Info builds an info-level event with optional trace caller context.
+func (m Mixin) Info(depth int) *Event {
+	return m.Event(slog.LevelInfo, depth)
+}
+
+// Warn builds a warn-level event with optional trace caller context.
+func (m Mixin) Warn(depth int) *Event {
+	return m.Event(slog.LevelWarn, depth)
+}
+
+// Error builds an error-level event with optional trace caller context.
+func (m Mixin) Error(depth int) *Event {
+	return m.Event(slog.LevelError, depth)
+}
+
+func (m Mixin) eventLogger() *slog.Logger {
+	if m.logger != nil {
+		return m.logger
+	}
+	return GetLogger()
 }
 
 // LevelEnabled reports whether logger emits events at level.
@@ -82,17 +141,16 @@ func TraceEnabled(l *slog.Logger) bool {
 
 // Event builds an event at level and adds trace callsite context when enabled.
 func NewEvent(l *slog.Logger, level slog.Level, depth int) *Event {
-	ev := newEvent(resolveLogger(l), level)
+	ev := newEvent(resolveLogger(l), level, "")
 	TraceCaller(l, ev, depth+1)
 	return ev
 }
 
 // ComponentEvent builds an event at level and adds a stable component field when provided.
 func ComponentEvent(l *slog.Logger, component string, level slog.Level, depth int) *Event {
-	if component == "" {
-		return NewEvent(l, level, depth)
-	}
-	return NewEvent(WithComponent(l, component), level, depth)
+	ev := newEvent(resolveLogger(l), level, component)
+	TraceCaller(l, ev, depth+1)
+	return ev
 }
 
 // TraceCaller annotates ev with caller function information when trace is enabled.
@@ -121,7 +179,7 @@ func New(w io.Writer, level slog.Level) *slog.Logger {
 					a.Value = slog.StringValue(strings.ToLower(lv.String()))
 				}
 			case slog.MessageKey:
-				a.Key = "message"
+				a.Key = "msg"
 			}
 			return a
 		},
@@ -132,7 +190,20 @@ func resolveLogger(l *slog.Logger) *slog.Logger {
 	if l != nil {
 		return l
 	}
-	return Logger
+	return GetLogger()
+}
+
+func normalizeLogger(l *slog.Logger) *slog.Logger {
+	if l != nil {
+		return l
+	}
+	if current := loggerPtr.Load(); current != nil {
+		return current
+	}
+	if Logger != nil {
+		return Logger
+	}
+	return New(os.Stdout, LevelDisabled)
 }
 
 // Event is a chainable slog event builder compatible with the existing log call style.
@@ -140,10 +211,16 @@ type Event struct {
 	logger *slog.Logger
 	level  slog.Level
 	attrs  []slog.Attr
+	buf    [16]slog.Attr
 }
 
-func newEvent(l *slog.Logger, level slog.Level) *Event {
-	return &Event{logger: l, level: level}
+func newEvent(l *slog.Logger, level slog.Level, component string) *Event {
+	e := &Event{logger: l, level: level}
+	e.attrs = e.buf[:0]
+	if component != "" {
+		e.attrs = append(e.attrs, slog.String("component", component))
+	}
+	return e
 }
 
 func (e *Event) addAttr(a slog.Attr) *Event {
@@ -156,11 +233,7 @@ func (e *Event) Str(key, value string) *Event {
 }
 
 func (e *Event) Strs(key string, values []string) *Event {
-	out := make([]any, 0, len(values))
-	for i := range values {
-		out = append(out, values[i])
-	}
-	return e.addAttr(slog.Any(key, out))
+	return e.addAttr(slog.Any(key, values))
 }
 
 func (e *Event) Stringer(key string, value fmt.Stringer) *Event {
@@ -230,16 +303,13 @@ func (e *Event) Msg(msg string) {
 	e.logger.LogAttrs(context.Background(), e.level, msg, e.attrs...)
 }
 
-func (e *Event) Msgf(format string, args ...any) {
-	e.Msg(fmt.Sprintf(format, args...))
-}
-
 func marshalObjectAny(value any) any {
 	if value == nil {
 		return nil
 	}
 	if m, ok := value.(interface{ MarshalLogObject(*Event) }); ok {
 		ev := &Event{}
+		ev.attrs = ev.buf[:0]
 		m.MarshalLogObject(ev)
 		return logObject{attrs: ev.attrs}
 	}

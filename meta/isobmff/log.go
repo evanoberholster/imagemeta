@@ -10,29 +10,29 @@ const componentName = "isobmff"
 
 // logLevelInfo
 func logLevelInfo() bool {
-	return metalog.LevelEnabled(metalog.Logger, slog.LevelInfo)
+	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelInfo)
 }
 
 // logLevelDebug
 func logLevelDebug() bool {
-	return metalog.LevelEnabled(metalog.Logger, slog.LevelDebug)
+	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelDebug)
 }
 
 // logLevelError
 func logLevelError() bool {
-	return metalog.LevelEnabled(metalog.Logger, slog.LevelError)
+	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelError)
 }
 
 func logInfo() *metalog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelInfo, 2)
+	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelInfo, 2)
 }
 
 func logDebug() *metalog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelDebug, 2)
+	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelDebug, 2)
 }
 
 func logError() *metalog.Event {
-	return metalog.ComponentEvent(metalog.Logger, componentName, slog.LevelError, 2)
+	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelError, 2)
 }
 func logInfoBox(b *box) *metalog.Event {
 	ev := logInfo()

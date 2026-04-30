@@ -1,8 +1,6 @@
 package tag
 
 import (
-	"fmt"
-
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -154,5 +152,5 @@ func (t Entry) MarshalLogObject(e *metalog.Event) {
 		Stringer("type", t.Type).
 		Str("ifd", t.IfdType.String()).
 		Uint32("units", t.UnitCount).
-		Str("offset", fmt.Sprintf("0x%04x", t.ValueOffset))
+		Str("offset", HexUint32LowerMinWidth(t.ValueOffset, 4))
 }

@@ -38,7 +38,7 @@ func (pr *previewReader) RenderPreview(r io.Reader, h meta.PreviewHeader) error 
 			pr.logError(err).
 				Uint32("offset", offset).
 				Uint32("maxOffset", maxOffset).
-				Msgf("error read preview image")
+				Msg("error read preview image")
 			return err
 		}
 		if readLength == 0 {

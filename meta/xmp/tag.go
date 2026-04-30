@@ -1,7 +1,7 @@
 package xmp
 
 import (
-	"fmt"
+	"strings"
 )
 
 // property is an XML property
@@ -65,7 +65,15 @@ func (p property) Is(p1 Property) bool {
 }
 
 func (p property) String() string {
-	return fmt.Sprintf("(%s) %s \t Val:%s", p.parent.String(), p.self.String(), string(p.val))
+	var b strings.Builder
+	b.Grow(len(p.val) + 32)
+	b.WriteByte('(')
+	b.WriteString(p.parent.String())
+	b.WriteString(") ")
+	b.WriteString(p.self.String())
+	b.WriteString(" \t Val:")
+	b.Write(p.val)
+	return b.String()
 }
 
 func (p property) valuePreview(limit int) string {
@@ -85,7 +93,16 @@ type Tag struct {
 }
 
 func (t Tag) String() string {
-	return fmt.Sprintf("%s: \t (%s) %s \t Val:%s", t.t.String(), t.parent.String(), t.self.String(), string(t.val))
+	var b strings.Builder
+	b.Grow(len(t.val) + 40)
+	b.WriteString(t.t.String())
+	b.WriteString(": \t (")
+	b.WriteString(t.parent.String())
+	b.WriteString(") ")
+	b.WriteString(t.self.String())
+	b.WriteString(" \t Val:")
+	b.Write(t.val)
+	return b.String()
 }
 
 // Attribute is an xmp Attribute
@@ -94,7 +111,16 @@ type Attribute struct {
 }
 
 func (attr Attribute) String() string {
-	return fmt.Sprintf("Attribute: (%s) %s=\"%s\"", attr.parent.String(), attr.self.String(), string(attr.val))
+	var b strings.Builder
+	b.Grow(len(attr.val) + 40)
+	b.WriteString("Attribute: (")
+	b.WriteString(attr.parent.String())
+	b.WriteString(") ")
+	b.WriteString(attr.self.String())
+	b.WriteString("=\"")
+	b.Write(attr.val)
+	b.WriteByte('"')
+	return b.String()
 }
 
 // pType represents a property's type.

@@ -3,11 +3,11 @@ package isobmff
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	metalog.Logger = metalog.New(io.Discard, metalog.LevelDisabled)
+	metalog.SetLogger(metalog.New(io.Discard, metalog.LevelDisabled))
 }
 
 func BenchmarkISOBMFFSamples(b *testing.B) {
@@ -105,7 +105,16 @@ func benchmarkSampleLabel(index int, path string) string {
 	if len(base) > 40 {
 		base = base[:40]
 	}
-	return fmt.Sprintf("%02d_%s", index+1, base)
+	n := index + 1
+	var b strings.Builder
+	b.Grow(len(base) + 3)
+	if n < 10 {
+		b.WriteByte('0')
+	}
+	b.WriteString(strconv.Itoa(n))
+	b.WriteByte('_')
+	b.WriteString(base)
+	return b.String()
 }
 
 func TestBrandFromBufAdditionalBrands(t *testing.T) {
