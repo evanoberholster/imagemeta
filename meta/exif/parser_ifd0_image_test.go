@@ -24,12 +24,12 @@ func TestParseIFD0ImageReferenceFromStripArrays(t *testing.T) {
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 
 	offsetTag := tag.NewEntry(tag.TagStripOffsets, tag.TypeLong, 2, 0, tag.IFD0, 0, utils.LittleEndian)
-	if !r.parseIFD0ImageTag(offsetTag) {
-		t.Fatal("parseIFD0ImageTag(TagStripOffsets) = false, want true")
+	if !r.parseIFD0Tag(offsetTag) {
+		t.Fatal("parseIFD0Tag(TagStripOffsets) = false, want true")
 	}
 	lengthTag := tag.NewEntry(tag.TagStripByteCounts, tag.TypeLong, 2, 8, tag.IFD0, 0, utils.LittleEndian)
-	if !r.parseIFD0ImageTag(lengthTag) {
-		t.Fatal("parseIFD0ImageTag(TagStripByteCounts) = false, want true")
+	if !r.parseIFD0Tag(lengthTag) {
+		t.Fatal("parseIFD0Tag(TagStripByteCounts) = false, want true")
 	}
 
 	if got, want := r.Exif.IFD0.ImageOffset, uint32(0x2000); got != want {

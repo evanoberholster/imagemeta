@@ -31,7 +31,7 @@ func tagFromBuffer(directory tag.Directory, buf []byte) (tag.Entry, error) {
 
 // addTag appends a tag to parser state while preserving parse order constraints.
 func (r *Reader) addTag(t tag.Entry) {
-	if t.IfdType != tag.MakerNoteIFD && t.ValueOffset < r.po {
+	if t.IfdType != tag.MakerNoteIFD && t.ValueOffset < r.po && t.ID != tag.TagMakerNote {
 		if r.WarnEnabled() {
 			r.warnTagAdd(t, "ignoring reverse-offset tag")
 		}
@@ -184,18 +184,107 @@ func (r *Reader) parseTag(t tag.Entry) {
 	}
 }
 
+func (r *Reader) parseDNGTags() bool {
+	switch r.Exif.ImageType {
+	case imagetype.ImageDNG, imagetype.ImageTiff:
+		return true
+	default:
+		return false
+	}
+}
+
 // parseIFD0Tag parses IFD0 tags into typed model fields.
 //
 // Non-parsed IFD0 tags are documented in the explicit "intentionally non-parsed"
 // case branch below. These tags are treated as handled for coverage/reporting
 // parity but are not mapped into the Exif model.
 func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
-	if r.parseIFD0TextTag(t) || r.parseIFD0ImageTag(t) || r.parseIFD0ColorTag(t) || (r.parseIFD0DNGTags() && r.parseIFD0DNGTag(t)) {
-		return true
-	}
+	ifd0 := &r.Exif.IFD0
+	exifIfd := &r.Exif.ExifIFD
+	switch t.ID {
+	// Text/date tags.
+	case tag.TagDateTime:
+		modifyDate := r.parseDate(t)
+		ifd0.setDate(modifyDate)
+		ifd0.markTagParsed(t.ID)
+	case tag.TagDateTimeOriginal:
+		dateTimeOriginal := r.parseDate(t)
+		exifIfd.setDate(t.ID, dateTimeOriginal)
+		exifIfd.markTagParsed(t.ID)
+	case tag.TagMake:
+		r.Exif.CameraMakeID, ifd0.Make = r.parseMakeTag(t)
+	case tag.TagModel:
+		ifd0.Model = r.parseString(t)
+	case tag.TagArtist:
+		ifd0.Artist = r.parseStringTrimRightSpaceNewline(t)
+	case tag.TagCopyright:
+		ifd0.Copyright = r.parseDisplayStringTrimRightSpaceNewline(t, 512)
+	case tag.TagApplicationNotes:
+		// TODO: TagApplicationNotes parsing intentionally disabled for now.
+		// The payload is often large and not needed in the hot parse path.
+	case tag.TagPrintIM:
+		// ignore tag
+		//ifd0.PrintIM = r.parseDisplayString(t, 512)
+	case tag.TagImageDescription:
+		ifd0.ImageDescription = r.parseString(t)
+	case tag.TagSoftware:
+		ifd0.Software = r.parseString(t)
+	// Image/layout tags.
+	case tag.TagSubfileType:
+		ifd0.SubfileType = meta.SubfileType(r.parseUint32(t))
+	case tag.TagPhotometricInterpretation:
+		ifd0.PhotometricInterpretation = r.parseUint16(t)
+	case tag.TagTileWidth:
+		// ingnore tag
+	case tag.TagTileLength:
+		// ingnore tag
+	case tag.TagTileOffsets:
+		// ingnore tag
+	case tag.TagTileByteCounts:
+		// ingnore tag
+	case tag.TagThumbnailOffset:
+		ifd0.ThumbnailOffset = r.parseFirstUint32(t)
+	case tag.TagThumbnailLength:
+		ifd0.ThumbnailLength = r.parseFirstUint32(t)
+	case tag.TagBitsPerSample:
+		r.parseUint16List(t, ifd0.BitsPerSample[:])
+	case tag.TagCompression:
+		ifd0.Compression = meta.Compression(r.parseUint16(t))
+	case tag.TagRowsPerStrip:
+		// ingnore tag
+	case tag.TagSubIFDs:
+		r.parseSubIFDs(t)
+	case tag.TagPlanarConfiguration:
+		ifd0.PlanarConfiguration = r.parseUint16(t)
+	case tag.TagXResolution:
+		ifd0.XResolution = r.parseRationalValue(t).Float64()
+	case tag.TagYResolution:
+		ifd0.YResolution = r.parseRationalValue(t).Float64()
+	case tag.TagResolutionUnit:
+		ifd0.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
+	case tag.TagSamplesPerPixel:
+		ifd0.SamplesPerPixel = r.parseUint16(t)
+	case tag.TagImageWidth:
+		ifd0.ImageWidth = r.parseUint32(t)
+	case tag.TagImageLength:
+		ifd0.ImageHeight = r.parseUint32(t)
+	case tag.TagStripOffsets:
+		ifd0.ImageOffset = r.parseFirstUint32(t)
+	case tag.TagStripByteCounts:
+		ifd0.ImageLength = r.parseFirstUint32(t)
+	case tag.TagOrientation:
+		ifd0.Orientation = meta.Orientation(r.parseUint16(t))
+	// Color tags.
+	case tag.TagWhitePoint:
+		r.parseRationalFloat64List(t, ifd0.WhitePoint[:])
+	case tag.TagPrimaryChromaticities:
+		r.parseRationalFloat64List(t, ifd0.PrimaryChromaticities[:])
+	case tag.TagYCbCrCoefficients:
+		r.parseRationalFloat64List(t, ifd0.YCbCrCoefficients[:])
+	case tag.TagYCbCrPositioning:
+		ifd0.YCbCrPositioning = r.parseUint16(t)
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
 	// Keep this list as the canonical location for IFD0 exclusions.
-	switch t.ID {
 	case tag.TagCFARepeatPatternDim, tag.TagCFAPattern2, tag.TagReferenceBlackWhite, tag.TagTIFFEPStandardID,
 		tag.TagCFAPlaneColor, tag.TagBlackLevelRepeatDim, tag.TagBlackLevel, tag.TagWhiteLevel,
 		tag.TagColorMatrix1, tag.TagColorMatrix2, tag.TagAnalogBalance, tag.TagAsShotNeutral,
@@ -206,56 +295,41 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 		tag.TagProfileEmbedPolicy, tag.TagNoiseProfile, tag.TagOpcodeList2, tag.TagLensSpecification,
 		tag.TagIPTCNAA:
 		return true
-	default:
-		return false
-	}
-}
-
-func (r *Reader) parseIFD0DNGTags() bool {
-	switch r.Exif.ImageType {
-	case imagetype.ImageDNG, imagetype.ImageTiff:
-		return true
-	default:
-		return false
-	}
-}
-
-// parseIFD0TextTag parses IFD0 tags with string or date types.
-func (r *Reader) parseIFD0TextTag(t tag.Entry) bool {
-	switch t.ID {
-	case tag.TagDateTime:
-		modifyDate := r.parseDate(t)
-		r.Exif.IFD0.setDate(modifyDate)
-		r.Exif.IFD0.markTagParsed(t.ID)
-	case tag.TagDateTimeOriginal:
-		dateTimeOriginal := r.parseDate(t)
-		r.Exif.ExifIFD.setDate(t.ID, dateTimeOriginal)
-		r.Exif.ExifIFD.markTagParsed(t.ID)
-	case tag.TagMake:
-		r.Exif.CameraMakeID, r.Exif.IFD0.Make = r.parseMakeTag(t)
-	case tag.TagModel:
-		r.Exif.IFD0.Model = r.parseString(t)
-		if r.Exif.IFD0.Model != "" {
-			if r.InfoEnabled() {
-				r.Info(3).
-					Uint32("tagOffset", t.ValueOffset).
-					Msg("parsed camera model")
-			}
+		// DNG extension tags.
+	case tag.TagDNGAdobeData:
+		r.dngMakerNote()
+		r.parseDNGAdobeData(t)
+	case tag.TagDNGVersion:
+		dst := r.dngMakerNote()
+		dst.DNGVersionCount = uint8(r.parseByteList(t, dst.DNGVersion[:]))
+		if r.Exif.ImageType == imagetype.ImageTiff {
+			r.Exif.ImageType = imagetype.ImageDNG
 		}
-	case tag.TagArtist:
-		r.Exif.IFD0.Artist = r.parseStringTrimRightSpaceNewline(t)
-	case tag.TagCopyright:
-		r.Exif.IFD0.Copyright = r.parseDisplayStringTrimRightSpaceNewline(t, 512)
-	case tag.TagApplicationNotes:
-		// TODO: TagApplicationNotes parsing intentionally disabled for now.
-		// The payload is often large and not needed in the hot parse path.
-	case tag.TagPrintIM:
-		// ignore tag
-		//r.Exif.IFD0.PrintIM = r.parseDisplayString(t, 512)
-	case tag.TagImageDescription:
-		r.Exif.IFD0.ImageDescription = r.parseString(t)
-	case tag.TagSoftware:
-		r.Exif.IFD0.Software = r.parseString(t)
+	case tag.TagDNGBackwardVersion:
+		dst := r.dngMakerNote()
+		dst.DNGBackwardVersionCount = uint8(r.parseByteList(t, dst.DNGBackwardVersion[:]))
+	case tag.TagUniqueCameraModel, tag.TagLocalizedCameraModel:
+		dst := r.dngMakerNote()
+		if dst.CameraModel != "" {
+			return true
+		}
+		v := r.parseStringAllowUndefined(t)
+		if v != "" {
+			dst.CameraModel = v
+		}
+	case tag.TagOriginalRawFileName:
+		dst := r.dngMakerNote()
+		dst.OriginalRawFileName = r.parseStringAllowUndefined(t)
+	case tag.TagProfileName:
+		dst := r.dngMakerNote()
+		dst.ProfileName = r.parseStringAllowUndefined(t)
+	case tag.TagCameraSerial:
+		if r.Exif.CameraSerial == "" {
+			r.Exif.CameraSerial = r.parseString(t)
+		}
+	case tag.TagBestQualityScale:
+		dst := r.dngMakerNote()
+		dst.BestQualityScale = r.parseRationalValue(t)
 	default:
 		return false
 	}
@@ -305,112 +379,6 @@ func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, makeNam
 			Msg("parsed camera make")
 	}
 	return makeID, makeName
-}
-
-// parseIFD0ImageTag parses IFD0 image geometry and layout tags.
-func (r *Reader) parseIFD0ImageTag(t tag.Entry) bool {
-	switch t.ID {
-	case tag.TagSubfileType:
-		r.Exif.IFD0.SubfileType = meta.SubfileType(r.parseUint32(t))
-	case tag.TagPhotometricInterpretation:
-		r.Exif.IFD0.PhotometricInterpretation = r.parseUint16(t)
-	case tag.TagTileWidth:
-		// ingnore tag
-	case tag.TagTileLength:
-		// ingnore tag
-	case tag.TagTileOffsets:
-		// ingnore tag
-	case tag.TagTileByteCounts:
-		// ingnore tag
-	case tag.TagThumbnailOffset:
-		r.Exif.IFD0.ThumbnailOffset = r.parseFirstUint32(t)
-	case tag.TagThumbnailLength:
-		r.Exif.IFD0.ThumbnailLength = r.parseFirstUint32(t)
-	case tag.TagBitsPerSample:
-		r.parseUint16List(t, r.Exif.IFD0.BitsPerSample[:])
-	case tag.TagCompression:
-		r.Exif.IFD0.Compression = meta.Compression(r.parseUint16(t))
-	case tag.TagRowsPerStrip:
-		// ingnore tag
-	case tag.TagSubIFDs:
-		r.parseSubIFDs(t)
-	case tag.TagPlanarConfiguration:
-		r.Exif.IFD0.PlanarConfiguration = r.parseUint16(t)
-	case tag.TagXResolution:
-		r.Exif.IFD0.XResolution = r.parseRationalValue(t).Float64()
-	case tag.TagYResolution:
-		r.Exif.IFD0.YResolution = r.parseRationalValue(t).Float64()
-	case tag.TagResolutionUnit:
-		r.Exif.IFD0.ResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
-	case tag.TagSamplesPerPixel:
-		r.Exif.IFD0.SamplesPerPixel = r.parseUint16(t)
-	case tag.TagImageWidth:
-		r.Exif.IFD0.ImageWidth = r.parseUint32(t)
-	case tag.TagImageLength:
-		r.Exif.IFD0.ImageHeight = r.parseUint32(t)
-	case tag.TagStripOffsets:
-		r.Exif.IFD0.ImageOffset = r.parseFirstUint32(t)
-	case tag.TagStripByteCounts:
-		r.Exif.IFD0.ImageLength = r.parseFirstUint32(t)
-	case tag.TagOrientation:
-		r.Exif.IFD0.Orientation = meta.Orientation(r.parseUint16(t))
-	default:
-		return false
-	}
-	return true
-}
-
-func (r *Reader) parseIFD0ColorTag(t tag.Entry) bool {
-	switch t.ID {
-	case tag.TagWhitePoint:
-		r.parseRationalFloat64List(t, r.Exif.IFD0.WhitePoint[:])
-	case tag.TagPrimaryChromaticities:
-		r.parseRationalFloat64List(t, r.Exif.IFD0.PrimaryChromaticities[:])
-	case tag.TagYCbCrCoefficients:
-		r.parseRationalFloat64List(t, r.Exif.IFD0.YCbCrCoefficients[:])
-	case tag.TagYCbCrPositioning:
-		r.Exif.IFD0.YCbCrPositioning = r.parseUint16(t)
-	default:
-		return false
-	}
-	return true
-}
-
-// parseIFD0DNGTag parses IFD0 DNG extension fields.
-func (r *Reader) parseIFD0DNGTag(t tag.Entry) bool {
-	dst := r.dngMakerNote()
-	switch t.ID {
-	case tag.TagDNGAdobeData:
-		r.parseDNGAdobeData(t)
-	case tag.TagDNGVersion:
-		dst.DNGVersionCount = uint8(r.parseByteList(t, dst.DNGVersion[:]))
-		if r.Exif.ImageType == imagetype.ImageTiff {
-			r.Exif.ImageType = imagetype.ImageDNG
-		}
-	case tag.TagDNGBackwardVersion:
-		dst.DNGBackwardVersionCount = uint8(r.parseByteList(t, dst.DNGBackwardVersion[:]))
-	case tag.TagUniqueCameraModel, tag.TagLocalizedCameraModel:
-		if dst.CameraModel != "" {
-			return true
-		}
-		v := r.parseStringAllowUndefined(t)
-		if v != "" {
-			dst.CameraModel = v
-		}
-	case tag.TagOriginalRawFileName:
-		dst.OriginalRawFileName = r.parseStringAllowUndefined(t)
-	case tag.TagProfileName:
-		dst.ProfileName = r.parseStringAllowUndefined(t)
-	case tag.TagCameraSerial:
-		if r.Exif.CameraSerial == "" {
-			r.Exif.CameraSerial = r.parseString(t)
-		}
-	case tag.TagBestQualityScale:
-		dst.BestQualityScale = r.parseRationalValue(t)
-	default:
-		return false
-	}
-	return true
 }
 
 func (r *Reader) parseDNGAdobeData(t tag.Entry) {
@@ -603,205 +571,187 @@ func (r *Reader) parseQueuedMakerNoteRange(start uint32) {
 //
 // Non-parsed ExifIFD/SubIFD tags are currently handled by falling through to
 // the default case (`return false`) when there is no modeled parser mapping.
+//
+// TODO(exiftool-coverage): Expand ExifIFD parity against ExifTool
+// lib/Image/ExifTool/Exif.pm (%Image::ExifTool::Exif::Main) and
+// https://exiftool.org/TagNames/EXIF.html (ExifIFD rows).
+// Keep large/opaque payloads opt-in and avoid allocations in hot paths.
 func (r *Reader) parseExifTag(t tag.Entry) bool {
-	return r.parseExifTimeTag(t) ||
-		r.parseExifTextTag(t) ||
-		r.parseExifImageTag(t) ||
-		r.parseExifExposureTag(t) ||
-		r.parseExifCaptureTag(t)
-}
-
-func (r *Reader) parseExifTimeTag(t tag.Entry) bool {
+	exifIfd := &r.Exif.ExifIFD
+	ifd0 := &r.Exif.IFD0
 	switch t.ID {
+	// Time/date.
 	case tag.TagDateTimeOriginal:
-		r.Exif.ExifIFD.setDate(t.ID, r.parseDate(t))
-		r.Exif.ExifIFD.markTagParsed(t.ID)
+		exifIfd.setDate(t.ID, r.parseDate(t))
+		exifIfd.markTagParsed(t.ID)
 	case tag.TagDateTimeDigitized:
-		r.Exif.ExifIFD.setDate(t.ID, r.parseDate(t))
-		r.Exif.ExifIFD.markTagParsed(t.ID)
+		exifIfd.setDate(t.ID, r.parseDate(t))
+		exifIfd.markTagParsed(t.ID)
 	case tag.TagSubSecTime:
 		value, raw := r.parseSubSecTimeParts(t)
-		r.Exif.IFD0.setSubSec(raw, value)
-		r.Exif.IFD0.markTagParsed(t.ID)
+		ifd0.setSubSec(raw, value)
+		ifd0.markTagParsed(t.ID)
 	case tag.TagSubSecTimeOriginal:
 		value, raw := r.parseSubSecTimeParts(t)
-		r.Exif.ExifIFD.setSubSec(t.ID, raw, value)
-		r.Exif.ExifIFD.markTagParsed(t.ID)
+		exifIfd.setSubSec(t.ID, raw, value)
+		exifIfd.markTagParsed(t.ID)
 	case tag.TagSubSecTimeDigitized:
 		value, raw := r.parseSubSecTimeParts(t)
-		r.Exif.ExifIFD.setSubSec(t.ID, raw, value)
-		r.Exif.ExifIFD.markTagParsed(t.ID)
+		exifIfd.setSubSec(t.ID, raw, value)
+		exifIfd.markTagParsed(t.ID)
 	case tag.TagOffsetTime:
-		r.Exif.IFD0.setOffset(r.parseOffsetTime(t))
-		r.Exif.IFD0.markTagParsed(t.ID)
+		ifd0.setOffset(r.parseOffsetTime(t))
+		ifd0.markTagParsed(t.ID)
 	case tag.TagOffsetTimeOriginal:
-		r.Exif.ExifIFD.setOffset(t.ID, r.parseOffsetTime(t))
-		r.Exif.ExifIFD.markTagParsed(t.ID)
+		exifIfd.setOffset(t.ID, r.parseOffsetTime(t))
+		exifIfd.markTagParsed(t.ID)
 	case tag.TagOffsetTimeDigitized:
-		r.Exif.ExifIFD.setOffset(t.ID, r.parseOffsetTime(t))
-		r.Exif.ExifIFD.markTagParsed(t.ID)
-	default:
-		return false
-	}
-	return true
-}
+		exifIfd.setOffset(t.ID, r.parseOffsetTime(t))
+		exifIfd.markTagParsed(t.ID)
 
-func (r *Reader) parseExifTextTag(t tag.Entry) bool {
-	switch t.ID {
+	// Text/meta.
+	// TODO(exiftool-coverage): Add selected ExifIFD text fields with bounded
+	// parsing and explicit truncation limits where needed:
+	// ImageUniqueID(0xa420), CompositeImageCount(0xa461), and
+	// CompositeImageExposureTimes(0xa462) display summaries.
 	case tag.TagExifVersion:
-		r.Exif.ExifIFD.ExifVersion = r.parseExifVersion(t)
+		exifIfd.ExifVersion = r.parseExifVersion(t)
 	case tag.TagLensMake:
-		r.Exif.ExifIFD.LensMake = r.parseString(t)
+		exifIfd.LensMake = r.parseString(t)
 	case tag.TagLensModel:
-		r.Exif.ExifIFD.LensModel = r.parseString(t)
+		exifIfd.LensModel = r.parseString(t)
 	case tag.TagLensSerialNumber:
-		r.Exif.ExifIFD.LensSerial = r.parseString(t)
+		exifIfd.LensSerial = r.parseString(t)
 	case tag.TagCameraOwnerName:
-		r.Exif.ExifIFD.CameraOwnerName = r.parseString(t)
-		if r.Exif.IFD0.Artist == "" {
-			r.Exif.IFD0.Artist = r.Exif.ExifIFD.CameraOwnerName
-		}
+		exifIfd.CameraOwnerName = r.parseString(t)
 	case tag.TagBodySerialNumber:
-		r.Exif.ExifIFD.BodySerialNumber = r.parseString(t)
-		if r.Exif.CameraSerial == "" {
-			r.Exif.CameraSerial = r.Exif.ExifIFD.BodySerialNumber
-		}
+		exifIfd.BodySerialNumber = r.parseString(t)
 	case tag.TagUserComment:
-		r.Exif.ExifIFD.UserComment = r.parseExifUserComment(t)
+		exifIfd.UserComment = r.parseExifUserComment(t)
 	case tag.TagFlashpixVersion:
-		r.Exif.ExifIFD.FlashpixVersion = r.parseStringAllowUndefined(t)
+		exifIfd.FlashpixVersion = r.parseStringAllowUndefined(t)
 	case tag.TagDeviceSettingDescription:
-		// Not parsed
+		// Not parsed.
 		// The payload is often large and not needed in the hot parse path.
-	default:
-		return false
-	}
-	return true
-}
 
-func (r *Reader) parseExifImageTag(t tag.Entry) bool {
-	switch t.ID {
+	// Image characterization.
+	// TODO(exiftool-coverage): Consider lightweight modeling for ExifIFD image
+	// characterization tags used by ExifTool:
+	// OECF(0x8828), SpatialFrequencyResponse(0x920c), SubjectLocation(0xa214),
+	// and CFAPattern(0xa302). Prefer compact fixed-size summaries over raw blobs.
 	case tag.TagPixelXDimension:
-		r.Exif.ExifIFD.PixelXDimension = r.parseUint32(t)
-		if r.Exif.IFD0.ImageWidth == 0 {
-			r.Exif.IFD0.ImageWidth = r.Exif.ExifIFD.PixelXDimension
-		}
+		exifIfd.PixelXDimension = r.parseUint32(t)
 	case tag.TagPixelYDimension:
-		r.Exif.ExifIFD.PixelYDimension = r.parseUint32(t)
-		if r.Exif.IFD0.ImageHeight == 0 {
-			r.Exif.IFD0.ImageHeight = r.Exif.ExifIFD.PixelYDimension
-		}
+		exifIfd.PixelYDimension = r.parseUint32(t)
 	case tag.TagInteropIFDPointer:
-		r.Exif.ExifIFD.interopIFDPointer = r.parseUint32(t)
+		exifIfd.interopIFDPointer = r.parseUint32(t)
 	case tag.TagInteropIndex:
-		r.Exif.ExifIFD.InteropIndex = r.parseStringAllowUndefined(t)
+		exifIfd.InteropIndex = r.parseStringAllowUndefined(t)
 	case tag.TagInteropVersion:
-		r.Exif.ExifIFD.InteropVersion = r.parseStringAllowUndefined(t)
+		exifIfd.InteropVersion = r.parseStringAllowUndefined(t)
 	case tag.TagRelatedImageWidth:
-		r.Exif.ExifIFD.RelatedImageWidth = r.parseUint32(t)
+		exifIfd.RelatedImageWidth = r.parseUint32(t)
 	case tag.TagRelatedImageHeight:
-		r.Exif.ExifIFD.RelatedImageHeight = r.parseUint32(t)
+		exifIfd.RelatedImageHeight = r.parseUint32(t)
 	case tag.TagColorSpace:
-		r.Exif.ExifIFD.ColorSpace = r.parseUint16(t)
+		exifIfd.ColorSpace = r.parseUint16(t)
 	case tag.TagLensSpecification:
-		r.Exif.ExifIFD.LensInfo = r.parseLensInfo(t)
+		exifIfd.LensInfo = r.parseLensInfo(t)
 	case tag.TagComponentsConfiguration:
-		r.parseByteList(t, r.Exif.ExifIFD.ComponentsConfiguration[:])
+		r.parseByteList(t, exifIfd.ComponentsConfiguration[:])
 	case tag.TagCompressedBitsPerPixel:
-		r.Exif.ExifIFD.CompressedBitsPerPixel = r.parseRationalValue(t).Float64()
+		exifIfd.CompressedBitsPerPixel = r.parseRationalValue(t).Float64()
 	case tag.TagFocalPlaneXResolution:
-		r.Exif.ExifIFD.FocalPlaneXResolution, r.Exif.ExifIFD.focalPlaneXResolutionState = r.parseUnsignedRationalFloat64(t)
+		exifIfd.FocalPlaneXResolution, exifIfd.focalPlaneXResolutionState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagFocalPlaneYResolution:
-		r.Exif.ExifIFD.FocalPlaneYResolution, r.Exif.ExifIFD.focalPlaneYResolutionState = r.parseUnsignedRationalFloat64(t)
+		exifIfd.FocalPlaneYResolution, exifIfd.focalPlaneYResolutionState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagFocalPlaneResolutionUnit:
-		r.Exif.ExifIFD.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
+		exifIfd.FocalPlaneResolutionUnit = meta.ResolutionUnit(r.parseUint16(t))
 	case tag.TagSubjectArea:
-		r.parseUint16List(t, r.Exif.ExifIFD.SubjectArea[:])
+		r.parseUint16List(t, exifIfd.SubjectArea[:])
 	case tag.TagGamma:
-		r.Exif.ExifIFD.Gamma = r.parseRationalValue(t).Float64()
-	default:
-		return false
-	}
-	return true
-}
+		exifIfd.Gamma = r.parseRationalValue(t).Float64()
 
-func (r *Reader) parseExifExposureTag(t tag.Entry) bool {
-	switch t.ID {
+	// Exposure/optics.
+	// TODO(exiftool-coverage): Add ISO-family ExifIFD fields documented by
+	// ExifTool for EXIF 2.31+ parity:
+	// StandardOutputSensitivity(0x8831), ISOSpeed(0x8833),
+	// ISOSpeedLatitudeyyy(0x8834), ISOSpeedLatitudezzz(0x8835).
+	// Keep parse paths branch-light and avoid allocations.
 	case tag.TagExposureTime:
-		r.Exif.ExifIFD.ExposureTime = r.parseExposureTime(t)
+		exifIfd.ExposureTime = r.parseExposureTime(t)
 	case tag.TagShutterSpeedValue:
-		r.Exif.ExifIFD.ShutterSpeedValue = r.parseShutterSpeed(t)
+		exifIfd.ShutterSpeedValue = r.parseShutterSpeed(t)
 	case tag.TagFNumber:
-		r.Exif.ExifIFD.FNumber = r.parseAperture(t)
+		exifIfd.FNumber = r.parseAperture(t)
 	case tag.TagApertureValue:
-		r.Exif.ExifIFD.ApertureValue = r.parseApexAperture(t)
-		if r.Exif.ExifIFD.FNumber == 0 && apertureIsFinite(r.Exif.ExifIFD.ApertureValue) {
-			r.Exif.ExifIFD.FNumber = r.Exif.ExifIFD.ApertureValue
+		exifIfd.ApertureValue = r.parseApexAperture(t)
+		if exifIfd.FNumber == 0 && apertureIsFinite(exifIfd.ApertureValue) {
+			exifIfd.FNumber = exifIfd.ApertureValue
 		}
 	case tag.TagMaxApertureValue:
-		r.Exif.ExifIFD.MaxApertureValue = r.parseApexAperture(t)
+		exifIfd.MaxApertureValue = r.parseApexAperture(t)
 	case tag.TagSubjectDistance:
-		r.Exif.ExifIFD.SubjectDistance, r.Exif.ExifIFD.subjectDistanceState = r.parseUnsignedRationalFloat64(t)
+		exifIfd.SubjectDistance, exifIfd.subjectDistanceState = r.parseUnsignedRationalFloat64(t)
 	case tag.TagBrightnessValue:
-		r.Exif.ExifIFD.BrightnessValue = r.parseSignedRationalFloat32(t)
+		exifIfd.BrightnessValue = r.parseSignedRationalFloat32(t)
 	case tag.TagExposureProgram:
-		r.Exif.ExifIFD.ExposureProgram = meta.ExposureProgram(r.parseUint16(t))
+		exifIfd.ExposureProgram = meta.ExposureProgram(r.parseUint16(t))
 	case tag.TagSensitivityType:
-		r.Exif.ExifIFD.SensitivityType = r.parseUint16(t)
+		exifIfd.SensitivityType = r.parseUint16(t)
 	case tag.TagRecommendedExposureIndex:
-		r.Exif.ExifIFD.RecommendedExposureIndex = r.parseUint32(t)
+		exifIfd.RecommendedExposureIndex = r.parseUint32(t)
 	case tag.TagExposureBiasValue:
-		r.Exif.ExifIFD.ExposureBias = r.parseExposureBias(t)
+		exifIfd.ExposureBias = r.parseExposureBias(t)
 	case tag.TagExposureMode:
-		r.Exif.ExifIFD.ExposureMode = meta.ExposureMode(r.parseUint16(t))
+		exifIfd.ExposureMode = meta.ExposureMode(r.parseUint16(t))
 	case tag.TagMeteringMode:
-		r.Exif.ExifIFD.MeteringMode = meta.MeteringMode(r.parseUint16(t))
+		exifIfd.MeteringMode = meta.MeteringMode(r.parseUint16(t))
 	case tag.TagLightSource:
-		r.Exif.ExifIFD.LightSource = r.parseUint16(t)
+		exifIfd.LightSource = r.parseUint16(t)
 	case tag.TagISOSpeedRatings:
-		r.Exif.ExifIFD.ISOSpeedRatings = r.parseUint32(t)
+		exifIfd.ISOSpeedRatings = r.parseUint32(t)
 	case tag.TagFlash:
-		r.Exif.ExifIFD.Flash = meta.Flash(r.parseUint16(t))
+		exifIfd.Flash = meta.Flash(r.parseUint16(t))
 	case tag.TagFocalLength:
-		r.Exif.ExifIFD.FocalLength = r.parseFocalLength(t)
+		exifIfd.FocalLength = r.parseFocalLength(t)
 	case tag.TagFocalLengthIn35mmFilm:
-		r.Exif.ExifIFD.FocalLengthIn35mmFormat = r.parseFocalLength(t)
+		exifIfd.FocalLengthIn35mmFormat = r.parseFocalLength(t)
 	case tag.TagExposureIndex:
-		r.Exif.ExifIFD.ExposureIndex, r.Exif.ExifIFD.exposureIndexState = r.parseUnsignedRationalFloat64(t)
-	default:
-		return false
-	}
-	return true
-}
+		exifIfd.ExposureIndex, exifIfd.exposureIndexState = r.parseUnsignedRationalFloat64(t)
 
-func (r *Reader) parseExifCaptureTag(t tag.Entry) bool {
-	switch t.ID {
+	// Capture/mode.
+	// TODO(exiftool-coverage): Evaluate adding environmental capture tags
+	// surfaced by ExifTool:
+	// AmbientTemperature(0x9400), Humidity(0x9401), Pressure(0x9402),
+	// WaterDepth(0x9403), Acceleration(0x9404), CameraElevationAngle(0x9405).
+	// These are niche but useful for action cameras and drone media.
 	case tag.TagSensingMethod:
-		r.Exif.ExifIFD.SensingMethod = r.parseUint16(t)
+		exifIfd.SensingMethod = r.parseUint16(t)
 	case tag.TagFileSource:
-		r.Exif.ExifIFD.FileSource = r.parseSceneType(t)
+		exifIfd.FileSource = r.parseSceneType(t)
 	case tag.TagSceneType:
-		r.Exif.ExifIFD.SceneType = r.parseSceneType(t)
+		exifIfd.SceneType = r.parseSceneType(t)
 	case tag.TagCustomRendered:
-		r.Exif.ExifIFD.CustomRendered = r.parseUint16(t)
+		exifIfd.CustomRendered = r.parseUint16(t)
 	case tag.TagWhiteBalance:
-		r.Exif.ExifIFD.WhiteBalance = r.parseUint16(t)
+		exifIfd.WhiteBalance = r.parseUint16(t)
 	case tag.TagDigitalZoomRatio:
-		r.Exif.ExifIFD.DigitalZoomRatio = float32(r.parseRationalValue(t).Float64())
+		exifIfd.DigitalZoomRatio = float32(r.parseRationalValue(t).Float64())
 	case tag.TagSceneCaptureType:
-		r.Exif.ExifIFD.SceneCaptureType = r.parseUint16(t)
+		exifIfd.SceneCaptureType = r.parseUint16(t)
 	case tag.TagGainControl:
-		r.Exif.ExifIFD.GainControl = r.parseUint16(t)
+		exifIfd.GainControl = r.parseUint16(t)
 	case tag.TagContrast:
-		r.Exif.ExifIFD.Contrast = r.parseUint16(t)
+		exifIfd.Contrast = r.parseUint16(t)
 	case tag.TagSaturation:
-		r.Exif.ExifIFD.Saturation = r.parseUint16(t)
+		exifIfd.Saturation = r.parseUint16(t)
 	case tag.TagSharpness:
-		r.Exif.ExifIFD.Sharpness = r.parseUint16(t)
+		exifIfd.Sharpness = r.parseUint16(t)
 	case tag.TagSubjectDistanceRange:
-		r.Exif.ExifIFD.SubjectDistanceRange = r.parseUint16(t)
+		exifIfd.SubjectDistanceRange = r.parseUint16(t)
 	case tag.TagCompositeImage:
-		r.Exif.ExifIFD.CompositeImage = r.parseUint16(t)
+		exifIfd.CompositeImage = r.parseUint16(t)
 	default:
 		return false
 	}

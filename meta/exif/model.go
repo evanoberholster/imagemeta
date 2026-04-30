@@ -19,7 +19,6 @@ type Exif struct {
 	ExifIFD      ExifIFDTags
 	IFD1         *ImageIFD
 	IFD2         *ImageIFD
-	DNG          *makernote.DNG
 	MakerNote    makernote.Info
 	CameraSerial string
 	CameraMakeID makernote.CameraMake
@@ -351,7 +350,7 @@ type exifIFDJSON struct {
 	SubSecTimeOriginal  uint16    `json:"SubSecTimeOriginal"`
 	SubSecTimeDigitized uint16    `json:"SubSecTimeDigitized"`
 
-	LensInfo LensInfo `json:"LensInfo"`
+	LensInfo string `json:"LensInfo"`
 
 	ExifVersion              string               `json:"ExifVersion"`
 	FlashpixVersion          string               `json:"FlashpixVersion"`
@@ -582,7 +581,7 @@ func (t ExifIFDTags) MarshalJSON() ([]byte, error) {
 		OffsetTimeDigitized:      offsetTimeStringPtr(t.OffsetTimeDigitized),
 		SubSecTimeOriginal:       t.SubSecTimeOriginal,
 		SubSecTimeDigitized:      t.SubSecTimeDigitized,
-		LensInfo:                 t.LensInfo,
+		LensInfo:                 t.LensInfo.String(),
 		ExifVersion:              t.ExifVersion.String(),
 		FlashpixVersion:          t.FlashpixVersion,
 		FocalPlaneXResolution:    t.FocalPlaneXResolution,

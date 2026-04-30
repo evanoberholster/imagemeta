@@ -574,17 +574,21 @@ func canonShotMeasuredEV2(raw int16) float32 {
 }
 
 func canonCameraSettingValue(v int16) int16 {
-	if v == math.MaxInt16 {
+	if v == 0x7fff {
 		return 0
 	}
 	return v
 }
 
-func canonCameraSettingISO(v int16) metacanon.CameraISO {
-	if v == math.MaxInt16 {
+func canonClarityValue(v int16) int16 {
+	if v == 0x7fff {
 		return 0
 	}
-	return metacanon.CameraISO(v)
+	return v
+}
+
+func canonCameraSettingISO(v int16) uint32 {
+	return uint32(metacanon.CameraISOValue(v))
 }
 
 func canonNormalizeFirmwareVersion(s string) string {

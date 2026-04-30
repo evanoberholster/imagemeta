@@ -70,6 +70,13 @@ type GPSInfo struct {
 	altitudeRef       tag.GPSRef
 }
 
+const (
+	knotsToKPH       = 1.852
+	milesToKilometer = 1.60934
+	kmToMeter        = 1000.0
+	nauticalToMeter  = 1852.0
+)
+
 // gpsJSON is the JSON-serializable representation of GPSInfo.
 type gpsJSON struct {
 	Date             time.Time `json:"Date,omitempty"`
@@ -138,14 +145,8 @@ func (g GPSInfo) GPSTimestamp() time.Time {
 	return g.date
 }
 
-// GPSTime returns the combined GPS timestamp.
-// Deprecated: use GPSTimestamp.
-func (g GPSInfo) GPSTime() time.Time {
-	return g.GPSTimestamp()
-}
-
-// setDate sets the internal state value used during parsing.
-func (g *GPSInfo) setDate(date time.Time) {
+// applyDate merges GPSDateStamp into the combined GPS timestamp state.
+func (g *GPSInfo) applyDate(date time.Time) {
 	if pending, ok := gpsPendingDelta(g.date); ok {
 		g.date = date.Add(pending)
 		return
@@ -153,8 +154,8 @@ func (g *GPSInfo) setDate(date time.Time) {
 	g.date = date
 }
 
-// setTime sets the internal state value used during parsing.
-func (g *GPSInfo) setTime(delta time.Duration) {
+// applyTime merges GPSTimeStamp into the combined GPS timestamp state.
+func (g *GPSInfo) applyTime(delta time.Duration) {
 	if delta == 0 {
 		return
 	}
@@ -180,43 +181,37 @@ func gpsPendingDelta(ts time.Time) (time.Duration, bool) {
 		time.Duration(ts.Nanosecond()), true
 }
 
-// Latitude returns the raw latitude in decimal degrees (unsigned).
+// Latitude returns the signed latitude in decimal degrees.
 func (g GPSInfo) Latitude() float64 {
 	return g.latitude
 }
 
-// Longitude returns the raw longitude in decimal degrees (unsigned).
+// Longitude returns the signed longitude in decimal degrees.
 func (g GPSInfo) Longitude() float64 {
 	return g.longitude
 }
 
 // DestLatitudeSigned returns the signed destination latitude.
 func (g GPSInfo) DestLatitudeSigned() float64 {
-	if g.destLatitudeRef == tag.GPSRefSouth {
-		return -1 * g.destLatitude
-	}
-	return g.destLatitude
+	return signedByRef(abs64(g.destLatitude), g.destLatitudeRef, tag.GPSRefSouth)
 }
 
-// DestLatitude returns the raw destination latitude (unsigned).
+// DestLatitude returns the signed destination latitude.
 func (g GPSInfo) DestLatitude() float64 {
-	return g.destLatitude
+	return g.DestLatitudeSigned()
 }
 
 // DestLongitudeSigned returns the signed destination longitude.
 func (g GPSInfo) DestLongitudeSigned() float64 {
-	if g.destLongitudeRef == tag.GPSRefWest {
-		return -1 * g.destLongitude
-	}
-	return g.destLongitude
+	return signedByRef(abs64(g.destLongitude), g.destLongitudeRef, tag.GPSRefWest)
 }
 
-// DestLongitude returns the raw destination longitude (unsigned).
+// DestLongitude returns the signed destination longitude.
 func (g GPSInfo) DestLongitude() float64 {
-	return g.destLongitude
+	return g.DestLongitudeSigned()
 }
 
-// Altitude returns the raw altitude value (unsigned).
+// Altitude returns the signed altitude in meters.
 func (g GPSInfo) Altitude() float32 {
 	return g.altitude
 }
@@ -306,6 +301,58 @@ func (g GPSInfo) DestDistanceWithRef() tag.GPSRationalRef[tag.RationalU] {
 	}
 }
 
+func signedByRef(value float64, ref tag.GPSRef, negativeRef tag.GPSRef) float64 {
+	if ref == negativeRef {
+		return -value
+	}
+	return value
+}
+
+func signedAltitude(value float32, ref tag.GPSRef) float32 {
+	if ref == tag.GPSRefBelowSeaLevel {
+		return -value
+	}
+	return value
+}
+
+func speedInKPH(value float64, ref tag.GPSRef) float64 {
+	switch ref {
+	case tag.GPSRefKnots:
+		return value * knotsToKPH
+	case tag.GPSRefMilesPerHour:
+		return value * milesToKilometer
+	default:
+		return value
+	}
+}
+
+func distanceInMeters(value float64, ref tag.GPSRef) float64 {
+	switch ref {
+	case tag.GPSRefMiles:
+		return value * milesToKilometer * kmToMeter
+	case tag.GPSRefKilometers:
+		return value * kmToMeter
+	case tag.GPSRefNauticalMiles:
+		return value * nauticalToMeter
+	default:
+		return value
+	}
+}
+
+func abs64(v float64) float64 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+func abs32(v float32) float32 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
 // parseGPSTag parses GPS IFD tags into typed model fields.
 //
 // Non-parsed GPS tags are currently handled by falling through to
@@ -319,14 +366,19 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 		gps.differential = r.parseUint16(t)
 	case tag.TagGPSAltitudeRef:
 		gps.altitudeRef = r.parseGPSRef(t)
+		gps.altitude = signedAltitude(abs32(gps.altitude), gps.altitudeRef)
 	case tag.TagGPSLatitudeRef:
 		gps.latitudeRef = r.parseGPSRef(t)
+		gps.latitude = signedByRef(abs64(gps.latitude), gps.latitudeRef, tag.GPSRefSouth)
 	case tag.TagGPSLongitudeRef:
 		gps.longitudeRef = r.parseGPSRef(t)
+		gps.longitude = signedByRef(abs64(gps.longitude), gps.longitudeRef, tag.GPSRefWest)
 	case tag.TagGPSDestLatitudeRef:
 		gps.destLatitudeRef = r.parseGPSRef(t)
+		gps.destLatitude = signedByRef(abs64(gps.destLatitude), gps.destLatitudeRef, tag.GPSRefSouth)
 	case tag.TagGPSDestLongitudeRef:
 		gps.destLongitudeRef = r.parseGPSRef(t)
+		gps.destLongitude = signedByRef(abs64(gps.destLongitude), gps.destLongitudeRef, tag.GPSRefWest)
 	case tag.TagGPSSpeedRef:
 		gps.speedRef = r.parseGPSRef(t)
 	case tag.TagGPSTrackRef:
@@ -338,72 +390,217 @@ func (r *Reader) parseGPSTag(t tag.Entry) bool {
 	case tag.TagGPSDestDistanceRef:
 		gps.destDistanceRef = r.parseGPSRef(t)
 	case tag.TagGPSAltitude:
-		gps.altitude = r.parseGPSAltitude(t)
-		if gps.altitudeRef == tag.GPSRefBelowSeaLevel {
-			gps.altitude *= -1
-		}
+		gps.altitude = signedAltitude(abs32(r.parseGPSAltitude(t)), gps.altitudeRef)
 	case tag.TagGPSLatitude:
-		gps.latitude = r.parseGPSCoord(t)
-		if gps.latitudeRef == tag.GPSRefSouth {
-			gps.latitude *= -1
-		}
+		gps.latitude = signedByRef(abs64(r.parseGPSCoord(t)), gps.latitudeRef, tag.GPSRefSouth)
 	case tag.TagGPSLongitude:
-		gps.longitude = r.parseGPSCoord(t)
-		if gps.longitudeRef == tag.GPSRefWest {
-			gps.longitude *= -1
-		}
+		gps.longitude = signedByRef(abs64(r.parseGPSCoord(t)), gps.longitudeRef, tag.GPSRefWest)
 	case tag.TagGPSDestLatitude:
-		r.Exif.GPS.destLatitude = r.parseGPSCoord(t)
+		gps.destLatitude = signedByRef(abs64(r.parseGPSCoord(t)), gps.destLatitudeRef, tag.GPSRefSouth)
 	case tag.TagGPSDestLongitude:
-		r.Exif.GPS.destLongitude = r.parseGPSCoord(t)
+		gps.destLongitude = signedByRef(abs64(r.parseGPSCoord(t)), gps.destLongitudeRef, tag.GPSRefWest)
 	case tag.TagGPSSatellites:
-		r.Exif.GPS.satellites = r.parseString(t)
+		gps.satellites = r.parseString(t)
 	case tag.TagGPSStatus:
-		r.Exif.GPS.status = r.parseString(t)
+		gps.status = r.parseString(t)
 	case tag.TagGPSMeasureMode:
-		r.Exif.GPS.measureMode = r.parseString(t)
+		gps.measureMode = r.parseString(t)
 	case tag.TagGPSMapDatum:
-		r.Exif.GPS.mapDatum = r.parseString(t)
+		gps.mapDatum = r.parseString(t)
 	case tag.TagGPSProcessingMethod:
-		r.Exif.GPS.processingMethod = r.parseExifUserComment(t)
+		gps.processingMethod = r.parseExifUserComment(t)
 	case tag.TagGPSAreaInformation:
-		r.Exif.GPS.areaInformation = r.parseExifUserComment(t)
+		gps.areaInformation = r.parseExifUserComment(t)
 	case tag.TagGPSDOP:
-		r.Exif.GPS.dop = r.parseRationalValue(t).Float64()
+		gps.dop = r.parseRationalValue(t).Float64()
 	case tag.TagGPSSpeed:
-		gps.speed = r.parseRationalValue(t).Float64()
-		if gps.speedRef == tag.GPSRefKnots {
-			gps.speed *= 1.852 // Convert knots to km/h.
-		}
-		if gps.speedRef == tag.GPSRefMilesPerHour {
-			gps.speed *= 1.60934 // Convert mph to km/h.
-		}
+		gps.speed = speedInKPH(r.parseRationalValue(t).Float64(), gps.speedRef)
 	case tag.TagGPSTrack:
-		r.Exif.GPS.track = r.parseRationalValue(t).Float64()
-
+		gps.track = r.parseRationalValue(t).Float64()
 	case tag.TagGPSImgDirection:
-		r.Exif.GPS.imgDirection = r.parseRationalValue(t).Float64()
+		gps.imgDirection = r.parseRationalValue(t).Float64()
 	case tag.TagGPSDestBearing:
-		r.Exif.GPS.destBearing = r.parseRationalValue(t).Float64()
+		gps.destBearing = r.parseRationalValue(t).Float64()
 	case tag.TagGPSDestDistance:
-		gps.destDistance = r.parseRationalValue(t).Float64()
-		if gps.destDistanceRef == tag.GPSRefMiles {
-			gps.destDistance *= 1.60934 * 1000 // Convert miles to m.
-		}
-		if gps.destDistanceRef == tag.GPSRefKilometers {
-			gps.destDistance *= 1000 // Convert km to m.
-		}
-		if gps.destDistanceRef == tag.GPSRefNauticalMiles {
-			gps.destDistance *= 1852 // Convert nautical miles to m.
-		}
+		gps.destDistance = distanceInMeters(r.parseRationalValue(t).Float64(), gps.destDistanceRef)
 	case tag.TagGPSHPositioningError:
-		r.Exif.GPS.hPositioningError = r.parseRationalValue(t).Float64()
+		gps.hPositioningError = r.parseRationalValue(t).Float64()
 	case tag.TagGPSTimeStamp:
-		r.Exif.GPS.setTime(r.parseGPSTimeStamp(t))
+		gps.applyTime(r.parseGPSTimeStamp(t))
 	case tag.TagGPSDateStamp:
-		r.Exif.GPS.setDate(r.parseGPSDateStamp(t))
+		gps.applyDate(r.parseGPSDateStamp(t))
 	default:
 		return false
 	}
 	return true
+}
+
+func (r *Reader) parseGPSRef(t tag.Entry) tag.GPSRef {
+	first, ok := r.firstTagByte(t)
+	if !ok {
+		return tag.GPSRefUnknown
+	}
+
+	switch t.ID {
+	case tag.TagGPSAltitudeRef:
+		// ExifTool GPS docs define 0/2 as above and 1/3 as below sea level.
+		if first == 1 || first == 3 {
+			return tag.GPSRefBelowSeaLevel
+		}
+		if first == 0 || first == 2 {
+			return tag.GPSRefAboveSeaLevel
+		}
+		return tag.GPSRefUnknown
+	case tag.TagGPSLatitudeRef, tag.TagGPSDestLatitudeRef:
+		switch first | 0x20 {
+		case 's':
+			return tag.GPSRefSouth
+		case 'n':
+			return tag.GPSRefNorth
+		default:
+			return tag.GPSRefUnknown
+		}
+	case tag.TagGPSLongitudeRef, tag.TagGPSDestLongitudeRef:
+		switch first | 0x20 {
+		case 'w':
+			return tag.GPSRefWest
+		case 'e':
+			return tag.GPSRefEast
+		default:
+			return tag.GPSRefUnknown
+		}
+	case tag.TagGPSSpeedRef:
+		switch first | 0x20 {
+		case 'k':
+			return tag.GPSRefKilometersPerHour
+		case 'm':
+			return tag.GPSRefMilesPerHour
+		case 'n':
+			return tag.GPSRefKnots
+		default:
+			return tag.GPSRefUnknown
+		}
+	case tag.TagGPSTrackRef, tag.TagGPSImgDirectionRef, tag.TagGPSDestBearingRef:
+		switch first | 0x20 {
+		case 't':
+			return tag.GPSRefTrueDirection
+		case 'm':
+			return tag.GPSRefMagneticDirection
+		default:
+			return tag.GPSRefUnknown
+		}
+	case tag.TagGPSDestDistanceRef:
+		switch first | 0x20 {
+		case 'k':
+			return tag.GPSRefKilometers
+		case 'm':
+			return tag.GPSRefMiles
+		case 'n':
+			return tag.GPSRefNauticalMiles
+		default:
+			return tag.GPSRefUnknown
+		}
+	default:
+		return tag.GPSRefUnknown
+	}
+}
+
+func (r *Reader) firstTagByte(t tag.Entry) (byte, bool) {
+	if t.IsEmbedded() {
+		t.EmbeddedValue(r.state.buf[:4])
+		return r.state.buf[0], true
+	}
+	buf, _, err := r.readTagBytes(t, 1)
+	if err != nil || len(buf) == 0 {
+		return 0, false
+	}
+	return buf[0], true
+}
+
+func (r *Reader) parseGPSCoord(t tag.Entry) float64 {
+	if t.UnitCount != 3 {
+		return 0
+	}
+	if !(t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
+		return 0
+	}
+	buf, _, err := r.readTagBytes(t, 24)
+	if err != nil || len(buf) < 24 {
+		return 0
+	}
+	dNum := t.ByteOrder.Uint32(buf[:4])
+	dDen := t.ByteOrder.Uint32(buf[4:8])
+	mNum := t.ByteOrder.Uint32(buf[8:12])
+	mDen := t.ByteOrder.Uint32(buf[12:16])
+	sNum := t.ByteOrder.Uint32(buf[16:20])
+	sDen := t.ByteOrder.Uint32(buf[20:24])
+	if dDen == 0 || mDen == 0 || sDen == 0 {
+		return 0
+	}
+
+	deg := float64(dNum) / float64(dDen)
+	min := float64(mNum) / float64(mDen)
+	sec := float64(sNum) / float64(sDen)
+	return deg + min/60.0 + sec/3600.0
+}
+
+func (r *Reader) parseGPSAltitude(t tag.Entry) float32 {
+	rat := r.parseRationalU(t)
+	if rat[1] == 0 {
+		return 0
+	}
+	return float32(rat[0]) / float32(rat[1])
+}
+
+func (r *Reader) parseGPSTimeStamp(t tag.Entry) time.Duration {
+	if t.UnitCount != 3 || !t.IsType(tag.TypeRational) {
+		return 0
+	}
+	buf, _, err := r.readTagBytes(t, 24)
+	if err != nil || len(buf) < 24 {
+		return 0
+	}
+	v := [6]uint32{
+		t.ByteOrder.Uint32(buf[:4]),
+		t.ByteOrder.Uint32(buf[4:8]),
+		t.ByteOrder.Uint32(buf[8:12]),
+		t.ByteOrder.Uint32(buf[12:16]),
+		t.ByteOrder.Uint32(buf[16:20]),
+		t.ByteOrder.Uint32(buf[20:24]),
+	}
+	return rationalDuration(v[0], v[1], time.Hour) +
+		rationalDuration(v[2], v[3], time.Minute) +
+		rationalDuration(v[4], v[5], time.Second)
+}
+
+func (r *Reader) parseGPSDateStamp(t tag.Entry) time.Time {
+	if !t.IsType(tag.TypeASCII) {
+		return time.Time{}
+	}
+	buf, _, err := r.readTagBytes(t, 32)
+	if err != nil || len(buf) < 10 {
+		return time.Time{}
+	}
+	sepA := buf[4]
+	sepB := buf[7]
+	if !((sepA == ':' && sepB == ':') || (sepA == 0 && sepB == 0)) {
+		return time.Time{}
+	}
+
+	year := int(parseStrUint(buf[0:4]))
+	month := time.Month(parseStrUint(buf[5:7]))
+	day := int(parseStrUint(buf[8:10]))
+	if len(buf) >= 19 && buf[10] == ' ' && buf[13] == ':' && buf[16] == ':' {
+		return time.Date(
+			year,
+			month,
+			day,
+			int(parseStrUint(buf[11:13])),
+			int(parseStrUint(buf[14:16])),
+			int(parseStrUint(buf[17:19])),
+			0,
+			time.UTC,
+		)
+	}
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
