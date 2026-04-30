@@ -15,5 +15,5 @@ var (
 
 func SetLogger(w io.Writer, level slog.Level) {
 	logger = metalog.New(w, level)
-	metalog.Logger = logger
+	metalog.SetLogger(logger)
 }

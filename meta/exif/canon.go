@@ -1080,8 +1080,8 @@ func (r *Reader) parseCanonBlockPreview(t tag.Entry) canon.BlockPreview {
 	}
 	buf, _, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
-		if r.warnEnabled() {
-			r.tagLogContext(r.warn(), t).
+		if r.WarnEnabled() {
+			r.tagLogContext(r.Warn(3), t).
 				Err(err).
 				Str("parser", "parseCanonBlockPreview").
 				Msg("failed reading canon maker-note payload")
@@ -1608,8 +1608,8 @@ const (
 //   - return bytes up to first NUL; empty => not present
 func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
 	if t.Size() != canonBatteryTypePayloadSize {
-		if r.warnEnabled() {
-			r.tagLogContext(r.warn(), t).
+		if r.WarnEnabled() {
+			r.tagLogContext(r.Warn(3), t).
 				Str("parser", "parseCanonBatteryType").
 				Uint32("sizeBytes", t.Size()).
 				Uint32("wantSizeBytes", canonBatteryTypePayloadSize).
@@ -1732,10 +1732,10 @@ func canonBitsetWords(vals []uint16) []int {
 }
 
 func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want int) {
-	if !r.warnEnabled() {
+	if !r.WarnEnabled() {
 		return
 	}
-	r.tagLogContext(r.warn(), t).
+	r.tagLogContext(r.Warn(3), t).
 		Str("parser", parser).
 		Int("wordsDecoded", got).
 		Int("wordsRequested", want).
@@ -1743,10 +1743,10 @@ func (r *Reader) warnCanonTruncatedWords(t tag.Entry, parser string, got, want i
 }
 
 func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
-	if !r.warnEnabled() {
+	if !r.WarnEnabled() {
 		return
 	}
-	r.tagLogContext(r.warn(), t).
+	r.tagLogContext(r.Warn(3), t).
 		Str("parser", parser).
 		Int("gotUnits", got).
 		Int("wantUnits", want).
@@ -1754,10 +1754,10 @@ func (r *Reader) warnCanonShortRead(t tag.Entry, parser string, got, want int) {
 }
 
 func (r *Reader) warnCanonInvalidSize(t tag.Entry, parser string, declaredSizeBytes uint32) {
-	if !r.warnEnabled() {
+	if !r.WarnEnabled() {
 		return
 	}
-	r.tagLogContext(r.warn(), t).
+	r.tagLogContext(r.Warn(3), t).
 		Str("parser", parser).
 		Uint32("declaredSizeBytes", declaredSizeBytes).
 		Uint32("actualSizeBytes", t.Size()).

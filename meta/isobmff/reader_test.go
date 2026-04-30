@@ -41,9 +41,9 @@ func TestReadBoxEightByteHeader(t *testing.T) {
 
 func TestCallbackLogsDecodedMetadataItems(t *testing.T) {
 	var buf bytes.Buffer
-	oldLogger := metalog.Logger
-	metalog.Logger = metalog.New(&buf, slog.LevelInfo)
-	t.Cleanup(func() { metalog.Logger = oldLogger })
+	oldLogger := metalog.GetLogger()
+	metalog.SetLogger(metalog.New(&buf, slog.LevelInfo))
+	t.Cleanup(func() { metalog.SetLogger(oldLogger) })
 
 	r := NewReader(bytes.NewReader(nil),
 		func(io.Reader, meta.ExifHeader) error { return nil },
@@ -65,7 +65,7 @@ func TestCallbackLogsDecodedMetadataItems(t *testing.T) {
 
 	out := buf.String()
 	for _, want := range []string{
-		`"message":"decoded metadata item"`,
+		`"msg":"decoded metadata item"`,
 		`"component":"isobmff"`,
 		`"metadataKind":"exif"`,
 		`"metadataKind":"xmp"`,
@@ -78,7 +78,7 @@ func TestCallbackLogsDecodedMetadataItems(t *testing.T) {
 			t.Fatalf("log output missing %s: %q", want, out)
 		}
 	}
-	if got := strings.Count(out, `"message":"decoded metadata item"`); got != 3 {
+	if got := strings.Count(out, `"msg":"decoded metadata item"`); got != 3 {
 		t.Fatalf("decoded item log count = %d, want 3: %q", got, out)
 	}
 }

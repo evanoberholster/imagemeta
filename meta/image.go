@@ -1,6 +1,6 @@
 package meta
 
-import "fmt"
+import "strconv"
 
 //go:generate msgp
 
@@ -20,7 +20,13 @@ func NewDimensions(width, height uint32) Dimensions {
 
 func (d Dimensions) String() string {
 	width, height := d.Size()
-	return fmt.Sprintf("width: %d, height: %d", width, height)
+	var b [48]byte
+	out := b[:0]
+	out = append(out, "width: "...)
+	out = strconv.AppendUint(out, uint64(width), 10)
+	out = append(out, ", height: "...)
+	out = strconv.AppendUint(out, uint64(height), 10)
+	return string(out)
 }
 
 // Size returns width and height from underlying dimensions

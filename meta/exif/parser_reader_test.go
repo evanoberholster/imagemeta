@@ -17,49 +17,49 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
-func TestTagTypeFor(t *testing.T) {
+func TestTagNormalizeType(t *testing.T) {
 	t.Parallel()
 
-	if got := tagTypeFor(tag.IFD0, tag.TagExifIFDPointer, tag.TypeLong); got != tag.TypeIfd {
-		t.Fatalf("tagTypeFor(ifd0, exif ptr, long) = %v, want %v", got, tag.TypeIfd)
+	if got := tag.NormalizeType(tag.IFD0, tag.TagExifIFDPointer, tag.TypeLong); got != tag.TypeIfd {
+		t.Fatalf("NormalizeType(ifd0, exif ptr, long) = %v, want %v", got, tag.TypeIfd)
 	}
-	if got := tagTypeFor(tag.IFD0, tag.TagGPSIFDPointer, tag.TypeUndefined); got != tag.TypeIfd {
-		t.Fatalf("tagTypeFor(ifd0, gps ptr, undef) = %v, want %v", got, tag.TypeIfd)
+	if got := tag.NormalizeType(tag.IFD0, tag.TagGPSIFDPointer, tag.TypeUndefined); got != tag.TypeIfd {
+		t.Fatalf("NormalizeType(ifd0, gps ptr, undef) = %v, want %v", got, tag.TypeIfd)
 	}
-	if got := tagTypeFor(tag.ExifIFD, tag.TagMakerNote, tag.TypeLong); got != tag.TypeIfd {
-		t.Fatalf("tagTypeFor(exif, makernote, long) = %v, want %v", got, tag.TypeIfd)
+	if got := tag.NormalizeType(tag.ExifIFD, tag.TagMakerNote, tag.TypeLong); got != tag.TypeIfd {
+		t.Fatalf("NormalizeType(exif, makernote, long) = %v, want %v", got, tag.TypeIfd)
 	}
-	if got := tagTypeFor(tag.ExifIFD, tag.TagInteropIFDPointer, tag.TypeLong); got != tag.TypeIfd {
-		t.Fatalf("tagTypeFor(exif, interop ptr, long) = %v, want %v", got, tag.TypeIfd)
+	if got := tag.NormalizeType(tag.ExifIFD, tag.TagInteropIFDPointer, tag.TypeLong); got != tag.TypeIfd {
+		t.Fatalf("NormalizeType(exif, interop ptr, long) = %v, want %v", got, tag.TypeIfd)
 	}
-	if got := tagTypeFor(tag.IFD0, tag.TagMake, tag.TypeLong); got != tag.TypeLong {
-		t.Fatalf("tagTypeFor(ifd0, make, long) = %v, want %v", got, tag.TypeLong)
+	if got := tag.NormalizeType(tag.IFD0, tag.TagMake, tag.TypeLong); got != tag.TypeLong {
+		t.Fatalf("NormalizeType(ifd0, make, long) = %v, want %v", got, tag.TypeLong)
 	}
-	if got := tagTypeFor(tag.ExifIFD, tag.TagMakerNote, tag.TypeShort); got != tag.TypeShort {
-		t.Fatalf("tagTypeFor(exif, makernote, short) = %v, want %v", got, tag.TypeShort)
+	if got := tag.NormalizeType(tag.ExifIFD, tag.TagMakerNote, tag.TypeShort); got != tag.TypeShort {
+		t.Fatalf("NormalizeType(exif, makernote, short) = %v, want %v", got, tag.TypeShort)
 	}
 }
 
-func TestTagUsesIfdType(t *testing.T) {
+func TestTagUsesIFDType(t *testing.T) {
 	t.Parallel()
 
-	if !tagUsesIfdType(tag.IFD0, tag.TagExifIFDPointer) {
-		t.Fatal("tagUsesIfdType(ifd0, exif ptr) = false, want true")
+	if !tag.UsesIFDType(tag.IFD0, tag.TagExifIFDPointer) {
+		t.Fatal("UsesIFDType(ifd0, exif ptr) = false, want true")
 	}
-	if !tagUsesIfdType(tag.IFD0, tag.TagGPSIFDPointer) {
-		t.Fatal("tagUsesIfdType(ifd0, gps ptr) = false, want true")
+	if !tag.UsesIFDType(tag.IFD0, tag.TagGPSIFDPointer) {
+		t.Fatal("UsesIFDType(ifd0, gps ptr) = false, want true")
 	}
-	if !tagUsesIfdType(tag.ExifIFD, tag.TagMakerNote) {
-		t.Fatal("tagUsesIfdType(exif, makernote) = false, want true")
+	if !tag.UsesIFDType(tag.ExifIFD, tag.TagMakerNote) {
+		t.Fatal("UsesIFDType(exif, makernote) = false, want true")
 	}
-	if !tagUsesIfdType(tag.ExifIFD, tag.TagInteropIFDPointer) {
-		t.Fatal("tagUsesIfdType(exif, interop ptr) = false, want true")
+	if !tag.UsesIFDType(tag.ExifIFD, tag.TagInteropIFDPointer) {
+		t.Fatal("UsesIFDType(exif, interop ptr) = false, want true")
 	}
-	if tagUsesIfdType(tag.IFD0, tag.TagMake) {
-		t.Fatal("tagUsesIfdType(ifd0, make) = true, want false")
+	if tag.UsesIFDType(tag.IFD0, tag.TagMake) {
+		t.Fatal("UsesIFDType(ifd0, make) = true, want false")
 	}
-	if tagUsesIfdType(tag.GPSIFD, tag.TagMakerNote) {
-		t.Fatal("tagUsesIfdType(gps, makernote) = true, want false")
+	if tag.UsesIFDType(tag.GPSIFD, tag.TagMakerNote) {
+		t.Fatal("UsesIFDType(gps, makernote) = true, want false")
 	}
 }
 

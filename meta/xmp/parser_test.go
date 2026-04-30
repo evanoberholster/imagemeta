@@ -220,9 +220,9 @@ func TestParseDigitsShortInput(t *testing.T) {
 
 func TestParserDebugLogsStructuredWarning(t *testing.T) {
 	var buf bytes.Buffer
-	oldLogger := metalog.Logger
-	metalog.Logger = metalog.New(&buf, slog.LevelWarn)
-	t.Cleanup(func() { metalog.Logger = oldLogger })
+	oldLogger := metalog.GetLogger()
+	metalog.SetLogger(metalog.New(&buf, slog.LevelWarn))
+	t.Cleanup(func() { metalog.SetLogger(oldLogger) })
 
 	x := XMP{}
 	prop := property{
@@ -239,7 +239,7 @@ func TestParserDebugLogsStructuredWarning(t *testing.T) {
 	out := buf.String()
 	for _, want := range []string{
 		`"component":"xmp"`,
-		`"message":"xmp property parse warning"`,
+		`"msg":"xmp property parse warning"`,
 		`"namespace":"exif"`,
 		`"property":"exif:DateTimeOriginal"`,
 		`"parent":"xmp:MetadataDate"`,
@@ -257,9 +257,9 @@ func TestParserDebugLogsStructuredWarning(t *testing.T) {
 
 func TestParserDebugSuppressesErrPropertyNotSetWarning(t *testing.T) {
 	var buf bytes.Buffer
-	oldLogger := metalog.Logger
-	metalog.Logger = metalog.New(&buf, slog.LevelWarn)
-	t.Cleanup(func() { metalog.Logger = oldLogger })
+	oldLogger := metalog.GetLogger()
+	metalog.SetLogger(metalog.New(&buf, slog.LevelWarn))
+	t.Cleanup(func() { metalog.SetLogger(oldLogger) })
 
 	x := XMP{}
 	prop := property{
@@ -279,9 +279,9 @@ func TestParserDebugSuppressesErrPropertyNotSetWarning(t *testing.T) {
 
 func TestLogPropertyParseWarningTruncatesValuePreview(t *testing.T) {
 	var buf bytes.Buffer
-	oldLogger := metalog.Logger
-	metalog.Logger = metalog.New(&buf, slog.LevelWarn)
-	t.Cleanup(func() { metalog.Logger = oldLogger })
+	oldLogger := metalog.GetLogger()
+	metalog.SetLogger(metalog.New(&buf, slog.LevelWarn))
+	t.Cleanup(func() { metalog.SetLogger(oldLogger) })
 
 	prop := property{
 		parent: NewProperty(XmpNS, MetadataDate),

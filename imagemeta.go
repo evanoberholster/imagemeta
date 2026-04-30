@@ -48,7 +48,7 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	it, err := imagetype.ScanBuf(rr)
@@ -113,7 +113,7 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	defer readerPool.Put(rr)
 	rr.Reset(r)
 
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
@@ -144,7 +144,7 @@ func DecodeTiff(r io.ReadSeeker) (exif.Exif, error) {
 	if err != nil {
 		return exif.Exif{}, err
 	}
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	if err := ir.DecodeTiff(rr, header); err != nil {
@@ -203,7 +203,7 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
 
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
@@ -226,7 +226,7 @@ func DecodeJPEG(r io.ReadSeeker) (exif.Exif, error) {
 	rr.Reset(r)
 	defer readerPool.Put(rr)
 
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	it, err := imagetype.ScanBuf(rr)
@@ -251,7 +251,7 @@ func DecodePng(r io.ReadSeeker) (exif.Exif, error) {
 		return exif.Exif{}, err
 	}
 
-	ir := exif.AcquirePooledReader(metalog.Logger)
+	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
 	if err := ir.DecodeTiff(r, header); err != nil {

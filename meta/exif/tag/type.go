@@ -2,7 +2,7 @@ package tag
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 )
 
 var (
@@ -13,7 +13,7 @@ var (
 type ID uint16
 
 func (id ID) String() string {
-	return fmt.Sprintf("0x%04x", uint16(id))
+	return hexUint16Lower(uint16(id))
 }
 
 // Type is the EXIF field type.
@@ -141,4 +141,84 @@ func (tt Type) String() string {
 
 func (tt Type) IsValid() bool {
 	return typeIsValidLookup[uint8(tt)] != 0
+}
+
+// RationalU stores an unsigned rational number.
+type RationalU struct {
+	Numerator   uint32
+	Denominator uint32
+}
+
+// Float64 converts the rational value into a float64.
+func (r RationalU) Float64() float64 {
+	if r.Denominator == 0 {
+		return 0
+	}
+	return float64(r.Numerator) / float64(r.Denominator)
+}
+
+// UsesIFDType reports whether an ID acts as an IFD pointer in directoryType.
+func UsesIFDType(directoryType IfdType, id ID) bool {
+	switch id {
+	case TagExifIFDPointer, TagGPSIFDPointer:
+		return directoryType == IFD0
+	case TagMakerNote, TagInteropIFDPointer:
+		return directoryType == ExifIFD
+	default:
+		return false
+	}
+}
+
+// NormalizeType resolves parser pseudo-types for known IFD pointer tags.
+func NormalizeType(directoryType IfdType, id ID, typ Type) Type {
+	if (typ.Is(TypeLong) || typ.Is(TypeUndefined)) && UsesIFDType(directoryType, id) {
+		return TypeIfd
+	}
+	return typ
+}
+
+const hexDigitsLower = "0123456789abcdef"
+const hexDigitsUpper = "0123456789ABCDEF"
+
+func hexUint16(v uint16, digits string) string {
+	var out [6]byte
+	out[0] = '0'
+	out[1] = 'x'
+	out[2] = digits[(v>>12)&0xF]
+	out[3] = digits[(v>>8)&0xF]
+	out[4] = digits[(v>>4)&0xF]
+	out[5] = digits[v&0xF]
+	return string(out[:])
+}
+
+func hexUint16Lower(v uint16) string {
+	return hexUint16(v, hexDigitsLower)
+}
+
+// HexUint16Upper returns 0x-prefixed, fixed-width uppercase hex.
+func HexUint16Upper(v uint16) string {
+	return hexUint16(v, hexDigitsUpper)
+}
+
+func hexUint32LowerMinWidth(v uint32, minWidth int) string {
+	digits := strconv.FormatUint(uint64(v), 16)
+	if len(digits) >= minWidth {
+		return "0x" + digits
+	}
+
+	n := 2 + minWidth
+	out := make([]byte, n)
+	out[0] = '0'
+	out[1] = 'x'
+	pad := minWidth - len(digits)
+	for i := 0; i < pad; i++ {
+		out[2+i] = '0'
+	}
+	copy(out[2+pad:], digits)
+	return string(out)
+}
+
+// HexUint32LowerMinWidth returns 0x-prefixed lowercase hex padded to minWidth.
+func HexUint32LowerMinWidth(v uint32, minWidth int) string {
+	return hexUint32LowerMinWidth(v, minWidth)
 }

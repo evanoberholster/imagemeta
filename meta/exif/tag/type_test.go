@@ -54,3 +54,49 @@ func TestTypeProperties(t *testing.T) {
 		})
 	}
 }
+
+func TestUsesIFDType(t *testing.T) {
+	t.Parallel()
+
+	if !UsesIFDType(IFD0, TagExifIFDPointer) {
+		t.Fatal("UsesIFDType(ifd0, exif ptr) = false, want true")
+	}
+	if !UsesIFDType(IFD0, TagGPSIFDPointer) {
+		t.Fatal("UsesIFDType(ifd0, gps ptr) = false, want true")
+	}
+	if !UsesIFDType(ExifIFD, TagMakerNote) {
+		t.Fatal("UsesIFDType(exif, makernote) = false, want true")
+	}
+	if !UsesIFDType(ExifIFD, TagInteropIFDPointer) {
+		t.Fatal("UsesIFDType(exif, interop ptr) = false, want true")
+	}
+	if UsesIFDType(IFD0, TagMake) {
+		t.Fatal("UsesIFDType(ifd0, make) = true, want false")
+	}
+	if UsesIFDType(GPSIFD, TagMakerNote) {
+		t.Fatal("UsesIFDType(gps, makernote) = true, want false")
+	}
+}
+
+func TestNormalizeType(t *testing.T) {
+	t.Parallel()
+
+	if got := NormalizeType(IFD0, TagExifIFDPointer, TypeLong); got != TypeIfd {
+		t.Fatalf("NormalizeType(ifd0, exif ptr, long) = %v, want %v", got, TypeIfd)
+	}
+	if got := NormalizeType(IFD0, TagGPSIFDPointer, TypeUndefined); got != TypeIfd {
+		t.Fatalf("NormalizeType(ifd0, gps ptr, undef) = %v, want %v", got, TypeIfd)
+	}
+	if got := NormalizeType(ExifIFD, TagMakerNote, TypeLong); got != TypeIfd {
+		t.Fatalf("NormalizeType(exif, makernote, long) = %v, want %v", got, TypeIfd)
+	}
+	if got := NormalizeType(ExifIFD, TagInteropIFDPointer, TypeLong); got != TypeIfd {
+		t.Fatalf("NormalizeType(exif, interop ptr, long) = %v, want %v", got, TypeIfd)
+	}
+	if got := NormalizeType(IFD0, TagMake, TypeLong); got != TypeLong {
+		t.Fatalf("NormalizeType(ifd0, make, long) = %v, want %v", got, TypeLong)
+	}
+	if got := NormalizeType(ExifIFD, TagMakerNote, TypeShort); got != TypeShort {
+		t.Fatalf("NormalizeType(exif, makernote, short) = %v, want %v", got, TypeShort)
+	}
+}

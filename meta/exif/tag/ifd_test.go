@@ -126,3 +126,29 @@ func TestDirectoryNewAndString(t *testing.T) {
 		t.Fatalf("Directory.String() = %q, want %q", got, want)
 	}
 }
+
+func TestSubIFDTypeForIndex(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		index int
+		want  IfdType
+	}{
+		{name: "zero", index: 0, want: SubIFD0},
+		{name: "middle", index: 3, want: SubIFD3},
+		{name: "max", index: 7, want: SubIFD7},
+		{name: "negative", index: -1, want: SubIFD0},
+		{name: "overflow", index: 8, want: SubIFD0},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := SubIFDTypeForIndex(tt.index); got != tt.want {
+				t.Fatalf("SubIFDTypeForIndex(%d) = %v, want %v", tt.index, got, tt.want)
+			}
+		})
+	}
+}
