@@ -9,42 +9,36 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
-// makerNoteInfo returns the typed maker-note container from Exif.MakerNote.
-func (r *Reader) makerNoteInfo() *makernote.Info {
-	return &r.Exif.MakerNote
-}
-
 func (r *Reader) appleMakerNote() *apple.Apple {
-	info := r.makerNoteInfo()
-	if info.Apple == nil {
-		info.Apple = &apple.Apple{}
+	mknote := r.Exif.MakerNote
+	if mknote.Apple == nil {
+		mknote.Apple = &apple.Apple{}
 	}
-	return info.Apple
+	return mknote.Apple
 }
 
 func (r *Reader) dngMakerNote() *makernote.DNG {
-	info := r.makerNoteInfo()
-	if info.DNG == nil {
-		info.DNG = &makernote.DNG{}
+	mknote := r.Exif.MakerNote
+	if mknote.DNG == nil {
+		mknote.DNG = &makernote.DNG{}
 	}
-	r.Exif.DNG = info.DNG
-	return info.DNG
+	return mknote.DNG
 }
 
 func (r *Reader) nikonMakerNote() *nikon.Nikon {
-	info := r.makerNoteInfo()
-	if info.Nikon == nil {
-		info.Nikon = &nikon.Nikon{}
+	mknote := r.Exif.MakerNote
+	if mknote.Nikon == nil {
+		mknote.Nikon = &nikon.Nikon{}
 	}
-	return info.Nikon
+	return mknote.Nikon
 }
 
 func (r *Reader) panasonicMakerNote() *panasonic.Panasonic {
-	info := r.makerNoteInfo()
-	if info.Panasonic == nil {
-		info.Panasonic = &panasonic.Panasonic{}
+	mknote := r.Exif.MakerNote
+	if mknote.Panasonic == nil {
+		mknote.Panasonic = &panasonic.Panasonic{}
 	}
-	return info.Panasonic
+	return mknote.Panasonic
 }
 
 // parseMakerNoteTag parses vendor-specific maker-note tags.

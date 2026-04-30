@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	logging.Logger = logging.New(os.Stdout, slog.LevelDebug)
+	logging.SetLogger(logging.New(os.Stdout, slog.LevelDebug))
 }
 
 func main() {

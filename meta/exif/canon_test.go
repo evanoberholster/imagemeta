@@ -139,8 +139,8 @@ func TestCanonCameraInfoLayoutUsesModelID(t *testing.T) {
 		utils.LittleEndian,
 	))
 
-	if got != canonCameraInfoLayoutR6 {
-		t.Fatalf("layout = %v, want %v", got, canonCameraInfoLayoutR6)
+	if got != canon.CameraInfoLayoutR6 {
+		t.Fatalf("layout = %v, want %v", got, canon.CameraInfoLayoutR6)
 	}
 }
 
@@ -159,31 +159,31 @@ func TestCanonCameraInfoLayoutFallsBackBeforeModelID(t *testing.T) {
 		utils.LittleEndian,
 	))
 
-	if got != canonCameraInfoLayout60D {
-		t.Fatalf("layout = %v, want %v", got, canonCameraInfoLayout60D)
+	if got != canon.CameraInfoLayout60D {
+		t.Fatalf("layout = %v, want %v", got, canon.CameraInfoLayout60D)
 	}
 }
 
 func TestCanonCameraInfoLayoutForModelIDExpanded(t *testing.T) {
 	tests := []struct {
 		modelID canon.CanonCameraModel
-		want    canonCameraInfoLayout
+		want    canon.CameraInfoLayout
 	}{
-		{canon.CanonModelEOS7D, canonCameraInfoLayout7D},
-		{canon.CanonModelEOS70D, canonCameraInfoLayout70D},
-		{canon.CanonModelEOS80D, canonCameraInfoLayout80D},
-		{canon.CanonModelEOSDigitalRebelXSi, canonCameraInfoLayout450D},
-		{canon.CanonModelEOSRebelT1i, canonCameraInfoLayout500D},
-		{canon.CanonModelEOSRebelT2i, canonCameraInfoLayout550D},
-		{canon.CanonModelEOSRebelT3i, canonCameraInfoLayout600D},
-		{canon.CanonModelEOSRebelT4i, canonCameraInfoLayout650D},
-		{canon.CanonModelEOSRebelT5i, canonCameraInfoLayout700D},
-		{canon.CanonModelEOSRebelT6i, canonCameraInfoLayout750D},
-		{canon.CanonModelEOSRebelXS, canonCameraInfoLayout1000D},
+		{canon.CanonModelEOS7D, canon.CameraInfoLayout7D},
+		{canon.CanonModelEOS70D, canon.CameraInfoLayout70D},
+		{canon.CanonModelEOS80D, canon.CameraInfoLayout80D},
+		{canon.CanonModelEOSDigitalRebelXSi, canon.CameraInfoLayout450D},
+		{canon.CanonModelEOSRebelT1i, canon.CameraInfoLayout500D},
+		{canon.CanonModelEOSRebelT2i, canon.CameraInfoLayout550D},
+		{canon.CanonModelEOSRebelT3i, canon.CameraInfoLayout600D},
+		{canon.CanonModelEOSRebelT4i, canon.CameraInfoLayout650D},
+		{canon.CanonModelEOSRebelT5i, canon.CameraInfoLayout700D},
+		{canon.CanonModelEOSRebelT6i, canon.CameraInfoLayout750D},
+		{canon.CanonModelEOSRebelXS, canon.CameraInfoLayout1000D},
 	}
 
 	for _, tc := range tests {
-		got, ok := canonCameraInfoLayoutForModelID(tc.modelID)
+		got, ok := canon.CameraInfoLayoutForModelID(tc.modelID)
 		if !ok {
 			t.Fatalf("layout(%v) not found", tc.modelID)
 		}
@@ -482,66 +482,6 @@ func TestParseCanonAFInfo2DecodeOptionsNone(t *testing.T) {
 	}
 }
 
-func TestParseCanonBatteryType(t *testing.T) {
-	withHeader := func(payload []byte) []byte {
-		raw := make([]byte, canonBatteryTypePayloadSize)
-		copy(raw[:4], []byte{0xde, 0xad, 0xbe, 0xef})
-		copy(raw[4:], payload)
-		return raw
-	}
-
-	tests := []struct {
-		name      string
-		raw       []byte
-		unitCount uint32
-		want      string
-	}{
-		{
-			name:      "invalid length",
-			raw:       make([]byte, canonBatteryTypePayloadSize-1),
-			unitCount: canonBatteryTypePayloadSize - 1,
-			want:      "",
-		},
-		{
-			name:      "empty payload after header",
-			raw:       withHeader([]byte{0}),
-			unitCount: canonBatteryTypePayloadSize,
-			want:      "",
-		},
-		{
-			name:      "nul terminated battery type",
-			raw:       withHeader([]byte("LP-E6N\x00TRAILING")),
-			unitCount: canonBatteryTypePayloadSize,
-			want:      "LP-E6N",
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			entry := tag.NewEntry(
-				tag.ID(canon.BatteryType),
-				tag.TypeUndefined,
-				tc.unitCount,
-				0,
-				tag.MakerNoteIFD,
-				0,
-				utils.LittleEndian,
-			)
-			r := NewReader(metalog.Logger)
-			defer r.Close()
-
-			var br bytes.Reader
-			br.Reset(tc.raw)
-			r.Reset(&br)
-			got := r.parseCanonBatteryType(entry)
-			if got != tc.want {
-				t.Fatalf("got = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestParseCanonLensModelTerminatedAtNUL(t *testing.T) {
 	raw := []byte("EF70-200\x00TRAILING")
 	entry := tag.NewEntry(
@@ -593,34 +533,6 @@ func TestParseCanonStringSanitizesUndefinedJunk(t *testing.T) {
 
 	if got := r.Exif.MakerNote.Canon.OwnerName; got != "Canon USA - Editorial Sample" {
 		t.Fatalf("OwnerName = %q, want %q", got, "Canon USA - Editorial Sample")
-	}
-}
-
-func TestParseCanonBatteryTypeTag(t *testing.T) {
-	raw := make([]byte, canonBatteryTypePayloadSize)
-	copy(raw[4:], []byte("LP-E6N\x00TRAILING"))
-	entry := tag.NewEntry(
-		tag.ID(canon.BatteryType),
-		tag.TypeUndefined,
-		uint32(len(raw)),
-		0,
-		tag.MakerNoteIFD,
-		0,
-		utils.LittleEndian,
-	)
-
-	r := NewReader(metalog.Logger)
-	defer r.Close()
-
-	var br bytes.Reader
-	br.Reset(raw)
-	r.Reset(&br)
-	if ok := r.parseCanonTag(entry); !ok {
-		t.Fatal("parseCanonTag returned false for BatteryType")
-	}
-
-	if got := r.Exif.MakerNote.Canon.BatteryType; got != "LP-E6N" {
-		t.Fatalf("BatteryType = %q, want %q", got, "LP-E6N")
 	}
 }
 
@@ -979,9 +891,9 @@ func TestParseCanonMaxAperture(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := float64(parseCanonMaxAperture(tc.raw))
+			got := float64(canon.MaxApertureFromCode(tc.raw))
 			if math.Abs(got-tc.want) > 1e-5 {
-				t.Fatalf("parseCanonMaxAperture(%#x)=%.8f want %.8f", tc.raw, got, tc.want)
+				t.Fatalf("canon.MaxApertureFromCode(%#x)=%.8f want %.8f", tc.raw, got, tc.want)
 			}
 		})
 	}
@@ -1066,8 +978,8 @@ func TestParseCanonCameraSettingsIndexMapping(t *testing.T) {
 	if got.LensType != canon.CanonLensType(unsigned[21]) {
 		t.Fatalf("LensType = %#x, want %#x", got.LensType, canon.CanonLensType(unsigned[21]))
 	}
-	if got.DisplayAperture != parseCanonDisplayAperture(unsigned[34]) {
-		t.Fatalf("DisplayAperture = %v, want %v", got.DisplayAperture, parseCanonDisplayAperture(unsigned[34]))
+	if got.DisplayAperture != canon.DisplayApertureFromCode(unsigned[34]) {
+		t.Fatalf("DisplayAperture = %v, want %v", got.DisplayAperture, canon.DisplayApertureFromCode(unsigned[34]))
 	}
 	if got.SRAWQuality != canon.SRAWQuality(signed[45]) {
 		t.Fatalf("SRAWQuality = %d, want %d", got.SRAWQuality, canon.SRAWQuality(signed[45]))
@@ -1273,11 +1185,11 @@ func TestParseCanonShotInfo(t *testing.T) {
 	if got.SlowShutter != canon.SlowShutterNightScene {
 		t.Fatalf("SlowShutter = %d, want %d", got.SlowShutter, canon.SlowShutterNightScene)
 	}
-	if got.TargetAperture != canonShotAperture(int16(words[4])) {
-		t.Fatalf("TargetAperture = %v, want %v", got.TargetAperture, canonShotAperture(int16(words[4])))
+	if got.TargetAperture != canon.ShotAperture(int16(words[4])) {
+		t.Fatalf("TargetAperture = %v, want %v", got.TargetAperture, canon.ShotAperture(int16(words[4])))
 	}
-	if got.TargetExposureTime != canonShotExposureTime(int16(words[5]), false) {
-		t.Fatalf("TargetExposureTime = %v, want %v", got.TargetExposureTime, canonShotExposureTime(int16(words[5]), false))
+	if got.TargetExposureTime != canon.ShotExposureTime(int16(words[5]), false) {
+		t.Fatalf("TargetExposureTime = %v, want %v", got.TargetExposureTime, canon.ShotExposureTime(int16(words[5]), false))
 	}
 	if math.Abs(float64(got.ExposureCompensation-1.0)) > 1e-5 {
 		t.Fatalf("ExposureCompensation = %.5f, want 1.0", got.ExposureCompensation)
@@ -1288,11 +1200,11 @@ func TestParseCanonShotInfo(t *testing.T) {
 	if math.Abs(float64(got.FlashGuideNumber-2.0)) > 1e-6 {
 		t.Fatalf("FlashGuideNumber = %.6f, want 2.0", got.FlashGuideNumber)
 	}
-	if got.FNumber != canonShotAperture(int16(words[21])) {
-		t.Fatalf("FNumber = %v, want %v", got.FNumber, canonShotAperture(int16(words[21])))
+	if got.FNumber != canon.ShotAperture(int16(words[21])) {
+		t.Fatalf("FNumber = %v, want %v", got.FNumber, canon.ShotAperture(int16(words[21])))
 	}
-	if got.ExposureTime != canonShotExposureTime(int16(words[22]), false) {
-		t.Fatalf("ExposureTime = %v, want %v", got.ExposureTime, canonShotExposureTime(int16(words[22]), false))
+	if got.ExposureTime != canon.ShotExposureTime(int16(words[22]), false) {
+		t.Fatalf("ExposureTime = %v, want %v", got.ExposureTime, canon.ShotExposureTime(int16(words[22]), false))
 	}
 	if math.Abs(float64(got.MeasuredEV2-2.0)) > 1e-5 {
 		t.Fatalf("MeasuredEV2 = %.5f, want 2.0", got.MeasuredEV2)
@@ -1327,11 +1239,11 @@ func TestParseCanonShotInfoTruncated(t *testing.T) {
 	if math.Abs(float64(got.ActualISO-400.0)) > 1e-5 {
 		t.Fatalf("ActualISO = %.5f, want 400.0", got.ActualISO)
 	}
-	if got.TargetAperture != canonShotAperture(int16(words[4])) {
-		t.Fatalf("TargetAperture = %v, want %v", got.TargetAperture, canonShotAperture(int16(words[4])))
+	if got.TargetAperture != canon.ShotAperture(int16(words[4])) {
+		t.Fatalf("TargetAperture = %v, want %v", got.TargetAperture, canon.ShotAperture(int16(words[4])))
 	}
-	if got.TargetExposureTime != canonShotExposureTime(int16(words[5]), false) {
-		t.Fatalf("TargetExposureTime = %v, want %v", got.TargetExposureTime, canonShotExposureTime(int16(words[5]), false))
+	if got.TargetExposureTime != canon.ShotExposureTime(int16(words[5]), false) {
+		t.Fatalf("TargetExposureTime = %v, want %v", got.TargetExposureTime, canon.ShotExposureTime(int16(words[5]), false))
 	}
 	if got.WhiteBalance != 0 {
 		t.Fatalf("WhiteBalance = %d, want 0", got.WhiteBalance)
@@ -1362,20 +1274,9 @@ func TestParseCanonShotInfoLegacyExposureTime(t *testing.T) {
 	words[22] = 672 // [22] ExposureTime
 
 	got := parseShotInfoForTest(t, words, "Canon EOS 20D", 10)
-	want := canonShotExposureTime(int16(words[22]), true)
+	want := canon.ShotExposureTime(int16(words[22]), true)
 	if got.ExposureTime != want {
 		t.Fatalf("ExposureTime = %v, want %v", got.ExposureTime, want)
-	}
-}
-
-func TestCanonNormalizeFirmwareVersion(t *testing.T) {
-	t.Parallel()
-
-	if got := canonNormalizeFirmwareVersion("Firmware Version 1.0.1"); got != "1.0.1" {
-		t.Fatalf("canonNormalizeFirmwareVersion() = %q, want %q", got, "1.0.1")
-	}
-	if got := canonNormalizeFirmwareVersion("1.0.1"); got != "1.0.1" {
-		t.Fatalf("canonNormalizeFirmwareVersion() passthrough = %q, want %q", got, "1.0.1")
 	}
 }
 

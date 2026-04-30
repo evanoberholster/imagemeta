@@ -83,9 +83,9 @@ func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) e
 
 // ensureMakerNoteMake resolves and caches maker-note camera make.
 func (r *Reader) ensureMakerNoteMake() makernote.CameraMake {
-	info := r.makerNoteInfo()
-	if info.Make != makernote.CameraMakeUnknown {
-		return info.Make
+	mknote := &r.Exif.MakerNote
+	if mknote.Make != makernote.CameraMakeUnknown {
+		return mknote.Make
 	}
 
 	if r.Exif.CameraMakeID == makernote.CameraMakeUnknown && r.Exif.IFD0.Make != "" {
@@ -113,8 +113,8 @@ func (r *Reader) ensureMakerNoteMake() makernote.CameraMake {
 		}
 	}
 
-	info.Make = r.Exif.CameraMakeID
-	return info.Make
+	mknote.Make = r.Exif.CameraMakeID
+	return mknote.Make
 }
 
 // readNikonMakerNoteDirectory parses Nikon maker-note TIFF headers and directory offsets.

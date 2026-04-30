@@ -201,6 +201,111 @@ func TestParseGPSTagUnitConversions(t *testing.T) {
 	}
 }
 
+func TestParseGPSTagOrderInsensitiveCoordinates(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
+		tg := tag.NewEntry(id, typ, unitCount, valueOffset, tag.GPSIFD, 0, utils.LittleEndian)
+		if ok := r.parseGPSTag(tg); !ok {
+			t.Fatalf("parseGPSTag(%v) = false, want true", id)
+		}
+	}
+	parseWithData := func(id tag.ID, typ tag.Type, unitCount uint32, data []byte) {
+		r.setReader(bytes.NewReader(data))
+		r.resetOffsets()
+		tg := tag.NewEntry(id, typ, unitCount, 0, tag.GPSIFD, 0, utils.LittleEndian)
+		if ok := r.parseGPSTag(tg); !ok {
+			t.Fatalf("parseGPSTag(%v) = false, want true", id)
+		}
+	}
+
+	parseWithData(tag.TagGPSLatitude, tag.TypeRational, 3, packRationalList([2]uint32{33, 1}, [2]uint32{54, 1}, [2]uint32{0, 1}))
+	parseEmbedded(tag.TagGPSLatitudeRef, tag.TypeASCII, 2, packLE([4]byte{'S', 0, 0, 0}))
+	if got := r.Exif.GPS.Latitude(); math.Abs(got-(-33.9)) > 0.00001 {
+		t.Fatalf("Latitude after ref = %v, want -33.9", got)
+	}
+
+	parseWithData(tag.TagGPSLongitude, tag.TypeRational, 3, packRationalList([2]uint32{18, 1}, [2]uint32{24, 1}, [2]uint32{0, 1}))
+	parseEmbedded(tag.TagGPSLongitudeRef, tag.TypeASCII, 2, packLE([4]byte{'W', 0, 0, 0}))
+	if got := r.Exif.GPS.Longitude(); math.Abs(got-(-18.4)) > 0.00001 {
+		t.Fatalf("Longitude after ref = %v, want -18.4", got)
+	}
+
+	parseWithData(tag.TagGPSDestLatitude, tag.TypeRational, 3, packRationalList([2]uint32{45, 1}, [2]uint32{30, 1}, [2]uint32{0, 1}))
+	parseEmbedded(tag.TagGPSDestLatitudeRef, tag.TypeASCII, 2, packLE([4]byte{'S', 0, 0, 0}))
+	if got := r.Exif.GPS.DestLatitude(); math.Abs(got-(-45.5)) > 0.00001 {
+		t.Fatalf("DestLatitude after ref = %v, want -45.5", got)
+	}
+
+	parseWithData(tag.TagGPSDestLongitude, tag.TypeRational, 3, packRationalList([2]uint32{9, 1}, [2]uint32{6, 1}, [2]uint32{0, 1}))
+	parseEmbedded(tag.TagGPSDestLongitudeRef, tag.TypeASCII, 2, packLE([4]byte{'W', 0, 0, 0}))
+	if got := r.Exif.GPS.DestLongitude(); math.Abs(got-(-9.1)) > 0.00001 {
+		t.Fatalf("DestLongitude after ref = %v, want -9.1", got)
+	}
+
+	parseWithData(tag.TagGPSAltitude, tag.TypeRational, 1, packRationalList([2]uint32{1234, 10}))
+	parseEmbedded(tag.TagGPSAltitudeRef, tag.TypeByte, 1, 1)
+	if got := r.Exif.GPS.Altitude(); math.Abs(float64(got-(-123.4))) > 0.00001 {
+		t.Fatalf("Altitude after ref = %v, want -123.4", got)
+	}
+}
+
+func TestParseGPSAltitudeRefExifToolVariants(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
+		tg := tag.NewEntry(id, typ, unitCount, valueOffset, tag.GPSIFD, 0, utils.LittleEndian)
+		if ok := r.parseGPSTag(tg); !ok {
+			t.Fatalf("parseGPSTag(%v) = false, want true", id)
+		}
+	}
+	parseWithData := func(id tag.ID, typ tag.Type, unitCount uint32, data []byte) {
+		r.setReader(bytes.NewReader(data))
+		r.resetOffsets()
+		tg := tag.NewEntry(id, typ, unitCount, 0, tag.GPSIFD, 0, utils.LittleEndian)
+		if ok := r.parseGPSTag(tg); !ok {
+			t.Fatalf("parseGPSTag(%v) = false, want true", id)
+		}
+	}
+
+	parseWithData(tag.TagGPSAltitude, tag.TypeRational, 1, packRationalList([2]uint32{25, 1}))
+	parseEmbedded(tag.TagGPSAltitudeRef, tag.TypeByte, 1, 2)
+	if got := r.Exif.GPS.Altitude(); got != 25 {
+		t.Fatalf("Altitude ref=2 = %v, want 25", got)
+	}
+
+	parseEmbedded(tag.TagGPSAltitudeRef, tag.TypeByte, 1, 3)
+	if got := r.Exif.GPS.Altitude(); got != -25 {
+		t.Fatalf("Altitude ref=3 = %v, want -25", got)
+	}
+}
+
+func TestParseGPSDateStampNULSeparators(t *testing.T) {
+	t.Parallel()
+
+	r := NewReader(metalog.Logger)
+	defer r.Close()
+
+	data := []byte{'2', '0', '2', '4', 0, '0', '3', 0, '0', '1', 0}
+	r.setReader(bytes.NewReader(data))
+	r.resetOffsets()
+	tg := tag.NewEntry(tag.TagGPSDateStamp, tag.TypeASCII, uint32(len(data)), 0, tag.GPSIFD, 0, utils.LittleEndian)
+	if ok := r.parseGPSTag(tg); !ok {
+		t.Fatal("parseGPSTag(GPSDateStamp) = false, want true")
+	}
+
+	want := time.Date(2024, time.March, 1, 0, 0, 0, 0, time.UTC)
+	if got := r.Exif.GPS.GPSTimestamp(); !got.Equal(want) {
+		t.Fatalf("GPSTimestamp = %v, want %v", got, want)
+	}
+}
+
 func packLE(b [4]byte) uint32 {
 	return utils.LittleEndian.Uint32(b[:])
 }

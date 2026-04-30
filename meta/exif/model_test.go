@@ -64,26 +64,26 @@ func TestGPSInfoSetDateAndTimeOrder(t *testing.T) {
 	want := base.Add(delta)
 
 	var a GPSInfo
-	a.setDate(base)
-	a.setTime(delta)
-	if got := a.GPSTime(); !got.Equal(want) {
-		t.Fatalf("date->time GPSTime = %v, want %v", got, want)
+	a.applyDate(base)
+	a.applyTime(delta)
+	if got := a.GPSTimestamp(); !got.Equal(want) {
+		t.Fatalf("date->time GPSTimestamp = %v, want %v", got, want)
 	}
 
 	var b GPSInfo
-	b.setTime(delta)
-	if pending, ok := gpsPendingDelta(b.GPSTime()); !ok || pending != delta {
+	b.applyTime(delta)
+	if pending, ok := gpsPendingDelta(b.GPSTimestamp()); !ok || pending != delta {
 		t.Fatalf("gpsPendingDelta() = (%v,%v), want (%v,true)", pending, ok, delta)
 	}
-	b.setDate(base)
-	if got := b.GPSTime(); !got.Equal(want) {
-		t.Fatalf("time->date GPSTime = %v, want %v", got, want)
+	b.applyDate(base)
+	if got := b.GPSTimestamp(); !got.Equal(want) {
+		t.Fatalf("time->date GPSTimestamp = %v, want %v", got, want)
 	}
 
 	var c GPSInfo
-	c.setTime(0)
-	if got := c.GPSTime(); !got.IsZero() {
-		t.Fatalf("zero-delta GPSTime = %v, want zero", got)
+	c.applyTime(0)
+	if got := c.GPSTimestamp(); !got.IsZero() {
+		t.Fatalf("zero-delta GPSTimestamp = %v, want zero", got)
 	}
 }
 
@@ -128,8 +128,8 @@ func TestGPSInfoAccessorsAndBitset(t *testing.T) {
 	if got := g.TrackWithRef(); got.Ref != "T" || got.Value.Numerator != 123 || got.Value.Denominator != 1 {
 		t.Fatalf("TrackWithRef() = %+v", got)
 	}
-	if got := g.DestLatitude(); got != 45.5 {
-		t.Fatalf("DestLatitude() = %v, want 45.5", got)
+	if got := g.DestLatitude(); got != -45.5 {
+		t.Fatalf("DestLatitude() = %v, want -45.5", got)
 	}
 	g.destLatitudeRef = tag.GPSRefNorth
 	if got := g.DestLatitudeSigned(); got != 45.5 {

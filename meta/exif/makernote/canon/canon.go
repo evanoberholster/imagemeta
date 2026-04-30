@@ -3,13 +3,14 @@ package canon
 
 import (
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
 )
 
 //go:generate msgp
-//go:generate stringer -type=MacroMode,Quality,CanonFlashMode,ContinuousDrive,FocusMode,RecordMode,CanonImageSize,EasyMode,DigitalZoom,CameraISO,MeteringMode,FocusRange,ExposureMode,FlashModel,FocusContinuous,AESetting,ImageStabilization,SpotMeteringMode,PhotoEffect,ManualFlashOutput,SRAWQuality,FocusBracketing,HDRPQ,BracketMode,OnOffAuto,FilterEffect,ToningEffect,ShutterMode,RawJpgQuality,RawJpgSize,TimeZoneCity,DaylightSavings,AFAreaMode -linecomment -output=canon_string.go
+//go:generate stringer -type=MacroMode,Quality,CanonFlashMode,ContinuousDrive,FocusMode,RecordMode,CanonImageSize,EasyMode,DigitalZoom,MeteringMode,FocusRange,ExposureMode,FlashModel,FocusContinuous,AESetting,ImageStabilization,SpotMeteringMode,PhotoEffect,ManualFlashOutput,SRAWQuality,FocusBracketing,HDRPQ,BracketMode,OnOffAuto,FilterEffect,ToningEffect,ShutterMode,RawJpgQuality,RawJpgSize,TimeZoneCity,DaylightSavings,AFAreaMode -linecomment -output=canon_string.go
 
 // Canon contains selected Canon maker-note fields.
 //
@@ -75,8 +76,7 @@ type Canon struct {
 //	4:  "Continuous, Low",
 //	5:  "Continuous, High",
 //	6:  "Silent Single",
-//	7:  "Continuous",
-//	8:  "Single",
+//	8:  "Continuous, High+",
 //	9:  "Single, Silent",
 //	10: "Continuous, Silent",
 type ContinuousDrive int16
@@ -89,12 +89,9 @@ const (
 	ContinuousDriveContinuousLow           ContinuousDrive = 4  // Continuous, Low
 	ContinuousDriveContinuousHigh          ContinuousDrive = 5  // Continuous, High
 	ContinuousDriveSilentSingle            ContinuousDrive = 6  // Silent Single
-	ContinuousDriveContinuousAlt           ContinuousDrive = 7  // Continuous
-	ContinuousDriveSingleAlt               ContinuousDrive = 8  // Single
+	ContinuousDriveContinuousHighPlus      ContinuousDrive = 8  // Continuous, High+
 	ContinuousDriveSingleSilent            ContinuousDrive = 9  // Single, Silent
 	ContinuousDriveContinuousSilent        ContinuousDrive = 10 // Continuous, Silent
-	ContinuousDriveUnknown7                ContinuousDrive = 7  // Continuous
-	ContinuousDriveUnknown8                ContinuousDrive = 8  // Single
 )
 
 // FocusMode is part of the CanonCameraSettings field
@@ -102,30 +99,32 @@ const (
 //	0:   "One-shot AF",
 //	1:   "AI Servo AF",
 //	2:   "AI Focus AF",
-//	3:   "Manual Focus",
+//	3:   "Manual Focus (3)",
 //	4:   "Single",
 //	5:   "Continuous",
-//	6:   "Manual Focus",
+//	6:   "Manual Focus (6)",
 //	16:  "Pan Focus",
-//	256: "AF + MF",
-//	258: "MF",
+//	256: "One-shot AF (Live View)",
+//	257: "AI Servo AF (Live View)",
+//	258: "AI Focus AF (Live View)",
 //	512: "Movie Snap Focus",
 //	519: "Movie Servo AF",
 type FocusMode int16
 
 const (
-	FocusModeOneShotAF      FocusMode = 0   // One-shot AF
-	FocusModeAIServoAF      FocusMode = 1   // AI Servo AF
-	FocusModeAIFocusAF      FocusMode = 2   // AI Focus AF
-	FocusModeManualFocus    FocusMode = 3   // Manual Focus
-	FocusModeSingle         FocusMode = 4   // Single
-	FocusModeContinuous     FocusMode = 5   // Continuous
-	FocusModeManualFocusAlt FocusMode = 6   // Manual Focus
-	FocusModePanFocus       FocusMode = 16  // Pan Focus
-	FocusModeAFPlusMF       FocusMode = 256 // AF + MF
-	FocusModeMF             FocusMode = 258 // MF
-	FocusModeMovieSnapFocus FocusMode = 512 // Movie Snap Focus
-	FocusModeMovieServoAF   FocusMode = 519 // Movie Servo AF
+	FocusModeOneShotAF         FocusMode = 0   // One-shot AF
+	FocusModeAIServoAF         FocusMode = 1   // AI Servo AF
+	FocusModeAIFocusAF         FocusMode = 2   // AI Focus AF
+	FocusModeManualFocus3      FocusMode = 3   // Manual Focus (3)
+	FocusModeSingle            FocusMode = 4   // Single
+	FocusModeContinuous        FocusMode = 5   // Continuous
+	FocusModeManualFocus6      FocusMode = 6   // Manual Focus (6)
+	FocusModePanFocus          FocusMode = 16  // Pan Focus
+	FocusModeOneShotAFLiveView FocusMode = 256 // One-shot AF (Live View)
+	FocusModeAIServoAFLiveView FocusMode = 257 // AI Servo AF (Live View)
+	FocusModeAIFocusAFLiveView FocusMode = 258 // AI Focus AF (Live View)
+	FocusModeMovieSnapFocus    FocusMode = 512 // Movie Snap Focus
+	FocusModeMovieServoAF      FocusMode = 519 // Movie Servo AF
 )
 
 // MeteringMode is part of the CanonCameraSettings field
@@ -216,39 +215,47 @@ const (
 
 // Quality is part of the CanonCameraSettings field.
 //
-//	2: "Normal"
-//	3: "Fine"
-//	4: "RAW"
-//	5: "Superfine"
+//	-1: "n/a"
+//	1:  "Economy"
+//	2:  "Normal"
+//	3:  "Fine"
+//	4:  "RAW"
+//	5:  "Superfine"
+//	7:  "CRAW"
 type Quality int16
 
 const (
-	QualityNormal    Quality = 2 // Normal
-	QualityFine      Quality = 3 // Fine
-	QualityRAW       Quality = 4 // RAW
-	QualitySuperfine Quality = 5 // Superfine
+	QualityNA        Quality = -1 // n/a
+	QualityEconomy   Quality = 1  // Economy
+	QualityNormal    Quality = 2  // Normal
+	QualityFine      Quality = 3  // Fine
+	QualityRAW       Quality = 4  // RAW
+	QualitySuperfine Quality = 5  // Superfine
+	QualityCRAW      Quality = 7  // CRAW
 )
 
 // CanonFlashMode is part of the CanonCameraSettings field.
 //
+//	-1: "n/a"
 //	0:  "Off"
 //	1:  "Auto"
 //	2:  "On"
 //	3:  "Red-eye reduction"
 //	4:  "Slow-sync"
-//	5:  "Auto + red-eye"
-//	6:  "On + red-eye"
+//	5:  "Red-eye reduction (Auto)"
+//	6:  "Red-eye reduction (On)"
 //	16: "External flash"
 type CanonFlashMode int16
 
 const (
+	CanonFlashModeNA            CanonFlashMode = -1 // n/a
 	CanonFlashModeOff           CanonFlashMode = 0  // Off
 	CanonFlashModeAuto          CanonFlashMode = 1  // Auto
 	CanonFlashModeOn            CanonFlashMode = 2  // On
 	CanonFlashModeRedEye        CanonFlashMode = 3  // Red-eye reduction
 	CanonFlashModeSlowSync      CanonFlashMode = 4  // Slow-sync
-	CanonFlashModeAutoRedEye    CanonFlashMode = 5  // Auto + red-eye
-	CanonFlashModeOnRedEye      CanonFlashMode = 6  // On + red-eye
+	CanonFlashModeAutoRedEye    CanonFlashMode = 5  // Red-eye reduction (Auto)
+	CanonFlashModeOnRedEye      CanonFlashMode = 6  // Red-eye reduction (On)
 	CanonFlashModeExternalFlash CanonFlashMode = 16 // External flash
 )
 
@@ -263,6 +270,11 @@ const (
 //	7:  "CR2+JPEG"
 //	9:  "MOV"
 //	10: "MP4"
+//	11: "CRM"
+//	12: "CR3"
+//	13: "CR3+JPEG"
+//	14: "HIF"
+//	15: "CR3+HIF"
 type RecordMode int16
 
 const (
@@ -275,6 +287,11 @@ const (
 	RecordModeCR2JPEG RecordMode = 7  // CR2+JPEG
 	RecordModeMOV     RecordMode = 9  // MOV
 	RecordModeMP4     RecordMode = 10 // MP4
+	RecordModeCRM     RecordMode = 11 // CRM
+	RecordModeCR3     RecordMode = 12 // CR3
+	RecordModeCR3JPEG RecordMode = 13 // CR3+JPEG
+	RecordModeHIF     RecordMode = 14 // HIF
+	RecordModeCR3HIF  RecordMode = 15 // CR3+HIF
 )
 
 // CanonImageSize is part of the CanonCameraSettings field.
@@ -288,85 +305,94 @@ const (
 type CanonImageSize int16
 
 const (
-	CanonImageSizeLarge   CanonImageSize = 0 // Large
-	CanonImageSizeMedium  CanonImageSize = 1 // Medium
-	CanonImageSizeSmall   CanonImageSize = 2 // Small
-	CanonImageSizeMedium1 CanonImageSize = 5 // Medium 1
-	CanonImageSizeMedium2 CanonImageSize = 6 // Medium 2
-	CanonImageSizeMedium3 CanonImageSize = 7 // Medium 3
+	CanonImageSizeNA      CanonImageSize = -1 // n/a
+	CanonImageSizeLarge   CanonImageSize = 0  // Large
+	CanonImageSizeMedium  CanonImageSize = 1  // Medium
+	CanonImageSizeSmall   CanonImageSize = 2  // Small
+	CanonImageSizeMedium1 CanonImageSize = 5  // Medium 1
+	CanonImageSizeMedium2 CanonImageSize = 6  // Medium 2
+	CanonImageSizeMedium3 CanonImageSize = 7  // Medium 3
 )
 
 // EasyMode is part of the CanonCameraSettings field.
 type EasyMode int16
 
 const (
-	EasyModeFullAuto            EasyMode = 0   // Full auto
-	EasyModeManual              EasyMode = 1   // Manual
-	EasyModeLandscape           EasyMode = 2   // Landscape
-	EasyModeFastShutter         EasyMode = 3   // Fast shutter
-	EasyModeSlowShutter         EasyMode = 4   // Slow shutter
-	EasyModeNight               EasyMode = 5   // Night
-	EasyModeBWP                 EasyMode = 7   // B&W
-	EasyModeSepia               EasyMode = 8   // Sepia
-	EasyModePortrait            EasyMode = 9   // Portrait
-	EasyModeSports              EasyMode = 10  // Sports
-	EasyModeMacroCloseUp        EasyMode = 11  // Macro / Close-up
-	EasyModePanFocus            EasyMode = 19  // Pan focus
-	EasyModeFoliage             EasyMode = 20  // Foliage
-	EasyModeNightSnapshot       EasyMode = 23  // Night Snapshot
-	EasyModeSuperMacro          EasyMode = 25  // Super Macro
-	EasyModeLowLight            EasyMode = 26  // Low Light
-	EasyModeStitchAssist        EasyMode = 28  // Stitch Assist
-	EasyModeMovie               EasyMode = 29  // Movie
-	EasyModeFireworks           EasyMode = 30  // Fireworks
-	EasyModeLongShutter         EasyMode = 31  // Long Shutter
-	EasyModeBeach               EasyMode = 33  // Beach
-	EasyModeUnderwater          EasyMode = 34  // Underwater
-	EasyModeSnow                EasyMode = 35  // Snow
-	EasyModeIndoor              EasyMode = 36  // Indoor
-	EasyModeKidsPets            EasyMode = 37  // Kids & Pets
-	EasyModeNightPortrait       EasyMode = 38  // Night Portrait
-	EasyModeShade               EasyMode = 39  // Shade
-	EasyModeMyColors            EasyMode = 40  // My Colors
-	EasyModeStillImage          EasyMode = 41  // Still Image
-	EasyModeColorAccent         EasyMode = 42  // Color Accent
-	EasyModeColorSwap           EasyMode = 43  // Color Swap
-	EasyModeAquarium            EasyMode = 44  // Aquarium
-	EasyModeISO3200             EasyMode = 45  // ISO 3200
-	EasyModeISO6400             EasyMode = 46  // ISO 6400
-	EasyModeCreativeLightEffect EasyMode = 47  // Creative Light Effect
-	EasyModeEasy                EasyMode = 48  // Easy
-	EasyModeQuickShot           EasyMode = 49  // Quick Shot
-	EasyModeCreativeAuto        EasyMode = 50  // Creative Auto
-	EasyModeZoomBlur            EasyMode = 52  // Zoom Blur
-	EasyModeLowLight2           EasyMode = 53  // Low Light
-	EasyModeNostalgic           EasyMode = 54  // Nostalgic
-	EasyModeSuperVivid          EasyMode = 55  // Super Vivid
-	EasyModePosterEffect        EasyMode = 56  // Poster Effect
-	EasyModeFaceSelfTimer       EasyMode = 57  // Face Self-timer
-	EasyModeSmile               EasyMode = 59  // Smile
-	EasyModeWinkSelfTimer       EasyMode = 62  // Wink Self-timer
-	EasyModeFisheyeEffect       EasyMode = 63  // Fisheye Effect
-	EasyModeHandheldNightScene  EasyMode = 67  // Handheld Night Scene
-	EasyModeHDRBacklightControl EasyMode = 83  // HDR Backlight Control
-	EasyModeFood                EasyMode = 99  // Food
-	EasyModeKids                EasyMode = 100 // Kids
-	EasyModeSmoothSkin          EasyMode = 119 // Smooth Skin
-	EasyModeHybridAuto          EasyMode = 257 // Hybrid Auto
-	EasyModePowerShotWv         EasyMode = 258 // PowerShot wv
-	EasyModePowerShotLv         EasyMode = 259 // PowerShot lv
-	EasyModeCreativeShot        EasyMode = 260 // Creative Shot
-	EasyModeSelfPortrait        EasyMode = 261 // Self Portrait
-	EasyModeMovieDigest         EasyMode = 263 // Movie Digest
-	EasyModeLiveViewControl     EasyMode = 264 // Live View Control
-	EasyModeDiscreet            EasyMode = 265 // Discreet
-	EasyModeBlurReduction       EasyMode = 266 // Blur Reduction
-	EasyModeMonochrome          EasyMode = 267 // Monochrome
-	EasyModeFisheyeEffect2      EasyMode = 268 // Fisheye Effect
-	EasyModeWaterPaintingEffect EasyMode = 269 // Water Painting Effect
-	EasyModeToyCameraEffect     EasyMode = 270 // Toy Camera Effect
-	EasyModeMiniatureEffect     EasyMode = 271 // Miniature Effect
-	EasyModeHDR                 EasyMode = 274 // HDR
+	EasyModeFullAuto             EasyMode = 0   // Full auto
+	EasyModeManual               EasyMode = 1   // Manual
+	EasyModeLandscape            EasyMode = 2   // Landscape
+	EasyModeFastShutter          EasyMode = 3   // Fast shutter
+	EasyModeSlowShutter          EasyMode = 4   // Slow shutter
+	EasyModeNight                EasyMode = 5   // Night
+	EasyModeGrayScale            EasyMode = 6   // Gray Scale
+	EasyModeSepia                EasyMode = 7   // Sepia
+	EasyModePortrait             EasyMode = 8   // Portrait
+	EasyModeSports               EasyMode = 9   // Sports
+	EasyModeMacro                EasyMode = 10  // Macro
+	EasyModeBlackAndWhite        EasyMode = 11  // Black & White
+	EasyModePanFocus             EasyMode = 12  // Pan focus
+	EasyModeVivid                EasyMode = 13  // Vivid
+	EasyModeNeutral              EasyMode = 14  // Neutral
+	EasyModeFlashOff             EasyMode = 15  // Flash Off
+	EasyModeLongShutter          EasyMode = 16  // Long Shutter
+	EasyModeSuperMacro           EasyMode = 17  // Super Macro
+	EasyModeFoliage              EasyMode = 18  // Foliage
+	EasyModeIndoor               EasyMode = 19  // Indoor
+	EasyModeFireworks            EasyMode = 20  // Fireworks
+	EasyModeBeach                EasyMode = 21  // Beach
+	EasyModeUnderwater           EasyMode = 22  // Underwater
+	EasyModeSnow                 EasyMode = 23  // Snow
+	EasyModeKidsPets             EasyMode = 24  // Kids & Pets
+	EasyModeNightSnapshot        EasyMode = 25  // Night Snapshot
+	EasyModeDigitalMacro         EasyMode = 26  // Digital Macro
+	EasyModeMyColors             EasyMode = 27  // My Colors
+	EasyModeMovieSnap            EasyMode = 28  // Movie Snap
+	EasyModeSuperMacro2          EasyMode = 29  // Super Macro 2
+	EasyModeColorAccent          EasyMode = 30  // Color Accent
+	EasyModeColorSwap            EasyMode = 31  // Color Swap
+	EasyModeAquarium             EasyMode = 32  // Aquarium
+	EasyModeISO3200              EasyMode = 33  // ISO 3200
+	EasyModeISO6400              EasyMode = 34  // ISO 6400
+	EasyModeCreativeLightEffect  EasyMode = 35  // Creative Light Effect
+	EasyModeEasy                 EasyMode = 36  // Easy
+	EasyModeQuickShot            EasyMode = 37  // Quick Shot
+	EasyModeCreativeAuto         EasyMode = 38  // Creative Auto
+	EasyModeZoomBlur             EasyMode = 39  // Zoom Blur
+	EasyModeLowLight             EasyMode = 40  // Low Light
+	EasyModeNostalgic            EasyMode = 41  // Nostalgic
+	EasyModeSuperVivid           EasyMode = 42  // Super Vivid
+	EasyModePosterEffect         EasyMode = 43  // Poster Effect
+	EasyModeFaceSelfTimer        EasyMode = 44  // Face Self-timer
+	EasyModeSmile                EasyMode = 45  // Smile
+	EasyModeWinkSelfTimer        EasyMode = 46  // Wink Self-timer
+	EasyModeFisheyeEffect        EasyMode = 47  // Fisheye Effect
+	EasyModeMiniatureEffect      EasyMode = 48  // Miniature Effect
+	EasyModeHighSpeedBurst       EasyMode = 49  // High-speed Burst
+	EasyModeBestImageSelection   EasyMode = 50  // Best Image Selection
+	EasyModeHighDynamicRange     EasyMode = 51  // High Dynamic Range
+	EasyModeHandheldNightScene   EasyMode = 52  // Handheld Night Scene
+	EasyModeMovieDigest          EasyMode = 53  // Movie Digest
+	EasyModeLiveViewControl      EasyMode = 54  // Live View Control
+	EasyModeDiscreet             EasyMode = 55  // Discreet
+	EasyModeBlurReduction        EasyMode = 56  // Blur Reduction
+	EasyModeMonochrome           EasyMode = 57  // Monochrome
+	EasyModeToyCameraEffect      EasyMode = 58  // Toy Camera Effect
+	EasyModeSceneIntelligentAuto EasyMode = 59  // Scene Intelligent Auto
+	EasyModeHighSpeedBurstHQ     EasyMode = 60  // High-speed Burst HQ
+	EasyModeSmoothSkin           EasyMode = 61  // Smooth Skin
+	EasyModeSoftFocus            EasyMode = 62  // Soft Focus
+	EasyModeFood                 EasyMode = 68  // Food
+	EasyModeHDRArtStandard       EasyMode = 84  // HDR Art Standard
+	EasyModeHDRArtVivid          EasyMode = 85  // HDR Art Vivid
+	EasyModeHDRArtBold           EasyMode = 93  // HDR Art Bold
+	EasyModeSpotlight            EasyMode = 257 // Spotlight
+	EasyModeNight2               EasyMode = 258 // Night 2
+	EasyModeNightPlus            EasyMode = 259 // Night+
+	EasyModeSuperNight           EasyMode = 260 // Super Night
+	EasyModeSunset               EasyMode = 261 // Sunset
+	EasyModeNightScene           EasyMode = 263 // Night Scene
+	EasyModeSurface              EasyMode = 264 // Surface
+	EasyModeLowLight2            EasyMode = 265 // Low Light 2
 )
 
 // DigitalZoom is part of the CanonCameraSettings field.
@@ -384,24 +410,89 @@ const (
 	DigitalZoomOther DigitalZoom = 3 // Other
 )
 
-// CameraISO is part of the CanonCameraSettings field.
+// CameraISO stores the raw CameraSettings index-16 value.
 //
-//	14: "n/a"
+// For newer EOS models the value is an enum (0=n/a, 14=Auto High, 15=Auto,
+// 16..20=50..800). For older PowerShot models the value encodes the actual ISO
+// directly (either in the lower 14 bits with bit 0x4000 set, or as a raw ISO
+// number).
+//
+// Use CameraISOValue to resolve the raw stored value into an ISO number.
+//
+//	0:  "n/a"
+//	14: "Auto High"
 //	15: "Auto"
 //	16: "50"
 //	17: "100"
 //	18: "200"
 //	19: "400"
+//	20: "800"
 type CameraISO int16
 
 const (
-	CameraISONA   CameraISO = 14 // n/a
-	CameraISOAuto CameraISO = 15 // Auto
-	CameraISO50   CameraISO = 16 // 50
-	CameraISO100  CameraISO = 17 // 100
-	CameraISO200  CameraISO = 18 // 200
-	CameraISO400  CameraISO = 19 // 400
+	CameraISONA       CameraISO = 0  // n/a
+	CameraISOAutoHigh CameraISO = 14 // Auto High
+	CameraISOAuto     CameraISO = 15 // Auto
+	CameraISO50       CameraISO = 16 // 50
+	CameraISO100      CameraISO = 17 // 100
+	CameraISO200      CameraISO = 18 // 200
+	CameraISO400      CameraISO = 19 // 400
+	CameraISO800      CameraISO = 20 // 800
 )
+
+const (
+	CameraISOAutoSentinel     = math.MaxUint32     // resolved ISO sentinel for "Auto"
+	CameraISOAutoHighSentinel = math.MaxUint32 - 1 // resolved ISO sentinel for "Auto High"
+)
+
+// isoLookup maps CameraISO enum values to resolved ISO values.
+var isoLookup = map[CameraISO]int{
+	0:  0,
+	14: CameraISOAutoHighSentinel,
+	15: CameraISOAutoSentinel,
+	16: 50,
+	17: 100,
+	18: 200,
+	19: 400,
+	20: 800,
+}
+
+// CameraISOValue resolves the raw CameraISO value using ExifTool-style logic.
+//
+// Returns the resolved ISO value, or a sentinel (CameraISOAutoSentinel /
+// CameraISOAutoHighSentinel) for non-numeric modes. Returns 0 for n/a.
+func CameraISOValue(raw int16) int {
+	switch {
+	case raw == 0x7fff:
+		return 0
+	case raw&0x4000 != 0:
+		return int(raw & 0x3fff)
+	default:
+		if v, ok := isoLookup[CameraISO(raw)]; ok {
+			return v
+		}
+		return int(raw)
+	}
+}
+
+// CameraISOString returns the ExifTool-style display string for a resolved CameraISO value.
+func CameraISOString(v uint32) string {
+	switch v {
+	case 0:
+		return "n/a"
+	case CameraISOAutoSentinel:
+		return "Auto"
+	case CameraISOAutoHighSentinel:
+		return "Auto High"
+	default:
+		return strconv.FormatUint(uint64(v), 10)
+	}
+}
+
+// String returns the display string for the raw CameraISO enum value.
+func (i CameraISO) String() string {
+	return CameraISOString(uint32(CameraISOValue(int16(i))))
+}
 
 // FlashModel is part of the CanonCameraSettings field.
 type FlashModel int16
@@ -432,31 +523,42 @@ const (
 //
 //	0: "Single"
 //	1: "Continuous"
+//	8: "Manual"
 type FocusContinuous int16
 
 const (
 	FocusContinuousSingle     FocusContinuous = 0 // Single
 	FocusContinuousContinuous FocusContinuous = 1 // Continuous
+	FocusContinuousManual     FocusContinuous = 8 // Manual
 )
 
 // ImageStabilization is part of the CanonCameraSettings field.
 //
-//	0: "Off"
-//	1: "On"
-//	2: "Shoot Only"
-//	3: "Panning"
-//	4: "Dynamic"
-//	-1: "n/a"
+//	0:   "Off"
+//	1:   "On"
+//	2:   "Shoot Only"
+//	3:   "Panning"
+//	4:   "Dynamic"
+//	256: "Off (2)"
+//	257: "On (2)"
+//	258: "Shoot Only (2)"
+//	259: "Panning (2)"
+//	260: "Dynamic (2)"
+//	-1:  "n/a"
 type ImageStabilization int16
 
 const (
-	ImageStabilizationOff       ImageStabilization = 0   // Off
-	ImageStabilizationOn        ImageStabilization = 1   // On
-	ImageStabilizationShootOnly ImageStabilization = 2   // Shoot Only
-	ImageStabilizationPanning   ImageStabilization = 3   // Panning
-	ImageStabilizationDynamic   ImageStabilization = 4   // Dynamic
-	ImageStabilizationViaLens   ImageStabilization = 256 // Image Stabilization via the Lens
-	ImageStabilizationNA        ImageStabilization = -1  // n/a
+	ImageStabilizationOff        ImageStabilization = 0   // Off
+	ImageStabilizationOn         ImageStabilization = 1   // On
+	ImageStabilizationShootOnly  ImageStabilization = 2   // Shoot Only
+	ImageStabilizationPanning    ImageStabilization = 3   // Panning
+	ImageStabilizationDynamic    ImageStabilization = 4   // Dynamic
+	ImageStabilizationOff2       ImageStabilization = 256 // Off (2)
+	ImageStabilizationOn2        ImageStabilization = 257 // On (2)
+	ImageStabilizationShootOnly2 ImageStabilization = 258 // Shoot Only (2)
+	ImageStabilizationPanning2   ImageStabilization = 259 // Panning (2)
+	ImageStabilizationDynamic2   ImageStabilization = 260 // Dynamic (2)
+	ImageStabilizationNA         ImageStabilization = -1  // n/a
 )
 
 // SpotMeteringMode is part of the CanonCameraSettings field.
@@ -481,19 +583,18 @@ const (
 	PhotoEffectSepia       PhotoEffect = 4   // Sepia
 	PhotoEffectBAndW       PhotoEffect = 5   // B&W
 	PhotoEffectCustom      PhotoEffect = 6   // Custom
-	PhotoEffectMyColorData PhotoEffect = 7   // My Color Data
-	PhotoEffectBAndWAlt    PhotoEffect = 100 // B&W
+	PhotoEffectMyColorData PhotoEffect = 100 // My Color Data
 )
 
 // ManualFlashOutput is part of the CanonCameraSettings field.
 type ManualFlashOutput int16
 
 const (
-	ManualFlashOutputNA     ManualFlashOutput = 0   // n/a
-	ManualFlashOutputFull   ManualFlashOutput = 128 // Full
-	ManualFlashOutputMedium ManualFlashOutput = 129 // Medium
-	ManualFlashOutputLow    ManualFlashOutput = 130 // Low
-	ManualFlashOutputNAAlt  ManualFlashOutput = 131 // n/a
+	ManualFlashOutputNA0  ManualFlashOutput = 0      // n/a
+	ManualFlashOutputFull ManualFlashOutput = 0x500  // Full
+	ManualFlashOutputMed  ManualFlashOutput = 0x502  // Medium
+	ManualFlashOutputLow  ManualFlashOutput = 0x504  // Low
+	ManualFlashOutputNA   ManualFlashOutput = 0x7fff // n/a
 )
 
 // SRAWQuality is part of the CanonCameraSettings field.
@@ -511,24 +612,26 @@ const (
 
 // FocusBracketing is part of the CanonCameraSettings field.
 //
-//	0: "Off"
-//	1: "On"
+//	0: "Disable"
+//	1: "Enable"
 type FocusBracketing int16
 
 const (
-	FocusBracketingOff FocusBracketing = 0 // Off
-	FocusBracketingOn  FocusBracketing = 1 // On
+	FocusBracketingDisable FocusBracketing = 0 // Disable
+	FocusBracketingEnable  FocusBracketing = 1 // Enable
 )
 
 // HDRPQ is part of the CanonCameraSettings field.
 //
-//	0: "Off"
-//	1: "On"
+//	-1: "n/a"
+//	0:  "Off"
+//	1:  "On"
 type HDRPQ int16
 
 const (
-	HDRPQOff HDRPQ = 0 // Off
-	HDRPQOn  HDRPQ = 1 // On
+	HDRPQNA  HDRPQ = -1 // n/a
+	HDRPQOff HDRPQ = 0  // Off
+	HDRPQOn  HDRPQ = 1  // On
 )
 
 // FocusDistance -
@@ -707,14 +810,14 @@ const (
 // ShutterMode - Canon FileInfo ShutterMode.
 //
 //	0: "Mechanical"
-//	1: "Electronic"
-//	2: "Electronic (first curtain)"
+//	1: "Electronic First Curtain"
+//	2: "Electronic"
 type ShutterMode uint16
 
 const (
 	ShutterModeMechanical             ShutterMode = 0 // Mechanical
-	ShutterModeElectronic             ShutterMode = 1 // Electronic
-	ShutterModeElectronicFirstCurtain ShutterMode = 2 // Electronic (first curtain)
+	ShutterModeElectronicFirstCurtain ShutterMode = 1 // Electronic First Curtain
+	ShutterModeElectronic             ShutterMode = 2 // Electronic
 )
 
 // RawJpgQuality - Canon FileInfo RawJpgQuality.
@@ -996,19 +1099,51 @@ func LocationForCity(city TimeZoneCity) (*time.Location, bool) {
 //	0: "Normal AE",
 //	1: "Exposure Compensation",
 //	2: "AE Lock",
-//	3: "AE Lock + Exposure Compensation",
+//	3: "AE Lock + Exposure Comp.",
 //	4: "No AE",
-//	5: "Pattern",
 type AESetting int16
 
 const (
 	AESettingNormalAE                       AESetting = 0 // Normal AE
 	AESettingExposureCompensation           AESetting = 1 // Exposure Compensation
 	AESettingAELock                         AESetting = 2 // AE Lock
-	AESettingAELockWithExposureCompensation AESetting = 3 // AE Lock + Exposure Compensation
+	AESettingAELockWithExposureCompensation AESetting = 3 // AE Lock + Exposure Comp.
 	AESettingNoAE                           AESetting = 4 // No AE
-	AESettingPattern                        AESetting = 5 // Pattern
 )
+
+// AFPointSetting is the stored value for Canon CameraSettings AFPoint (seq 19).
+type AFPointSetting uint16
+
+// ExifTool Canon.pm AFPoint PrintConv values.
+const (
+	AFPointManualSelection AFPointSetting = 0x2005 // Manual AF point selection
+	AFPointNoneMF          AFPointSetting = 0x3000 // None (MF)
+	AFPointAutoSelection   AFPointSetting = 0x3001 // Auto AF point selection
+	AFPointRight           AFPointSetting = 0x3002 // Right
+	AFPointCenter          AFPointSetting = 0x3003 // Center
+	AFPointLeft            AFPointSetting = 0x3004 // Left
+	AFPointAutoAlt         AFPointSetting = 0x4001 // Auto AF point selection
+	AFPointFaceDetect      AFPointSetting = 0x4006 // Face Detect
+)
+
+var afPointLabels = map[AFPointSetting]string{
+	AFPointManualSelection: "Manual AF point selection",
+	AFPointNoneMF:          "None (MF)",
+	AFPointAutoSelection:   "Auto AF point selection",
+	AFPointRight:           "Right",
+	AFPointCenter:          "Center",
+	AFPointLeft:            "Left",
+	AFPointAutoAlt:         "Auto AF point selection",
+	AFPointFaceDetect:      "Face Detect",
+}
+
+// AFPointString returns the ExifTool-style display string for an AFPoint value.
+func AFPointString(v uint16) string {
+	if s, ok := afPointLabels[AFPointSetting(v)]; ok {
+		return s
+	}
+	return ""
+}
 
 // AFAreaMode - Canon Autofocus Area Mode
 //
@@ -1043,4 +1178,10 @@ const (
 	AFAreaModeFlexizoneMulti9   AFAreaMode = 12 // Flexizone Multi (9 point)
 	AFAreaModeFlexizoneSingle   AFAreaMode = 13 // Flexizone Single
 	AFAreaModeLargeZoneAF       AFAreaMode = 14 // Large Zone AF
+	AFAreaModeLargeZoneAFVert   AFAreaMode = 16 // Large Zone AF (vertical)
+	AFAreaModeLargeZoneAFHoriz  AFAreaMode = 17 // Large Zone AF (horizontal)
+	AFAreaModeFlexibleZoneAF1   AFAreaMode = 19 // Flexible Zone AF 1
+	AFAreaModeFlexibleZoneAF2   AFAreaMode = 20 // Flexible Zone AF 2
+	AFAreaModeFlexibleZoneAF3   AFAreaMode = 21 // Flexible Zone AF 3
+	AFAreaModeWholeAreaAF       AFAreaMode = 22 // Whole Area AF
 )

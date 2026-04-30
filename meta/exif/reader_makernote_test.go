@@ -46,13 +46,13 @@ func TestMakerNoteAccessorsLazyAllocation(t *testing.T) {
 	r := NewReader(metalog.Logger)
 	defer r.Close()
 
-	info := r.makerNoteInfo()
+	info := r.Exif.MakerNote
 	if info.Apple != nil || info.Canon != nil || info.Nikon != nil {
 		t.Fatal("makerNoteInfo() should not eagerly allocate vendor maker-note structs")
 	}
 
 	r.Exif.MakerNote = makernote.Info{}
-	info = r.makerNoteInfo()
+	info = r.Exif.MakerNote
 	if got := r.appleMakerNote(); got == nil {
 		t.Fatal("appleMakerNote() = nil")
 	}
@@ -64,7 +64,7 @@ func TestMakerNoteAccessorsLazyAllocation(t *testing.T) {
 	}
 
 	r.Exif.MakerNote = makernote.Info{}
-	info = r.makerNoteInfo()
+	info = r.Exif.MakerNote
 	if got := r.nikonMakerNote(); got == nil {
 		t.Fatal("nikonMakerNote() = nil")
 	}

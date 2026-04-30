@@ -20,7 +20,7 @@ type CameraSettings struct {
 	Contrast           int16              // [13] Contrast
 	Saturation         int16              // [14] Saturation
 	Sharpness          int16              // [15] Sharpness
-	CameraISO          CameraISO          // [16] CameraISO
+	CameraISO          uint32             // [16] CameraISO (resolved ISO; 0=n/a, math.MaxUint32=Auto, MaxUint32-1=Auto High)
 	MeteringMode       MeteringMode       // [17] MeteringMode
 	FocusRange         FocusRange         // [18] FocusRange
 	AFPoint            uint16             // [19] AFPoint
@@ -54,7 +54,8 @@ type CameraSettings struct {
 // (CanonCameraInfo).
 //
 // ExifTool uses many model-specific tables for this tag. This struct captures
-// the stable subset currently parsed across those layouts.
+// all fields across all model variants; fields not present in a given model's
+// layout are left at their zero value.
 type CameraInfo struct {
 	FNumber               meta.Aperture     // ExifTool CameraInfo FNumber
 	ExposureTime          meta.ExposureTime // ExifTool CameraInfo ExposureTime
@@ -78,6 +79,21 @@ type CameraInfo struct {
 	DirectoryIndex        uint32            // ExifTool DirectoryIndex
 	ShutterCount          uint32            // ExifTool ShutterCount
 	ImageCount            uint32            // ExifTool ImageCount
+
+	// Model-specific fields (zero value when not present for a given model)
+	Sharpness           int16            // EOS-1D, 1DmkII
+	SharpnessFrequency  int16            // EOS-1D
+	CanonImageSize      CanonImageSize   // EOS-1DmkII
+	FocalType           uint16           // EOS-1DmkII
+	Saturation          int16            // EOS-1DmkII
+	ColorTone           int16            // EOS-1DmkII
+	Contrast            int16            // EOS-1DmkII
+	TimeStamp           uint32           // EOS-1DmkIII
+	MeasuredEV3         float32          // EOS-1DmkIV
+	LensSerialNumber    string           // EOS 5DmkIII, 5DSR
+	FileIndex2          uint32           // EOS 5DmkIII (2nd card slot)
+	DirectoryIndex2     uint32           // EOS 5DmkIII (2nd card slot)
+	Rotation            int32            // PowerShot
 }
 
 // ShotInfo stores selected Canon ShotInfo values from MakerNote tag 0x0004
