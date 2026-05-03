@@ -225,6 +225,9 @@ type Nikon struct {
 
 	// AFTune is Nikon maker-note tag 0x00b9 interpreted using Nikon::AFTune.
 	AFTune NikonAFTune
+
+	// ShotInfo is Nikon maker-note tag 0x0091 interpreted using Nikon::ShotInfo*.
+	ShotInfo NikonShotInfo
 }
 
 // NikonVRInfo models ExifTool's Image::ExifTool::Nikon::VRInfo table.

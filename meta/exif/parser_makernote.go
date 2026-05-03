@@ -10,7 +10,7 @@ import (
 )
 
 func (r *Reader) appleMakerNote() *apple.Apple {
-	mknote := r.Exif.MakerNote
+	mknote := &r.Exif.MakerNote
 	if mknote.Apple == nil {
 		mknote.Apple = &apple.Apple{}
 	}
@@ -18,7 +18,7 @@ func (r *Reader) appleMakerNote() *apple.Apple {
 }
 
 func (r *Reader) dngMakerNote() *makernote.DNG {
-	mknote := r.Exif.MakerNote
+	mknote := &r.Exif.MakerNote
 	if mknote.DNG == nil {
 		mknote.DNG = &makernote.DNG{}
 	}
@@ -26,7 +26,7 @@ func (r *Reader) dngMakerNote() *makernote.DNG {
 }
 
 func (r *Reader) nikonMakerNote() *nikon.Nikon {
-	mknote := r.Exif.MakerNote
+	mknote := &r.Exif.MakerNote
 	if mknote.Nikon == nil {
 		mknote.Nikon = &nikon.Nikon{}
 	}
@@ -34,7 +34,7 @@ func (r *Reader) nikonMakerNote() *nikon.Nikon {
 }
 
 func (r *Reader) panasonicMakerNote() *panasonic.Panasonic {
-	mknote := r.Exif.MakerNote
+	mknote := &r.Exif.MakerNote
 	if mknote.Panasonic == nil {
 		mknote.Panasonic = &panasonic.Panasonic{}
 	}

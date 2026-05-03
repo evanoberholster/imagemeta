@@ -210,6 +210,76 @@ func (r *Reader) parseSonyTag(t tag.Entry) bool {
 		dst.Tag9416 = r.parseSonyTag9416(t)
 	case sony.AFInfo:
 		dst.AFInfo = r.parseSonyAFInfo(t)
+	case sony.Brightness:
+		dst.Brightness = r.parseSonyInt32(t)
+	case sony.LongExposureNoiseReduction:
+		dst.LongExposureNoiseReduction = r.parseMakerNoteUint32(t)
+	case sony.HighISONoiseReduction:
+		dst.HighISONoiseReduction = r.parseSonyU16(t)
+	case sony.HDR:
+		dst.HDR = r.parseMakerNoteUint32(t)
+	case sony.MultiFrameNoiseReduction:
+		dst.MultiFrameNoiseReduction = r.parseMakerNoteUint32(t)
+	case sony.PictureEffect:
+		dst.PictureEffect = r.parseSonyU16(t)
+	case sony.SoftSkinEffect:
+		dst.SoftSkinEffect = r.parseMakerNoteUint32(t)
+	case sony.VignettingCorrection:
+		dst.VignettingCorrection = r.parseMakerNoteUint32(t)
+	case sony.LateralChromaticAberration:
+		dst.LateralChromaticAberration = r.parseMakerNoteUint32(t)
+	case sony.DistortionCorrectionSetting:
+		dst.DistortionCorrectionSetting = r.parseMakerNoteUint32(t)
+	case sony.AutoPortraitFramed:
+		dst.AutoPortraitFramed = r.parseSonyU16(t)
+	case sony.FlashAction:
+		dst.FlashAction = r.parseMakerNoteUint32(t)
+	case sony.ElectronicFrontCurtainShutter:
+		dst.ElectronicFrontCurtainShutter = r.parseMakerNoteUint32(t)
+	case sony.FocusMode:
+		dst.FocusMode = r.parseSonyU8(t)
+	case sony.AFAreaModeSetting:
+		dst.AFAreaModeSetting = r.parseSonyU8(t)
+	case sony.AFPointSelected:
+		dst.AFPointSelected = r.parseSonyU8(t)
+	case sony.MultiFrameNREffect:
+		dst.MultiFrameNREffect = r.parseMakerNoteUint32(t)
+	case sony.RAWFileType:
+		dst.RAWFileType = r.parseSonyU16(t)
+	case sony.PrioritySetInAWB:
+		dst.PrioritySetInAWB = r.parseSonyU8(t)
+	case sony.MeteringMode2:
+		dst.MeteringMode2 = r.parseSonyU16(t)
+	case sony.Macro:
+		dst.Macro = r.parseSonyU16(t)
+	case sony.FocusMode0xB04E:
+		dst.FocusMode0xB04E = r.parseSonyU16(t)
+	case sony.WBShiftABGM:
+		r.parseInt32List(t, dst.WBShiftABGM[:])
+	case sony.FlexibleSpotPosition:
+		r.parseUint16List(t, dst.FlexibleSpotPosition[:])
+	case sony.WBShiftABGMPrecise:
+		r.parseInt32List(t, dst.WBShiftABGMPrecise[:])
+	case sony.FocusLocation:
+		r.parseUint16List(t, dst.FocusLocation[:])
+	case sony.VariableLowPassFilter:
+		r.parseUint16List(t, dst.VariableLowPassFilter[:])
+	case sony.ExposureStandardAdjustment:
+		dst.ExposureStandardAdjustment = r.parseSonySignedRationalValue(t)
+	case sony.SerialNumber:
+		dst.SerialNumber = r.parseSonyText(t)
+	case sony.Shadows:
+		dst.Shadows = r.parseSonyInt32(t)
+	case sony.Highlights:
+		dst.Highlights = r.parseSonyInt32(t)
+	case sony.Fade:
+		dst.Fade = r.parseSonyInt32(t)
+	case sony.SharpnessRange:
+		dst.SharpnessRange = r.parseSonyInt32(t)
+	case sony.Clarity:
+		dst.Clarity = r.parseSonyInt32(t)
+	case sony.FocusLocation2:
+		r.parseUint16List(t, dst.FocusLocation2[:])
 	default:
 		return false
 	}
@@ -221,7 +291,7 @@ func (r *Reader) parseSonyCameraInfo(t tag.Entry) (legacy sony.SonyCameraInfo2, 
 	if !ok {
 		return legacy, modern
 	}
-	if sony.UsesCameraInfo3(r.Exif.IFD0.Model) || t.UnitCount > 6000 {
+	if sony.UsesCameraInfo3(r.Exif.IFD0.Model) && t.UnitCount > 6000 || t.UnitCount >= 15360 {
 		modern = sony.ParseCameraInfo3(raw, t.ByteOrder)
 	} else {
 		legacy = sony.ParseCameraInfo2(raw, t.ByteOrder)
@@ -446,7 +516,7 @@ func (r *Reader) promoteSonyDerivedFields() {
 		return
 	}
 
-	if dst.CreativeStyle == "" {
+	if !isAsciiCreativeStyle(dst.CreativeStyle) {
 		if v := sony.CreativeStyleValue(dst.CameraSettings3.CreativeStyleSetting).Name(); v != "" {
 			dst.CreativeStyle = v
 		} else if v := sony.CreativeStyleValue(dst.CameraSettings.CreativeStyle).Name(); v != "" {
@@ -466,17 +536,29 @@ func (r *Reader) promoteSonyDerivedFields() {
 		}
 	}
 
-	if dst.LensType == 0 {
-		if v := dst.Tag9050.LensType; v != 0 {
-			dst.LensType = uint32(v)
-		} else if v := dst.Tag9416.LensType2; v != 0 {
-			dst.LensType = uint32(v)
-		} else if v := dst.Tag940C.LensType3; v != 0 {
-			dst.LensType = uint32(v)
-		}
+	if v := dst.Tag9050.LensType; v != 0 && v != 65535 {
+		dst.LensType = uint32(v)
+	} else if v := dst.Tag9416.LensType2; v != 0 && v != 65535 {
+		dst.LensType = uint32(v)
+	} else if v := dst.Tag940C.LensType3; v != 0 && v != 65535 {
+		dst.LensType = uint32(v)
 	}
 
 	if dst.SonyModelID == 0 {
 		dst.SonyModelID = sony.ModelIDFromModel(r.Exif.IFD0.Model)
 	}
+}
+
+// isAsciiCreativeStyle reports whether s is a valid human-readable CreativeStyle
+// string from tag 0xb020.  Returns true only when the raw string matches a known
+// name; false for binary garbage, dots, or empty.
+func isAsciiCreativeStyle(s string) bool {
+	switch s {
+	case "Standard", "Vivid", "Portrait", "Landscape", "Sunset",
+		"Night View/Portrait", "B&W", "Adobe RGB",
+		"Neutral", "Clear", "Deep", "Light",
+		"Autumn Leaves", "Off", "Sepia":
+		return true
+	}
+	return false
 }

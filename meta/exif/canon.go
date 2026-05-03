@@ -22,8 +22,6 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 		dst.FirmwareVersion = canon.NormalizeFirmwareVersion(r.parseCanonString(t))
 	case canon.CanonFocalLength:
 		dst.CanonFocalLength = r.parseCanonFocalLength(t)
-	case canon.CanonFlashInfo:
-		dst.FlashInfo = r.parseCanonFlashInfo(t)
 	case canon.CanonCameraInfo:
 		dst.CameraInfo = r.parseCanonCameraInfo(t)
 	case canon.FileNumber:
@@ -50,22 +48,22 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 		dst.BatteryType = r.parseCanonBatteryType(t)
 	case canon.CanonAFInfo:
 		candidate := r.parseCanonAFInfo(t)
-		if canonShouldReplaceAFInfo(dst.AFInfo, candidate) {
+		if canon.ShouldReplaceAFInfo(dst.AFInfo, candidate) {
 			dst.AFInfo = candidate
 		}
 	case canon.AFPointsInFocus1D:
 		dst.AFInfo = r.parseCanonAFPointsInFocus1D(t, dst.AFInfo)
 	case canon.CanonAFInfo2, canon.AFInfo3:
 		candidate := r.parseCanonAFInfo2(t)
-		if canonShouldReplaceAFInfo(dst.AFInfo, candidate) {
+		if canon.ShouldReplaceAFInfo(dst.AFInfo, candidate) {
 			dst.AFInfo = candidate
 		}
 	case canon.FaceDetect1:
-		dst.FaceDetect1 = r.parseCanonFaceDetect1(t)
+		dst.FaceDetect = r.parseCanonFaceDetect1(t)
 	case canon.FaceDetect2:
-		dst.FaceDetect2 = r.parseCanonFaceDetect2(t)
+		dst.FaceDetect = r.parseCanonFaceDetect2(t)
 	case canon.FaceDetect3:
-		dst.FaceDetect3 = r.parseCanonFaceDetect3(t)
+		dst.FaceDetect = r.parseCanonFaceDetect3(t)
 	case canon.ImageUniqueID:
 		dst.ImageUniqueID = r.parseCanonImageUniqueID(t)
 	case canon.CanonCustomFunctions:
@@ -167,6 +165,18 @@ func (r *Reader) parseCanonCameraInfo(t tag.Entry) canon.CameraInfo {
 		if v, ok := r.readCanonCameraInfoUint16At(t, 0x086d); ok {
 			return canon.CameraInfo{ImageCount: uint32(v)}
 		}
+	case canon.CameraInfoLayout1D:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1D)
+	case canon.CameraInfoLayout1DmkII:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkII)
+	case canon.CameraInfoLayout1DmkIIN:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIIN)
+	case canon.CameraInfoLayout1DmkIII:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIII)
+	case canon.CameraInfoLayout1DmkIV:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIV)
+	case canon.CameraInfoLayout1DX:
+		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DX)
 	default:
 	}
 	return canon.CameraInfo{}
@@ -174,9 +184,6 @@ func (r *Reader) parseCanonCameraInfo(t tag.Entry) canon.CameraInfo {
 
 func (r *Reader) canonCameraInfoLayout(t tag.Entry) canon.CameraInfoLayout {
 	if layout, ok := canon.CameraInfoLayoutForModelID(r.canonModelID()); ok {
-		return layout
-	}
-	if layout, ok := canon.CameraInfoLayoutForModelName(r.canonModelName()); ok {
 		return layout
 	}
 	if t.Type != tag.TypeLong {
@@ -201,60 +208,52 @@ func (r *Reader) parseCanonCameraInfoBytes(t tag.Entry, spec canon.CameraInfoSpe
 }
 
 func (r *Reader) parseCanonCameraInfoPowerShot(t tag.Entry) canon.CameraInfo {
-	return r.parseCanonCameraInfoTempFromCount(t,
-		135, 138,
-		145, 148,
-	)
+	return r.parseCanonCameraInfoPowerShotTemp(t)
 }
 
 func (r *Reader) parseCanonCameraInfoPowerShot2(t tag.Entry) canon.CameraInfo {
-	return r.parseCanonCameraInfoTempFromCount(t,
-		153, 156,
-		159, 162,
-		164, 167,
-		168, 171,
-		261, 264,
-	)
+	return r.parseCanonCameraInfoPowerShotTemp(t)
 }
 
-func (r *Reader) parseCanonCameraInfoUnknown32(t tag.Entry) canon.CameraInfo {
+// parseCanonCameraInfoPowerShotTemp extracts camera temperature from PowerShot
+// int32u payloads where the last word is a known non-temperature field and the
+// second-to-last word (at index count-3) is the temperature value.
+//
+// This matches ExifTool's CameraInfoPowerShot table where element [-3] (relative
+// to CameraInfoCount) is CameraTemperature.
+func (r *Reader) parseCanonCameraInfoPowerShotTemp(t tag.Entry) canon.CameraInfo {
 	count := int(t.UnitCount)
-	var tempIndex int
-	switch count {
-	case 72:
-		tempIndex = 71
-	case 85:
-		tempIndex = 83
-	case 93, 94:
-		tempIndex = 91
-	case 96:
-		tempIndex = 92
-	case 104:
-		tempIndex = 100
-	default:
-		if count > 400 {
-			tempIndex = count - 3
-		} else {
-			return canon.CameraInfo{}
-		}
-	}
-	if v, ok := r.readCanonCameraInfoInt32At(t, tempIndex*4); ok {
+	// Temperature is at index count-3 (ExifTool: element [-3]).
+	tempOff := (count - 3) * 4
+	if v, ok := r.readCanonCameraInfoInt32At(t, tempOff); ok {
 		return canon.CameraInfo{CameraTemperature: int16(v)}
 	}
 	return canon.CameraInfo{}
 }
 
-// parseCanonCameraInfoTempFromCount extracts camera temperature from a
-// PowerShot int32 payload. Pairs of (tempIndex, unitCount) are checked.
-func (r *Reader) parseCanonCameraInfoTempFromCount(t tag.Entry, pairs ...int) canon.CameraInfo {
+func (r *Reader) parseCanonCameraInfoUnknown32(t tag.Entry) canon.CameraInfo {
 	count := int(t.UnitCount)
-	for i := 0; i+1 < len(pairs); i += 2 {
-		if count == pairs[i+1] {
-			if v, ok := r.readCanonCameraInfoInt32At(t, pairs[i]*4); ok {
-				return canon.CameraInfo{CameraTemperature: int16(v)}
-			}
+	var tempOff int
+	switch count {
+	case 72:
+		tempOff = 71 * 4
+	case 85:
+		tempOff = 83 * 4
+	case 93, 94:
+		tempOff = 91 * 4
+	case 96:
+		tempOff = 92 * 4
+	case 104:
+		tempOff = 100 * 4
+	default:
+		if count > 400 {
+			tempOff = (count - 3) * 4
+		} else {
 			return canon.CameraInfo{}
 		}
+	}
+	if v, ok := r.readCanonCameraInfoInt32At(t, tempOff); ok {
+		return canon.CameraInfo{CameraTemperature: int16(v)}
 	}
 	return canon.CameraInfo{}
 }
@@ -264,7 +263,7 @@ func (r *Reader) readCanonCameraInfoUint32At(t tag.Entry, off int) (uint32, bool
 	if err != nil || len(b) < 4 {
 		return 0, false
 	}
-	return canon.CIU32LEAt(b, 0), true
+	return canon.U32LEAt(b, 0), true
 }
 
 func (r *Reader) readCanonCameraInfoUint16At(t tag.Entry, off int) (uint16, bool) {
@@ -272,7 +271,7 @@ func (r *Reader) readCanonCameraInfoUint16At(t tag.Entry, off int) (uint16, bool
 	if err != nil || len(b) < 2 {
 		return 0, false
 	}
-	return canon.CIU16LEAt(b, 0), true
+	return canon.U16LEAt(b, 0), true
 }
 
 func (r *Reader) readCanonCameraInfoInt32At(t tag.Entry, off int) (int32, bool) {
@@ -285,7 +284,7 @@ func (r *Reader) readCanonCameraInfoInt32At(t tag.Entry, off int) (int32, bool) 
 
 func (r *Reader) readCanonTagOffsetBytes(t tag.Entry, off, n int) ([]byte, error) {
 	size := int(t.Size())
-	if off < 0 || n <= 0 || off > size-n {
+	if off < 0 || n <= 0 || off+n > size {
 		return nil, imagetype.ErrDataLength
 	}
 	if err := r.seekToTag(t); err != nil {
@@ -307,12 +306,12 @@ func (r *Reader) readCanonTagOffsetBytes(t tag.Entry, off, n int) ([]byte, error
 	return buf, nil
 }
 
-func (r *Reader) parseCanonUint16List(t tag.Entry, dst []uint16) int {
+func (r *Reader) parseCanonUint16List(t tag.Entry, s canon.Seq16) int {
 	switch t.Type {
 	case tag.TypeShort, tag.TypeSignedShort:
-		return r.parseCanonRawUint16List(t, dst, int(t.UnitCount))
+		return r.parseCanonRawUint16List(t, s, int(t.UnitCount))
 	case tag.TypeUndefined:
-		return r.parseCanonRawUint16List(t, dst, int(t.UnitCount/2))
+		return r.parseCanonRawUint16List(t, s, int(t.UnitCount/2))
 	default:
 		return 0
 	}
@@ -385,6 +384,23 @@ func (r *Reader) parseCanonRawUint16List(t tag.Entry, dst []uint16, wordCount in
 	return readWords
 }
 
+// parseCanonSeq16 reads a uint16 payload, validates the size word, strips it,
+// and returns a 1-based Seq16 view.
+func (r *Reader) parseCanonSeq16(t tag.Entry, dst []uint16, parser string) canon.Seq16 {
+
+	n := r.parseCanonUint16List(t, dst)
+	if n < 2 {
+		r.warnCanonShortRead(t, parser, n, 1)
+		return nil
+	}
+	if uint32(dst[0]) != t.Size() {
+		r.warnCanonInvalidSize(t, parser, uint32(dst[0]))
+		return nil
+	}
+	return canon.Seq16(dst[1:n])
+}
+
+// parseCanonInt32List reads int32 values, falling back to uint32 on mismatch.
 func (r *Reader) parseCanonInt32List(t tag.Entry, dst []int32) int {
 	if n := r.parseInt32List(t, dst); n > 0 {
 		return n
@@ -394,92 +410,27 @@ func (r *Reader) parseCanonInt32List(t tag.Entry, dst []int32) int {
 		dst = dst[:len(u32)]
 	}
 	n := r.parseUint32List(t, u32[:len(dst)])
-	for i := 0; i < n; i++ {
+	for i := range n {
 		dst[i] = int32(u32[i])
 	}
 	return n
 }
 
-type canonSeq16 []uint16
-
-func (s canonSeq16) present(seq int) bool {
-	idx := seq - 1
-	return idx >= 0 && idx < len(s)
-}
-
-func (s canonSeq16) u16(seq int) uint16 {
-	if !s.present(seq) {
-		return 0
-	}
-	return s[seq-1]
-}
-
-func (s canonSeq16) i16(seq int) int16 {
-	return int16(s.u16(seq))
-}
-
-// parseCanonSizedUint16Payload validates Canon tables that begin with a byte
-// size word, then returns a 1-based sequence view matching ExifTool indices.
-func (r *Reader) parseCanonSizedUint16Payload(t tag.Entry, parser string, dst []uint16) (canonSeq16, bool) {
-	n := r.parseCanonUint16List(t, dst)
-	if n < 1 {
-		r.warnCanonShortRead(t, parser, n, 1)
-		return nil, false
-	}
-	if uint32(dst[0]) != t.Size() {
-		r.warnCanonInvalidSize(t, parser, uint32(dst[0]))
-		return nil, false
-	}
+// parseCanonSeq32 reads an int32 payload, validates and strips the size word,
+// and returns a 1-based Seq32 view.
+func (r *Reader) parseCanonSeq32(t tag.Entry, dst []int32) canon.Seq32 {
+	n := r.parseCanonInt32List(t, dst)
 	if n < 2 {
-		return nil, false
+		return nil
 	}
-	return canonSeq16(dst[1:n]), true
-}
-
-func (r *Reader) parseCanonBlockPreview(t tag.Entry) canon.BlockPreview {
-	dst := canon.BlockPreview{Size: t.Size()}
-	if dst.Size == 0 {
-		return dst
-	}
-	maxBytes := uint32(len(dst.Preview))
-	if maxBytes > dst.Size {
-		maxBytes = dst.Size
-	}
-	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
-		n := int(maxBytes)
-		copy(dst.Preview[:], r.state.buf[:n])
-		dst.PreviewCount = uint8(n)
-		return dst
-	}
-	buf, _, err := r.readTagBytes(t, maxBytes)
-	if err != nil {
-		if r.WarnEnabled() {
-			r.tagLogContext(r.Warn(3), t).
-				Err(err).
-				Str("parser", "parseCanonBlockPreview").
-				Msg("failed reading canon maker-note payload")
-		}
-		return dst
-	}
-	if len(buf) == 0 {
-		r.warnCanonShortRead(t, "parseCanonBlockPreview", 0, 1)
-		return dst
-	}
-	n := len(buf)
-	if n > len(dst.Preview) {
-		n = len(dst.Preview)
-	}
-	copy(dst.Preview[:], buf[:n])
-	dst.PreviewCount = uint8(n)
-	return dst
+	return canon.Seq32(dst[1:n])
 }
 
 func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) canon.PreviewImageInfo {
 	var raw [8]int32
 	n := r.parseCanonInt32List(t, raw[:])
 	start := 0
-	if n >= 6 && (raw[0] == int32(t.Size()) || (raw[0] > 5 && raw[1] >= 0 && raw[1] <= 5 && raw[2] > 0xffff)) {
+	if n >= 6 && isPreviewImageInfoSizeWord(raw, int32(t.Size())) {
 		start = 1
 	}
 	if n-start < 5 {
@@ -500,57 +451,69 @@ func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) canon.PreviewImageInfo 
 	return dst
 }
 
+// isPreviewImageInfoSizeWord reports whether raw[0] is a size-header word that
+// should be skipped when decoding PreviewImageInfo. ExifTool uses this heuristic
+// when the first word matches the tag size, or when raw[0] is a small value
+// followed by a plausible preview quality byte and an out-of-range width.
+func isPreviewImageInfoSizeWord(raw [8]int32, tagSize int32) bool {
+	if raw[0] == tagSize {
+		return true
+	}
+	return raw[0] > 5 && raw[1] >= 0 && raw[1] <= 5 && raw[2] > 0xffff
+}
+
 func (r *Reader) parseCanonSensorInfo(t tag.Entry) canon.SensorInfo {
 	var raw [13]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	if n < 13 {
+	if n := r.parseCanonUint16List(t, raw[:]); n < 13 {
 		r.warnCanonShortRead(t, "parseCanonSensorInfo", n, 13)
 		return canon.SensorInfo{}
 	}
-	return canon.SensorInfo{
-		SensorWidth:           int16(raw[1]),
-		SensorHeight:          int16(raw[2]),
-		SensorLeftBorder:      int16(raw[5]),
-		SensorTopBorder:       int16(raw[6]),
-		SensorRightBorder:     int16(raw[7]),
-		SensorBottomBorder:    int16(raw[8]),
-		BlackMaskLeftBorder:   int16(raw[9]),
-		BlackMaskTopBorder:    int16(raw[10]),
-		BlackMaskRightBorder:  int16(raw[11]),
-		BlackMaskBottomBorder: int16(raw[12]),
-	}
+	return canon.DecodeSensorInfo(raw[:])
 }
 
 func (r *Reader) parseCanonAFConfig(t tag.Entry) canon.AFConfig {
 	var raw [25]int32
-	n := r.parseCanonInt32List(t, raw[:])
-	if n < 2 {
-		r.warnCanonShortRead(t, "parseCanonAFConfig", n, 2)
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
 		return canon.AFConfig{}
 	}
-	return canon.AFConfig{
-		AFConfigTool:              uint32(raw[1]) + 1,
-		AFTrackingSensitivity:     raw[2],
-		AFAccelDecelTracking:      raw[3],
-		AFPointSwitching:          raw[4],
-		AIServoFirstImage:         raw[5],
-		AIServoSecondImage:        raw[6],
-		USMLensElectronicMF:       raw[7],
-		AFAssistBeam:              raw[8],
-		OneShotAFRelease:          raw[9],
-		AutoAFPointSelEOSiTRAF:    raw[10],
-		LensDriveWhenAFImpossible: raw[11],
-		SelectAFAreaSelectionMode: uint32(raw[12]),
-		AFAreaSelectionMethod:     raw[13],
-		OrientationLinkedAF:       raw[14],
-		ManualAFPointSelPattern:   raw[15],
-		AFPointDisplayDuringFocus: raw[16],
-		VFDisplayIllumination:     raw[17],
-		AFStatusViewfinder:        raw[18],
-		InitialAFPointInServo:     raw[19],
-		SubjectToDetect:           raw[20],
-		EyeDetection:              raw[24],
+	return canon.DecodeAFConfig(s)
+}
+
+func (r *Reader) parseCanonLightingOpt(t tag.Entry) canon.LightingOptInfo {
+	var raw [12]int32
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
+		return canon.LightingOptInfo{}
 	}
+	return canon.DecodeLightingOpt(s)
+}
+
+func (r *Reader) parseCanonMultiExp(t tag.Entry) canon.MultiExpInfo {
+	var raw [8]int32
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
+		return canon.MultiExpInfo{}
+	}
+	return canon.DecodeMultiExp(s)
+}
+
+func (r *Reader) parseCanonHDRInfo(t tag.Entry) canon.HDRInfo {
+	var raw [8]int32
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
+		return canon.HDRInfo{}
+	}
+	return canon.DecodeHDRInfo(s)
+}
+
+func (r *Reader) parseCanonAFMicroAdj(t tag.Entry) canon.AFMicroAdjInfo {
+	var raw [8]int32
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
+		return canon.AFMicroAdjInfo{}
+	}
+	return canon.DecodeAFMicroAdj(s)
 }
 
 func (r *Reader) parseCanonRawBurstInfo(t tag.Entry) canon.RawBurstInfo {
@@ -568,7 +531,6 @@ func (r *Reader) parseCanonRawBurstInfo(t tag.Entry) canon.RawBurstInfo {
 // parseCanonImageUniqueID parses Canon maker-note tag 0x0028 into meta.UUID.
 //
 // ExifTool renders this value as hex text, but imagemeta stores it as a UUID.
-// parseCanonImageUniqueID parses Canon maker-note tag 0x0028 into meta.UUID.
 const canonUUIDBytesLength = 16
 
 func (r *Reader) parseCanonImageUniqueID(t tag.Entry) meta.UUID {
@@ -583,58 +545,32 @@ func (r *Reader) parseCanonImageUniqueID(t tag.Entry) meta.UUID {
 	return uuid
 }
 
-func (r *Reader) parseCanonFaceDetect1(t tag.Entry) canon.FaceDetect1Info {
+func (r *Reader) parseCanonFaceDetect1(t tag.Entry) canon.FaceDetectInfo {
 	var raw [26]uint16
 	n := r.parseCanonUint16List(t, raw[:])
 	if n < 5 {
 		r.warnCanonShortRead(t, "parseCanonFaceDetect1", n, 5)
-		return canon.FaceDetect1Info{}
+		return canon.FaceDetectInfo{}
 	}
-	dst := canon.FaceDetect1Info{
-		FacesDetected: raw[2],
-	}
-	dst.FaceDetectFrameSize[0] = raw[3]
-	dst.FaceDetectFrameSize[1] = raw[4]
-
-	faceCount := int(dst.FacesDetected)
-	if faceCount > len(dst.FacePositions) {
-		faceCount = len(dst.FacePositions)
-	}
-	for i := 0; i < faceCount; i++ {
-		start := 8 + i*2
-		if start+1 >= n {
-			r.warnCanonShortRead(t, "parseCanonFaceDetect1", n, start+2)
-			break
-		}
-		dst.FacePositions[i] = canon.FacePosition{
-			X: int16(raw[start]),
-			Y: int16(raw[start+1]),
-		}
-	}
-	return dst
+	return canon.DecodeFaceDetect1(raw[:n])
 }
 
-func (r *Reader) parseCanonFaceDetect2(t tag.Entry) canon.FaceDetect2Info {
+func (r *Reader) parseCanonFaceDetect2(t tag.Entry) canon.FaceDetectInfo {
 	var raw [8]byte
 	if n := r.parseByteList(t, raw[:]); n < 3 {
 		r.warnCanonShortRead(t, "parseCanonFaceDetect2", n, 3)
-		return canon.FaceDetect2Info{}
+		return canon.FaceDetectInfo{}
 	}
-	return canon.FaceDetect2Info{
-		FaceWidth:     raw[1],
-		FacesDetected: raw[2],
-	}
+	return canon.DecodeFaceDetect2(raw[:])
 }
 
-func (r *Reader) parseCanonFaceDetect3(t tag.Entry) canon.FaceDetect3Info {
+func (r *Reader) parseCanonFaceDetect3(t tag.Entry) canon.FaceDetectInfo {
 	var raw [8]uint16
 	if n := r.parseCanonUint16List(t, raw[:]); n < 4 {
 		r.warnCanonShortRead(t, "parseCanonFaceDetect3", n, 4)
-		return canon.FaceDetect3Info{}
+		return canon.FaceDetectInfo{}
 	}
-	return canon.FaceDetect3Info{
-		FacesDetected: raw[3],
-	}
+	return canon.DecodeFaceDetect3(raw[:])
 }
 
 // parseCanonFocalLength parses tag 0x0002 (CanonFocalLength).
@@ -644,16 +580,7 @@ func (r *Reader) parseCanonFocalLength(t tag.Entry) canon.FocalLengthInfo {
 		r.warnCanonShortRead(t, "parseCanonFocalLength", n, 4)
 		return canon.FocalLengthInfo{}
 	}
-	return canon.FocalLengthInfo{
-		FocalType:       raw[0],
-		FocalLength:     raw[1],
-		FocalPlaneXSize: canon.FocalPlaneSizeMM(raw[2]),
-		FocalPlaneYSize: canon.FocalPlaneSizeMM(raw[3]),
-	}
-}
-
-func (r *Reader) parseCanonFlashInfo(t tag.Entry) canon.FlashInfo {
-	return canon.FlashInfo{Raw: r.parseCanonBlockPreview(t)}
+	return canon.DecodeFocalLength(raw[:])
 }
 
 // parseCanonAspectInfo parses tag 0x009a (AspectInfo).
@@ -680,79 +607,7 @@ func (r *Reader) parseCanonProcessingInfo(t tag.Entry) canon.ProcessingInfo {
 		r.warnCanonShortRead(t, "parseCanonProcessingInfo", n, 2)
 		return canon.ProcessingInfo{}
 	}
-	return canon.ProcessingInfo{
-		// ExifTool ProcessingInfo uses FIRST_ENTRY => 1, so raw[0] is the size word.
-		// The payload length varies by model, so decode conditionally.
-		ToneCurve:            canonI16At(raw[:], n, 1),
-		Sharpness:            canonI16At(raw[:], n, 2),
-		SharpnessFrequency:   canonI16At(raw[:], n, 3),
-		SensorRedLevel:       canonI16At(raw[:], n, 4),
-		SensorBlueLevel:      canonI16At(raw[:], n, 5),
-		WhiteBalanceRed:      canonI16At(raw[:], n, 6),
-		WhiteBalanceBlue:     canonI16At(raw[:], n, 7),
-		WhiteBalance:         canonI16At(raw[:], n, 8),
-		ColorTemperature:     canonI16At(raw[:], n, 9),
-		PictureStyle:         canonI16At(raw[:], n, 10),
-		DigitalGain:          canonI16At(raw[:], n, 11),
-		WBShiftAB:            canonI16At(raw[:], n, 12),
-		WBShiftGM:            canonI16At(raw[:], n, 13),
-		UnsharpMaskFineness:  canonI16At(raw[:], n, 14),
-		UnsharpMaskThreshold: canonI16At(raw[:], n, 15),
-	}
-}
-
-// parseCanonAFMicroAdj parses tag 0x4013 (AFMicroAdj).
-func (r *Reader) parseCanonAFMicroAdj(t tag.Entry) canon.AFMicroAdjInfo {
-	var raw [8]int32
-	n := r.parseCanonInt32List(t, raw[:])
-	if n < 2 {
-		r.warnCanonShortRead(t, "parseCanonAFMicroAdj", n, 2)
-		return canon.AFMicroAdjInfo{}
-	}
-	dst := canon.AFMicroAdjInfo{
-		Mode: raw[1],
-	}
-	if n > 2 {
-		dst.ValueNumerator = raw[2]
-	}
-	if n > 3 {
-		dst.ValueDenominator = raw[3]
-	}
-	return dst
-}
-
-// parseCanonLightingOpt parses tag 0x4018 (LightingOpt).
-func (r *Reader) parseCanonLightingOpt(t tag.Entry) canon.LightingOptInfo {
-	var raw [12]int32
-	n := r.parseCanonInt32List(t, raw[:])
-	if n < 2 {
-		r.warnCanonShortRead(t, "parseCanonLightingOpt", n, 2)
-		return canon.LightingOptInfo{}
-	}
-
-	dst := canon.LightingOptInfo{
-		// ExifTool LightingOpt table uses FIRST_ENTRY=1.
-		PeripheralIlluminationCorr: raw[1],
-	}
-	if n > 2 {
-		dst.AutoLightingOptimizer = raw[2]
-	}
-	if n > 3 {
-		dst.HighlightTonePriority = raw[3]
-	}
-	if n > 4 {
-		dst.LongExposureNoiseReduction = raw[4]
-	}
-	if n > 5 {
-		dst.HighISONoiseReduction = raw[5]
-	}
-	if n > 10 {
-		dst.DigitalLensOptimizer = raw[10]
-	}
-	if n > 11 {
-		dst.DualPixelRaw = raw[11]
-	}
-	return dst
+	return canon.DecodeProcessingInfo(raw[1:n])
 }
 
 const canonLensInfoByteLength = 5
@@ -766,284 +621,57 @@ func (r *Reader) parseCanonLensInfo(t tag.Entry) canon.LensInfoForService {
 		r.warnCanonShortRead(t, "parseCanonLensInfo", l, int(t.Size()))
 		return canon.LensInfoForService{}
 	}
-	n := min(l, canonLensInfoByteLength)
-	copy(dst.Raw[:], raw[:n])
-	dst.RawCount = uint8(n)
+	copy(dst.Raw[:], raw)
+	dst.RawCount = canonLensInfoByteLength
 	if dst.Raw[0] == 0 && dst.Raw[1] == 0 && dst.Raw[2] == 0 && dst.Raw[3] == 0 {
 		return dst
 	}
-	dst.LensSerialNumber = canon.HexBytes(dst.Raw[:n])
+	dst.LensSerialNumber = canon.HexBytes(dst.Raw[:])
 	return dst
 }
-
-// parseCanonMultiExp parses tag 0x4021 (MultiExp).
-func (r *Reader) parseCanonMultiExp(t tag.Entry) canon.MultiExpInfo {
-	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 4 {
-		r.warnCanonShortRead(t, "parseCanonMultiExp", n, 4)
-		return canon.MultiExpInfo{}
-	}
-	return canon.MultiExpInfo{
-		// ExifTool MultiExp table uses FIRST_ENTRY=1.
-		MultiExposure:        raw[1],
-		MultiExposureControl: raw[2],
-		MultiExposureShots:   raw[3],
-	}
-}
-
-// parseCanonHDRInfo parses tag 0x4025 (HDRInfo).
-func (r *Reader) parseCanonHDRInfo(t tag.Entry) canon.HDRInfo {
-	var raw [8]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 3 {
-		r.warnCanonShortRead(t, "parseCanonHDRInfo", n, 3)
-		return canon.HDRInfo{}
-	}
-	return canon.HDRInfo{
-		// ExifTool HDRInfo table uses FIRST_ENTRY=1.
-		HDR:       raw[1],
-		HDREffect: raw[2],
-	}
-}
-
-// Canon CameraSettings uses ExifTool FIRST_ENTRY=1 indexing. The payload's
-// size word is stripped by parseCanonSizedUint16Payload before these positions
-// are read.
-const (
-	cameraSettingsMacroMode          = 1
-	cameraSettingsSelfTimer          = 2
-	cameraSettingsQuality            = 3
-	cameraSettingsFlashMode          = 4
-	cameraSettingsContinuousDrive    = 5
-	cameraSettingsFocusMode          = 7
-	cameraSettingsRecordMode         = 9
-	cameraSettingsImageSize          = 10
-	cameraSettingsEasyMode           = 11
-	cameraSettingsDigitalZoom        = 12
-	cameraSettingsContrast           = 13
-	cameraSettingsSaturation         = 14
-	cameraSettingsSharpness          = 15
-	cameraSettingsCameraISO          = 16
-	cameraSettingsMeteringMode       = 17
-	cameraSettingsFocusRange         = 18
-	cameraSettingsAFPoint            = 19
-	cameraSettingsExposureMode       = 20
-	cameraSettingsLensType           = 22
-	cameraSettingsMaxFocalLength     = 23
-	cameraSettingsMinFocalLength     = 24
-	cameraSettingsFocalUnits         = 25
-	cameraSettingsMaxAperture        = 26
-	cameraSettingsMinAperture        = 27
-	cameraSettingsFlashModel         = 28
-	cameraSettingsFlashBits          = 29
-	cameraSettingsFocusContinuous    = 32
-	cameraSettingsAESetting          = 33
-	cameraSettingsImageStabilization = 34
-	cameraSettingsDisplayAperture    = 35
-	cameraSettingsZoomSourceWidth    = 36
-	cameraSettingsZoomTargetWidth    = 37
-	cameraSettingsSpotMeteringMode   = 39
-	cameraSettingsPhotoEffect        = 40
-	cameraSettingsManualFlashOutput  = 41
-	cameraSettingsColorTone          = 42
-	cameraSettingsSRAWQuality        = 46
-	cameraSettingsFocusBracketing    = 50
-	cameraSettingsClarity            = 51
-	cameraSettingsHDRPQ              = 52
-)
 
 // parseCanonCameraSettings parses tag 0x0001 (CanonCameraSettings).
 func (r *Reader) parseCanonCameraSettings(t tag.Entry) canon.CameraSettings {
 	var raw [53]uint16
-	settings, ok := r.parseCanonSizedUint16Payload(t, "parseCanonCameraSettings", raw[:])
-	if !ok {
+	s := r.parseCanonSeq16(t, raw[:], "parseCanonCameraSettings")
+	if s == nil {
 		return canon.CameraSettings{}
 	}
-
-	return canon.CameraSettings{
-		MacroMode:          canon.MacroMode(settings.u16(cameraSettingsMacroMode)),
-		SelfTimer:          settings.i16(cameraSettingsSelfTimer),
-		Quality:            canon.Quality(settings.i16(cameraSettingsQuality)),
-		CanonFlashMode:     canon.CanonFlashMode(settings.i16(cameraSettingsFlashMode)),
-		ContinuousDrive:    canon.ContinuousDrive(settings.i16(cameraSettingsContinuousDrive)),
-		FocusMode:          canon.FocusMode(settings.i16(cameraSettingsFocusMode)),
-		RecordMode:         canon.RecordMode(settings.i16(cameraSettingsRecordMode)),
-		CanonImageSize:     canon.CanonImageSize(settings.i16(cameraSettingsImageSize)),
-		EasyMode:           canon.EasyMode(settings.i16(cameraSettingsEasyMode)),
-		DigitalZoom:        canon.DigitalZoom(settings.i16(cameraSettingsDigitalZoom)),
-		Contrast:           canon.CameraSettingValue(settings.i16(cameraSettingsContrast)),
-		Saturation:         canon.CameraSettingValue(settings.i16(cameraSettingsSaturation)),
-		Sharpness:          canon.CameraSettingValue(settings.i16(cameraSettingsSharpness)),
-		CameraISO:          canonCameraSettingISO(settings.i16(cameraSettingsCameraISO)),
-		MeteringMode:       canon.MeteringMode(settings.i16(cameraSettingsMeteringMode)),
-		FocusRange:         canon.FocusRange(settings.i16(cameraSettingsFocusRange)),
-		AFPoint:            settings.u16(cameraSettingsAFPoint),
-		CanonExposureMode:  canon.ExposureMode(settings.i16(cameraSettingsExposureMode)),
-		LensType:           canon.CanonLensType(settings.u16(cameraSettingsLensType)),
-		MaxFocalLength:     settings.u16(cameraSettingsMaxFocalLength),
-		MinFocalLength:     settings.u16(cameraSettingsMinFocalLength),
-		FocalUnits:         settings.u16(cameraSettingsFocalUnits),
-		MaxAperture:        canon.MaxApertureFromCode(settings.u16(cameraSettingsMaxAperture)),
-		MinAperture:        canon.MaxApertureFromCode(settings.u16(cameraSettingsMinAperture)),
-		FlashModel:         canon.FlashModel(settings.i16(cameraSettingsFlashModel)),
-		FlashBits:          settings.u16(cameraSettingsFlashBits),
-		FocusContinuous:    canon.FocusContinuous(settings.i16(cameraSettingsFocusContinuous)),
-		AESetting:          canon.AESetting(settings.i16(cameraSettingsAESetting)),
-		ImageStabilization: canon.ImageStabilization(settings.i16(cameraSettingsImageStabilization)),
-		DisplayAperture:    canon.DisplayApertureFromCode(settings.u16(cameraSettingsDisplayAperture)),
-		ZoomSourceWidth:    settings.u16(cameraSettingsZoomSourceWidth),
-		ZoomTargetWidth:    settings.u16(cameraSettingsZoomTargetWidth),
-		SpotMeteringMode:   canon.SpotMeteringMode(settings.i16(cameraSettingsSpotMeteringMode)),
-		PhotoEffect:        canon.PhotoEffect(settings.i16(cameraSettingsPhotoEffect)),
-		ManualFlashOutput:  canon.ManualFlashOutput(settings.i16(cameraSettingsManualFlashOutput)),
-		ColorTone:          canon.CameraSettingValue(settings.i16(cameraSettingsColorTone)),
-		SRAWQuality:        canon.SRAWQuality(settings.i16(cameraSettingsSRAWQuality)),
-		FocusBracketing:    canon.FocusBracketing(settings.i16(cameraSettingsFocusBracketing)),
-		Clarity:            canon.ClarityValue(settings.i16(cameraSettingsClarity)),
-		HDRPQ:              canon.HDRPQ(settings.u16(cameraSettingsHDRPQ)),
-	}
+	return canon.DecodeCameraSettings(s)
 }
 
-const (
-	shotInfoAutoISO              = 1
-	shotInfoBaseISO              = 2
-	shotInfoMeasuredEV           = 3
-	shotInfoTargetAperture       = 4
-	shotInfoTargetExposureTime   = 5
-	shotInfoExposureCompensation = 6
-	shotInfoWhiteBalance         = 7
-	shotInfoSlowShutter          = 8
-	shotInfoSequenceNumber       = 9
-	shotInfoOpticalZoomCode      = 10
-	shotInfoCameraTemperature    = 12
-	shotInfoFlashGuideNumber     = 13
-	shotInfoAFPointsInFocus      = 14
-	shotInfoFlashExposureComp    = 15
-	shotInfoAEB                  = 16
-	shotInfoAEBBracketValue      = 17
-	shotInfoControlMode          = 18
-	shotInfoFocusDistanceUpper   = 19
-	shotInfoFocusDistanceLower   = 20
-	shotInfoFNumber              = 21
-	shotInfoExposureTime         = 22
-	shotInfoMeasuredEV2          = 23
-	shotInfoBulbDuration         = 24
-	shotInfoCameraType           = 26
-	shotInfoAutoRotate           = 27
-	shotInfoNDFilter             = 28
-	shotInfoSelfTimer2           = 29
-	shotInfoFlashOutput          = 33
-)
-
-// parseCanonShotInfo parses tag 0x0004 (CanonShotInfo).
 func (r *Reader) parseCanonShotInfo(t tag.Entry) canon.ShotInfo {
 	var raw [64]uint16
-	settings, ok := r.parseCanonSizedUint16Payload(t, "parseCanonShotInfo", raw[:])
-	if !ok {
+	s := r.parseCanonSeq16(t, raw[:], "parseCanonShotInfo")
+	if s == nil {
 		return canon.ShotInfo{}
 	}
-	autoISO := settings.i16(shotInfoAutoISO)
-	baseISO := settings.i16(shotInfoBaseISO)
-	measuredEV := settings.i16(shotInfoMeasuredEV)
-	targetAperture := settings.i16(shotInfoTargetAperture)
-	targetExposureTime := settings.i16(shotInfoTargetExposureTime)
-	exposureCompensation := settings.i16(shotInfoExposureCompensation)
-	cameraTemperature := settings.i16(shotInfoCameraTemperature)
-	flashGuideNumber := settings.i16(shotInfoFlashGuideNumber)
-	fNumber := settings.i16(shotInfoFNumber)
-	exposureTime := settings.i16(shotInfoExposureTime)
-	measuredEV2 := settings.i16(shotInfoMeasuredEV2)
-	modelID := r.canonModelID()
-
-	dst := canon.ShotInfo{
-		AutoISO:                canon.ShotISO(autoISO),
-		BaseISO:                canon.ShotISO(baseISO),
-		MeasuredEV:             canon.ShotMeasuredEV(measuredEV),
-		TargetAperture:         canon.ShotAperture(targetAperture),
-		TargetExposureTime:     canon.ShotExposureTime(targetExposureTime, false),
-		ExposureCompensation:   canon.ShotExposureCompensation(exposureCompensation),
-		WhiteBalance:           canon.WhiteBalance(settings.i16(shotInfoWhiteBalance)),
-		SlowShutter:            canon.SlowShutter(settings.i16(shotInfoSlowShutter)),
-		SequenceNumber:         settings.i16(shotInfoSequenceNumber),
-		OpticalZoomCode:        settings.i16(shotInfoOpticalZoomCode),
-		CameraTemperature:      canonShotCameraTemperature(cameraTemperature, modelID),
-		FlashGuideNumber:       canon.ShotFlashGuideNumber(flashGuideNumber),
-		AFPointsInFocus:        settings.u16(shotInfoAFPointsInFocus),
-		FlashExposureComp:      settings.i16(shotInfoFlashExposureComp),
-		AutoExposureBracketing: settings.i16(shotInfoAEB),
-		AEBBracketValue:        settings.i16(shotInfoAEBBracketValue),
-		ControlMode:            settings.i16(shotInfoControlMode),
-		FNumber:                canon.ShotAperture(fNumber),
-		ExposureTime:           canon.ShotExposureTime(exposureTime, r.canonShotInfoLegacyExposureTime()),
-		MeasuredEV2:            canon.ShotMeasuredEV2(measuredEV2),
-		BulbDuration:           settings.i16(shotInfoBulbDuration),
-		CameraType:             canon.CameraType(settings.i16(shotInfoCameraType)),
-		AutoRotate:             canon.AutoRotate(settings.i16(shotInfoAutoRotate)),
-		NDFilter:               canon.NDFilter(settings.i16(shotInfoNDFilter)),
-		SelfTimer2:             settings.i16(shotInfoSelfTimer2),
-		FlashOutput:            settings.i16(shotInfoFlashOutput),
-	}
-	dst.ActualISO = canon.ShotActualISO(dst.AutoISO, dst.BaseISO)
-	focusUpper := settings.u16(shotInfoFocusDistanceUpper)
-	if settings.present(shotInfoFocusDistanceLower) && focusUpper != 0 {
-		dst.FocusDistance = canon.NewFocusDistance(focusUpper, settings.u16(shotInfoFocusDistanceLower))
-	}
-	return dst
+	return s.DecodeShotInfo(canon.ShotInfoDecodeConfig{
+		LegacyExposureTime: r.canonShotInfoLegacyExposureTime(),
+		ModelID:            r.canonModelID(),
+	})
 }
 
 // parseCanonFileInfo parses tag 0x0093 (CanonFileInfo).
 func (r *Reader) parseCanonFileInfo(t tag.Entry) canon.FileInfo {
 	var raw [64]uint16
-	n := r.parseCanonUint16List(t, raw[:])
-	if n < 2 {
-		r.warnCanonShortRead(t, "parseCanonFileInfo", n, 2)
+	s := r.parseCanonSeq16(t, raw[:], "parseCanonFileInfo")
+	if s == nil {
 		return canon.FileInfo{}
 	}
-
-	// Tag 0x0093 index 1 is model-dependent (FileNumber or ShutterCount).
-	// Preserve raw 32-bit representation for both fields.
-	dst := canon.FileInfo{
-		FileNumber:                  uint32(canonU16At(raw[:], n, 1)) | (uint32(canonU16At(raw[:], n, 2)) << 16),
-		BracketMode:                 canon.BracketMode(canonI16At(raw[:], n, 3)),
-		BracketValue:                canonI16At(raw[:], n, 4),
-		BracketShotNumber:           canonI16At(raw[:], n, 5),
-		RawJpgQuality:               canon.RawJpgQuality(canonU16At(raw[:], n, 6)),
-		RawJpgSize:                  canon.RawJpgSize(canonU16At(raw[:], n, 7)),
-		LongExposureNoiseReduction2: canon.OnOffAuto(canonU16At(raw[:], n, 8)),
-		WBBracketMode:               canonI16At(raw[:], n, 9),
-		WBBracketValueAB:            canonI16At(raw[:], n, 12),
-		WBBracketValueGM:            canonI16At(raw[:], n, 13),
-		FilterEffect:                canon.FilterEffect(canonU16At(raw[:], n, 14)),
-		ToningEffect:                canon.ToningEffect(canonU16At(raw[:], n, 15)),
-		MacroMagnification:          canonI16At(raw[:], n, 16),
-		LiveViewShooting:            canon.OnOffAuto(canonU16At(raw[:], n, 19)),
-		FocusDistance:               canon.NewFocusDistance(canonU16At(raw[:], n, 20), canonU16At(raw[:], n, 21)),
-		ShutterMode:                 canon.ShutterMode(canonU16At(raw[:], n, 23)),
-		FlashExposureLock:           canon.OnOffAuto(canonU16At(raw[:], n, 25)),
-		AntiFlicker:                 canon.OnOffAuto(canonU16At(raw[:], n, 32)),
-		RFLensType:                  canon.CanonRFLensType(canonU16At(raw[:], n, 61)),
-	}
-	if canonModelUsesLegacyShutterCount(r.canonModelID()) {
-		dst.ShutterCount = uint32(canonU16At(raw[:], n, 2))
-		dst.FileNumber = 0
-	}
-	return dst
+	return canon.DecodeFileInfo(s, r.canonModelID())
 }
 
 // parseCanonTimeInfo parses tag 0x0035 (TimeInfo).
 func (r *Reader) parseCanonTimeInfo(t tag.Entry) canon.CanonTimeInfo {
 	var raw [4]int32
-	if n := r.parseCanonInt32List(t, raw[:]); n < 4 {
-		r.warnCanonShortRead(t, "parseCanonTimeInfo", n, 4)
+	s := r.parseCanonSeq32(t, raw[:])
+	if s == nil {
 		return canon.CanonTimeInfo{}
 	}
-	return canon.CanonTimeInfo{
-		TimeZone:        raw[1],
-		TimeZoneCity:    canon.TimeZoneCity(raw[2]),
-		DaylightSavings: canon.DaylightSavings(raw[3]),
-	}
+	return canon.DecodeTimeInfo(s)
 }
 
-// parseCanonBatteryType parses Canon Camera:BatteryType (tag 0x0038) like ExifTool.
 func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
 	raw, _, err := r.readTagBytes(t, canon.BatteryTypePayloadSize)
 	if err != nil || len(raw) < canon.BatteryTypePayloadSize {
@@ -1070,32 +698,32 @@ func (r *Reader) parseCanonAFPointsInFocus1D(t tag.Entry, current canon.AFInfo) 
 // parseCanonAFInfo parses tag 0x0012 (AFInfo).
 func (r *Reader) parseCanonAFInfo(t tag.Entry) canon.AFInfo {
 	var wordsStack [2048]uint16
-	words, truncated := canonAFWordsBuffer(wordsStack[:], t.UnitCount)
+	words, truncated := canon.AFWordsBuffer(wordsStack[:], t.UnitCount)
 	if truncated {
 		r.warnCanonTruncatedWords(t, "parseCanonAFInfo", len(words), int(t.UnitCount))
 	}
 	n := r.parseCanonUint16List(t, words)
-	source := canonAFInfoSource(tag.ID(canon.CanonAFInfo))
+	source := canon.AFInfoSourceFromID(tag.ID(canon.CanonAFInfo))
 	if n == 0 {
 		r.warnCanonShortRead(t, "parseCanonAFInfo", n, 1)
 		return canon.AFInfo{Source: source}
 	}
-	return canon.DecodeAFInfo(words[:n], canonModelIsEOS(r.canonModelID()), int(t.UnitCount))
+	return canon.DecodeAFInfo(words[:n], canon.ModelIsEOS(r.canonModelID()), int(t.UnitCount))
 }
 
 func fillCanonAFInfo(dst *canon.AFInfo, words []uint16, modelID canon.CanonCameraModel, afInfoCount int) {
-	*dst = canon.DecodeAFInfo(words, canonModelIsEOS(modelID), afInfoCount)
+	*dst = canon.DecodeAFInfo(words, canon.ModelIsEOS(modelID), afInfoCount)
 }
 
 // parseCanonAFInfo2 parses tags 0x0026 and 0x003c (AFInfo2/AFInfo3).
 func (r *Reader) parseCanonAFInfo2(t tag.Entry) canon.AFInfo {
 	var wordsStack [2048]uint16
-	words, truncated := canonAFWordsBuffer(wordsStack[:], t.UnitCount)
+	words, truncated := canon.AFWordsBuffer(wordsStack[:], t.UnitCount)
 	if truncated {
 		r.warnCanonTruncatedWords(t, "parseCanonAFInfo2", len(words), int(t.UnitCount))
 	}
 	n := r.parseCanonUint16List(t, words)
-	source := canonAFInfoSource(t.ID)
+	source := canon.AFInfoSourceFromID(t.ID)
 	if n == 0 {
 		r.warnCanonShortRead(t, "parseCanonAFInfo2", n, 1)
 		return canon.AFInfo{Source: source}
@@ -1104,7 +732,7 @@ func (r *Reader) parseCanonAFInfo2(t tag.Entry) canon.AFInfo {
 	isAFInfo3 := canon.MakerNoteTag(t.ID) == canon.AFInfo3
 	return canon.DecodeAFInfo2(words[:n], canon.AFInfo2DecodeConfig{
 		Source:         source,
-		EOS:            canonModelIsEOS(modelID),
+		EOS:            canon.ModelIsEOS(modelID),
 		AFInfo3:        isAFInfo3,
 		DecodeCoords:   r.afInfoDecodeOptions.has(AFInfoDecodeCoords),
 		DecodePoints:   r.afInfoDecodeOptions.has(AFInfoDecodePoints),

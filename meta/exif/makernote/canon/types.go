@@ -32,7 +32,6 @@ type CameraSettings struct {
 	MaxAperture        meta.Aperture      // [26] MaxAperture
 	MinAperture        meta.Aperture      // [27] MinAperture
 	FlashModel         FlashModel         // [28] FlashModel
-	FlashActivity      FlashModel         // [28] FlashActivity (backward-compatible alias)
 	FlashBits          uint16             // [29] FlashBits
 	FocusContinuous    FocusContinuous    // [32] FocusContinuous
 	AESetting          AESetting          // [33] AESetting
@@ -213,25 +212,13 @@ type FacePosition struct {
 	Y int16
 }
 
-// FaceDetect1Info stores Canon MakerNote tag 0x0024 (FaceDetect1).
-// Field comments use ExifTool sequence indices.
-type FaceDetect1Info struct {
-	FacesDetected       uint16          // [2] FacesDetected
-	FaceDetectFrameSize [2]uint16       // [3] FaceDetectFrameSize
-	FacePositions       [9]FacePosition // [8..25] Face1..Face9 position pairs
-}
-
-// FaceDetect2Info stores Canon MakerNote tag 0x0025 (FaceDetect2).
-// Field comments use ExifTool sequence indices.
-type FaceDetect2Info struct {
-	FaceWidth     uint8 // [1] FaceWidth
-	FacesDetected uint8 // [2] FacesDetected
-}
-
-// FaceDetect3Info stores Canon MakerNote tag 0x002f (FaceDetect3).
-// Field comments use ExifTool sequence indices.
-type FaceDetect3Info struct {
-	FacesDetected uint16 // [3] FacesDetected
+// FaceDetectInfo stores combined Canon face detection data from MakerNote
+// tags 0x0024 (FaceDetect1), 0x0025 (FaceDetect2), and 0x002f (FaceDetect3).
+type FaceDetectInfo struct {
+	FacesDetected       uint16          // shared count across all three tags
+	FaceWidth           uint8           // [FaceDetect2:1] FaceWidth
+	FaceDetectFrameSize [2]uint16       // [FaceDetect1:3] FaceDetectFrameSize
+	FacePositions       [9]FacePosition // [FaceDetect1:8..25] Face1..Face9
 }
 
 // AFPoint stores width, height, x, and y values for a Canon AF area tuple.
@@ -244,25 +231,6 @@ type AFPoint [4]int16
 // width, height, x-axis coord and y-axis coord
 func NewAFPoint(w, h, x, y int16) AFPoint {
 	return AFPoint{w, h, x, y}
-}
-
-// CanonRawPreviewLen is the maximum raw-byte preview stored for opaque
-// maker-note blocks to avoid retaining large payloads.
-const CanonRawPreviewLen = 64
-
-// BlockPreview stores size and a short preview for opaque maker-note blocks.
-type BlockPreview struct {
-	Size         uint32
-	Preview      [CanonRawPreviewLen]byte
-	PreviewCount uint8
-}
-
-// FlashInfo stores Canon MakerNote tag 0x0003 (CanonFlashInfo).
-//
-// ExifTool currently treats this payload as unknown, so we retain only a
-// bounded raw preview.
-type FlashInfo struct {
-	Raw BlockPreview
 }
 
 // PreviewImageInfo stores Canon MakerNote tag 0x00b6 (PreviewImageInfo).

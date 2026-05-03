@@ -926,18 +926,6 @@ func UsesCameraInfo3(model string) bool {
 	}
 }
 
-// ModelIDFromModel maps a camera model string to a SonyModelID value.
-func ModelIDFromModel(model string) uint16 {
-	switch {
-	case strings.HasPrefix(model, "DSLR-A200"), strings.HasPrefix(model, "SLT-A65"):
-		return 286
-	case strings.HasPrefix(model, "ZV-E1"):
-		return 393
-	default:
-		return 0
-	}
-}
-
 // Sony contains the selected Sony maker-note fields currently decoded by
 // imagemeta.
 //
@@ -986,6 +974,44 @@ type Sony struct {
 	HighISONoiseReduction2      uint16    // 0xb050 HighISONoiseReduction2 (int16u)
 	IntelligentAuto             uint16    // 0xb052 IntelligentAuto (int16u)
 	WhiteBalance0xB054          uint16    // 0xb054 WhiteBalance (int16u)
+
+	Brightness                  int32     // 0x2007 Brightness (int32s)
+	LongExposureNoiseReduction  uint32    // 0x2008 LongExposureNoiseReduction (int32u)
+	HighISONoiseReduction       uint16    // 0x2009 HighISONoiseReduction (int16u)
+	HDR                         uint32    // 0x200a HDR (int32u)
+	MultiFrameNoiseReduction    uint32    // 0x200b MultiFrameNoiseReduction (int32u)
+	PictureEffect               uint16    // 0x200e PictureEffect (int16u)
+	SoftSkinEffect              uint32    // 0x200f SoftSkinEffect (int32u)
+	VignettingCorrection        uint32    // 0x2011 VignettingCorrection (int32u)
+	LateralChromaticAberration  uint32    // 0x2012 LateralChromaticAberration (int32u)
+	DistortionCorrectionSetting uint32    // 0x2013 DistortionCorrectionSetting (int32u)
+	AutoPortraitFramed          uint16    // 0x2016 AutoPortraitFramed (int16u)
+	FlashAction                 uint32    // 0x2017 FlashAction (int32u)
+	ElectronicFrontCurtainShutter uint32  // 0x201a ElectronicFrontCurtainShutter (int32u)
+	FocusMode                   uint8     // 0x201b FocusMode (int8u)
+	AFAreaModeSetting           uint8     // 0x201c AFAreaModeSetting (int8u)
+	AFPointSelected             uint8     // 0x201e AFPointSelected (int8u)
+	MultiFrameNREffect          uint32    // 0x2023 MultiFrameNREffect (int32u)
+	RAWFileType                 uint16    // 0x2029 RAWFileType (int16u)
+	PrioritySetInAWB            uint8     // 0x202b PrioritySetInAWB (int8u)
+	MeteringMode2               uint16    // 0x202c MeteringMode2 (int16u)
+	Macro                       uint16    // 0xb040 Macro (int16u)
+	FocusMode0xB04E             uint16    // 0xb04e FocusMode (int16u)
+
+	// Image processing controls (0x2014-0x2036).
+	WBShiftABGM                   [2]int32 // 0x2014 WBShiftAB_GM (int32s[2])
+	FlexibleSpotPosition          [2]uint16 // 0x201d FlexibleSpotPosition (int16u[2])
+	WBShiftABGMPrecise            [2]int32 // 0x2026 WBShiftAB_GM_Precise (int32s[2])
+	FocusLocation                 [4]uint16 // 0x2027 FocusLocation (int16u[4])
+	VariableLowPassFilter         [2]uint16 // 0x2028 VariableLowPassFilter (int16u[2])
+	ExposureStandardAdjustment    float64   // 0x202d ExposureStandardAdjustment (rational64s)
+	SerialNumber                  string    // 0x2031 SerialNumber (string)
+	Shadows                       int32     // 0x2032 Shadows (int32s)
+	Highlights                    int32     // 0x2033 Highlights (int32s)
+	Fade                          int32     // 0x2034 Fade (int32s)
+	SharpnessRange                int32     // 0x2035 SharpnessRange (int32s)
+	Clarity                       int32     // 0x2036 Clarity (int32s)
+	FocusLocation2                [4]uint16 // 0x204a FocusLocation2 (int16u[4])
 
 	// Embedded Sony maker-note sub-directory tables.
 

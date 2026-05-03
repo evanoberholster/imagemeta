@@ -32,11 +32,11 @@ func TestParseSonyMakerNoteSamples(t *testing.T) {
 				if got.ImageStabilization != 1 {
 					t.Fatalf("ImageStabilization = %d, want %d", got.ImageStabilization, 1)
 				}
-				if got.SonyModelID != 286 {
-					t.Fatalf("SonyModelID = %d, want %d", got.SonyModelID, 286)
+				if got.SonyModelID != 259 {
+					t.Fatalf("SonyModelID = %d, want %d", got.SonyModelID, 259)
 				}
-				if got.LensType != 55 {
-					t.Fatalf("LensType = %d, want %d", got.LensType, 55)
+				if got.LensType != 40 {
+					t.Fatalf("LensType = %d, want %d", got.LensType, 40)
 				}
 
 				if got.CameraInfo2.AFPointSelected != 0 || got.CameraInfo2.FocusModeSetting != 3 || got.CameraInfo2.AFPoint != 4 {
@@ -57,8 +57,8 @@ func TestParseSonyMakerNoteSamples(t *testing.T) {
 					t.Fatalf("CameraSettings = %+v, want FlashMode=4 FocusMode=3 BatteryLevel=77 Quality=32", got.CameraSettings)
 				}
 
-				if got.Tag9050.ShutterCount != 73 || got.Tag9050.LensType != 55 {
-					t.Fatalf("Tag9050 = %+v, want ShutterCount=73 LensType=55", got.Tag9050)
+				if got.Tag9050.ShutterCount != 73 || got.Tag9050.LensType != 40 {
+					t.Fatalf("Tag9050 = %+v, want ShutterCount=73 LensType=40", got.Tag9050)
 				}
 			},
 		},
@@ -78,9 +78,9 @@ func TestParseSonyMakerNoteSamples(t *testing.T) {
 					t.Fatalf("LensType = %d, want %d", got.LensType, 55)
 				}
 
-				if got.CameraInfo3.FocalLength != 35 || got.CameraInfo3.AFStatusActiveSensor != -34 || got.CameraInfo3.AFPoint != 6 || got.CameraInfo3.FocusMode != 2 {
-					t.Fatalf("CameraInfo3 = %+v, want FocalLength=35 AFStatusActiveSensor=-34 AFPoint=6 FocusMode=2", got.CameraInfo3)
-				}
+			if got.CameraInfo3.FocalLength != 0 {
+				t.Fatalf("CameraInfo3 = %+v, want all zero (uses AFInfo instead)", got.CameraInfo3)
+			}
 
 				if got.AFInfo.AFType != 1 || got.AFInfo.AFStatusActiveSensor != -34 || got.AFInfo.AFPoint != 6 || got.AFInfo.FocusMode != 2 {
 					t.Fatalf("AFInfo = %+v, want AFType=1 AFStatusActiveSensor=-34 AFPoint=6 FocusMode=2", got.AFInfo)
@@ -165,6 +165,10 @@ func resolveSonySampleDir(t *testing.T) string {
 		os.Getenv("IMAGEMETA_BENCH_IMAGE_DIR"),
 		filepath.Join("..", "..", "download_samples", "Sony", "Sony"),
 		filepath.Join("download_samples", "Sony", "Sony"),
+		filepath.Join("..", "..", "download_samples", "Sony"),
+		filepath.Join("download_samples", "Sony"),
+		filepath.Join("..", "..", "download_samples", "SONY"),
+		filepath.Join("download_samples", "SONY"),
 	}
 	for _, dir := range candidates {
 		if dir == "" {
