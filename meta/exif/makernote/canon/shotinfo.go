@@ -36,14 +36,6 @@ func CameraSettingValue(v int16) int16 {
 	return v
 }
 
-// ClarityValue normalizes a Canon Clarity (index 51) int16 value.
-func ClarityValue(v int16) int16 {
-	if v == 0x7fff {
-		return 0
-	}
-	return v
-}
-
 // MaxApertureFromCode converts a Canon CameraSettings aperture code to f-number.
 func MaxApertureFromCode(raw uint16) meta.Aperture {
 	code := int16(raw)
@@ -118,6 +110,73 @@ func ShotFlashGuideNumber(raw int16) float32 {
 		return 0
 	}
 	return float32(raw) / 32.0
+}
+
+// ShotCameraTemperature converts a Canon ShotInfo raw camera temperature
+// code. Returns the temperature in Celsius, or 0 if not available.
+func ShotCameraTemperature(raw int16, modelID CanonCameraModel) int16 {
+	if raw == 0 || !ModelIsEOS(modelID) || ModelUsesLegacyShotInfo(modelID) {
+		return 0
+	}
+	return raw - 128
+}
+
+// ModelIsEOS reports whether the CanonCameraModel is an EOS body.
+func ModelIsEOS(modelID CanonCameraModel) bool {
+	switch modelID {
+	case CanonModelEOSD30, CanonModelEOSD60, CanonModelEOSM3, CanonModelEOSM10,
+		CanonModelEOSM5, CanonModelEOSM100, CanonModelEOSM6, CanonModelEOSM50,
+		CanonModelEOSC50, CanonModelEOSC300, CanonModelEOSC200,
+		CanonModelEOS1D, CanonModelEOS1DS, CanonModelEOS10D,
+		CanonModelEOS1DMarkIII, CanonModelEOSDigitalRebel,
+		CanonModelEOS1DMarkII, CanonModelEOS20D, CanonModelEOSDigitalRebelXSi,
+		CanonModelEOS1DsMarkII, CanonModelEOSDigitalRebelXT, CanonModelEOS40D,
+		CanonModelEOS5D, CanonModelEOS1DsMarkIII, CanonModelEOS5DMarkII,
+		CanonModelEOS1DMarkIIN, CanonModelEOS30D, CanonModelEOSDigitalRebelXTi,
+		CanonModelEOS7D, CanonModelEOSRebelT1i, CanonModelEOSRebelXS,
+		CanonModelEOS50D, CanonModelEOS1DX, CanonModelEOSRebelT2i,
+		CanonModelEOS1DMarkIV, CanonModelEOS5DMarkIII, CanonModelEOSRebelT3i,
+		CanonModelEOS60D, CanonModelEOSRebelT3, CanonModelEOS7DMarkII,
+		CanonModelEOSRebelT4i, CanonModelEOS6D, CanonModelEOS1DC,
+		CanonModelEOS70D, CanonModelEOSRebelT5i, CanonModelEOSRebelT5,
+		CanonModelEOS1DXMarkII, CanonModelEOSM, CanonModelEOS80D,
+		CanonModelEOSM2, CanonModelEOSRebelSL1, CanonModelEOSRebelT6s,
+		CanonModelEOS5DMarkIV, CanonModelEOS5DS, CanonModelEOSRebelT6i,
+		CanonModelEOS5DSR, CanonModelEOSRebelT6, CanonModelEOSRebelT7i,
+		CanonModelEOS6DMarkII, CanonModelEOS77D, CanonModelEOSRebelSL2,
+		CanonModelEOSR5, CanonModelEOSRebelT100, CanonModelEOSR,
+		CanonModelEOS1DXMarkIII, CanonModelEOSRebelT7, CanonModelEOSRP,
+		CanonModelEOSRebelT8i, CanonModelEOSSL3, CanonModelEOS90D,
+		CanonModelEOSR3, CanonModelEOSR6, CanonModelEOSR7,
+		CanonModelEOSR10, CanonModelEOSM50MarkII, CanonModelEOSR50,
+		CanonModelEOSR6MarkII, CanonModelEOSR8, CanonModelEOSR1,
+		CanonModelEOSR5MarkII, CanonModelEOSR100, CanonModelEOSR50V,
+		CanonModelEOSR6MarkIII, CanonModelEOSD2000C, CanonModelEOSD6000C:
+		return true
+	default:
+		return false
+	}
+}
+
+// ModelUsesLegacyShotInfo reports whether the camera uses the legacy ShotInfo format.
+func ModelUsesLegacyShotInfo(modelID CanonCameraModel) bool {
+	switch modelID {
+	case CanonModelEOS1D, CanonModelEOS1DS, CanonModelEOSD30, CanonModelEOSD60:
+		return true
+	default:
+		return false
+	}
+}
+
+// ModelUsesLegacyShutterCount reports whether the camera stores shutter count
+// in the legacy FileInfo format.
+func ModelUsesLegacyShutterCount(modelID CanonCameraModel) bool {
+	switch modelID {
+	case CanonModelEOS1D, CanonModelEOS1DS:
+		return true
+	default:
+		return false
+	}
 }
 
 // ShotMeasuredEV2 converts a Canon ShotInfo MeasuredEV2 raw code.

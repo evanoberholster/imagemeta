@@ -4,6 +4,7 @@ package canon
 import (
 	"math"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -45,14 +46,11 @@ type Canon struct {
 	CanonCameraSettings        CameraSettings     // 88 bytes
 	CameraInfo                 CameraInfo         // selected Canon CameraInfo fields
 	CanonFocalLength           FocalLengthInfo    // 8 bytes
-	FlashInfo                  FlashInfo          // bounded preview of CanonFlashInfo
 	CanonShotInfo              ShotInfo           // 100 bytes
 	CanonFileInfo              FileInfo           // 48 bytes
 	TimeInfo                   CanonTimeInfo      // 12 bytes
 	AFInfo                     AFInfo             // 128 bytes
-	FaceDetect1                FaceDetect1Info    // 42 bytes
-	FaceDetect2                FaceDetect2Info    // 2 bytes
-	FaceDetect3                FaceDetect3Info    // 4 bytes in struct (2 data + 2 padding)
+	FaceDetect                 FaceDetectInfo     // combined FaceDetect1+2+3
 	AspectInfo                 AspectInfo         // 20 bytes
 	ProcessingInfo             ProcessingInfo     // 36 bytes in struct (30 data + 6 padding)
 	CustomPictureStyleFileName string             // 16 bytes
@@ -445,18 +443,6 @@ const (
 	CameraISOAutoHighSentinel = math.MaxUint32 - 1 // resolved ISO sentinel for "Auto High"
 )
 
-// isoLookup maps CameraISO enum values to resolved ISO values.
-var isoLookup = map[CameraISO]int{
-	0:  0,
-	14: CameraISOAutoHighSentinel,
-	15: CameraISOAutoSentinel,
-	16: 50,
-	17: 100,
-	18: 200,
-	19: 400,
-	20: 800,
-}
-
 // CameraISOValue resolves the raw CameraISO value using ExifTool-style logic.
 //
 // Returns the resolved ISO value, or a sentinel (CameraISOAutoSentinel /
@@ -467,10 +453,25 @@ func CameraISOValue(raw int16) int {
 		return 0
 	case raw&0x4000 != 0:
 		return int(raw & 0x3fff)
+	}
+	switch CameraISO(raw) {
+	case 0:
+		return 0
+	case 14:
+		return CameraISOAutoHighSentinel
+	case 15:
+		return CameraISOAutoSentinel
+	case 16:
+		return 50
+	case 17:
+		return 100
+	case 18:
+		return 200
+	case 19:
+		return 400
+	case 20:
+		return 800
 	default:
-		if v, ok := isoLookup[CameraISO(raw)]; ok {
-			return v
-		}
 		return int(raw)
 	}
 }
@@ -981,7 +982,8 @@ func (o GMTOffset) EffectiveGMTHours(daylightSavings bool) float64 {
 }
 
 // cityGMTOffsets maps Canon timezone city enum values to GMT offsets.
-var cityGMTOffsets = map[TimeZoneCity]GMTOffset{
+// Indexed by TimeZoneCity (0–23).
+var cityGMTOffsets = [24]GMTOffset{
 	TimeZoneCityNA:          {HoursFromGMT: 0, DSTHours: 0},
 	TimeZoneCityManual:      {HoursFromGMT: 0, DSTHours: 0},
 	TimeZoneCityTimeZone:    {HoursFromGMT: 0, DSTHours: 0},
@@ -1010,17 +1012,18 @@ var cityGMTOffsets = map[TimeZoneCity]GMTOffset{
 
 // GMTOffsetForCity returns the GMT offset config for a Canon timezone city.
 func GMTOffsetForCity(city TimeZoneCity) (GMTOffset, bool) {
-	offset, ok := cityGMTOffsets[city]
-	return offset, ok
+	if int(city) < 0 || int(city) >= len(cityGMTOffsets) {
+		return GMTOffset{}, false
+	}
+	return cityGMTOffsets[city], true
 }
 
 // GMTHoursForCity returns the effective GMT offset in hours for a city.
 func GMTHoursForCity(city TimeZoneCity, daylightSavings bool) (float64, bool) {
-	offset, ok := cityGMTOffsets[city]
-	if !ok {
+	if int(city) < 0 || int(city) >= len(cityGMTOffsets) {
 		return 0, false
 	}
-	return offset.Hours(daylightSavings), true
+	return cityGMTOffsets[city].Hours(daylightSavings), true
 }
 
 // EffectiveGMTHoursForCity is kept for compatibility.
@@ -1044,7 +1047,7 @@ var cityIANA = [...]string{
 	TimeZoneCityDarwin:      "Australia/Darwin",
 	TimeZoneCityEdmonton:    "America/Edmonton",
 	TimeZoneCityHonolulu:    "Pacific/Honolulu",
-	TimeZoneCityKathmandu:   "Asia/Kathmandu",
+	TimeZoneCityKathmandu:   "Asia/Katmandu",
 	TimeZoneCityLondon:      "Europe/London",
 	TimeZoneCityNewYork:     "America/New_York",
 	TimeZoneCitySamoa:       "Pacific/Apia", // country of Samoa
@@ -1058,11 +1061,12 @@ var cityIANA = [...]string{
 	TimeZoneCityDubai:       "Asia/Dubai",
 }
 
-var cityLocations = buildCityLocations()
+var cityLocationsOnce sync.Once
+var cityLocations []*time.Location
 
-func buildCityLocations() []*time.Location {
+func buildCityLocations() {
 	const cityCount = int(TimeZoneCityDubai) + 1
-	locations := make([]*time.Location, cityCount)
+	cityLocations = make([]*time.Location, cityCount)
 
 	for city, name := range cityIANA {
 		if name == "" {
@@ -1073,24 +1077,21 @@ func buildCityLocations() []*time.Location {
 		if err != nil {
 			continue
 		}
-		locations[int(city)] = loc
+		cityLocations[int(city)] = loc
 	}
-
-	return locations
 }
 
 // LocationForCity returns the cached IANA location for a Canon timezone city.
 func LocationForCity(city TimeZoneCity) (*time.Location, bool) {
+	cityLocationsOnce.Do(buildCityLocations)
 	idx := int(city)
 	if idx < 0 || idx >= len(cityLocations) {
 		return nil, false
 	}
-
 	loc := cityLocations[idx]
 	if loc == nil {
 		return nil, false
 	}
-
 	return loc, true
 }
 

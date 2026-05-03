@@ -144,11 +144,11 @@ func TestCanonCameraInfoLayoutUsesModelID(t *testing.T) {
 	}
 }
 
-func TestCanonCameraInfoLayoutFallsBackBeforeModelID(t *testing.T) {
+func TestCanonCameraInfoLayoutUsesModelIDForRebelT5(t *testing.T) {
 	r := NewReader(metalog.Logger)
 	defer r.Close()
 
-	r.Exif.IFD0.Model = "Canon EOS Kiss X70"
+	r.Exif.MakerNote.Canon = &canon.Canon{ModelID: uint32(canon.CanonModelEOSRebelT5)}
 	got := r.canonCameraInfoLayout(tag.NewEntry(
 		tag.ID(canon.CanonCameraInfo),
 		tag.TypeByte,
@@ -180,6 +180,18 @@ func TestCanonCameraInfoLayoutForModelIDExpanded(t *testing.T) {
 		{canon.CanonModelEOSRebelT5i, canon.CameraInfoLayout700D},
 		{canon.CanonModelEOSRebelT6i, canon.CameraInfoLayout750D},
 		{canon.CanonModelEOSRebelXS, canon.CameraInfoLayout1000D},
+		{canon.CanonModelEOS1D, canon.CameraInfoLayout1D},
+		{canon.CanonModelEOS1DS, canon.CameraInfoLayout1D},
+		{canon.CanonModelEOS1DMarkII, canon.CameraInfoLayout1DmkII},
+		{canon.CanonModelEOS1DsMarkII, canon.CameraInfoLayout1DmkII},
+		{canon.CanonModelEOS1DMarkIIN, canon.CameraInfoLayout1DmkIIN},
+		{canon.CanonModelEOS1DMarkIII, canon.CameraInfoLayout1DmkIII},
+		{canon.CanonModelEOS1DsMarkIII, canon.CameraInfoLayout1DmkIII},
+		{canon.CanonModelEOS1DMarkIV, canon.CameraInfoLayout1DmkIV},
+		{canon.CanonModelEOS1DX, canon.CameraInfoLayout1DX},
+		{canon.CanonModelEOS1DC, canon.CameraInfoLayout1DX},
+		{canon.CanonModelEOS1DXMarkII, canon.CameraInfoLayout1DX},
+		{canon.CanonModelEOS1DXMarkIII, canon.CameraInfoLayout1DX},
 	}
 
 	for _, tc := range tests {
@@ -212,273 +224,6 @@ func TestParseCanonMainColorTemperature(t *testing.T) {
 	}
 	if got := r.Exif.MakerNote.Canon.ColorTemperature; got != 5200 {
 		t.Fatalf("ColorTemperature = %d, want 5200", got)
-	}
-}
-
-func TestParseCanonFlashInfoStoresBoundedPreview(t *testing.T) {
-	raw := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	entry := tag.NewEntry(
-		tag.ID(canon.CanonFlashInfo),
-		tag.TypeUndefined,
-		uint32(len(raw)),
-		0,
-		tag.MakerNoteIFD,
-		0,
-		utils.LittleEndian,
-	)
-
-	r := NewReader(metalog.Logger)
-	defer r.Close()
-
-	var br bytes.Reader
-	br.Reset(raw)
-	r.Reset(&br)
-	r.parseCanonTag(entry)
-
-	if r.Exif.MakerNote.Canon == nil {
-		t.Fatal("Canon maker-note missing")
-	}
-	got := r.Exif.MakerNote.Canon.FlashInfo.Raw
-	if got.Size != uint32(len(raw)) {
-		t.Fatalf("FlashInfo.Raw.Size = %d, want %d", got.Size, len(raw))
-	}
-	if got.PreviewCount != uint8(len(raw)) {
-		t.Fatalf("FlashInfo.Raw.PreviewCount = %d, want %d", got.PreviewCount, len(raw))
-	}
-	if !bytes.Equal(got.Preview[:got.PreviewCount], raw) {
-		t.Fatalf("FlashInfo.Raw.Preview = %v, want %v", got.Preview[:got.PreviewCount], raw)
-	}
-}
-
-func TestFillCanonAFInfoEOS(t *testing.T) {
-	words := make([]uint16, 19)
-	words[0] = 5 // NumAFPoints
-	words[1] = 5 // ValidAFPoints
-	words[6] = 10
-	words[7] = 12
-
-	words[8] = u16(-2)
-	words[9] = u16(-1)
-	words[10] = 0
-	words[11] = 1
-	words[12] = 2
-
-	words[13] = 3
-	words[14] = 2
-	words[15] = 1
-	words[16] = 0
-	words[17] = u16(-1)
-
-	words[18] = (1 << 0) | (1 << 4)
-
-	var got canon.AFInfo
-	fillCanonAFInfo(&got, words, canon.CanonModelEOS6D, len(words))
-
-	if got.PrimaryAFPoint != 0 {
-		t.Fatalf("PrimaryAFPoint = %d, want 0 for EOS", got.PrimaryAFPoint)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo", got.Source)
-	}
-	if !slices.Equal(got.AFPointsInFocusBits, []int{0, 4}) {
-		t.Fatalf("AFPointsInFocusBits = %v, want [0 4]", got.AFPointsInFocusBits)
-	}
-	if got.AFPointsSelectedBits != nil {
-		t.Fatalf("AFPointsSelectedBits = %v, want nil", got.AFPointsSelectedBits)
-	}
-	if len(got.AFPoints) != 5 {
-		t.Fatalf("len(AFPoints) = %d, want 5", len(got.AFPoints))
-	}
-}
-
-func TestFillCanonAFInfoNonEOSCount36PrimaryOffset(t *testing.T) {
-	words := make([]uint16, 36)
-	words[0] = 9 // NumAFPoints
-	words[1] = 9 // ValidAFPoints
-	words[6] = 8
-	words[7] = 8
-
-	// Sequence 10 mask starts at 8 + 2*9 = 26.
-	words[26] = 1 << 3
-
-	// Sequence 11/12 behavior for AFInfoCount==36:
-	// seq11 PrimaryAFPoint is skipped, seq11 unknown[8], seq12 PrimaryAFPoint.
-	words[27] = 2 // should be ignored
-	words[35] = 6 // expected primary point
-
-	var got canon.AFInfo
-	fillCanonAFInfo(&got, words, canon.CanonModelPowerShotG1, 36)
-
-	if got.PrimaryAFPoint != 6 {
-		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo", got.Source)
-	}
-	if !slices.Equal(got.AFPointsInFocusBits, []int{3}) {
-		t.Fatalf("AFPointsInFocusBits = %v, want [3]", got.AFPointsInFocusBits)
-	}
-}
-
-func TestFillCanonAFInfoNonEOSPrimarySequence12(t *testing.T) {
-	words := make([]uint16, 21)
-	words[0] = 5 // NumAFPoints
-	words[1] = 5 // ValidAFPoints
-	words[6] = 8
-	words[7] = 8
-
-	// Sequence 10 mask starts at 8 + 2*5 = 18.
-	words[18] = 1 << 3
-
-	// Canon.pm sequence 11 is an alternative: for non-EOS records that are not
-	// AFInfoCount==36, seq11 is PrimaryAFPoint and seq12 follows immediately.
-	words[19] = 2
-	words[20] = 6
-
-	var got canon.AFInfo
-	fillCanonAFInfo(&got, words, canon.CanonModelPowerShotG1, len(words))
-
-	if got.PrimaryAFPoint != 6 {
-		t.Fatalf("PrimaryAFPoint = %d, want 6 from sequence 12", got.PrimaryAFPoint)
-	}
-	if !slices.Equal(got.AFPointsInFocusBits, []int{3}) {
-		t.Fatalf("AFPointsInFocusBits = %v, want [3]", got.AFPointsInFocusBits)
-	}
-}
-
-func TestFillCanonAFInfo2EOSSelectedBits(t *testing.T) {
-	words := make([]uint16, 38)
-	words[1] = 2 // AFAreaMode
-	words[2] = 7 // NumAFPoints
-	words[3] = 7 // ValidAFPoints
-	words[4] = 100
-	words[5] = 80
-
-	// widths/heights/x/y blocks of NumAFPoints each.
-	for i := 0; i < 7; i++ {
-		words[8+i] = 4
-		words[15+i] = 6
-		words[22+i] = uint16(i)
-		words[29+i] = uint16(i)
-	}
-
-	// in-focus and selected masks.
-	words[36] = 1 << 1
-	words[37] = 1 << 2
-
-	got := parseAFInfo2ForTest(t, words, "Canon EOS R6", false)
-
-	if !slices.Equal(got.AFPointsInFocusBits, []int{1}) {
-		t.Fatalf("AFPointsInFocusBits = %v, want [1]", got.AFPointsInFocusBits)
-	}
-	if !slices.Equal(got.AFPointsSelectedBits, []int{2}) {
-		t.Fatalf("AFPointsSelectedBits = %v, want [2]", got.AFPointsSelectedBits)
-	}
-	if got.PrimaryAFPoint != 0 {
-		t.Fatalf("PrimaryAFPoint = %d, want 0 for EOS AFInfo2", got.PrimaryAFPoint)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo2 {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
-	}
-}
-
-func TestFillCanonAFInfo2NonEOSPrimaryOffset(t *testing.T) {
-	words := make([]uint16, 40)
-	words[1] = 4 // AFAreaMode
-	words[2] = 7 // NumAFPoints
-	words[3] = 7 // ValidAFPoints
-
-	// in-focus mask at seq 12.
-	words[36] = 1 << 5
-	// seq 13 unknown has maskWordCount+1 values for non-EOS.
-	words[39] = 6 // seq 14 PrimaryAFPoint
-
-	got := parseAFInfo2ForTest(t, words, "PowerShot G1", false)
-
-	if got.PrimaryAFPoint != 6 {
-		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo2 {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
-	}
-	if got.AFPointsSelectedBits != nil {
-		t.Fatalf("AFPointsSelectedBits = %v, want nil for non-EOS AFInfo2", got.AFPointsSelectedBits)
-	}
-
-	gotAFInfo3 := parseAFInfo2ForTest(t, words, "PowerShot G1", true)
-	if gotAFInfo3.PrimaryAFPoint != 0 {
-		t.Fatalf("PrimaryAFPoint(AFInfo3) = %d, want 0", gotAFInfo3.PrimaryAFPoint)
-	}
-	if gotAFInfo3.Source != canon.AFInfoSourceAFInfo3 {
-		t.Fatalf("Source(AFInfo3) = %v, want AFInfoSourceAFInfo3", gotAFInfo3.Source)
-	}
-}
-
-func TestParseCanonAFInfo2DecodeOptionsBitset(t *testing.T) {
-	words := make([]uint16, 38)
-	words[1] = 2 // AFAreaMode
-	words[2] = 7 // NumAFPoints
-	words[3] = 7 // ValidAFPoints
-	words[4] = 100
-	words[5] = 80
-	for i := 0; i < 7; i++ {
-		words[8+i] = 4
-		words[15+i] = 6
-		words[22+i] = uint16(i)
-		words[29+i] = uint16(i)
-	}
-	words[36] = 1 << 1
-	words[37] = 1 << 2
-
-	got := parseAFInfo2ForTest(
-		t,
-		words,
-		"Canon EOS R6",
-		false,
-		AFInfoDecodeInFocus|AFInfoDecodeSelected,
-	)
-
-	if got.AFArea != nil {
-		t.Fatalf("expected AFArea to be nil when AFInfoDecodeCoords is off")
-	}
-	if got.AFPoints != nil {
-		t.Fatalf("expected AFPoints to be nil when AFInfoDecodePoints is off")
-	}
-	if !slices.Equal(got.AFPointsInFocusBits, []int{1}) {
-		t.Fatalf("AFPointsInFocusBits = %v, want [1]", got.AFPointsInFocusBits)
-	}
-	if !slices.Equal(got.AFPointsSelectedBits, []int{2}) {
-		t.Fatalf("AFPointsSelectedBits = %v, want [2]", got.AFPointsSelectedBits)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo2 {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
-	}
-}
-
-func TestParseCanonAFInfo2DecodeOptionsNone(t *testing.T) {
-	words := make([]uint16, 40)
-	words[1] = 4 // AFAreaMode
-	words[2] = 7 // NumAFPoints
-	words[3] = 7 // ValidAFPoints
-	words[36] = 1 << 5
-	words[39] = 6 // seq 14 PrimaryAFPoint
-
-	got := parseAFInfo2ForTest(t, words, "PowerShot G1", false, 0)
-
-	if got.AFPointsInFocusBits != nil {
-		t.Fatalf("expected in-focus bitsets to be nil when decode options are empty")
-	}
-	if got.AFPointsSelectedBits != nil {
-		t.Fatalf("expected selected bitsets to be nil when decode options are empty")
-	}
-	if got.AFPoints != nil {
-		t.Fatalf("expected AFPoints to be nil when decode options are empty")
-	}
-	if got.PrimaryAFPoint != 6 {
-		t.Fatalf("PrimaryAFPoint = %d, want 6", got.PrimaryAFPoint)
-	}
-	if got.Source != canon.AFInfoSourceAFInfo2 {
-		t.Fatalf("Source = %v, want AFInfoSourceAFInfo2", got.Source)
 	}
 }
 
@@ -651,10 +396,10 @@ func TestCanonShouldReplaceAFInfoPrefersPopulated(t *testing.T) {
 		Source: canon.AFInfoSourceAFInfo2,
 	}
 
-	if canonShouldReplaceAFInfo(current, candidate) {
+	if canon.ShouldReplaceAFInfo(current, candidate) {
 		t.Fatal("expected populated AFInfo to be retained over empty candidate")
 	}
-	if !canonShouldReplaceAFInfo(candidate, current) {
+	if !canon.ShouldReplaceAFInfo(candidate, current) {
 		t.Fatal("expected populated AFInfo candidate to replace empty current")
 	}
 }
@@ -673,7 +418,7 @@ func TestCanonShouldReplaceAFInfoPrefersHigherQuality(t *testing.T) {
 		AFArea:        make([]canon.AFPoint, 1053),
 	}
 
-	if !canonShouldReplaceAFInfo(current, candidate) {
+	if !canon.ShouldReplaceAFInfo(current, candidate) {
 		t.Fatal("expected higher-quality AFInfo candidate to replace current")
 	}
 }
@@ -681,7 +426,7 @@ func TestCanonShouldReplaceAFInfoPrefersHigherQuality(t *testing.T) {
 func TestCanonShouldReplaceAFInfoSourceTieBreak(t *testing.T) {
 	current := canon.AFInfo{Source: canon.AFInfoSourceAFInfo3}
 	candidate := canon.AFInfo{Source: canon.AFInfoSourceAFInfo2}
-	if !canonShouldReplaceAFInfo(current, candidate) {
+	if !canon.ShouldReplaceAFInfo(current, candidate) {
 		t.Fatal("expected AFInfo2 to win source-priority tie over AFInfo3")
 	}
 }
