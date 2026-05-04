@@ -6,7 +6,6 @@ import (
 )
 
 // ParseCameraInfo3 parses maker-note tag 0x0010 CameraInfo3 (modern layout)
-// ParseCameraInfo3 parses maker-note tag 0x0010 CameraInfo3 (modern layout)
 // from raw bytes. Expected payload length is at least 0x80 bytes.
 func ParseCameraInfo3(raw []byte, bo utils.ByteOrder) SonyCameraInfo3 {
 	var dst SonyCameraInfo3
@@ -22,7 +21,6 @@ func ParseCameraInfo3(raw []byte, bo utils.ByteOrder) SonyCameraInfo3 {
 	return dst
 }
 
-// ParseCameraInfo2 parses maker-note tag 0x0010 CameraInfo2 (legacy layout,
 // ParseCameraInfo2 parses maker-note tag 0x0010 CameraInfo2 (legacy layout,
 // models A700/A850/A900). Expected payload length is at least 0x80 bytes.
 func ParseCameraInfo2(raw []byte, bo utils.ByteOrder) SonyCameraInfo2 {
@@ -47,7 +45,6 @@ func ParseCameraInfo2(raw []byte, bo utils.ByteOrder) SonyCameraInfo2 {
 }
 
 // ParseFocusInfo parses maker-note tag 0x0020 FocusInfo (legacy layout) from
-// ParseFocusInfo parses maker-note tag 0x0020 FocusInfo (legacy layout) from
 // raw bytes. UnitCount must be 19154 or 19148.
 func ParseFocusInfo(raw []byte, bo utils.ByteOrder) SonyFocusInfo {
 	var dst SonyFocusInfo
@@ -70,7 +67,6 @@ func ParseFocusInfo(raw []byte, bo utils.ByteOrder) SonyFocusInfo {
 	return dst
 }
 
-// ParseMoreSettings parses the nested 0x0001 sub-block inside Sony MoreInfo
 // ParseMoreSettings parses the nested 0x0001 sub-block inside Sony MoreInfo
 // (tag 0x0020). Slice length should be 256 bytes.
 func ParseMoreSettings(raw []byte, bo utils.ByteOrder) SonyMoreSettings {
@@ -119,7 +115,6 @@ func ParseMoreSettings(raw []byte, bo utils.ByteOrder) SonyMoreSettings {
 }
 
 // ParseMoreInfo parses maker-note tag 0x0020 MoreInfo (modern layout) from
-// ParseMoreInfo parses maker-note tag 0x0020 MoreInfo (modern layout) from
 // raw bytes. UnitCount must be 20480.
 func ParseMoreInfo(raw []byte, bo utils.ByteOrder) SonyMoreInfo {
 	var dst SonyMoreInfo
@@ -131,8 +126,6 @@ func ParseMoreInfo(raw []byte, bo utils.ByteOrder) SonyMoreInfo {
 	return dst
 }
 
-// ParseCameraSettings parses maker-note tag 0x0114 CameraSettings (legacy
-// 280-byte or 332-byte layout) from raw bytes.  Dispatches to the correct
 // ParseCameraSettings parses maker-note tag 0x0114 CameraSettings (legacy
 // 280-byte or 332-byte layout) from raw bytes. Dispatches to the correct
 // internal parser based on payload length.
@@ -253,7 +246,6 @@ func parseCameraSettings332(raw []byte, bo utils.ByteOrder) SonyCameraSettings {
 }
 
 // ParseCameraSettings3 parses maker-note tag 0x0114 CameraSettings3 (modern
-// ParseCameraSettings3 parses maker-note tag 0x0114 CameraSettings3 (modern
 // 1-byte layout, 1536 or 2048 byte payload) from raw bytes.
 func ParseCameraSettings3(raw []byte, bo utils.ByteOrder) SonyCameraSettings3 {
 	var dst SonyCameraSettings3
@@ -318,7 +310,6 @@ func ParseCameraSettings3(raw []byte, bo utils.ByteOrder) SonyCameraSettings3 {
 }
 
 // ParseShotInfo parses maker-note tag 0x3000 ShotInfo from raw bytes.
-// ParseShotInfo parses maker-note tag 0x3000 ShotInfo from raw bytes.
 // Expected payload length is at least 0x40 bytes.
 func ParseShotInfo(raw []byte, bo utils.ByteOrder) SonyShotInfo {
 	var dst SonyShotInfo
@@ -332,7 +323,6 @@ func ParseShotInfo(raw []byte, bo utils.ByteOrder) SonyShotInfo {
 	return dst
 }
 
-// ParseFaceInfo parses the face-detection sub-block inside Sony ShotInfo
 // ParseFaceInfo parses the face-detection sub-block inside Sony ShotInfo
 // (tag 0x3000) from raw bytes.
 func ParseFaceInfo(raw []byte, bo utils.ByteOrder) SonyFaceInfo {

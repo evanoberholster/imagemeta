@@ -2,7 +2,6 @@ package exif
 
 import (
 	"math/bits"
-	"strings"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -110,47 +109,12 @@ func (r *Reader) parseCanonTag(t tag.Entry) bool {
 
 func (r *Reader) parseCanonCameraInfo(t tag.Entry) canon.CameraInfo {
 	layout := r.canonCameraInfoLayout(t)
+	if spec, ok := canonCameraInfoSpecForLayout(layout); ok {
+		return r.parseCanonCameraInfoBytes(t, spec)
+	}
 	switch layout {
-	case canon.CameraInfoLayout5D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout5D)
-	case canon.CameraInfoLayout5DmkII:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout5DmkII)
-	case canon.CameraInfoLayout5DmkIII:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout5DmkIII)
-	case canon.CameraInfoLayout6D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout6D)
-	case canon.CameraInfoLayout7D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout7D)
-	case canon.CameraInfoLayout40D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout40D)
-	case canon.CameraInfoLayout50D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout50D)
-	case canon.CameraInfoLayout60D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout60D)
-	case canon.CameraInfoLayout70D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout70D)
-	case canon.CameraInfoLayout80D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout80D)
-	case canon.CameraInfoLayout450D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout450D)
-	case canon.CameraInfoLayout500D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout500D)
-	case canon.CameraInfoLayout550D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout550D)
-	case canon.CameraInfoLayout600D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout600D)
-	case canon.CameraInfoLayout650D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout650D)
-	case canon.CameraInfoLayout700D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout700D)
-	case canon.CameraInfoLayout750D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout750D)
-	case canon.CameraInfoLayout1000D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1000D)
-	case canon.CameraInfoLayoutPowerShot:
-		return r.parseCanonCameraInfoPowerShot(t)
-	case canon.CameraInfoLayoutPowerShot2:
-		return r.parseCanonCameraInfoPowerShot2(t)
+	case canon.CameraInfoLayoutPowerShot, canon.CameraInfoLayoutPowerShot2:
+		return r.parseCanonCameraInfoPowerShotTemp(t)
 	case canon.CameraInfoLayoutUnknown32:
 		return r.parseCanonCameraInfoUnknown32(t)
 	case canon.CameraInfoLayoutR6:
@@ -165,21 +129,64 @@ func (r *Reader) parseCanonCameraInfo(t tag.Entry) canon.CameraInfo {
 		if v, ok := r.readCanonCameraInfoUint16At(t, 0x086d); ok {
 			return canon.CameraInfo{ImageCount: uint32(v)}
 		}
-	case canon.CameraInfoLayout1D:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1D)
-	case canon.CameraInfoLayout1DmkII:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkII)
-	case canon.CameraInfoLayout1DmkIIN:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIIN)
-	case canon.CameraInfoLayout1DmkIII:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIII)
-	case canon.CameraInfoLayout1DmkIV:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DmkIV)
-	case canon.CameraInfoLayout1DX:
-		return r.parseCanonCameraInfoBytes(t, canon.CameraInfoSpecLayout1DX)
 	default:
 	}
 	return canon.CameraInfo{}
+}
+
+func canonCameraInfoSpecForLayout(layout canon.CameraInfoLayout) (canon.CameraInfoSpec, bool) {
+	switch layout {
+	case canon.CameraInfoLayout5D:
+		return canon.CameraInfoSpecLayout5D, true
+	case canon.CameraInfoLayout5DmkII:
+		return canon.CameraInfoSpecLayout5DmkII, true
+	case canon.CameraInfoLayout5DmkIII:
+		return canon.CameraInfoSpecLayout5DmkIII, true
+	case canon.CameraInfoLayout6D:
+		return canon.CameraInfoSpecLayout6D, true
+	case canon.CameraInfoLayout7D:
+		return canon.CameraInfoSpecLayout7D, true
+	case canon.CameraInfoLayout40D:
+		return canon.CameraInfoSpecLayout40D, true
+	case canon.CameraInfoLayout50D:
+		return canon.CameraInfoSpecLayout50D, true
+	case canon.CameraInfoLayout60D:
+		return canon.CameraInfoSpecLayout60D, true
+	case canon.CameraInfoLayout70D:
+		return canon.CameraInfoSpecLayout70D, true
+	case canon.CameraInfoLayout80D:
+		return canon.CameraInfoSpecLayout80D, true
+	case canon.CameraInfoLayout450D:
+		return canon.CameraInfoSpecLayout450D, true
+	case canon.CameraInfoLayout500D:
+		return canon.CameraInfoSpecLayout500D, true
+	case canon.CameraInfoLayout550D:
+		return canon.CameraInfoSpecLayout550D, true
+	case canon.CameraInfoLayout600D:
+		return canon.CameraInfoSpecLayout600D, true
+	case canon.CameraInfoLayout650D:
+		return canon.CameraInfoSpecLayout650D, true
+	case canon.CameraInfoLayout700D:
+		return canon.CameraInfoSpecLayout700D, true
+	case canon.CameraInfoLayout750D:
+		return canon.CameraInfoSpecLayout750D, true
+	case canon.CameraInfoLayout1000D:
+		return canon.CameraInfoSpecLayout1000D, true
+	case canon.CameraInfoLayout1D:
+		return canon.CameraInfoSpecLayout1D, true
+	case canon.CameraInfoLayout1DmkII:
+		return canon.CameraInfoSpecLayout1DmkII, true
+	case canon.CameraInfoLayout1DmkIIN:
+		return canon.CameraInfoSpecLayout1DmkIIN, true
+	case canon.CameraInfoLayout1DmkIII:
+		return canon.CameraInfoSpecLayout1DmkIII, true
+	case canon.CameraInfoLayout1DmkIV:
+		return canon.CameraInfoSpecLayout1DmkIV, true
+	case canon.CameraInfoLayout1DX:
+		return canon.CameraInfoSpecLayout1DX, true
+	default:
+		return canon.CameraInfoSpec{}, false
+	}
 }
 
 func (r *Reader) canonCameraInfoLayout(t tag.Entry) canon.CameraInfoLayout {
@@ -207,14 +214,6 @@ func (r *Reader) parseCanonCameraInfoBytes(t tag.Entry, spec canon.CameraInfoSpe
 	return canon.CameraInfoDecode(buf, spec)
 }
 
-func (r *Reader) parseCanonCameraInfoPowerShot(t tag.Entry) canon.CameraInfo {
-	return r.parseCanonCameraInfoPowerShotTemp(t)
-}
-
-func (r *Reader) parseCanonCameraInfoPowerShot2(t tag.Entry) canon.CameraInfo {
-	return r.parseCanonCameraInfoPowerShotTemp(t)
-}
-
 // parseCanonCameraInfoPowerShotTemp extracts camera temperature from PowerShot
 // int32u payloads where the last word is a known non-temperature field and the
 // second-to-last word (at index count-3) is the temperature value.
@@ -223,6 +222,9 @@ func (r *Reader) parseCanonCameraInfoPowerShot2(t tag.Entry) canon.CameraInfo {
 // to CameraInfoCount) is CameraTemperature.
 func (r *Reader) parseCanonCameraInfoPowerShotTemp(t tag.Entry) canon.CameraInfo {
 	count := int(t.UnitCount)
+	if count < 3 {
+		return canon.CameraInfo{}
+	}
 	// Temperature is at index count-3 (ExifTool: element [-3]).
 	tempOff := (count - 3) * 4
 	if v, ok := r.readCanonCameraInfoInt32At(t, tempOff); ok {
@@ -387,7 +389,6 @@ func (r *Reader) parseCanonRawUint16List(t tag.Entry, dst []uint16, wordCount in
 // parseCanonSeq16 reads a uint16 payload, validates the size word, strips it,
 // and returns a 1-based Seq16 view.
 func (r *Reader) parseCanonSeq16(t tag.Entry, dst []uint16, parser string) canon.Seq16 {
-
 	n := r.parseCanonUint16List(t, dst)
 	if n < 2 {
 		r.warnCanonShortRead(t, parser, n, 1)
@@ -416,8 +417,8 @@ func (r *Reader) parseCanonInt32List(t tag.Entry, dst []int32) int {
 	return n
 }
 
-// parseCanonSeq32 reads an int32 payload, validates and strips the size word,
-// and returns a 1-based Seq32 view.
+// parseCanonSeq32 reads an int32 payload, strips the leading size word, and
+// returns a 1-based Seq32 view.
 func (r *Reader) parseCanonSeq32(t tag.Entry, dst []int32) canon.Seq32 {
 	n := r.parseCanonInt32List(t, dst)
 	if n < 2 {
@@ -468,7 +469,7 @@ func (r *Reader) parseCanonSensorInfo(t tag.Entry) canon.SensorInfo {
 		r.warnCanonShortRead(t, "parseCanonSensorInfo", n, 13)
 		return canon.SensorInfo{}
 	}
-	return canon.DecodeSensorInfo(raw[:])
+	return canon.Seq16(raw[:]).DecodeSensorInfo()
 }
 
 func (r *Reader) parseCanonAFConfig(t tag.Entry) canon.AFConfig {
@@ -477,7 +478,7 @@ func (r *Reader) parseCanonAFConfig(t tag.Entry) canon.AFConfig {
 	if s == nil {
 		return canon.AFConfig{}
 	}
-	return canon.DecodeAFConfig(s)
+	return s.DecodeAFConfig()
 }
 
 func (r *Reader) parseCanonLightingOpt(t tag.Entry) canon.LightingOptInfo {
@@ -486,7 +487,7 @@ func (r *Reader) parseCanonLightingOpt(t tag.Entry) canon.LightingOptInfo {
 	if s == nil {
 		return canon.LightingOptInfo{}
 	}
-	return canon.DecodeLightingOpt(s)
+	return s.DecodeLightingOpt()
 }
 
 func (r *Reader) parseCanonMultiExp(t tag.Entry) canon.MultiExpInfo {
@@ -495,7 +496,7 @@ func (r *Reader) parseCanonMultiExp(t tag.Entry) canon.MultiExpInfo {
 	if s == nil {
 		return canon.MultiExpInfo{}
 	}
-	return canon.DecodeMultiExp(s)
+	return s.DecodeMultiExp()
 }
 
 func (r *Reader) parseCanonHDRInfo(t tag.Entry) canon.HDRInfo {
@@ -504,7 +505,7 @@ func (r *Reader) parseCanonHDRInfo(t tag.Entry) canon.HDRInfo {
 	if s == nil {
 		return canon.HDRInfo{}
 	}
-	return canon.DecodeHDRInfo(s)
+	return s.DecodeHDRInfo()
 }
 
 func (r *Reader) parseCanonAFMicroAdj(t tag.Entry) canon.AFMicroAdjInfo {
@@ -513,7 +514,7 @@ func (r *Reader) parseCanonAFMicroAdj(t tag.Entry) canon.AFMicroAdjInfo {
 	if s == nil {
 		return canon.AFMicroAdjInfo{}
 	}
-	return canon.DecodeAFMicroAdj(s)
+	return s.DecodeAFMicroAdj()
 }
 
 func (r *Reader) parseCanonRawBurstInfo(t tag.Entry) canon.RawBurstInfo {
@@ -580,7 +581,7 @@ func (r *Reader) parseCanonFocalLength(t tag.Entry) canon.FocalLengthInfo {
 		r.warnCanonShortRead(t, "parseCanonFocalLength", n, 4)
 		return canon.FocalLengthInfo{}
 	}
-	return canon.DecodeFocalLength(raw[:])
+	return canon.Seq16(raw[:]).DecodeFocalLength()
 }
 
 // parseCanonAspectInfo parses tag 0x009a (AspectInfo).
@@ -607,7 +608,7 @@ func (r *Reader) parseCanonProcessingInfo(t tag.Entry) canon.ProcessingInfo {
 		r.warnCanonShortRead(t, "parseCanonProcessingInfo", n, 2)
 		return canon.ProcessingInfo{}
 	}
-	return canon.DecodeProcessingInfo(raw[1:n])
+	return canon.Seq16(raw[1:n]).DecodeProcessingInfo()
 }
 
 const canonLensInfoByteLength = 5
@@ -637,7 +638,7 @@ func (r *Reader) parseCanonCameraSettings(t tag.Entry) canon.CameraSettings {
 	if s == nil {
 		return canon.CameraSettings{}
 	}
-	return canon.DecodeCameraSettings(s)
+	return s.DecodeCameraSettings()
 }
 
 func (r *Reader) parseCanonShotInfo(t tag.Entry) canon.ShotInfo {
@@ -659,7 +660,7 @@ func (r *Reader) parseCanonFileInfo(t tag.Entry) canon.FileInfo {
 	if s == nil {
 		return canon.FileInfo{}
 	}
-	return canon.DecodeFileInfo(s, r.canonModelID())
+	return s.DecodeFileInfo(r.canonModelID())
 }
 
 // parseCanonTimeInfo parses tag 0x0035 (TimeInfo).
@@ -669,7 +670,7 @@ func (r *Reader) parseCanonTimeInfo(t tag.Entry) canon.CanonTimeInfo {
 	if s == nil {
 		return canon.CanonTimeInfo{}
 	}
-	return canon.DecodeTimeInfo(s)
+	return s.DecodeTimeInfo()
 }
 
 func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
@@ -695,42 +696,40 @@ func (r *Reader) parseCanonAFPointsInFocus1D(t tag.Entry, current canon.AFInfo) 
 	return current
 }
 
+func (r *Reader) parseCanonAFWords(t tag.Entry, parser string, source tag.ID, dst []uint16) ([]uint16, canon.AFInfoSource, bool) {
+	words, truncated := canon.AFWordsBuffer(dst, t.UnitCount)
+	if truncated {
+		r.warnCanonTruncatedWords(t, parser, len(words), int(t.UnitCount))
+	}
+	n := r.parseCanonUint16List(t, words)
+	src := canon.AFInfoSourceFromID(source)
+	if n == 0 {
+		r.warnCanonShortRead(t, parser, n, 1)
+		return nil, src, false
+	}
+	return words[:n], src, true
+}
+
 // parseCanonAFInfo parses tag 0x0012 (AFInfo).
 func (r *Reader) parseCanonAFInfo(t tag.Entry) canon.AFInfo {
 	var wordsStack [2048]uint16
-	words, truncated := canon.AFWordsBuffer(wordsStack[:], t.UnitCount)
-	if truncated {
-		r.warnCanonTruncatedWords(t, "parseCanonAFInfo", len(words), int(t.UnitCount))
-	}
-	n := r.parseCanonUint16List(t, words)
-	source := canon.AFInfoSourceFromID(tag.ID(canon.CanonAFInfo))
-	if n == 0 {
-		r.warnCanonShortRead(t, "parseCanonAFInfo", n, 1)
+	words, source, ok := r.parseCanonAFWords(t, "parseCanonAFInfo", tag.ID(canon.CanonAFInfo), wordsStack[:])
+	if !ok {
 		return canon.AFInfo{Source: source}
 	}
-	return canon.DecodeAFInfo(words[:n], canon.ModelIsEOS(r.canonModelID()), int(t.UnitCount))
-}
-
-func fillCanonAFInfo(dst *canon.AFInfo, words []uint16, modelID canon.CanonCameraModel, afInfoCount int) {
-	*dst = canon.DecodeAFInfo(words, canon.ModelIsEOS(modelID), afInfoCount)
+	return canon.DecodeAFInfo(words, canon.ModelIsEOS(r.canonModelID()), int(t.UnitCount))
 }
 
 // parseCanonAFInfo2 parses tags 0x0026 and 0x003c (AFInfo2/AFInfo3).
 func (r *Reader) parseCanonAFInfo2(t tag.Entry) canon.AFInfo {
 	var wordsStack [2048]uint16
-	words, truncated := canon.AFWordsBuffer(wordsStack[:], t.UnitCount)
-	if truncated {
-		r.warnCanonTruncatedWords(t, "parseCanonAFInfo2", len(words), int(t.UnitCount))
-	}
-	n := r.parseCanonUint16List(t, words)
-	source := canon.AFInfoSourceFromID(t.ID)
-	if n == 0 {
-		r.warnCanonShortRead(t, "parseCanonAFInfo2", n, 1)
+	words, source, ok := r.parseCanonAFWords(t, "parseCanonAFInfo2", t.ID, wordsStack[:])
+	if !ok {
 		return canon.AFInfo{Source: source}
 	}
 	modelID := r.canonModelID()
 	isAFInfo3 := canon.MakerNoteTag(t.ID) == canon.AFInfo3
-	return canon.DecodeAFInfo2(words[:n], canon.AFInfo2DecodeConfig{
+	return canon.DecodeAFInfo2(words, canon.AFInfo2DecodeConfig{
 		Source:         source,
 		EOS:            canon.ModelIsEOS(modelID),
 		AFInfo3:        isAFInfo3,
@@ -754,18 +753,40 @@ func canonString(raw []byte) string {
 	if len(raw) == 0 {
 		return ""
 	}
-	var b strings.Builder
-	b.Grow(len(raw))
-	for _, ch := range raw {
+	var stack [512]byte
+	buf := stack[:0]
+	if len(raw) > len(stack) {
+		buf = make([]byte, len(raw))
+	} else {
+		buf = stack[:len(raw)]
+	}
+	for i := 0; i < len(raw); i++ {
+		ch := raw[i]
 		if ch >= 0x20 && ch <= 0x7e {
-			b.WriteByte(ch)
+			buf[i] = ch
 		} else {
-			b.WriteByte('.')
+			buf[i] = '.'
 		}
 	}
-	s := b.String()
-	s = strings.TrimSpace(s)
-	return strings.Trim(s, ".")
+
+	start := 0
+	end := len(buf)
+	for start < end && buf[start] == ' ' {
+		start++
+	}
+	for end > start && buf[end-1] == ' ' {
+		end--
+	}
+	for start < end && buf[start] == '.' {
+		start++
+	}
+	for end > start && buf[end-1] == '.' {
+		end--
+	}
+	if start >= end {
+		return ""
+	}
+	return string(buf[start:end])
 }
 
 func canonBitsetWords(vals []uint16) []int {

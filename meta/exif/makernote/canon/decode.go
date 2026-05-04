@@ -1,8 +1,8 @@
 package canon
 
 // DecodeFileInfo decodes a Canon FileInfo payload (tag 0x0093).
-// The words slice must be the FIRST_ENTRY-stripped data (size word removed).
-func DecodeFileInfo(s Seq16, modelID CanonCameraModel) FileInfo {
+// The sequence must be FIRST_ENTRY-stripped data (size word removed).
+func (s Seq16) DecodeFileInfo(modelID CanonCameraModel) FileInfo {
 	dst := FileInfo{
 		FileNumber:                  uint32(s.U16(1)) | (uint32(s.U16(2)) << 16),
 		BracketMode:                 BracketMode(s.I16(3)),
@@ -32,7 +32,7 @@ func DecodeFileInfo(s Seq16, modelID CanonCameraModel) FileInfo {
 }
 
 // DecodeCameraSettings decodes a Canon CameraSettings payload (tag 0x0001).
-func DecodeCameraSettings(s Seq16) CameraSettings {
+func (s Seq16) DecodeCameraSettings() CameraSettings {
 	return CameraSettings{
 		MacroMode:          MacroMode(s.U16(1)),
 		SelfTimer:          s.I16(2),
@@ -78,8 +78,7 @@ func DecodeCameraSettings(s Seq16) CameraSettings {
 }
 
 // DecodeAFConfig decodes a Canon AFConfig payload (tag 0x4028).
-func DecodeAFConfig(words []int32) AFConfig {
-	s := Seq32(words)
+func (s Seq32) DecodeAFConfig() AFConfig {
 	return AFConfig{
 		AFConfigTool:              s.U32(1) + 1,
 		AFTrackingSensitivity:     s.I32(2),
@@ -106,8 +105,7 @@ func DecodeAFConfig(words []int32) AFConfig {
 }
 
 // DecodeTimeInfo decodes a Canon TimeInfo payload (tag 0x0035).
-func DecodeTimeInfo(words []int32) CanonTimeInfo {
-	s := Seq32(words)
+func (s Seq32) DecodeTimeInfo() CanonTimeInfo {
 	return CanonTimeInfo{
 		TimeZone:        s.I32(1),
 		TimeZoneCity:    TimeZoneCity(s.I32(2)),
@@ -116,8 +114,7 @@ func DecodeTimeInfo(words []int32) CanonTimeInfo {
 }
 
 // DecodeLightingOpt decodes a Canon LightingOpt payload (tag 0x4018).
-func DecodeLightingOpt(words []int32) LightingOptInfo {
-	s := Seq32(words)
+func (s Seq32) DecodeLightingOpt() LightingOptInfo {
 	return LightingOptInfo{
 		PeripheralIlluminationCorr: s.I32(1),
 		AutoLightingOptimizer:      s.I32(2),
@@ -130,8 +127,7 @@ func DecodeLightingOpt(words []int32) LightingOptInfo {
 }
 
 // DecodeMultiExp decodes a Canon MultiExp payload (tag 0x4021).
-func DecodeMultiExp(words []int32) MultiExpInfo {
-	s := Seq32(words)
+func (s Seq32) DecodeMultiExp() MultiExpInfo {
 	return MultiExpInfo{
 		MultiExposure:        s.I32(1),
 		MultiExposureControl: s.I32(2),
@@ -140,8 +136,7 @@ func DecodeMultiExp(words []int32) MultiExpInfo {
 }
 
 // DecodeHDRInfo decodes a Canon HDRInfo payload (tag 0x4025).
-func DecodeHDRInfo(words []int32) HDRInfo {
-	s := Seq32(words)
+func (s Seq32) DecodeHDRInfo() HDRInfo {
 	return HDRInfo{
 		HDR:       s.I32(1),
 		HDREffect: s.I32(2),
@@ -149,8 +144,7 @@ func DecodeHDRInfo(words []int32) HDRInfo {
 }
 
 // DecodeAFMicroAdj decodes a Canon AFMicroAdj payload (tag 0x4013).
-func DecodeAFMicroAdj(words []int32) AFMicroAdjInfo {
-	s := Seq32(words)
+func (s Seq32) DecodeAFMicroAdj() AFMicroAdjInfo {
 	return AFMicroAdjInfo{
 		Mode:             s.I32(1),
 		ValueNumerator:   s.I32(2),
@@ -159,7 +153,7 @@ func DecodeAFMicroAdj(words []int32) AFMicroAdjInfo {
 }
 
 // DecodeSensorInfo decodes a Canon SensorInfo payload (tag 0x00e0).
-func DecodeSensorInfo(s Seq16) SensorInfo {
+func (s Seq16) DecodeSensorInfo() SensorInfo {
 	if len(s) < 13 {
 		return SensorInfo{}
 	}
@@ -178,7 +172,7 @@ func DecodeSensorInfo(s Seq16) SensorInfo {
 }
 
 // DecodeFocalLength decodes a Canon FocalLength payload (tag 0x0002).
-func DecodeFocalLength(s Seq16) FocalLengthInfo {
+func (s Seq16) DecodeFocalLength() FocalLengthInfo {
 	if len(s) < 4 {
 		return FocalLengthInfo{}
 	}
@@ -192,7 +186,7 @@ func DecodeFocalLength(s Seq16) FocalLengthInfo {
 
 // DecodeProcessingInfo decodes a Canon ProcessingInfo payload (tag 0x00a0).
 // The payload uses FIRST_ENTRY=1 convention.
-func DecodeProcessingInfo(s Seq16) ProcessingInfo {
+func (s Seq16) DecodeProcessingInfo() ProcessingInfo {
 	return ProcessingInfo{
 		ToneCurve:            s.I16(1),
 		Sharpness:            s.I16(2),

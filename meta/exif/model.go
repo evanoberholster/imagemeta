@@ -3,7 +3,6 @@ package exif
 import (
 	"encoding/json"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -54,9 +53,6 @@ type IFD0Tag struct {
 	SamplesPerPixel           uint16
 	PlanarConfiguration       uint16
 	BitsPerSample             [4]uint16
-	WhitePoint                [2]float64
-	PrimaryChromaticities     [6]float64
-	YCbCrCoefficients         [3]float64
 	YCbCrPositioning          uint16
 	Rating                    uint16
 
@@ -205,12 +201,16 @@ func (t ExifIFDTags) ExifToolSubjectDistance() string {
 }
 
 func (l LensInfo) String() string {
-	return strings.Join([]string{
-		l.lensInfoPart(l.MinFocalLength),
-		l.lensInfoPart(l.MaxFocalLength),
-		l.lensInfoPart(l.MaxApertureAtMinFocal),
-		l.lensInfoPart(l.MaxApertureAtMaxFocal),
-	}, " ")
+	var out [96]byte
+	buf := out[:0]
+	buf = appendLensInfoPart(buf, l.MinFocalLength)
+	buf = append(buf, ' ')
+	buf = appendLensInfoPart(buf, l.MaxFocalLength)
+	buf = append(buf, ' ')
+	buf = appendLensInfoPart(buf, l.MaxApertureAtMinFocal)
+	buf = append(buf, ' ')
+	buf = appendLensInfoPart(buf, l.MaxApertureAtMaxFocal)
+	return string(buf)
 }
 
 // MarshalText emits an ExifTool -n style representation like "24 70 2.8 4".
@@ -218,15 +218,15 @@ func (l LensInfo) MarshalText() ([]byte, error) {
 	return []byte(l.String()), nil
 }
 
-func (LensInfo) lensInfoPart(v tag.RationalU) string {
+func appendLensInfoPart(dst []byte, v tag.RationalU) []byte {
 	if v.Denominator == 0 {
-		return "undef"
+		return append(dst, "undef"...)
 	}
 	f := v.Float64()
 	if f == float64(int64(f)) {
-		return strconv.FormatInt(int64(f), 10)
+		return strconv.AppendInt(dst, int64(f), 10)
 	}
-	return strconv.FormatFloat(f, 'f', -1, 64)
+	return strconv.AppendFloat(dst, f, 'f', -1, 64)
 }
 
 func exifToolUnsignedFloat64(v float64, state unsignedRationalState) string {
@@ -335,9 +335,6 @@ type ifd0JSON struct {
 	SamplesPerPixel           uint16              `json:"SamplesPerPixel"`
 	PlanarConfiguration       uint16              `json:"PlanarConfiguration"`
 	BitsPerSample             [4]uint16           `json:"BitsPerSample"`
-	WhitePoint                [2]float64          `json:"WhitePoint"`
-	PrimaryChromaticities     [6]float64          `json:"PrimaryChromaticities"`
-	YCbCrCoefficients         [3]float64          `json:"YCbCrCoefficients"`
 	YCbCrPositioning          uint16              `json:"YCbCrPositioning"`
 	Rating                    uint16              `json:"Rating"`
 }
@@ -551,9 +548,6 @@ func (t IFD0Tag) MarshalJSON() ([]byte, error) {
 		SamplesPerPixel:           t.SamplesPerPixel,
 		PlanarConfiguration:       t.PlanarConfiguration,
 		BitsPerSample:             t.BitsPerSample,
-		WhitePoint:                t.WhitePoint,
-		PrimaryChromaticities:     t.PrimaryChromaticities,
-		YCbCrCoefficients:         t.YCbCrCoefficients,
 		YCbCrPositioning:          t.YCbCrPositioning,
 		Rating:                    t.Rating,
 	})

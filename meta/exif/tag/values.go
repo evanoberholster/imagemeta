@@ -3,6 +3,7 @@ package tag
 import (
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // ValueNameFor returns the symbolic name for a numeric enum value.
@@ -49,9 +50,29 @@ func valueIDs(directoryType IfdType, id ID) map[string]uint32 {
 }
 
 func normalizeValueString(v string) string {
-	v = strings.ToLower(strings.TrimSpace(v))
-	v = strings.ReplaceAll(v, "_", " ")
-	return strings.Join(strings.Fields(v), " ")
+	if v == "" {
+		return ""
+	}
+
+	var b strings.Builder
+	b.Grow(len(v))
+	wroteToken := false
+	pendingSpace := false
+	for _, r := range v {
+		if r == '_' || unicode.IsSpace(r) {
+			if wroteToken {
+				pendingSpace = true
+			}
+			continue
+		}
+		if pendingSpace {
+			b.WriteByte(' ')
+			pendingSpace = false
+		}
+		b.WriteRune(unicode.ToLower(r))
+		wroteToken = true
+	}
+	return b.String()
 }
 
 func parseUint(v string) (uint32, bool) {
