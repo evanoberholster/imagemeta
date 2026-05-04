@@ -39,8 +39,7 @@ cmd/exifcache
 *.CR2
 download_samples/*
 meta/exif/vendor_benchmark_test.go
-cmd/compare_canon/main.go
 .gitignore
 .gitignore
 meta/exif/makernote/canon/CanonReportCard.md
-cmd/report_card/main.go
+tmp/
