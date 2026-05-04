@@ -61,9 +61,9 @@ func collectPaths(args []string) ([]string, error) {
 		}
 		if !info.IsDir() {
 			if includePath(in) {
-				ap, err := filepath.Abs(in)
-				if err != nil {
-					return nil, fmt.Errorf("abs %q: %w", in, err)
+				ap, absErr := filepath.Abs(in)
+				if absErr != nil {
+					return nil, fmt.Errorf("abs %q: %w", in, absErr)
 				}
 				if _, ok := seen[ap]; !ok {
 					seen[ap] = struct{}{}
@@ -83,9 +83,9 @@ func collectPaths(args []string) ([]string, error) {
 			if !includePath(path) {
 				return nil
 			}
-			ap, err := filepath.Abs(path)
-			if err != nil {
-				return err
+			ap, absErr := filepath.Abs(path)
+			if absErr != nil {
+				return absErr
 			}
 			if _, ok := seen[ap]; ok {
 				return nil
