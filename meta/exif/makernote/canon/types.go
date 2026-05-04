@@ -80,19 +80,19 @@ type CameraInfo struct {
 	ImageCount            uint32            // ExifTool ImageCount
 
 	// Model-specific fields (zero value when not present for a given model)
-	Sharpness           int16            // EOS-1D, 1DmkII
-	SharpnessFrequency  int16            // EOS-1D
-	CanonImageSize      CanonImageSize   // EOS-1DmkII
-	FocalType           uint16           // EOS-1DmkII
-	Saturation          int16            // EOS-1DmkII
-	ColorTone           int16            // EOS-1DmkII
-	Contrast            int16            // EOS-1DmkII
-	TimeStamp           uint32           // EOS-1DmkIII
-	MeasuredEV3         float32          // EOS-1DmkIV
-	LensSerialNumber    string           // EOS 5DmkIII, 5DSR
-	FileIndex2          uint32           // EOS 5DmkIII (2nd card slot)
-	DirectoryIndex2     uint32           // EOS 5DmkIII (2nd card slot)
-	Rotation            int32            // PowerShot
+	Sharpness          int16          // EOS-1D, 1DmkII
+	SharpnessFrequency int16          // EOS-1D
+	CanonImageSize     CanonImageSize // EOS-1DmkII
+	FocalType          uint16         // EOS-1DmkII
+	Saturation         int16          // EOS-1DmkII
+	ColorTone          int16          // EOS-1DmkII
+	Contrast           int16          // EOS-1DmkII
+	TimeStamp          uint32         // EOS-1DmkIII
+	MeasuredEV3        float32        // EOS-1DmkIV
+	LensSerialNumber   string         // EOS 5DmkIII, 5DSR
+	FileIndex2         uint32         // EOS 5DmkIII (2nd card slot)
+	DirectoryIndex2    uint32         // EOS 5DmkIII (2nd card slot)
+	Rotation           int32          // PowerShot
 }
 
 // ShotInfo stores selected Canon ShotInfo values from MakerNote tag 0x0004

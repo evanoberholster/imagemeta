@@ -23,7 +23,6 @@ func benchmarkParseSamples(b *testing.B, samples []benchSample, opts ...ReaderOp
 	}
 
 	for _, sample := range samples {
-		sample := sample
 
 		path, err := nthMatch(filepath.Join(benchDir, sample.glob), sample.matchIdx)
 		if err != nil {

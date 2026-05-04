@@ -206,7 +206,7 @@ func BenchmarkHeif(b *testing.B) {
 					}
 					rr.Reset(r)
 
-					ir := exif.NewReader(metalog.Logger)
+					ir := exif.NewReader(metalog.GetLogger())
 
 					it, scanErr := imagetype.ScanBuf(rr)
 					if scanErr != nil {
@@ -234,7 +234,7 @@ func BenchmarkHeif(b *testing.B) {
 					if _, err = r.Seek(0, 0); err != nil {
 						b.Fatal(err)
 					}
-					ir := exif.NewReader(metalog.Logger)
+					ir := exif.NewReader(metalog.GetLogger())
 
 					br := isobmff.NewReader(r, ir.DecodeIfdAppend, nil, nil)
 					if err := br.ReadFTYP(); err != nil {

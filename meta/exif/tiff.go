@@ -43,18 +43,25 @@ func ScanTiffHeader(r io.Reader, it imagetype.ImageType) (header meta.ExifHeader
 		if byteOrder == utils.UnknownEndian {
 			// Exif not identified. Move forward by one byte.
 			if buf[1] == 0x49 || buf[1] == 0x4d {
-				_, _ = br.Discard(1)
+				if _, err = br.Discard(1); err != nil {
+					return header, err
+				}
 				discarded++
 				continue
 			}
-			_, _ = br.Discard(2)
+			if _, err = br.Discard(2); err != nil {
+				return header, err
+			}
 			discarded += 2
 			continue
 		}
 
 		// Found Tiff Header
 		firstIfdOffset := byteOrder.Uint32(buf[4:8])
-		tiffHeaderOffset := uint32(discarded)
+		tiffHeaderOffset, ok := meta.SafecastIntToUint32(discarded)
+		if !ok {
+			return header, meta.ErrNoExif
+		}
 		header = meta.NewExifHeader(byteOrder, firstIfdOffset, tiffHeaderOffset, 0, it)
 		header.FirstIfd = tag.IFD0
 		return header, nil

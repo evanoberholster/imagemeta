@@ -12,12 +12,11 @@ const (
 )
 
 type state struct {
-	buf        [readBufferLength]byte
-	discardBuf [readBufferLength]byte
-	tag        [tagQueueMax]tag.Entry
-	dirty      bool
-	len        uint32
-	pos        uint32
+	buf   [readBufferLength]byte
+	tag   [tagQueueMax]tag.Entry
+	dirty bool
+	len   uint32
+	pos   uint32
 }
 
 var statePool = sync.Pool{

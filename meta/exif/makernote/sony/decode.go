@@ -302,8 +302,12 @@ func ParseCameraSettings3(raw []byte, bo utils.ByteOrder) SonyCameraSettings3 {
 	dst.LensMount = u8At(raw, 0x0099)
 	dst.SequenceNumber = u8At(raw, 0x010c)
 	if v := u32At(raw, bo, 0x0114); v != 0 {
-		dst.FolderNumber = uint16((v & 0xffc000) >> 14)
-		dst.ImageNumber = uint16(v & 0x3fff)
+		if folderNumber, ok := meta.SafecastUint32ToUint16((v & 0xffc000) >> 14); ok {
+			dst.FolderNumber = folderNumber
+		}
+		if imageNumber, ok := meta.SafecastUint32ToUint16(v & 0x3fff); ok {
+			dst.ImageNumber = imageNumber
+		}
 	}
 	dst.ShotNumberSincePowerUp2 = u32At(raw, bo, 0x0200)
 	return dst

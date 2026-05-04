@@ -126,7 +126,6 @@ func TestEntryEmbeddedShorts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -202,7 +201,6 @@ func TestEntryIsEmbeddedBoundaries(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			e := NewEntry(TagMake, tt.typ, tt.u, 0, IFD0, 0, utils.LittleEndian)
@@ -300,7 +298,6 @@ func TestEntryChildDirectory(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := tt.entry.ChildDirectory()

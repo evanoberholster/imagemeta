@@ -72,8 +72,14 @@ func parseAperture(buf []byte) Aperture {
 	// TODO: Improve parsing functionality
 	for i := 0; i < len(buf); i++ {
 		if buf[i] == '/' {
-			n := uint16(parseUint(buf[:i]))
-			d := uint16(parseUint(buf[i+1:]))
+			n, ok := SafecastUint64ToUint16(parseUint(buf[:i]))
+			if !ok {
+				return 0
+			}
+			d, ok := SafecastUint64ToUint16(parseUint(buf[i+1:]))
+			if !ok {
+				return 0
+			}
 			if d == 0 {
 				return 0
 			}
@@ -143,7 +149,10 @@ func (et ExposureTime) MarshalText() (text []byte, err error) {
 }
 
 func (et ExposureTime) String() string {
-	buf, _ := et.MarshalText()
+	buf, err := et.MarshalText()
+	if err != nil {
+		return ""
+	}
 	return string(buf)
 }
 
@@ -175,7 +184,10 @@ func NewExposureBias(n int16, d int16) ExposureBias {
 
 // String returns the value of Exposure Bias as a string
 func (eb ExposureBias) String() string {
-	buf, _ := eb.MarshalText()
+	buf, err := eb.MarshalText()
+	if err != nil {
+		return ""
+	}
 	return string(buf)
 }
 
@@ -191,7 +203,7 @@ func (eb ExposureBias) MarshalText() (text []byte, err error) {
 	}
 	text = strconv.AppendInt(text, int64(eb>>8), 10)
 	text = append(text, '/')
-	text = strconv.AppendUint(text, uint64(uint16(eb)<<8>>8), 10)
+	text = strconv.AppendUint(text, uint64(SafecastInt16ToUint16Bits(int16(eb))<<8>>8), 10)
 	return text, nil
 }
 
@@ -208,13 +220,29 @@ func (eb *ExposureBias) UnmarshalText(text []byte) (err error) {
 				var n int16
 				switch text[0] {
 				case '+':
-					n = int16(parseUint(text[1:i]))
+					parsed, ok := SafecastUint64ToInt16(parseUint(text[1:i]))
+					if !ok {
+						return nil
+					}
+					n = parsed
 				case '-':
-					n = int16(parseUint(text[1:i])) * -1
+					parsed, ok := SafecastUint64ToInt16(parseUint(text[1:i]))
+					if !ok {
+						return nil
+					}
+					n = parsed * -1
 				default:
-					n = int16(parseUint(text[:i]))
+					parsed, ok := SafecastUint64ToInt16(parseUint(text[:i]))
+					if !ok {
+						return nil
+					}
+					n = parsed
 				}
-				*eb = NewExposureBias(n, int16(parseUint(text[i+1:])))
+				d, ok := SafecastUint64ToInt16(parseUint(text[i+1:]))
+				if !ok {
+					return nil
+				}
+				*eb = NewExposureBias(n, d)
 				return err
 			}
 		}
@@ -499,7 +527,11 @@ func (f Flash) Fired() bool {
 //	FlashNoReturn: 4
 //	FlashReturn:  6
 func (f Flash) ReturnStatus() FlashMode {
-	return FlashMode(0b00000110 & f)
+	v, ok := SafecastUint16ToUint8(0b00000110 & uint16(f))
+	if !ok {
+		return FlashModeNone
+	}
+	return FlashMode(v)
 }
 
 // FlashFunction is bit 5, returns true if flash function was not present
@@ -514,7 +546,11 @@ func (f Flash) FlashFunction() bool {
 //		FlashModeOff: 16
 //		FlashModeAuto: 24
 func (f Flash) Mode() FlashMode {
-	return FlashMode(0b00011000 & f)
+	v, ok := SafecastUint16ToUint8(0b00011000 & uint16(f))
+	if !ok {
+		return FlashModeNone
+	}
+	return FlashMode(v)
 }
 
 // Redeye is bit 6, returns true if "Red-eye reduction" was present

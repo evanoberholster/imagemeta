@@ -443,6 +443,28 @@ const (
 	CameraISOAutoHighSentinel = math.MaxUint32 - 1 // resolved ISO sentinel for "Auto High"
 )
 
+// NewCameraISO returns a validated CameraISO enum, or 0 for unknown values.
+func NewCameraISO(v int16) CameraISO {
+	switch CameraISO(v) {
+	case CameraISONA,
+		CameraISOAutoHigh,
+		CameraISOAuto,
+		CameraISO50,
+		CameraISO100,
+		CameraISO200,
+		CameraISO400,
+		CameraISO800:
+		return CameraISO(v)
+	default:
+		return 0
+	}
+}
+
+// NewCameraISOFromRaw decodes a raw uint16 wire value into CameraISO.
+func NewCameraISOFromRaw(raw uint16) CameraISO {
+	return NewCameraISO(meta.SafecastUint16ToInt16Bits(raw))
+}
+
 // CameraISOValue resolves the raw CameraISO value using ExifTool-style logic.
 //
 // Returns the resolved ISO value, or a sentinel (CameraISOAutoSentinel /
@@ -476,6 +498,16 @@ func CameraISOValue(raw int16) int {
 	}
 }
 
+// NewResolvedCameraISOFromRaw resolves a raw CameraISO value to ExifTool-style output.
+// Returns 0 if conversion to uint32 fails.
+func NewResolvedCameraISOFromRaw(raw int16) uint32 {
+	value, ok := meta.SafecastIntToUint32(CameraISOValue(raw))
+	if !ok {
+		return 0
+	}
+	return value
+}
+
 // CameraISOString returns the ExifTool-style display string for a resolved CameraISO value.
 func CameraISOString(v uint32) string {
 	switch v {
@@ -492,7 +524,7 @@ func CameraISOString(v uint32) string {
 
 // String returns the display string for the raw CameraISO enum value.
 func (i CameraISO) String() string {
-	return CameraISOString(uint32(CameraISOValue(int16(i))))
+	return CameraISOString(NewResolvedCameraISOFromRaw(int16(i)))
 }
 
 // FlashModel is part of the CanonCameraSettings field.
@@ -641,17 +673,17 @@ type FocusDistance [2]int16
 // NewFocusDistance creates a new FocusDistance with the upper
 // and lower limits
 func NewFocusDistance(upper, lower uint16) FocusDistance {
-	return FocusDistance{int16(upper), int16(lower)}
+	return FocusDistance{meta.SafecastUint16ToInt16Bits(upper), meta.SafecastUint16ToInt16Bits(lower)}
 }
 
 // UpperRaw returns the raw upper focus-distance code as stored by Canon.
 func (fd FocusDistance) UpperRaw() uint16 {
-	return uint16(fd[0])
+	return meta.SafecastInt16ToUint16Bits(fd[0])
 }
 
 // LowerRaw returns the raw lower focus-distance code as stored by Canon.
 func (fd FocusDistance) LowerRaw() uint16 {
-	return uint16(fd[1])
+	return meta.SafecastInt16ToUint16Bits(fd[1])
 }
 
 // UpperMeters converts the upper focus-distance code into meters like ExifTool.
@@ -701,6 +733,42 @@ const (
 	WhiteBalanceAutoAmbiencePriority WhiteBalance = 21 // Auto (ambience priority)
 	WhiteBalanceAutoWhitePriority    WhiteBalance = 23 // Auto (white priority)
 )
+
+// NewWhiteBalance returns a validated WhiteBalance, or 0 for unknown values.
+func NewWhiteBalance(v int16) WhiteBalance {
+	wb := WhiteBalance(v)
+	switch wb {
+	case WhiteBalanceAuto,
+		WhiteBalanceDaylight,
+		WhiteBalanceCloudy,
+		WhiteBalanceTungsten,
+		WhiteBalanceFluorescent,
+		WhiteBalanceFlash,
+		WhiteBalanceCustom,
+		WhiteBalanceBlackAndWhite,
+		WhiteBalanceShade,
+		WhiteBalanceManualTemperature,
+		WhiteBalancePCSet1,
+		WhiteBalancePCSet2,
+		WhiteBalancePCSet3,
+		WhiteBalanceDaylightFluorescent,
+		WhiteBalanceCustom2,
+		WhiteBalanceUnderwater,
+		WhiteBalanceCustom3,
+		WhiteBalancePCSet4,
+		WhiteBalancePCSet5,
+		WhiteBalanceAutoAmbiencePriority,
+		WhiteBalanceAutoWhitePriority:
+		return wb
+	default:
+		return WhiteBalanceAuto
+	}
+}
+
+// NewWhiteBalanceFromRaw decodes a raw uint16 wire value into WhiteBalance.
+func NewWhiteBalanceFromRaw(raw uint16) WhiteBalance {
+	return NewWhiteBalance(meta.SafecastUint16ToInt16Bits(raw))
+}
 
 // SlowShutter is part of the CanonShotInfo field.
 type SlowShutter int16
@@ -1077,7 +1145,7 @@ func buildCityLocations() {
 		if err != nil {
 			continue
 		}
-		cityLocations[int(city)] = loc
+		cityLocations[city] = loc
 	}
 }
 

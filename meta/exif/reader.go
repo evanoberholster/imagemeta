@@ -532,7 +532,11 @@ func (r *Reader) parseDirectoryTagHeadersPerEntry(directory tag.Directory, tagCo
 		if parseErr != nil {
 			if warnEnabled {
 				tagID := tag.ID(directory.ByteOrder.Uint16(headerBuf[:2]))
-				tagType := tag.Type(directory.ByteOrder.Uint16(headerBuf[2:4]))
+				tagTypeValue, ok := meta.SafecastUint16ToUint8(directory.ByteOrder.Uint16(headerBuf[2:4]))
+				if !ok {
+					tagTypeValue = 0
+				}
+				tagType := tag.Type(tagTypeValue)
 				unitCount := directory.ByteOrder.Uint32(headerBuf[4:8])
 				valueOffset := directory.ByteOrder.Uint32(headerBuf[8:12])
 				r.rawTagHeaderLogContext(r.Warn(3), directory, i, tagID, tagType, unitCount, valueOffset).
@@ -588,7 +592,11 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, ta
 		index := pos / 12
 		h := raw[pos : pos+12]
 		tagID := tag.ID(byteOrder.Uint16(h[:2]))
-		tagType := tag.Type(byteOrder.Uint16(h[2:4]))
+		tagTypeValue, ok := meta.SafecastUint16ToUint8(byteOrder.Uint16(h[2:4]))
+		if !ok {
+			tagTypeValue = 0
+		}
+		tagType := tag.Type(tagTypeValue)
 		unitCount := byteOrder.Uint32(h[4:8])
 		valueOffset := byteOrder.Uint32(h[8:12])
 

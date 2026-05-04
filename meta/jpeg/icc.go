@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/evanoberholster/imagemeta/meta/utils"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // ICCProfile stores selected ICC profile header and tag values.
@@ -47,9 +47,19 @@ type ICCProfile struct {
 	MeasurementFlare          float64
 	MeasurementIlluminant     uint32
 	Technology                string
-	RedTRCLength              uint32
-	GreenTRCLength            uint32
-	BlueTRCLength             uint32
+	RedTRCLength              TRCLength
+	GreenTRCLength            TRCLength
+	BlueTRCLength             TRCLength
+}
+
+type TRCLength uint32
+
+func NewTRCLengthFromRaw(v int) TRCLength {
+	converted, ok := meta.SafecastIntToUint32(v)
+	if !ok {
+		return 0
+	}
+	return TRCLength(converted)
 }
 
 func (m *Metadata) addICCChunk(payload []byte) error {
@@ -113,9 +123,9 @@ func parseICCProfile(data []byte) (*ICCProfile, error) {
 		DeviceAttributes:       [2]uint32{jpegEndian.Uint32(data[56:60]), jpegEndian.Uint32(data[60:64])},
 		RenderingIntent:        jpegEndian.Uint32(data[64:68]),
 		ConnectionSpaceIlluminant: [3]float64{
-			s15Fixed16(utils.BigEndian, data[68:72]),
-			s15Fixed16(utils.BigEndian, data[72:76]),
-			s15Fixed16(utils.BigEndian, data[76:80]),
+			s15Fixed16(data[68:72]),
+			s15Fixed16(data[72:76]),
+			s15Fixed16(data[76:80]),
 		},
 		ProfileCreator: string(data[80:84]),
 	}
@@ -191,11 +201,11 @@ func parseICCTag(icc *ICCProfile, sig string, data []byte) {
 			icc.Technology = string(data[8:12])
 		}
 	case "rTRC":
-		icc.RedTRCLength = uint32(len(data))
+		icc.RedTRCLength = NewTRCLengthFromRaw(len(data))
 	case "gTRC":
-		icc.GreenTRCLength = uint32(len(data))
+		icc.GreenTRCLength = NewTRCLengthFromRaw(len(data))
 	case "bTRC":
-		icc.BlueTRCLength = uint32(len(data))
+		icc.BlueTRCLength = NewTRCLengthFromRaw(len(data))
 	}
 }
 
@@ -254,9 +264,9 @@ func parseICCXYZData(data []byte) [3]float64 {
 		return [3]float64{}
 	}
 	return [3]float64{
-		s15Fixed16(utils.BigEndian, data[0:4]),
-		s15Fixed16(utils.BigEndian, data[4:8]),
-		s15Fixed16(utils.BigEndian, data[8:12]),
+		s15Fixed16(data[0:4]),
+		s15Fixed16(data[4:8]),
+		s15Fixed16(data[8:12]),
 	}
 }
 

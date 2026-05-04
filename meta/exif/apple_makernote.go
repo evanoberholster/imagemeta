@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/apple"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
@@ -28,7 +29,7 @@ func (r *Reader) parseAppleFloat64(t tag.Entry) float64 {
 		return r.parseSignedRationalFloat64(t)
 	case tag.TypeFloat:
 		if !t.IsEmbedded() {
-			buf, _, err := r.readTagBytes(t, 4)
+			buf, err := r.readTagBytes(t, 4)
 			if err != nil || len(buf) < 4 {
 				return 0
 			}
@@ -39,7 +40,7 @@ func (r *Reader) parseAppleFloat64(t tag.Entry) float64 {
 		}
 		return float64(math.Float32frombits(t.EmbeddedLong()))
 	case tag.TypeDouble:
-		buf, _, err := r.readTagBytes(t, 8)
+		buf, err := r.readTagBytes(t, 8)
 		if err != nil || len(buf) < 8 {
 			return 0
 		}
@@ -62,34 +63,49 @@ func (r *Reader) parseAppleFloat64(t tag.Entry) float64 {
 	}
 }
 
-func (r *Reader) parseAppleFloat64List(t tag.Entry, dst []float64) int {
+func (r *Reader) parseAppleFloat64List(t tag.Entry, dst []float64) {
 	if len(dst) == 0 || t.UnitCount == 0 {
-		return 0
+		return
 	}
 	switch t.Type {
 	case tag.TypeRational, tag.TypeSignedRational:
 		n := min(int(t.UnitCount), len(dst))
-		buf, _, err := r.readTagBytes(t, uint32(n*8))
-		if err != nil {
-			return 0
+		maxBytes, ok := meta.SafecastIntToUint32(n * 8)
+		if !ok {
+			return
 		}
-		return apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		buf, err := r.readTagBytes(t, maxBytes)
+		if err != nil {
+			return
+		}
+		apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		return
 	case tag.TypeFloat:
 		n := min(int(t.UnitCount), len(dst))
-		buf, _, err := r.readTagBytes(t, uint32(n*4))
-		if err != nil {
-			return 0
+		maxBytes, ok := meta.SafecastIntToUint32(n * 4)
+		if !ok {
+			return
 		}
-		return apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		buf, err := r.readTagBytes(t, maxBytes)
+		if err != nil {
+			return
+		}
+		apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		return
 	case tag.TypeDouble:
 		n := min(int(t.UnitCount), len(dst))
-		buf, _, err := r.readTagBytes(t, uint32(n*8))
-		if err != nil {
-			return 0
+		maxBytes, ok := meta.SafecastIntToUint32(n * 8)
+		if !ok {
+			return
 		}
-		return apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		buf, err := r.readTagBytes(t, maxBytes)
+		if err != nil {
+			return
+		}
+		apple.ParseFloat64List(buf, t.ByteOrder, t.Type, t.UnitCount, dst)
+		return
 	default:
-		return 0
+		return
 	}
 }
 
@@ -106,11 +122,19 @@ func (r *Reader) parseAppleInt32List(t tag.Entry, dst []int32) int {
 	var count uint32
 	switch t.Type {
 	case tag.TypeShort, tag.TypeSignedShort:
-		count = uint32(n * 2)
+		converted, ok := meta.SafecastIntToUint32(n * 2)
+		if !ok {
+			return 0
+		}
+		count = converted
 	default:
-		count = uint32(n * 4)
+		converted, ok := meta.SafecastIntToUint32(n * 4)
+		if !ok {
+			return 0
+		}
+		count = converted
 	}
-	buf, _, err := r.readTagBytes(t, count)
+	buf, err := r.readTagBytes(t, count)
 	if err != nil {
 		return 0
 	}
@@ -123,9 +147,9 @@ func (r *Reader) parseAppleInt32(t tag.Entry) int32 {
 		case tag.TypeShort:
 			return int32(t.EmbeddedShort())
 		case tag.TypeSignedShort:
-			return int32(int16(t.EmbeddedShort()))
+			return int32(meta.SafecastUint16ToInt16Bits(t.EmbeddedShort()))
 		case tag.TypeLong, tag.TypeSignedLong:
-			return int32(t.EmbeddedLong())
+			return meta.SafecastUint32ToInt32Bits(t.EmbeddedLong())
 		}
 	}
 	var dst [1]int32

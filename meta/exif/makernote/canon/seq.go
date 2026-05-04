@@ -1,5 +1,7 @@
 package canon
 
+import "github.com/evanoberholster/imagemeta/meta"
+
 // Seq16 is a 1-based indexed view over a uint16 slice, matching ExifTool's
 // FIRST_ENTRY=1 convention used by Canon CameraSettings and ShotInfo payloads.
 type Seq16 []uint16
@@ -19,7 +21,7 @@ func (s Seq16) U16(n int) uint16 {
 
 // I16 returns the int16 at sequence index n (1-based), or 0 if absent.
 func (s Seq16) I16(n int) int16 {
-	return int16(s.U16(n))
+	return meta.SafecastUint16ToInt16Bits(s.U16(n))
 }
 
 // Seq32 is a 1-based indexed view over an int32 slice, matching ExifTool's
@@ -41,5 +43,5 @@ func (s Seq32) I32(n int) int32 {
 
 // U32 returns the uint32 at sequence index n (1-based), or 0 if absent.
 func (s Seq32) U32(n int) uint32 {
-	return uint32(s.I32(n))
+	return meta.SafecastInt32ToUint32Bits(s.I32(n))
 }

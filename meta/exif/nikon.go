@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
@@ -42,27 +43,27 @@ func (r *Reader) parseNikonTag(t tag.Entry) bool {
 			dst.SerialNumber = strings.TrimSpace(r.parseNikonText(t))
 		}
 	case nikon.ColorSpace:
-		dst.ColorSpace = uint16(r.parseNikonUint32(t))
+		dst.ColorSpace = r.parseNikonUint16(t)
 	case nikon.VRInfo:
 		dst.VRInfo = r.parseNikonVRInfo(t)
 	case nikon.ActiveDLighting:
-		dst.ActiveDLighting = uint16(r.parseNikonUint32(t))
+		dst.ActiveDLighting = r.parseNikonUint16(t)
 	case nikon.WorldTime:
 		dst.WorldTime = r.parseNikonWorldTime(t)
 	case nikon.ISOInfo:
 		dst.ISOInfo = r.parseNikonISOInfo(t)
 	case nikon.VignetteControl:
-		dst.VignetteControl = uint16(r.parseNikonUint32(t))
+		dst.VignetteControl = r.parseNikonUint16(t)
 	case nikon.ShutterMode:
-		dst.ShutterMode = uint16(r.parseNikonUint32(t))
+		dst.ShutterMode = r.parseNikonUint16(t)
 	case nikon.MechanicalShutterCount:
 		dst.MechanicalShutterCount = r.parseNikonUint32(t)
 	case nikon.ImageSizeRAW:
-		dst.ImageSizeRAW = uint16(r.parseNikonUint32(t))
+		dst.ImageSizeRAW = r.parseNikonUint16(t)
 	case nikon.ColorTemperatureAuto:
-		dst.ColorTemperatureAuto = uint16(r.parseNikonUint32(t))
+		dst.ColorTemperatureAuto = r.parseNikonUint16(t)
 	case nikon.LensType:
-		dst.LensType = uint8(r.parseNikonUint32(t))
+		dst.LensType = r.parseNikonUint8(t)
 	case nikon.Lens:
 		dst.Lens = r.parseNikonLens(t)
 	case nikon.ManualFocusDistance:
@@ -70,11 +71,11 @@ func (r *Reader) parseNikonTag(t tag.Entry) bool {
 	case nikon.DigitalZoom:
 		dst.DigitalZoom = r.parseRationalValue(t)
 	case nikon.FlashMode:
-		dst.FlashMode = uint8(r.parseNikonUint32(t))
+		dst.FlashMode = r.parseNikonUint8(t)
 	case nikon.AFInfo:
 		dst.AFInfo = r.parseNikonAFInfo(t)
 	case nikon.ShootingMode:
-		dst.ShootingMode = uint16(r.parseNikonUint32(t))
+		dst.ShootingMode = r.parseNikonUint16(t)
 	case nikon.LensFStops:
 		dst.LensFStops = r.parseNikonLensFStops(t)
 	case nikon.ImageCount:
@@ -99,6 +100,24 @@ func (r *Reader) parseNikonTag(t tag.Entry) bool {
 		return false
 	}
 	return true
+}
+
+func (r *Reader) parseNikonUint16(t tag.Entry) uint16 {
+	value := r.parseNikonUint32(t)
+	converted, ok := meta.SafecastUint32ToUint16(value)
+	if !ok {
+		return 0
+	}
+	return converted
+}
+
+func (r *Reader) parseNikonUint8(t tag.Entry) uint8 {
+	value := r.parseNikonUint32(t)
+	converted, ok := meta.SafecastUint32ToUint8(value)
+	if !ok {
+		return 0
+	}
+	return converted
 }
 
 func (r *Reader) parseNikonVersion(t tag.Entry) string {
@@ -175,7 +194,7 @@ func (r *Reader) parseNikonLens(t tag.Entry) string {
 	if !t.IsType(tag.TypeRational) {
 		return r.parseNikonText(t)
 	}
-	raw, _, err := r.readTagBytes(t, min(t.Size(), 32))
+	raw, err := r.readTagBytes(t, min(t.Size(), 32))
 	if err != nil || len(raw) < 32 {
 		return ""
 	}
@@ -209,4 +228,3 @@ func (r *Reader) parseNikonAFTune(t tag.Entry) nikon.NikonAFTune {
 func (r *Reader) parseNikonShotInfo(t tag.Entry) nikon.NikonShotInfo {
 	return nikon.DecodeShotInfo(r.parseOpaqueBytes(t, min(t.Size(), 16384)))
 }
-

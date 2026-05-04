@@ -22,7 +22,6 @@ func TestNameFor(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := NameFor(tt.ifdType, tt.tagID); got != tt.want {
@@ -138,7 +137,6 @@ func TestParseValueID(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, ok := ParseValueID(tt.ifdType, tt.tagID, tt.raw)

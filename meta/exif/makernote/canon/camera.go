@@ -704,7 +704,7 @@ func CameraInfoDecode(buf []byte, spec CameraInfoSpec) CameraInfo {
 		CameraTemperature:     CITemperature(ByteAt(buf, spec.CameraTemperatureOff)),
 		MacroMagnification:    CIMacroMagnification(ByteAt(buf, spec.MacroMagnificationOff)),
 		FocalLength:           CIFocalLength(U16BEAt(buf, spec.FocalLengthOff)),
-		WhiteBalance:          WhiteBalance(U16LEAt(buf, spec.WhiteBalanceOff)),
+		WhiteBalance:          NewWhiteBalanceFromRaw(U16LEAt(buf, spec.WhiteBalanceOff)),
 		ColorTemperature:      U16LEAt(buf, spec.ColorTemperatureOff),
 		LensType:              CanonLensType(U16BEAt(buf, spec.LensTypeOff)),
 		MinFocalLength:        CIFocalLength(U16BEAt(buf, spec.MinFocalLengthOff)),

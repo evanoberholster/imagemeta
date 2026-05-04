@@ -71,7 +71,11 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 	br, ok := r.(*bufio.Reader)
 	if !ok || br.Size() < bufferSize {
 		localBuffer = true
-		br = bufferPool.Get().(*bufio.Reader)
+		pooled, pooledOK := bufferPool.Get().(*bufio.Reader)
+		if !pooledOK || pooled == nil {
+			return fmt.Errorf("bufferPool returned non-*bufio.Reader")
+		}
+		br = pooled
 		br.Reset(r)
 	}
 
@@ -223,17 +227,19 @@ func (jr *jpegReader) discard(i int) (err error) {
 		return
 	}
 	i, err = jr.br.Discard(i)
-	jr.discarded += uint32(i)
+	if delta, ok := meta.SafecastIntToUint32(i); ok {
+		jr.discarded += delta
+	}
 	return
 }
 
 // readSOFMarker reads a JPEG Start of file with the uint16
 // width, height, and components of the JPEG image.
 func (jr *jpegReader) readSOFMarker() {
-	precision := uint8(jr.buf[4])
+	precision := jr.buf[4]
 	height := jpegEndian.Uint16(jr.buf[5:7])
 	width := jpegEndian.Uint16(jr.buf[7:9])
-	comp := uint8(jr.buf[9])
+	comp := jr.buf[9]
 	if jr.pos == 1 {
 		jr.sofHeader = sofHeader{height, width, comp}
 	}
@@ -282,7 +288,9 @@ func (jr *jpegReader) readSegmentPayload() ([]byte, error) {
 		return nil, err
 	}
 	n, err := io.ReadFull(jr.br, payload)
-	jr.discarded += uint32(n)
+	if delta, ok := meta.SafecastIntToUint32(n); ok {
+		jr.discarded += delta
+	}
 	if err != nil {
 		return nil, err
 	}

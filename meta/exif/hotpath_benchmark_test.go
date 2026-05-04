@@ -175,7 +175,7 @@ func BenchmarkFillCanonAFInfo2(b *testing.B) {
 	)
 
 	run := func(b *testing.B, opt ReaderOption) {
-		r := NewReader(metalog.Logger, opt)
+		r := NewReader(metalog.GetLogger(), opt)
 		defer r.Close()
 		var br bytes.Reader
 		var dst metacanon.AFInfo
@@ -213,7 +213,7 @@ func BenchmarkParseStringAllowUndefined(b *testing.B) {
 			utils.LittleEndian,
 		)
 
-		r := NewReader(metalog.Logger)
+		r := NewReader(metalog.GetLogger())
 		defer r.Close()
 		var br bytes.Reader
 
@@ -238,7 +238,7 @@ func BenchmarkParseStringAllowUndefined(b *testing.B) {
 			utils.LittleEndian,
 		)
 
-		r := NewReader(metalog.Logger)
+		r := NewReader(metalog.GetLogger())
 		defer r.Close()
 		var br bytes.Reader
 
@@ -268,7 +268,7 @@ func BenchmarkParseCanonInt32List(b *testing.B) {
 		utils.LittleEndian,
 	)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	var br bytes.Reader
 	var dst [64]int32

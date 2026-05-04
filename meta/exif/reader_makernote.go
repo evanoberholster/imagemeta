@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote"
 	applemk "github.com/evanoberholster/imagemeta/meta/exif/makernote/apple"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/nikon"
@@ -32,11 +33,15 @@ func (r *Reader) readMakerNoteDirectory(parent tag.Entry, child tag.Directory) e
 		return r.readPanasonicMakerNoteDirectory(parent, child)
 	case makernote.CameraMakeSony:
 		headerLen := r.sonyMakerNoteHeaderLength(parent)
+		headerOffset, ok := meta.SafecastIntToUint32(headerLen)
+		if !ok {
+			return nil
+		}
 		sonyDir := tag.NewDirectory(
 			child.ByteOrder,
 			tag.MakerNoteIFD,
 			child.Index,
-			parent.ValueOffset+uint32(headerLen),
+			parent.ValueOffset+headerOffset,
 			parent.ValueOffset,
 		)
 		return r.readSonyMakerNoteDirectory(sonyDir, headerLen)
@@ -268,22 +273,28 @@ func (r *Reader) parseAppleMakerNoteFallback(parent tag.Entry, order utils.ByteO
 	}
 
 	info := r.appleMakerNote()
-	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleMakerNoteVersion, uint16(tag.TypeSignedLong)); ok {
-		info.MakerNoteVersion = int32(value)
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleMakerNoteVersion); ok {
+		if converted, convertedOK := meta.SafecastUint32ToInt32(value); convertedOK {
+			info.MakerNoteVersion = converted
+		}
 	}
-	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEStable, uint16(tag.TypeSignedLong)); ok {
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEStable); ok {
 		info.AEStable = value != 0
 	}
-	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAETarget, uint16(tag.TypeSignedLong)); ok {
-		info.AETarget = int32(value)
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAETarget); ok {
+		if converted, convertedOK := meta.SafecastUint32ToInt32(value); convertedOK {
+			info.AETarget = converted
+		}
 	}
-	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEAverage, uint16(tag.TypeSignedLong)); ok {
-		info.AEAverage = int32(value)
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAEAverage); ok {
+		if converted, convertedOK := meta.SafecastUint32ToInt32(value); convertedOK {
+			info.AEAverage = converted
+		}
 	}
-	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAFStable, uint16(tag.TypeSignedLong)); ok {
+	if value, ok := findAppleEntryValue(raw, order, applemk.TagAppleAFStable); ok {
 		info.AFStable = value != 0
 	}
-	if entryOffset, _, size, ok := findAppleEntry(raw, order, applemk.TagAppleRunTime, uint16(tag.TypeUndefined)); ok {
+	if entryOffset, size, ok := findAppleEntry(raw, order, applemk.TagAppleRunTime, uint16(tag.TypeUndefined)); ok {
 		start := entryOffset + 8
 		end := start + int(size)
 		if start >= 0 && end <= len(raw) {
@@ -294,8 +305,8 @@ func (r *Reader) parseAppleMakerNoteFallback(parent tag.Entry, order utils.ByteO
 	}
 }
 
-func findAppleEntryValue(raw []byte, order utils.ByteOrder, tagID uint16, tagType uint16) (uint32, bool) {
-	entryOffset, _, _, ok := findAppleEntry(raw, order, tagID, tagType)
+func findAppleEntryValue(raw []byte, order utils.ByteOrder, tagID uint16) (uint32, bool) {
+	entryOffset, _, ok := findAppleEntry(raw, order, tagID, uint16(tag.TypeSignedLong))
 	if !ok {
 		return 0, false
 	}
@@ -305,13 +316,13 @@ func findAppleEntryValue(raw []byte, order utils.ByteOrder, tagID uint16, tagTyp
 	return order.Uint32(raw[entryOffset+8 : entryOffset+12]), true
 }
 
-func findAppleEntry(raw []byte, order utils.ByteOrder, tagID uint16, tagType uint16) (entryOffset int, valueOffset uint32, unitCount uint32, ok bool) {
+func findAppleEntry(raw []byte, order utils.ByteOrder, tagID uint16, tagType uint16) (entryOffset int, unitCount uint32, ok bool) {
 	var pattern [8]byte
 	order.PutUint16(pattern[0:2], tagID)
 	order.PutUint16(pattern[2:4], tagType)
 	idx := bytes.Index(raw, pattern[:])
 	if idx < 0 || idx+12 > len(raw) {
-		return 0, 0, 0, false
+		return 0, 0, false
 	}
-	return idx, order.Uint32(raw[idx+8 : idx+12]), order.Uint32(raw[idx+4 : idx+8]), true
+	return idx, order.Uint32(raw[idx+4 : idx+8]), true
 }

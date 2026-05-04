@@ -28,7 +28,11 @@ func (r *Reader) parseASCIIValueBytes(t tag.Entry) []byte {
 	default:
 		return nil
 	}
-	buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
+	maxBytes, ok := meta.SafecastIntToUint32(len(r.state.buf))
+	if !ok {
+		return nil
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return nil
 	}
@@ -267,7 +271,7 @@ func (r *Reader) parseDisplayBytes(t tag.Entry, maxBytes uint32) []byte {
 		if maxBytes == 0 {
 			return nil
 		}
-		buf, _, err := r.readTagBytes(t, maxBytes)
+		buf, err := r.readTagBytes(t, maxBytes)
 		if err != nil || len(buf) == 0 {
 			return nil
 		}
@@ -322,7 +326,7 @@ func (r *Reader) parseOpaqueBytes(t tag.Entry, maxBytes uint32) []byte {
 		t.EmbeddedValue(r.state.buf[:4])
 		return r.state.buf[:n]
 	}
-	buf, _, err := r.readTagBytes(t, maxBytes)
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil || len(buf) == 0 {
 		return nil
 	}
@@ -338,7 +342,11 @@ func (r *Reader) parseUint16(t tag.Entry) uint16 {
 	case tag.TypeShort:
 		return t.EmbeddedShort()
 	case tag.TypeLong:
-		return uint16(t.EmbeddedLong())
+		value, ok := meta.SafecastUint32ToUint16(t.EmbeddedLong())
+		if !ok {
+			return 0
+		}
+		return value
 	default:
 		return 0
 	}
@@ -400,7 +408,7 @@ func (r *Reader) parseMakerNoteInt16(t tag.Entry) int16 {
 	if r.parseUint16List(t, raw[:]) == 0 {
 		return 0
 	}
-	return int16(raw[0])
+	return meta.SafecastUint16ToInt16Bits(raw[0])
 }
 
 // parseFirstUint32 parses the first uint32-compatible value from EXIF metadata.
@@ -419,7 +427,7 @@ func (r *Reader) parseRationalU(t tag.Entry) [2]uint32 {
 	default:
 		return [2]uint32{}
 	}
-	buf, _, err := r.readTagBytes(t, 8)
+	buf, err := r.readTagBytes(t, 8)
 	if err != nil || len(buf) < 8 {
 		return [2]uint32{}
 	}
@@ -444,34 +452,6 @@ func (r *Reader) parseUnsignedRationalFloat64(t tag.Entry) (float64, unsignedRat
 	}
 }
 
-// parseRationalFloat64List decodes RATIONAL pairs into dst and returns count.
-func (r *Reader) parseRationalFloat64List(t tag.Entry, dst []float64) int {
-	if len(dst) == 0 || t.UnitCount == 0 || !t.IsType(tag.TypeRational) {
-		return 0
-	}
-	n := min(int(t.UnitCount), len(dst))
-	if n == 0 {
-		return 0
-	}
-	buf, _, err := r.readTagBytes(t, uint32(n*8))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 8; got < n {
-		n = got
-	}
-	for i, j := 0, 0; i < n; i, j = i+1, j+8 {
-		num := t.ByteOrder.Uint32(buf[j : j+4])
-		den := t.ByteOrder.Uint32(buf[j+4 : j+8])
-		if den == 0 {
-			dst[i] = 0
-			continue
-		}
-		dst[i] = float64(num) / float64(den)
-	}
-	return n
-}
-
 // parseUint16List parses the requested value from EXIF metadata.
 func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 	if len(dst) == 0 || t.UnitCount == 0 {
@@ -486,7 +466,11 @@ func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 	if t.IsEmbedded() {
 		return t.EmbeddedShorts(dst[:n])
 	}
-	buf, _, err := r.readTagBytes(t, uint32(n*2))
+	maxBytes, ok := meta.SafecastIntToUint32(n * 2)
+	if !ok {
+		return 0
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return 0
 	}
@@ -494,63 +478,6 @@ func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 		n = got
 	}
 
-	if t.ByteOrder == utils.BigEndian {
-		for i, j := 0, 0; i < n; i, j = i+1, j+2 {
-			dst[i] = binary.BigEndian.Uint16(buf[j:])
-		}
-		return n
-	}
-	for i, j := 0, 0; i < n; i, j = i+1, j+2 {
-		dst[i] = binary.LittleEndian.Uint16(buf[j:])
-	}
-	return n
-}
-
-// parseUndefinedUint16List parses uint16 values from UNDEFINED or SHORT payloads.
-func (r *Reader) parseUndefinedUint16List(t tag.Entry, dst []uint16) int {
-	if len(dst) == 0 || t.UnitCount == 0 {
-		return 0
-	}
-	switch t.Type {
-	case tag.TypeShort:
-		return r.parseUint16List(t, dst)
-	case tag.TypeUndefined:
-	default:
-		return 0
-	}
-
-	n := int(t.UnitCount / 2)
-	if n > len(dst) {
-		n = len(dst)
-	}
-	if n == 0 {
-		return 0
-	}
-
-	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
-		if n > 2 {
-			n = 2
-		}
-		if t.ByteOrder == utils.BigEndian {
-			for i, j := 0, 0; i < n; i, j = i+1, j+2 {
-				dst[i] = binary.BigEndian.Uint16(r.state.buf[j:])
-			}
-			return n
-		}
-		for i, j := 0, 0; i < n; i, j = i+1, j+2 {
-			dst[i] = binary.LittleEndian.Uint16(r.state.buf[j:])
-		}
-		return n
-	}
-
-	buf, _, err := r.readTagBytes(t, uint32(n*2))
-	if err != nil {
-		return 0
-	}
-	if got := len(buf) / 2; got < n {
-		n = got
-	}
 	if t.ByteOrder == utils.BigEndian {
 		for i, j := 0, 0; i < n; i, j = i+1, j+2 {
 			dst[i] = binary.BigEndian.Uint16(buf[j:])
@@ -591,7 +518,11 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 	}
 	switch t.Type {
 	case tag.TypeLong, tag.TypeIfd:
-		buf, _, err := r.readTagBytes(t, uint32(n*4))
+		maxBytes, ok := meta.SafecastIntToUint32(n * 4)
+		if !ok {
+			return 0
+		}
+		buf, err := r.readTagBytes(t, maxBytes)
 		if err != nil {
 			return 0
 		}
@@ -609,7 +540,11 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 			}
 		}
 	case tag.TypeShort:
-		buf, _, err := r.readTagBytes(t, uint32(n*2))
+		maxBytes, ok := meta.SafecastIntToUint32(n * 2)
+		if !ok {
+			return 0
+		}
+		buf, err := r.readTagBytes(t, maxBytes)
 		if err != nil {
 			return 0
 		}
@@ -639,10 +574,14 @@ func (r *Reader) parseInt32List(t tag.Entry, dst []int32) int {
 	}
 	n := min(int(t.UnitCount), len(dst))
 	if t.IsEmbedded() {
-		dst[0] = int32(t.EmbeddedLong())
+		dst[0] = meta.SafecastUint32ToInt32Bits(t.EmbeddedLong())
 		return 1
 	}
-	buf, _, err := r.readTagBytes(t, uint32(n*4))
+	maxBytes, ok := meta.SafecastIntToUint32(n * 4)
+	if !ok {
+		return 0
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return 0
 	}
@@ -651,12 +590,12 @@ func (r *Reader) parseInt32List(t tag.Entry, dst []int32) int {
 	}
 	if t.ByteOrder == utils.LittleEndian {
 		for i, j := 0, 0; i < n; i, j = i+1, j+4 {
-			dst[i] = int32(binary.LittleEndian.Uint32(buf[j:]))
+			dst[i] = meta.SafecastUint32ToInt32Bits(binary.LittleEndian.Uint32(buf[j:]))
 		}
 	} else {
 		for i := 0; i < n; i++ {
 			start := i * 4
-			dst[i] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
+			dst[i] = meta.SafecastUint32ToInt32Bits(t.ByteOrder.Uint32(buf[start : start+4]))
 		}
 	}
 	return n
@@ -679,7 +618,11 @@ func (r *Reader) parseByteList(t tag.Entry, dst []byte) int {
 		copy(dst[:n], r.state.buf[:n])
 		return n
 	}
-	buf, _, err := r.readTagBytes(t, uint32(n))
+	maxBytes, ok := meta.SafecastIntToUint32(n)
+	if !ok {
+		return 0
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return 0
 	}
@@ -704,7 +647,11 @@ func (r *Reader) parseRationalSList(t tag.Entry, dst []int32) int {
 	if n == 0 {
 		return 0
 	}
-	buf, _, err := r.readTagBytes(t, uint32(n*8))
+	maxBytes, ok := meta.SafecastIntToUint32(n * 8)
+	if !ok {
+		return 0
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return 0
 	}
@@ -713,14 +660,14 @@ func (r *Reader) parseRationalSList(t tag.Entry, dst []int32) int {
 	}
 	if t.ByteOrder == utils.LittleEndian {
 		for i, j := 0, 0; i < n; i, j = i+1, j+8 {
-			dst[i*2] = int32(binary.LittleEndian.Uint32(buf[j:]))
-			dst[i*2+1] = int32(binary.LittleEndian.Uint32(buf[j+4:]))
+			dst[i*2] = meta.SafecastUint32ToInt32Bits(binary.LittleEndian.Uint32(buf[j:]))
+			dst[i*2+1] = meta.SafecastUint32ToInt32Bits(binary.LittleEndian.Uint32(buf[j+4:]))
 		}
 	} else {
 		for i := 0; i < n; i++ {
 			start := i * 8
-			dst[i*2] = int32(t.ByteOrder.Uint32(buf[start : start+4]))
-			dst[i*2+1] = int32(t.ByteOrder.Uint32(buf[start+4 : start+8]))
+			dst[i*2] = meta.SafecastUint32ToInt32Bits(t.ByteOrder.Uint32(buf[start : start+4]))
+			dst[i*2+1] = meta.SafecastUint32ToInt32Bits(t.ByteOrder.Uint32(buf[start+4 : start+8]))
 		}
 	}
 	return n
@@ -731,7 +678,7 @@ func (r *Reader) parseDate(t tag.Entry) time.Time {
 	if !t.IsType(tag.TypeASCII) {
 		return time.Time{}
 	}
-	buf, _, err := r.readTagBytes(t, 32)
+	buf, err := r.readTagBytes(t, 32)
 	if err != nil || len(buf) < 19 {
 		return time.Time{}
 	}
@@ -739,16 +686,31 @@ func (r *Reader) parseDate(t tag.Entry) time.Time {
 	if buf[4] != ':' || buf[7] != ':' || buf[10] != ' ' || buf[13] != ':' || buf[16] != ':' {
 		return time.Time{}
 	}
-	return time.Date(
-		int(parseStrUint(buf[0:4])),
-		time.Month(parseStrUint(buf[5:7])),
-		int(parseStrUint(buf[8:10])),
-		int(parseStrUint(buf[11:13])),
-		int(parseStrUint(buf[14:16])),
-		int(parseStrUint(buf[17:19])),
-		0,
-		time.UTC,
-	)
+	year, ok := meta.SafecastUintToInt(parseStrUint(buf[0:4]))
+	if !ok {
+		return time.Time{}
+	}
+	month, ok := meta.SafecastUintToInt(parseStrUint(buf[5:7]))
+	if !ok {
+		return time.Time{}
+	}
+	day, ok := meta.SafecastUintToInt(parseStrUint(buf[8:10]))
+	if !ok {
+		return time.Time{}
+	}
+	hour, ok := meta.SafecastUintToInt(parseStrUint(buf[11:13]))
+	if !ok {
+		return time.Time{}
+	}
+	minute, ok := meta.SafecastUintToInt(parseStrUint(buf[14:16]))
+	if !ok {
+		return time.Time{}
+	}
+	second, ok := meta.SafecastUintToInt(parseStrUint(buf[17:19]))
+	if !ok {
+		return time.Time{}
+	}
+	return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC)
 }
 
 // parseOffsetTime parses the requested value from EXIF metadata.
@@ -756,19 +718,31 @@ func (r *Reader) parseOffsetTime(t tag.Entry) *time.Location {
 	if !t.IsType(tag.TypeASCII) {
 		return nil
 	}
-	buf, _, err := r.readTagBytes(t, 8)
+	buf, err := r.readTagBytes(t, 8)
 	if err != nil || len(buf) < 6 {
 		return nil
 	}
 	if buf[3] != ':' {
 		return nil
 	}
-	offset := int(parseStrUint(buf[1:3]))*hoursToSeconds + int(parseStrUint(buf[4:6]))*minutesToSeconds
+	hours, ok := meta.SafecastUintToInt(parseStrUint(buf[1:3]))
+	if !ok {
+		return nil
+	}
+	minutes, ok := meta.SafecastUintToInt(parseStrUint(buf[4:6]))
+	if !ok {
+		return nil
+	}
+	offset := hours*hoursToSeconds + minutes*minutesToSeconds
+	offset32, ok := meta.SafecastIntToInt32(offset)
+	if !ok {
+		return nil
+	}
 	switch buf[0] {
 	case '-':
-		return getLocation(int32(offset*-1), buf[:6])
+		return getLocation(-offset32, buf[:6])
 	case '+':
-		return getLocation(int32(offset), buf[:6])
+		return getLocation(offset32, buf[:6])
 	default:
 		return nil
 	}
@@ -943,13 +917,29 @@ func (r *Reader) parseExposureBias(t tag.Entry) meta.ExposureBias {
 			n = -n
 			d = -d
 		}
-		return meta.NewExposureBias(int16(n), int16(d))
+		n16, ok := meta.SafecastInt32ToInt16(n)
+		if !ok {
+			return meta.NewExposureBias(0, 0)
+		}
+		d16, ok := meta.SafecastInt32ToInt16(d)
+		if !ok {
+			return meta.NewExposureBias(0, 0)
+		}
+		return meta.NewExposureBias(n16, d16)
 	case t.IsType(tag.TypeRational):
 		rat := r.parseRationalU(t)
 		if rat[1] == 0 {
 			return meta.NewExposureBias(0, 0)
 		}
-		return meta.NewExposureBias(int16(rat[0]), int16(rat[1]))
+		n16, ok := meta.SafecastUint32ToInt16(rat[0])
+		if !ok {
+			return meta.NewExposureBias(0, 0)
+		}
+		d16, ok := meta.SafecastUint32ToInt16(rat[1])
+		if !ok {
+			return meta.NewExposureBias(0, 0)
+		}
+		return meta.NewExposureBias(n16, d16)
 	default:
 		return meta.NewExposureBias(0, 0)
 	}
@@ -976,7 +966,7 @@ func (r *Reader) parseLensInfo(t tag.Entry) LensInfo {
 	if t.IsEmbedded() {
 		return LensInfo{}
 	}
-	buf, _, err := r.readTagBytes(t, 32)
+	buf, err := r.readTagBytes(t, 32)
 	if err != nil || len(buf) < 32 {
 		return LensInfo{}
 	}
@@ -992,13 +982,21 @@ func (r *Reader) parseLensInfo(t tag.Entry) LensInfo {
 func (r *Reader) parseSceneType(t tag.Entry) uint16 {
 	switch {
 	case t.IsType(tag.TypeShort), t.IsType(tag.TypeLong):
-		return uint16(r.parseUint32(t))
+		value, ok := meta.SafecastUint32ToUint16(r.parseUint32(t))
+		if !ok {
+			return 0
+		}
+		return value
 	case t.IsType(tag.TypeASCII), t.IsType(tag.TypeASCIINoNul):
 		s := strings.TrimSpace(r.parseString(t))
 		if s == "" {
 			return 0
 		}
-		return uint16(parseStrUint([]byte(s)))
+		value, ok := meta.SafecastUintToUint16(parseStrUint([]byte(s)))
+		if !ok {
+			return 0
+		}
+		return value
 	case t.IsType(tag.TypeByte), t.IsType(tag.TypeUndefined):
 		var b [4]byte
 		if r.parseByteList(t, b[:]) == 0 {

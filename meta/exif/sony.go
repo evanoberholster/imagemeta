@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/makernote/sony"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
@@ -131,7 +132,12 @@ func (r *Reader) parseSonyTag(t tag.Entry) bool {
 	case sony.Teleconverter:
 		dst.Teleconverter = r.parseMakerNoteUint32(t)
 	case sony.SonyModelID:
-		dst.SonyModelID = uint16(r.parseMakerNoteUint32(t))
+		value := r.parseMakerNoteUint32(t)
+		converted, ok := meta.SafecastUint32ToUint16(value)
+		if !ok {
+			return true
+		}
+		dst.SonyModelID = converted
 	case sony.LensType:
 		dst.LensType = r.parseMakerNoteUint32(t)
 	case sony.FileFormat:
@@ -431,7 +437,7 @@ func (r *Reader) parseSonyAFInfo(t tag.Entry) sony.SonyAFInfo {
 }
 
 func (r *Reader) parseSonyText(t tag.Entry) string {
-	buf, _, err := r.readTagBytes(t, t.Size())
+	buf, err := r.readTagBytes(t, t.Size())
 	if err != nil || len(buf) == 0 {
 		return ""
 	}
@@ -454,7 +460,12 @@ func (r *Reader) parseSonyInt32(t tag.Entry) int32 {
 	case tag.TypeSignedShort, tag.TypeShort:
 		return int32(r.parseMakerNoteInt16(t))
 	case tag.TypeLong:
-		return int32(r.parseMakerNoteUint32(t))
+		value := r.parseMakerNoteUint32(t)
+		converted, ok := meta.SafecastUint32ToInt32(value)
+		if !ok {
+			return 0
+		}
+		return converted
 	}
 	return 0
 }
@@ -483,21 +494,21 @@ func (r *Reader) parseSonyU8(t tag.Entry) uint8 {
 	return raw[0]
 }
 
-func (r *Reader) readSonyTagBytes(t tag.Entry, max uint32) ([]byte, bool) {
+func (r *Reader) readSonyTagBytes(t tag.Entry, maxBytes uint32) ([]byte, bool) {
 	size := t.Size()
 	if size == 0 {
 		return nil, true
 	}
-	if max == 0 || max > size {
-		max = size
+	if maxBytes == 0 || maxBytes > size {
+		maxBytes = size
 	}
 	if err := r.seekToTag(t); err != nil {
 		return nil, false
 	}
-	if max > uint32(len(r.state.buf)) {
-		max = uint32(len(r.state.buf))
+	if maxBytes > uint32(len(r.state.buf)) {
+		maxBytes = uint32(len(r.state.buf))
 	}
-	buf, err := r.fastRead(int(max))
+	buf, err := r.fastRead(int(maxBytes))
 	if err != nil {
 		return nil, false
 	}

@@ -14,7 +14,11 @@ import (
 // tagFromBuffer decodes a tag entry from a raw TIFF directory buffer.
 func tagFromBuffer(directory tag.Directory, buf []byte) (tag.Entry, error) {
 	tagID := tag.ID(directory.ByteOrder.Uint16(buf[:2]))
-	tagType := tag.Type(directory.ByteOrder.Uint16(buf[2:4]))
+	tagTypeValue, ok := meta.SafecastUint16ToUint8(directory.ByteOrder.Uint16(buf[2:4]))
+	if !ok {
+		return tag.Entry{}, tag.ErrTagTypeNotValid
+	}
+	tagType := tag.Type(tagTypeValue)
 	unitCount := directory.ByteOrder.Uint32(buf[4:8])
 	valueOffset := directory.ByteOrder.Uint32(buf[8:12])
 	tagType = tag.NormalizeType(directory.Type, tagID, tagType)
@@ -98,7 +102,7 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 			t.EmbeddedValue(r.state.buf[:4])
 			offset = t.ByteOrder.Uint32(r.state.buf[:4])
 		default:
-			buf, _, err := r.readTagBytes(t, 4)
+			buf, err := r.readTagBytes(t, 4)
 			if err != nil || len(buf) < 4 {
 				return
 			}
@@ -111,7 +115,11 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		return
 	}
 
-	buf, _, err := r.readTagBytes(t, uint32(maxEntries*4))
+	maxBytes, ok := meta.SafecastIntToUint32(maxEntries * 4)
+	if !ok {
+		return
+	}
+	buf, err := r.readTagBytes(t, maxBytes)
 	if err != nil {
 		return
 	}
@@ -132,7 +140,11 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		}
 		r.appendSubIFDOffset(offset)
 		subType := tag.SubIFDTypeForIndex(i)
-		r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, subType, int8(i), t.ByteOrder))
+		ifdIndex, ok := meta.SafecastIntToInt8(i)
+		if !ok {
+			continue
+		}
+		r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, subType, ifdIndex, t.ByteOrder))
 	}
 }
 
@@ -176,20 +188,10 @@ func (r *Reader) parseTag(t tag.Entry) {
 		if !r.parseExifTag(t) {
 			return
 		}
-	default:
+	case tag.SubIFD0, tag.SubIFD1, tag.SubIFD2, tag.SubIFD3, tag.SubIFD4, tag.SubIFD5, tag.SubIFD6, tag.SubIFD7:
 		// SubIFD{0..7} tags are normalized through ExifIFD parsing semantics.
-		if t.IfdType != tag.ExifIFD && !t.IfdType.IsSubIFD() {
-			return
-		}
-	}
-}
-
-func (r *Reader) parseDNGTags() bool {
-	switch r.Exif.ImageType {
-	case imagetype.ImageDNG, imagetype.ImageTiff:
-		return true
 	default:
-		return false
+		return
 	}
 }
 
@@ -296,13 +298,17 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 		r.parseDNGAdobeData(t)
 	case tag.TagDNGVersion:
 		dst := r.dngMakerNote()
-		dst.DNGVersionCount = uint8(r.parseByteList(t, dst.DNGVersion[:]))
+		if count, ok := meta.SafecastIntToUint8(r.parseByteList(t, dst.DNGVersion[:])); ok {
+			dst.DNGVersionCount = count
+		}
 		if r.Exif.ImageType == imagetype.ImageTiff {
 			r.Exif.ImageType = imagetype.ImageDNG
 		}
 	case tag.TagDNGBackwardVersion:
 		dst := r.dngMakerNote()
-		dst.DNGBackwardVersionCount = uint8(r.parseByteList(t, dst.DNGBackwardVersion[:]))
+		if count, ok := meta.SafecastIntToUint8(r.parseByteList(t, dst.DNGBackwardVersion[:])); ok {
+			dst.DNGBackwardVersionCount = count
+		}
 	case tag.TagUniqueCameraModel, tag.TagLocalizedCameraModel:
 		dst := r.dngMakerNote()
 		if dst.CameraModel != "" {
@@ -346,7 +352,7 @@ func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, makeNam
 		t.EmbeddedValue(r.state.buf[:4])
 		raw = trimTrailingNULBytes(r.state.buf[:size])
 	} else {
-		buf, _, err := r.readTagBytes(t, uint32(len(r.state.buf)))
+		buf, err := r.readTagBytes(t, uint32(len(r.state.buf)))
 		if err != nil {
 			return makernote.CameraMakeUnknown, makeID.String()
 		}
@@ -389,7 +395,9 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 
 	size := t.Size()
 	if size < 6 {
-		_ = r.discard(int(size))
+		if err := r.discard(int(size)); err != nil {
+			return
+		}
 		return
 	}
 
@@ -400,7 +408,9 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 	if len(header) < 6 || string(header[:6]) != "Adobe\x00" {
 		remaining := int(size) - len(header)
 		if remaining > 0 {
-			_ = r.discard(remaining)
+			if err := r.discard(remaining); err != nil {
+				return
+			}
 		}
 		return
 	}
@@ -417,7 +427,9 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 		recordTag := string(recordHeader[:4])
 		recordSize := binary.BigEndian.Uint32(recordHeader[4:8])
 		if recordSize > recordBytesRemaining {
-			_ = r.discard(int(recordBytesRemaining))
+			if err := r.discard(int(recordBytesRemaining)); err != nil {
+				return
+			}
 			break
 		}
 
@@ -427,12 +439,16 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 		case "MakN":
 			r.parseDNGAdobeMakerNotes(recordStart, recordSize)
 		default:
-			_ = r.discard(int(recordSize))
+			if err := r.discard(int(recordSize)); err != nil {
+				return
+			}
 		}
 
 		recordEnd := recordStart + recordSize
 		if r.po < recordEnd {
-			_ = r.discard(int(recordEnd - r.po))
+			if err := r.discard(int(recordEnd - r.po)); err != nil {
+				return
+			}
 		}
 		recordBytesRemaining -= recordSize
 
@@ -440,7 +456,9 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 			if recordBytesRemaining == 0 {
 				break
 			}
-			_ = r.discard(1)
+			if err := r.discard(1); err != nil {
+				return
+			}
 			recordBytesRemaining--
 		}
 	}
@@ -448,15 +466,21 @@ func (r *Reader) parseDNGAdobeData(t tag.Entry) {
 	if recordCount > 0xff {
 		recordCount = 0xff
 	}
-	r.dngMakerNote().AdobeData.RecordCount = uint8(recordCount)
+	if count, ok := meta.SafecastIntToUint8(recordCount); ok {
+		r.dngMakerNote().AdobeData.RecordCount = count
+	}
 	if recordBytesRemaining > 0 {
-		_ = r.discard(int(recordBytesRemaining))
+		if err := r.discard(int(recordBytesRemaining)); err != nil {
+			return
+		}
 	}
 }
 
 func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
 	if recordSize < 6 {
-		_ = r.discard(int(recordSize))
+		if err := r.discard(int(recordSize)); err != nil {
+			return
+		}
 		return
 	}
 
@@ -475,7 +499,9 @@ func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
 	if byteOrder == utils.UnknownEndian {
 		recordEnd := recordStart + recordSize
 		if r.po < recordEnd {
-			_ = r.discard(int(recordEnd - r.po))
+			if err := r.discard(int(recordEnd - r.po)); err != nil {
+				return
+			}
 		}
 		return
 	}
@@ -500,7 +526,9 @@ func (r *Reader) parseDNGAdobeMakerNotes(recordStart, recordSize uint32) {
 	if dirStart < originalOffset {
 		recordEnd := recordStart + recordSize
 		if r.po < recordEnd {
-			_ = r.discard(int(recordEnd - r.po))
+			if err := r.discard(int(recordEnd - r.po)); err != nil {
+				return
+			}
 		}
 		return
 	}
@@ -814,14 +842,22 @@ func (r *Reader) parseSubSecTimeParts(t tag.Entry) (uint16, string) {
 	if t.IsEmbedded() {
 		t.EmbeddedValue(r.state.buf[:4])
 		raw = trimASCIIWhitespace(trimNULBuffer(r.state.buf[:4]))
-		return uint16(parseStrUint(raw)), string(raw)
+		n, ok := meta.SafecastUintToUint16(parseStrUint(raw))
+		if !ok {
+			return 0, string(raw)
+		}
+		return n, string(raw)
 	}
-	buf, _, err := r.readTagBytes(t, 16)
+	buf, err := r.readTagBytes(t, 16)
 	if err != nil {
 		return 0, ""
 	}
 	raw = trimASCIIWhitespace(trimNULBuffer(buf))
-	return uint16(parseStrUint(raw)), string(raw)
+	n, ok := meta.SafecastUintToUint16(parseStrUint(raw))
+	if !ok {
+		return 0, string(raw)
+	}
+	return n, string(raw)
 }
 
 func apertureIsFinite(v meta.Aperture) bool {

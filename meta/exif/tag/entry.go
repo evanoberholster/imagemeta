@@ -73,9 +73,9 @@ func (t Entry) EmbeddedValue(dst []byte) {
 // EmbeddedShort returns the first embedded SHORT value from ValueOffset.
 func (t Entry) EmbeddedShort() uint16 {
 	if t.ByteOrder == utils.BigEndian {
-		return uint16(t.ValueOffset >> 16)
+		return high16(t.ValueOffset)
 	}
-	return uint16(t.ValueOffset)
+	return low16(t.ValueOffset)
 }
 
 // EmbeddedShorts decodes embedded SHORT-like values into dst and returns count.
@@ -96,18 +96,28 @@ func (t Entry) EmbeddedShorts(dst []uint16) int {
 	}
 
 	if t.ByteOrder == utils.BigEndian {
-		dst[0] = uint16(t.ValueOffset >> 16)
+		dst[0] = high16(t.ValueOffset)
 		if n > 1 {
-			dst[1] = uint16(t.ValueOffset)
+			dst[1] = low16(t.ValueOffset)
 		}
 		return n
 	}
 
-	dst[0] = uint16(t.ValueOffset)
+	dst[0] = low16(t.ValueOffset)
 	if n > 1 {
-		dst[1] = uint16(t.ValueOffset >> 16)
+		dst[1] = high16(t.ValueOffset)
 	}
 	return n
+}
+
+func low16(v uint32) uint16 {
+	//nolint:gosec // G115: deliberate lower 16-bit extraction.
+	return uint16(v & 0xFFFF)
+}
+
+func high16(v uint32) uint16 {
+	//nolint:gosec // G115: deliberate upper 16-bit extraction.
+	return uint16((v >> 16) & 0xFFFF)
 }
 
 // EmbeddedLong returns the embedded LONG/IFD value from ValueOffset.

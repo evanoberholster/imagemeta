@@ -50,9 +50,16 @@ func ScanPngHeader(r io.ReadSeeker) (header meta.ExifHeader, err error) {
 
 		switch chunkType {
 		case "eXIf":
-			offset, _ := r.Seek(0, io.SeekCurrent)
+			offset, seekErr := r.Seek(0, io.SeekCurrent)
+			if seekErr != nil {
+				return header, seekErr
+			}
+			offset32, ok := meta.SafecastInt64ToUint32(offset)
+			if !ok {
+				return header, meta.ErrNoExif
+			}
 
-			return meta.NewExifHeader(utils.BigEndian, 8, uint32(offset), length, imagetype.ImagePNG), nil
+			return meta.NewExifHeader(utils.BigEndian, 8, offset32, length, imagetype.ImagePNG), nil
 
 		default:
 			// Discard the chunk length + CRC.

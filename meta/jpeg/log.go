@@ -12,16 +12,8 @@ func logInfo() bool {
 	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelInfo)
 }
 
-func logDebug() bool {
-	return metalog.LevelEnabled(metalog.GetLogger(), slog.LevelDebug)
-}
-
 func logInfoEvent() *metalog.Event {
 	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelInfo, 2)
-}
-
-func logDebugEvent() *metalog.Event {
-	return metalog.ComponentEvent(metalog.GetLogger(), componentName, slog.LevelDebug, 2)
 }
 
 func (jr *jpegReader) logMarker(str string) {
@@ -32,7 +24,7 @@ func (jr *jpegReader) logMarker(str string) {
 		logInfoEvent().
 			Str("marker", str).
 			Int("length", int(jr.size)).
-			Uint32("offset", uint32(jr.discarded)).
+			Uint32("offset", jr.discarded).
 			Msg("read jpeg marker")
 	}
 }
@@ -45,6 +37,6 @@ func (jr *jpegReader) logDecodedItem(kind string, size int) {
 		Str("metadataKind", kind).
 		Str("marker", jr.marker.String()).
 		Int("length", size).
-		Uint32("offset", uint32(jr.discarded)).
+		Uint32("offset", jr.discarded).
 		Msg("decoded metadata item")
 }

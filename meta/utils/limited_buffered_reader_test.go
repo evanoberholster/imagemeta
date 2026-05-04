@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 	"testing"
 )
@@ -13,7 +14,7 @@ func TestLimitedBufferedReaderReadBounded(t *testing.T) {
 
 	buf := make([]byte, 8)
 	n, err := lr.Read(buf)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		t.Fatalf("Read error = %v", err)
 	}
 	if got := string(buf[:n]); got != "abc" {
@@ -21,7 +22,7 @@ func TestLimitedBufferedReaderReadBounded(t *testing.T) {
 	}
 
 	n, err = lr.Read(buf)
-	if n != 0 || err != io.EOF {
+	if n != 0 || !errors.Is(err, io.EOF) {
 		t.Fatalf("second Read = (%d, %v), want (0, EOF)", n, err)
 	}
 }
@@ -39,7 +40,7 @@ func TestLimitedBufferedReaderPeekDiscardBounded(t *testing.T) {
 	}
 
 	discarded, err := lr.Discard(6)
-	if discarded != 4 || err != io.EOF {
+	if discarded != 4 || !errors.Is(err, io.EOF) {
 		t.Fatalf("Discard = (%d, %v), want (4, EOF)", discarded, err)
 	}
 }
