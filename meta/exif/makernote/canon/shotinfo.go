@@ -38,7 +38,7 @@ func CameraSettingValue(v int16) int16 {
 
 // MaxApertureFromCode converts a Canon CameraSettings aperture code to f-number.
 func MaxApertureFromCode(raw uint16) meta.Aperture {
-	code := int16(raw)
+	code := meta.SafecastUint16ToInt16Bits(raw)
 	if code <= 0 {
 		return 0
 	}

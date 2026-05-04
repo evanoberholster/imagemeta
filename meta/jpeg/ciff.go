@@ -68,9 +68,7 @@ func ParseCIFF(payload []byte) (*CIFF, error) {
 	if headerLen < 14 || headerLen > len(payload)-6 {
 		headerLen = 0
 	}
-	if err := parseCIFFDirectory(c, payload, order, headerLen, len(payload)-headerLen, "CIFF", 0); err != nil {
-		return nil, err
-	}
+	parseCIFFDirectory(c, payload, order, headerLen, len(payload)-headerLen, "CIFF", 0)
 	if len(c.UnknownTags) == 0 {
 		c.UnknownTags = nil
 	}
@@ -151,19 +149,19 @@ func ciffByteOrder(payload []byte) utils.ByteOrder {
 	}
 }
 
-func parseCIFFDirectory(c *CIFF, block []byte, order utils.ByteOrder, blockStart, blockSize int, dirName string, depth int) error {
+func parseCIFFDirectory(c *CIFF, block []byte, order utils.ByteOrder, blockStart, blockSize int, dirName string, depth int) {
 	if depth > 16 || blockStart < 0 || blockSize < 6 || blockStart+blockSize > len(block) {
-		return nil
+		return
 	}
 	dirPtrPos := blockStart + blockSize - 4
 	dirOffset := int(order.Uint32(block[dirPtrPos:dirPtrPos+4])) + blockStart
 	if dirOffset < blockStart || dirOffset+2 > blockStart+blockSize {
-		return nil
+		return
 	}
 	entries := int(order.Uint16(block[dirOffset : dirOffset+2]))
 	dirEntries := dirOffset + 2
 	if entries < 0 || dirEntries+entries*10 > blockStart+blockSize {
-		return nil
+		return
 	}
 	for i := 0; i < entries; i++ {
 		entry := block[dirEntries+i*10:]
@@ -178,7 +176,7 @@ func parseCIFFDirectory(c *CIFF, block []byte, order utils.ByteOrder, blockStart
 		valueInDir := tag&0x4000 != 0
 		if (tagType == 0x28 || tagType == 0x30) && !valueInDir {
 			if ptr >= blockStart && size > 0 && ptr+size <= blockStart+blockSize {
-				_ = parseCIFFDirectory(c, block, order, ptr, size, ciffDirName(tagID), depth+1)
+				parseCIFFDirectory(c, block, order, ptr, size, ciffDirName(tagID), depth+1)
 			}
 			continue
 		}
@@ -191,7 +189,6 @@ func parseCIFFDirectory(c *CIFF, block []byte, order utils.ByteOrder, blockStart
 		}
 		parseCIFFTag(c, order, dirName, tagID, tagType, value)
 	}
-	return nil
 }
 
 func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, blockStart, blockSize int64, dirName string, depth int) error {
@@ -205,7 +202,7 @@ func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, bl
 	buf := make([]byte, 4)
 	dirPtrPos := blockEnd - 4
 	if _, err := reader.ReadAt(buf, dirPtrPos); err != nil {
-		return nil
+		return err
 	}
 	dirOffset := int64(order.Uint32(buf)) + blockStart
 	if dirOffset < blockStart || dirOffset+2 > blockEnd {
@@ -213,7 +210,7 @@ func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, bl
 	}
 	buf = make([]byte, 2)
 	if _, err := reader.ReadAt(buf, dirOffset); err != nil {
-		return nil
+		return err
 	}
 	entries := int64(order.Uint16(buf))
 	dirEntries := dirOffset + 2
@@ -222,7 +219,7 @@ func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, bl
 	}
 	entriesBuf := make([]byte, entries*10)
 	if _, err := reader.ReadAt(entriesBuf, dirEntries); err != nil {
-		return nil
+		return err
 	}
 	for i := int64(0); i < entries; i++ {
 		entry := entriesBuf[i*10:]
@@ -237,7 +234,9 @@ func parseCIFFDirectoryAt(c *CIFF, reader io.ReaderAt, order utils.ByteOrder, bl
 		valueInDir := tag&0x4000 != 0
 		if (tagType == 0x28 || tagType == 0x30) && !valueInDir {
 			if ptr >= blockStart && size > 0 && ptr+size <= blockEnd {
-				_ = parseCIFFDirectoryAt(c, reader, order, ptr, size, ciffDirName(tagID), depth+1)
+				if err := parseCIFFDirectoryAt(c, reader, order, ptr, size, ciffDirName(tagID), depth+1); err != nil {
+					return err
+				}
 			}
 			continue
 		}

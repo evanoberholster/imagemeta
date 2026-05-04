@@ -140,7 +140,7 @@ func TestParseDirectoryTagHeadersBulkMatchesPerEntry(t *testing.T) {
 
 	directory := tag.NewDirectory(utils.LittleEndian, tag.IFD0, 0, 0, 0)
 
-	perEntry := NewReader(metalog.Logger)
+	perEntry := NewReader(metalog.GetLogger())
 	defer perEntry.Close()
 	perEntryRaw := bytes.NewReader(payload[:])
 	perEntry.Reset(bufio.NewReaderSize(perEntryRaw, len(payload)))
@@ -148,7 +148,7 @@ func TestParseDirectoryTagHeadersBulkMatchesPerEntry(t *testing.T) {
 		t.Fatalf("parseDirectoryTagHeadersPerEntry() error = %v", err)
 	}
 
-	bulk := NewReader(metalog.Logger)
+	bulk := NewReader(metalog.GetLogger())
 	defer bulk.Close()
 	bulkRaw := bytes.NewReader(payload[:])
 	bulk.Reset(bufio.NewReaderSize(bulkRaw, len(payload)))
@@ -196,7 +196,6 @@ func TestParseExifVersion(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if got := r.parseExifVersion(tc.entry).String(); got != tc.want {
@@ -227,7 +226,7 @@ func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 	copy(payload[8:12], []byte("0211"))
 
 	directory := tag.NewDirectory(utils.LittleEndian, tag.MakerNoteIFD, 0, 0, 0x853a)
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 	r.Exif.CameraMakeID = makernote.CameraMakeNikon
@@ -244,7 +243,7 @@ func TestParseDirectoryTagHeadersBulkTrustedEmbeddedBaseOffset(t *testing.T) {
 func TestParseSubSecTimeEmbedded(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	var raw [4]byte
@@ -313,7 +312,7 @@ func TestParseDNGAdobeDataSample(t *testing.T) {
 func TestParseIFD0MakeTagTrimsAndNormalizesKnownMake(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	raw := append([]byte("NIKON CORPORATION\x00"), bytes.Repeat([]byte{'x'}, 48)...)
@@ -333,7 +332,7 @@ func TestParseIFD0MakeTagTrimsAndNormalizesKnownMake(t *testing.T) {
 func TestParseSubIFDsSingleTypeIFDUsesValueOffset(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	tg := tag.NewEntry(tag.TagSubIFDs, tag.TypeIfd, 1, 0x1234, tag.IFD0, 0, utils.LittleEndian)
@@ -370,7 +369,7 @@ func TestParseSubIFDsClampsToQueueCapacity(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 0x30)
 	utils.LittleEndian.PutUint32(payload[12:16], 0x40)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 	r.state.len = tagQueueMax - 1
@@ -401,7 +400,7 @@ func TestParseSubIFDsClampsToOffsetCapacity(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 0x30)
 	utils.LittleEndian.PutUint32(payload[12:16], 0x40)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 	r.Exif.IFD0.subIFDOffsetCount = uint8(len(r.Exif.IFD0.subIFDOffsets) - 1)
@@ -446,7 +445,7 @@ func TestParseExposureBiasSignedRational(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[:4], uint32(num))
 	utils.LittleEndian.PutUint32(payload[4:8], 3)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload[:]))
 
@@ -470,7 +469,7 @@ func TestParseIFD0TagApplicationNotesSkipped(t *testing.T) {
 
 	const payload = "application notes payload"
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader([]byte(payload)))
 
@@ -549,9 +548,8 @@ func TestParseIFD0ColorAndSamplingTags(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewReader(metalog.Logger)
+			r := NewReader(metalog.GetLogger())
 			defer r.Close()
 			if tc.data == nil {
 				r.Reset(bytes.NewReader(nil))
@@ -569,7 +567,7 @@ func TestParseIFD0ColorAndSamplingTags(t *testing.T) {
 func TestParseExifTagInteropAndGamma(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	// InteropIndex "R98\0"
@@ -621,7 +619,7 @@ func TestParseExifTagUserCommentASCII(t *testing.T) {
 
 	payload := append([]byte("ASCII\x00\x00\x00"), []byte("hello world\x00")...)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload))
 
@@ -653,7 +651,7 @@ func TestParseExifTagUserCommentUnicode(t *testing.T) {
 		0, 0,
 	}...)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bytes.NewReader(payload))
 
@@ -714,9 +712,8 @@ func TestParseExifTagUserCommentHeaderSpacePadded(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewReader(metalog.Logger)
+			r := NewReader(metalog.GetLogger())
 			defer r.Close()
 
 			data := append(append([]byte{}, tc.header...), tc.payload...)

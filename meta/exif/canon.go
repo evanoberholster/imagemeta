@@ -207,7 +207,7 @@ func (r *Reader) canonCameraInfoLayout(t tag.Entry) canon.CameraInfoLayout {
 }
 
 func (r *Reader) parseCanonCameraInfoBytes(t tag.Entry, spec canon.CameraInfoSpec) canon.CameraInfo {
-	buf, _, err := r.readTagBytes(t, t.Size())
+	buf, err := r.readTagBytes(t, t.Size())
 	if err != nil || len(buf) == 0 {
 		return canon.CameraInfo{}
 	}
@@ -228,7 +228,9 @@ func (r *Reader) parseCanonCameraInfoPowerShotTemp(t tag.Entry) canon.CameraInfo
 	// Temperature is at index count-3 (ExifTool: element [-3]).
 	tempOff := (count - 3) * 4
 	if v, ok := r.readCanonCameraInfoInt32At(t, tempOff); ok {
-		return canon.CameraInfo{CameraTemperature: int16(v)}
+		if converted, convertedOK := meta.SafecastInt32ToInt16(v); convertedOK {
+			return canon.CameraInfo{CameraTemperature: converted}
+		}
 	}
 	return canon.CameraInfo{}
 }
@@ -255,7 +257,9 @@ func (r *Reader) parseCanonCameraInfoUnknown32(t tag.Entry) canon.CameraInfo {
 		}
 	}
 	if v, ok := r.readCanonCameraInfoInt32At(t, tempOff); ok {
-		return canon.CameraInfo{CameraTemperature: int16(v)}
+		if converted, convertedOK := meta.SafecastInt32ToInt16(v); convertedOK {
+			return canon.CameraInfo{CameraTemperature: converted}
+		}
 	}
 	return canon.CameraInfo{}
 }
@@ -281,7 +285,7 @@ func (r *Reader) readCanonCameraInfoInt32At(t tag.Entry, off int) (int32, bool) 
 	if !ok {
 		return 0, false
 	}
-	return int32(v), true
+	return meta.SafecastUint32ToInt32Bits(v), true
 }
 
 func (r *Reader) readCanonTagOffsetBytes(t tag.Entry, off, n int) ([]byte, error) {
@@ -412,7 +416,7 @@ func (r *Reader) parseCanonInt32List(t tag.Entry, dst []int32) int {
 	}
 	n := r.parseUint32List(t, u32[:len(dst)])
 	for i := range n {
-		dst[i] = int32(u32[i])
+		dst[i] = meta.SafecastUint32ToInt32Bits(u32[i])
 	}
 	return n
 }
@@ -431,7 +435,8 @@ func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) canon.PreviewImageInfo 
 	var raw [8]int32
 	n := r.parseCanonInt32List(t, raw[:])
 	start := 0
-	if n >= 6 && isPreviewImageInfoSizeWord(raw, int32(t.Size())) {
+	size32, ok := meta.SafecastUint32ToInt32(t.Size())
+	if n >= 6 && ok && isPreviewImageInfoSizeWord(raw, size32) {
 		start = 1
 	}
 	if n-start < 5 {
@@ -439,12 +444,32 @@ func (r *Reader) parseCanonPreviewImageInfo(t tag.Entry) canon.PreviewImageInfo 
 		return canon.PreviewImageInfo{}
 	}
 
+	previewQuality, ok := meta.SafecastInt32ToInt16(raw[start])
+	if !ok {
+		return canon.PreviewImageInfo{}
+	}
+	previewLength, ok := meta.SafecastInt32ToUint32(raw[start+1])
+	if !ok {
+		return canon.PreviewImageInfo{}
+	}
+	previewWidth, ok := meta.SafecastInt32ToUint32(raw[start+2])
+	if !ok {
+		return canon.PreviewImageInfo{}
+	}
+	previewHeight, ok := meta.SafecastInt32ToUint32(raw[start+3])
+	if !ok {
+		return canon.PreviewImageInfo{}
+	}
+	previewStart, ok := meta.SafecastInt32ToUint32(raw[start+4])
+	if !ok {
+		return canon.PreviewImageInfo{}
+	}
 	dst := canon.PreviewImageInfo{
-		PreviewQuality:     canon.Quality(int16(raw[start])),
-		PreviewImageLength: uint32(raw[start+1]),
-		PreviewImageWidth:  uint32(raw[start+2]),
-		PreviewImageHeight: uint32(raw[start+3]),
-		PreviewImageStart:  uint32(raw[start+4]),
+		PreviewQuality:     canon.Quality(previewQuality),
+		PreviewImageLength: previewLength,
+		PreviewImageWidth:  previewWidth,
+		PreviewImageHeight: previewHeight,
+		PreviewImageStart:  previewStart,
 	}
 	if start == 1 && dst.PreviewImageStart != 0 {
 		dst.PreviewImageStart += r.tiffHeaderOffset
@@ -617,7 +642,7 @@ const canonLensInfoByteLength = 5
 func (r *Reader) parseCanonLensInfo(t tag.Entry) canon.LensInfoForService {
 	dst := canon.LensInfoForService{}
 	raw := r.parseOpaqueBytes(t, canonLensInfoByteLength)
-	l := int(len(raw))
+	l := len(raw)
 	if l != 5 {
 		r.warnCanonShortRead(t, "parseCanonLensInfo", l, int(t.Size()))
 		return canon.LensInfoForService{}
@@ -674,7 +699,7 @@ func (r *Reader) parseCanonTimeInfo(t tag.Entry) canon.CanonTimeInfo {
 }
 
 func (r *Reader) parseCanonBatteryType(t tag.Entry) string {
-	raw, _, err := r.readTagBytes(t, canon.BatteryTypePayloadSize)
+	raw, err := r.readTagBytes(t, canon.BatteryTypePayloadSize)
 	if err != nil || len(raw) < canon.BatteryTypePayloadSize {
 		r.warnCanonShortRead(t, "parseCanonBatteryType", len(raw), canon.BatteryTypePayloadSize)
 		return ""
@@ -754,7 +779,7 @@ func canonString(raw []byte) string {
 		return ""
 	}
 	var stack [512]byte
-	buf := stack[:0]
+	var buf []byte
 	if len(raw) > len(stack) {
 		buf = make([]byte, len(raw))
 	} else {

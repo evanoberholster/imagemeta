@@ -36,7 +36,10 @@ func BenchmarkScanJPEG100(b *testing.B) {
 			b.Fatal(err)
 		}
 		defer f.Close()
-		buf, _ := io.ReadAll(f)
+		buf, readErr := io.ReadAll(f)
+		if readErr != nil {
+			b.Fatal(readErr)
+		}
 		r := bytes.NewReader(buf)
 		b.ReportAllocs()
 		b.ResetTimer()

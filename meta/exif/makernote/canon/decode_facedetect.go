@@ -1,5 +1,7 @@
 package canon
 
+import "github.com/evanoberholster/imagemeta/meta"
+
 // DecodeFaceDetect1 decodes a Canon FaceDetect1 payload (tag 0x0024).
 func DecodeFaceDetect1(words []uint16) FaceDetectInfo {
 	if len(words) < 5 {
@@ -21,8 +23,8 @@ func DecodeFaceDetect1(words []uint16) FaceDetectInfo {
 			break
 		}
 		dst.FacePositions[i] = FacePosition{
-			X: int16(words[start]),
-			Y: int16(words[start+1]),
+			X: meta.SafecastUint16ToInt16Bits(words[start]),
+			Y: meta.SafecastUint16ToInt16Bits(words[start+1]),
 		}
 	}
 	return dst

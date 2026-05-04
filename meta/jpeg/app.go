@@ -80,7 +80,7 @@ func (jr *jpegReader) readAPP2() {
 			if !ok {
 				return
 			}
-			jr.metadata.MPF, jr.err = parseMPF(payload, uint32(jr.offset)+8)
+			jr.metadata.MPF, jr.err = parseMPF(payload, jr.offset+8)
 			return
 		}
 	}
@@ -157,7 +157,9 @@ func (jr *jpegReader) readCallbackPayload(remain int, cb func(io.Reader) error) 
 	lr := utils.NewLimitedBufferedReader(jr.br, remain)
 	err := cb(lr)
 	consumed := remain - lr.N
-	jr.discarded += uint32(consumed)
+	if delta, ok := meta.SafecastIntToUint32(consumed); ok {
+		jr.discarded += delta
+	}
 	return lr.N, err
 }
 
@@ -182,7 +184,10 @@ func (jr *jpegReader) readExif() (err error) {
 	}
 	byteOrder := utils.BinaryOrder(buf)
 	firstIfdOffset := byteOrder.Uint32(buf[4:8])
-	exifLength := uint32(remain)
+	exifLength, ok := meta.SafecastIntToUint32(remain)
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	exifHeader := meta.NewExifHeader(byteOrder, firstIfdOffset, jr.discarded, exifLength, imagetype.ImageJPEG)
 
 	// Read Exif

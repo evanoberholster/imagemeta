@@ -13,11 +13,11 @@ type NikonShotInfo struct {
 	ShotInfoVersion string // [0x00] ShotInfoVersion (4 bytes)
 	FirmwareVersion string // [0x04] FirmwareVersion (5 or 8 bytes)
 
-	ShutterCount        uint32  // int32u (offset varies by version)
-	MechanicalShutterCount uint32 // int32u, some bodies only
-	ISO2                float64 // Nikon logarithmic ISO (offset varies)
-	VibrationReduction  uint8   // 0 = Off, 1 = On (offset varies)
-	Orientation         uint8   // rotation / orientation flag
+	ShutterCount           uint32  // int32u (offset varies by version)
+	MechanicalShutterCount uint32  // int32u, some bodies only
+	ISO2                   float64 // Nikon logarithmic ISO (offset varies)
+	VibrationReduction     uint8   // 0 = Off, 1 = On (offset varies)
+	Orientation            uint8   // rotation / orientation flag
 }
 
 // DecodeShotInfo decodes Nikon ShotInfo (tag 0x0091) from raw bytes.
@@ -78,7 +78,7 @@ func parseShotInfoVersion(raw []byte, dst NikonShotInfo) NikonShotInfo {
 	case hasPrefix(ver, "0233"):
 		_ = l // D810
 	case hasPrefix(ver, "0231"):
-		decodeShotInfoD4s(raw, &dst)
+		decodeShotInfoD4s(raw)
 	case hasPrefix(ver, "0232"):
 		_ = l // D610
 
@@ -86,67 +86,67 @@ func parseShotInfoVersion(raw []byte, dst NikonShotInfo) NikonShotInfo {
 	case hasPrefix(ver, "0223"):
 		_ = l // D4
 	case hasPrefix(ver, "0220"):
-		dst.ShutterCount = u32At(raw, 0x320, utils.LittleEndian) // D7000 ShutterCount
+		dst.ShutterCount = u32At(raw, 0x320) // D7000 ShutterCount
 	case hasPrefix(ver, "0222"):
-		dst.ShutterCount = u32At(raw, 0x5fb, utils.LittleEndian) // D800 ShutterCount
+		dst.ShutterCount = u32At(raw, 0x5fb) // D800 ShutterCount
 	case hasPrefix(ver, "0221"):
-		dst.ShutterCount = u32At(raw, 0x321, utils.LittleEndian) // D5100 ShutterCount
+		dst.ShutterCount = u32At(raw, 0x321) // D5100 ShutterCount
 	case hasPrefix(ver, "0226"):
-		dst.ShutterCount = u32At(raw, 0xbd8, utils.LittleEndian) // D5200 ShutterCount
+		dst.ShutterCount = u32At(raw, 0xbd8) // D5200 ShutterCount
 
 	// --- D5000 ---
 	case hasPrefix(ver, "0215"):
-		dst.ShutterCount = u32At(raw, 0x2d6, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 0x2d6)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 0x2b5)))
 
 	// --- D3S ---
 	case hasPrefix(ver, "0218"):
-		dst.ShutterCount = u32At(raw, 0x242, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 0x242)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 0x221)))
 
 	// --- D3X ---
 	case hasPrefix(ver, "0214"):
-		dst.ShutterCount = u32At(raw, 0x280, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 0x280)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 0x25d)))
 
 	// --- D3a / D300a / D300b ---
 	case hasPrefix(ver, "0210"):
 		switch l {
 		case 5399:
-			dst.ShutterCount = u32At(raw, 0x276, utils.LittleEndian) // D3a
+			dst.ShutterCount = u32At(raw, 0x276) // D3a
 			dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 0x256)))
 		case 5291:
-			dst.ShutterCount = u32At(raw, 633, utils.LittleEndian) // D300a
+			dst.ShutterCount = u32At(raw, 633) // D300a
 			dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 604)))
 		case 5303:
-			dst.ShutterCount = u32At(raw, 644, utils.LittleEndian) // D300b
+			dst.ShutterCount = u32At(raw, 644) // D300b
 			dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 613)))
 		}
 
 	// --- D300S ---
 	case hasPrefix(ver, "0216"):
-		dst.ShutterCount = u32At(raw, 646, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 646)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 613)))
 
 	// --- D700 ---
 	case hasPrefix(ver, "0212"):
-		dst.ShutterCount = u32At(raw, 0x287, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 0x287)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 613)))
 
 	// --- D90 ---
 	case hasPrefix(ver, "0213"):
-		dst.ShutterCount = u32At(raw, 0x2d5, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 0x2d5)
 		dst.ISO2 = ISOFromRaw(float64(ByteAt(raw, 0x2b5)))
 
 	// --- D40 ---
 	case hasPrefix(ver, "0209"):
-		dst.ShutterCount = u32At(raw, 582, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 582)
 		vb := ByteAt(raw, 586)
 		dst.VibrationReduction = (vb >> 3) & 0x01
 
 	// --- D80 ---
 	case hasPrefix(ver, "0208"):
-		dst.ShutterCount = u32At(raw, 586, utils.LittleEndian)
+		dst.ShutterCount = u32At(raw, 586)
 		vb := ByteAt(raw, 590)
 		dst.VibrationReduction = (vb >> 3) & 0x01
 		dst.Orientation = vb & 0x07
@@ -155,7 +155,7 @@ func parseShotInfoVersion(raw []byte, dst NikonShotInfo) NikonShotInfo {
 	case hasPrefix(ver, "02"):
 		// Encrypted block — direct fields at known offsets
 		if ver == "0204" {
-			dst.ShutterCount = u32At(raw, 0x6a, utils.LittleEndian)
+			dst.ShutterCount = u32At(raw, 0x6a)
 			vb := ByteAt(raw, 0x82)
 			dst.VibrationReduction = vb
 		}
@@ -164,7 +164,7 @@ func parseShotInfoVersion(raw []byte, dst NikonShotInfo) NikonShotInfo {
 			dst.VibrationReduction = vb
 		}
 		if ver == "0211" {
-			dst.ShutterCount = u32At(raw, 0x24d, utils.LittleEndian)
+			dst.ShutterCount = u32At(raw, 0x24d)
 		}
 	}
 
@@ -172,7 +172,7 @@ func parseShotInfoVersion(raw []byte, dst NikonShotInfo) NikonShotInfo {
 }
 
 // decodeShotInfoD4s extracts fields from Nikon D4S ShotInfo.
-func decodeShotInfoD4s(raw []byte, dst *NikonShotInfo) {
+func decodeShotInfoD4s(raw []byte) {
 	if len(raw) < 0x193d+4 {
 		return
 	}
@@ -183,11 +183,11 @@ func decodeShotInfoD4s(raw []byte, dst *NikonShotInfo) {
 }
 
 // u32At reads a uint32 at offset using the given byte order, or 0.
-func u32At(raw []byte, off int, bo utils.ByteOrder) uint32 {
+func u32At(raw []byte, off int) uint32 {
 	if off < 0 || off+4 > len(raw) {
 		return 0
 	}
-	return bo.Uint32(raw[off : off+4])
+	return utils.LittleEndian.Uint32(raw[off : off+4])
 }
 
 // hasPrefix reports whether s starts with prefix (case-sensitive).

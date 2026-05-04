@@ -30,7 +30,6 @@ func TestIdentifyCameraMakeString(t *testing.T) {
 		{name: "vodafone model-like", in: "VODAFONE V720", want: CameraMakeVodafone},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := IdentifyCameraMakeString(tt.in); got != tt.want {

@@ -34,7 +34,7 @@ func (s Seq16) DecodeFileInfo(modelID CanonCameraModel) FileInfo {
 // DecodeCameraSettings decodes a Canon CameraSettings payload (tag 0x0001).
 func (s Seq16) DecodeCameraSettings() CameraSettings {
 	return CameraSettings{
-		MacroMode:          MacroMode(s.U16(1)),
+		MacroMode:          MacroMode(s.I16(1)),
 		SelfTimer:          s.I16(2),
 		Quality:            Quality(s.I16(3)),
 		CanonFlashMode:     CanonFlashMode(s.I16(4)),
@@ -47,7 +47,7 @@ func (s Seq16) DecodeCameraSettings() CameraSettings {
 		Contrast:           CameraSettingValue(s.I16(13)),
 		Saturation:         CameraSettingValue(s.I16(14)),
 		Sharpness:          CameraSettingValue(s.I16(15)),
-		CameraISO:          uint32(CameraISOValue(s.I16(16))),
+		CameraISO:          NewResolvedCameraISOFromRaw(s.I16(16)),
 		MeteringMode:       MeteringMode(s.I16(17)),
 		FocusRange:         FocusRange(s.I16(18)),
 		AFPoint:            s.U16(19),
@@ -73,7 +73,7 @@ func (s Seq16) DecodeCameraSettings() CameraSettings {
 		SRAWQuality:        SRAWQuality(s.I16(46)),
 		FocusBracketing:    FocusBracketing(s.I16(50)),
 		Clarity:            CameraSettingValue(s.I16(51)),
-		HDRPQ:              HDRPQ(s.U16(52)),
+		HDRPQ:              HDRPQ(s.I16(52)),
 	}
 }
 

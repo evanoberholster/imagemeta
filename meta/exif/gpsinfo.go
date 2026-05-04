@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 )
 
@@ -510,7 +511,7 @@ func (r *Reader) firstTagByte(t tag.Entry) (byte, bool) {
 		t.EmbeddedValue(r.state.buf[:4])
 		return r.state.buf[0], true
 	}
-	buf, _, err := r.readTagBytes(t, 1)
+	buf, err := r.readTagBytes(t, 1)
 	if err != nil || len(buf) == 0 {
 		return 0, false
 	}
@@ -524,7 +525,7 @@ func (r *Reader) parseGPSCoord(t tag.Entry) float64 {
 	if !(t.IsType(tag.TypeRational) || t.IsType(tag.TypeSignedRational)) {
 		return 0
 	}
-	buf, _, err := r.readTagBytes(t, 24)
+	buf, err := r.readTagBytes(t, 24)
 	if err != nil || len(buf) < 24 {
 		return 0
 	}
@@ -539,9 +540,9 @@ func (r *Reader) parseGPSCoord(t tag.Entry) float64 {
 	}
 
 	deg := float64(dNum) / float64(dDen)
-	min := float64(mNum) / float64(mDen)
+	minutes := float64(mNum) / float64(mDen)
 	sec := float64(sNum) / float64(sDen)
-	return deg + min/60.0 + sec/3600.0
+	return deg + minutes/60.0 + sec/3600.0
 }
 
 func (r *Reader) parseGPSAltitude(t tag.Entry) float32 {
@@ -556,7 +557,7 @@ func (r *Reader) parseGPSTimeStamp(t tag.Entry) time.Duration {
 	if t.UnitCount != 3 || !t.IsType(tag.TypeRational) {
 		return 0
 	}
-	buf, _, err := r.readTagBytes(t, 24)
+	buf, err := r.readTagBytes(t, 24)
 	if err != nil || len(buf) < 24 {
 		return 0
 	}
@@ -577,7 +578,7 @@ func (r *Reader) parseGPSDateStamp(t tag.Entry) time.Time {
 	if !t.IsType(tag.TypeASCII) {
 		return time.Time{}
 	}
-	buf, _, err := r.readTagBytes(t, 32)
+	buf, err := r.readTagBytes(t, 32)
 	if err != nil || len(buf) < 10 {
 		return time.Time{}
 	}
@@ -587,17 +588,39 @@ func (r *Reader) parseGPSDateStamp(t tag.Entry) time.Time {
 		return time.Time{}
 	}
 
-	year := int(parseStrUint(buf[0:4]))
-	month := time.Month(parseStrUint(buf[5:7]))
-	day := int(parseStrUint(buf[8:10]))
+	year, ok := meta.SafecastUintToInt(parseStrUint(buf[0:4]))
+	if !ok {
+		return time.Time{}
+	}
+	monthValue, ok := meta.SafecastUintToInt(parseStrUint(buf[5:7]))
+	if !ok {
+		return time.Time{}
+	}
+	month := time.Month(monthValue)
+	day, ok := meta.SafecastUintToInt(parseStrUint(buf[8:10]))
+	if !ok {
+		return time.Time{}
+	}
 	if len(buf) >= 19 && buf[10] == ' ' && buf[13] == ':' && buf[16] == ':' {
+		hour, ok := meta.SafecastUintToInt(parseStrUint(buf[11:13]))
+		if !ok {
+			return time.Time{}
+		}
+		minute, ok := meta.SafecastUintToInt(parseStrUint(buf[14:16]))
+		if !ok {
+			return time.Time{}
+		}
+		second, ok := meta.SafecastUintToInt(parseStrUint(buf[17:19]))
+		if !ok {
+			return time.Time{}
+		}
 		return time.Date(
 			year,
 			month,
 			day,
-			int(parseStrUint(buf[11:13])),
-			int(parseStrUint(buf[14:16])),
-			int(parseStrUint(buf[17:19])),
+			hour,
+			minute,
+			second,
 			0,
 			time.UTC,
 		)

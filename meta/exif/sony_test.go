@@ -78,9 +78,9 @@ func TestParseSonyMakerNoteSamples(t *testing.T) {
 					t.Fatalf("LensType = %d, want %d", got.LensType, 55)
 				}
 
-			if got.CameraInfo3.FocalLength != 0 {
-				t.Fatalf("CameraInfo3 = %+v, want all zero (uses AFInfo instead)", got.CameraInfo3)
-			}
+				if got.CameraInfo3.FocalLength != 0 {
+					t.Fatalf("CameraInfo3 = %+v, want all zero (uses AFInfo instead)", got.CameraInfo3)
+				}
 
 				if got.AFInfo.AFType != 1 || got.AFInfo.AFStatusActiveSensor != -34 || got.AFInfo.AFPoint != 6 || got.AFInfo.FocusMode != 2 {
 					t.Fatalf("AFInfo = %+v, want AFType=1 AFStatusActiveSensor=-34 AFPoint=6 FocusMode=2", got.AFInfo)
@@ -131,7 +131,6 @@ func TestParseSonyMakerNoteSamples(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.file, func(t *testing.T) {
 			samplePath := filepath.Join(benchDir, tc.file)
 			if _, err := os.Stat(samplePath); err != nil {
@@ -193,7 +192,7 @@ func TestDecodeARWSample(t *testing.T) {
 		t.Fatalf("Buf() = %s, want %s", it, imagetype.ImageARW)
 	}
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	header, err := ScanTiffHeader(bufio.NewReader(bytes.NewReader(data)), it)
 	if err != nil {

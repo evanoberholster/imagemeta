@@ -3,6 +3,8 @@ package canon
 import (
 	"fmt"
 	"math/bits"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // Ev - ported from Phil Harvey's exiftool
@@ -35,7 +37,7 @@ func TempConv(val uint16) int16 {
 	if val == 0 {
 		return 0
 	}
-	return int16(val) - 128
+	return meta.SafecastUint16ToInt16Bits(val) - 128
 }
 
 // PointsInFocus returns AFPoints that are in focus and AFPoints that are selected
@@ -150,10 +152,10 @@ func DecodeAFInfo2(af []uint16, cfg AFInfo2DecodeConfig) AFInfo {
 			}
 			for i := 0; i < len(dst.AFArea); i++ {
 				dst.AFArea[i] = NewAFPoint(
-					int16(af[widthStart+i]),
-					int16(af[heightStart+i]),
-					int16(af[xStart+i]),
-					int16(af[yStart+i]),
+					meta.SafecastUint16ToInt16Bits(af[widthStart+i]),
+					meta.SafecastUint16ToInt16Bits(af[heightStart+i]),
+					meta.SafecastUint16ToInt16Bits(af[xStart+i]),
+					meta.SafecastUint16ToInt16Bits(af[yStart+i]),
 				)
 			}
 		}
@@ -193,18 +195,24 @@ func DecodeAFInfo2(af []uint16, cfg AFInfo2DecodeConfig) AFInfo {
 	if pts == nil {
 		pts = make([]AFPoint, areaCount)
 	}
-	xAdjust := int16(dst.CanonImageWidth / 2)
-	yAdjust := int16(dst.CanonImageHeight / 2)
+	xAdjust, ok := meta.SafecastUint32ToInt16(uint32(dst.CanonImageWidth / 2))
+	if !ok {
+		xAdjust = 0
+	}
+	yAdjust, ok := meta.SafecastUint32ToInt16(uint32(dst.CanonImageHeight / 2))
+	if !ok {
+		yAdjust = 0
+	}
 	for i := 0; i < areaCount; i++ {
 		var w, h, x, y int16
 		if cfg.DecodeCoords {
 			area := dst.AFArea[i]
 			w, h, x, y = area[0], area[1], area[2], area[3]
 		} else {
-			w = int16(af[widthStart+i])
-			h = int16(af[heightStart+i])
-			x = int16(af[xStart+i])
-			y = int16(af[yStart+i])
+			w = meta.SafecastUint16ToInt16Bits(af[widthStart+i])
+			h = meta.SafecastUint16ToInt16Bits(af[heightStart+i])
+			x = meta.SafecastUint16ToInt16Bits(af[xStart+i])
+			y = meta.SafecastUint16ToInt16Bits(af[yStart+i])
 		}
 		x += xAdjust - (w / 2)
 		y += yAdjust - (h / 2)
@@ -223,7 +231,7 @@ func decodeBits(vals []uint16, bits int) (list []int) {
 	for _, a := range vals {
 		for i := 0; i < bits; i++ {
 			n = i + num
-			if a&(1<<uint(i)) > 0 {
+			if a&(1<<i) > 0 {
 				list = append(list, n)
 			}
 		}
@@ -248,8 +256,14 @@ func ParseAFPoints(af []uint16) (afPoints []AFPoint) {
 			return nil
 		}
 		afPoints = make([]AFPoint, len(raw))
-		xAdjust := int16(layout.canonImageWidth / 2)
-		yAdjust := int16(layout.canonImageHeight / 2)
+		xAdjust, ok := meta.SafecastUint32ToInt16(uint32(layout.canonImageWidth / 2))
+		if !ok {
+			xAdjust = 0
+		}
+		yAdjust, ok := meta.SafecastUint32ToInt16(uint32(layout.canonImageHeight / 2))
+		if !ok {
+			yAdjust = 0
+		}
 		for i := range raw {
 			w, h, x, y := raw[i][0], raw[i][1], raw[i][2], raw[i][3]
 			x += xAdjust - (w / 2)
@@ -381,10 +395,10 @@ func parseLegacyAFArea(af []uint16, layout afLayout) []AFPoint {
 	out := make([]AFPoint, layout.numPoints)
 	for i := 0; i < layout.numPoints; i++ {
 		out[i] = NewAFPoint(
-			int16(layout.areaWidth),
-			int16(layout.areaHeight),
-			int16(af[xStart+i]),
-			int16(af[yStart+i]),
+			meta.SafecastUint16ToInt16Bits(layout.areaWidth),
+			meta.SafecastUint16ToInt16Bits(layout.areaHeight),
+			meta.SafecastUint16ToInt16Bits(af[xStart+i]),
+			meta.SafecastUint16ToInt16Bits(af[yStart+i]),
 		)
 	}
 	return out
@@ -404,10 +418,10 @@ func parseAFInfo2AFArea(af []uint16, layout afLayout) []AFPoint {
 	out := make([]AFPoint, layout.numPoints)
 	for i := 0; i < layout.numPoints; i++ {
 		out[i] = NewAFPoint(
-			int16(af[widthStart+i]),
-			int16(af[heightStart+i]),
-			int16(af[xStart+i]),
-			int16(af[yStart+i]),
+			meta.SafecastUint16ToInt16Bits(af[widthStart+i]),
+			meta.SafecastUint16ToInt16Bits(af[heightStart+i]),
+			meta.SafecastUint16ToInt16Bits(af[xStart+i]),
+			meta.SafecastUint16ToInt16Bits(af[yStart+i]),
 		)
 	}
 	return out

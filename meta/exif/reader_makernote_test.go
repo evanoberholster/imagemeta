@@ -43,7 +43,7 @@ func TestIsCanonMakerNotePrefix(t *testing.T) {
 func TestMakerNoteAccessorsLazyAllocation(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	info := r.Exif.MakerNote

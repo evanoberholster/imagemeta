@@ -14,7 +14,7 @@ import (
 func TestParseGPSTagCoverage(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
@@ -140,7 +140,7 @@ func TestParseGPSTagCoverage(t *testing.T) {
 func TestParseGPSTagUnknownTagReturnsFalse(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	tg := tag.NewEntry(0xfffe, tag.TypeLong, 1, 0, tag.GPSIFD, 0, utils.LittleEndian)
@@ -152,7 +152,7 @@ func TestParseGPSTagUnknownTagReturnsFalse(t *testing.T) {
 func TestParseGPSTagUnitConversions(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
@@ -204,7 +204,7 @@ func TestParseGPSTagUnitConversions(t *testing.T) {
 func TestParseGPSTagOrderInsensitiveCoordinates(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
@@ -256,7 +256,7 @@ func TestParseGPSTagOrderInsensitiveCoordinates(t *testing.T) {
 func TestParseGPSAltitudeRefExifToolVariants(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	parseEmbedded := func(id tag.ID, typ tag.Type, unitCount uint32, valueOffset uint32) {
@@ -289,7 +289,7 @@ func TestParseGPSAltitudeRefExifToolVariants(t *testing.T) {
 func TestParseGPSDateStampNULSeparators(t *testing.T) {
 	t.Parallel()
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	data := []byte{'2', '0', '2', '4', 0, '0', '3', 0, '0', '1', 0}

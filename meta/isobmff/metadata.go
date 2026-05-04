@@ -340,11 +340,11 @@ func discardTIFFOffsetPrefix(b *box, offset uint32) (bool, error) {
 	}
 	needInt, err := uint64ToInt(need)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	skipInt, err := uint64ToInt(skip)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	buf, err := b.Peek(needInt)
 	if err != nil {

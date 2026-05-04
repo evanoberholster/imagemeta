@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif/tag"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
@@ -102,7 +103,7 @@ func appendRationalPart(dst []byte, v tag.RationalU) []byte {
 
 // LegacyAFPoints decodes AF point indices from a schema-based bitmask.
 func LegacyAFPoints(raw []byte, schema uint8, offset int) []int {
-	size := 0
+	var size int
 	switch schema {
 	case 1:
 		size = 7
@@ -153,8 +154,8 @@ func WorldTimeByteOrder(raw []byte, defaultBO utils.ByteOrder) utils.ByteOrder {
 	if len(raw) < 4 {
 		return defaultBO
 	}
-	littleTZ := int16(utils.LittleEndian.Uint16(raw[:2]))
-	bigTZ := int16(utils.BigEndian.Uint16(raw[:2]))
+	littleTZ := meta.SafecastUint16ToInt16Bits(utils.LittleEndian.Uint16(raw[:2]))
+	bigTZ := meta.SafecastUint16ToInt16Bits(utils.BigEndian.Uint16(raw[:2]))
 	littleValid := worldTimeValid(littleTZ, raw[2], raw[3])
 	bigValid := worldTimeValid(bigTZ, raw[2], raw[3])
 	switch {
@@ -249,7 +250,7 @@ func DecodeWorldTime(raw []byte, defaultBO utils.ByteOrder) NikonWorldTime {
 	}
 	bo := WorldTimeByteOrder(raw, defaultBO)
 	return NikonWorldTime{
-		TimeZone:          int16(bo.Uint16(raw[:2])),
+		TimeZone:          meta.SafecastUint16ToInt16Bits(bo.Uint16(raw[:2])),
 		DaylightSavings:   ByteAt(raw, 2),
 		DateDisplayFormat: ByteAt(raw, 3),
 	}

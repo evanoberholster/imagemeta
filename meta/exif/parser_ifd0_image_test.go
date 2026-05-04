@@ -19,7 +19,7 @@ func TestParseIFD0ImageReferenceFromStripArrays(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 4096)
 	utils.LittleEndian.PutUint32(payload[12:16], 8192)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 
@@ -49,7 +49,7 @@ func TestParseImageIFDReferenceFromStripArrays(t *testing.T) {
 	utils.LittleEndian.PutUint32(payload[8:12], 1024)
 	utils.LittleEndian.PutUint32(payload[12:16], 2048)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 	r.Reset(bufio.NewReaderSize(bytes.NewReader(payload[:]), len(payload)))
 

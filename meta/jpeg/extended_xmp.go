@@ -3,6 +3,8 @@ package jpeg
 import (
 	"bytes"
 	"io"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 type extendedXMP struct {
@@ -27,7 +29,9 @@ func (jr *jpegReader) readExtendedXMP() error {
 
 	buf := make([]byte, payloadLen)
 	n, err := io.ReadFull(jr.br, buf)
-	jr.discarded += uint32(n)
+	if delta, ok := meta.SafecastIntToUint32(n); ok {
+		jr.discarded += delta
+	}
 	if err != nil {
 		return err
 	}
@@ -84,9 +88,15 @@ func (jr *jpegReader) processExtendedXMP() error {
 				break
 			}
 			assembled = append(assembled, chunk...)
-			offset += uint32(len(chunk))
+			delta, ok := meta.SafecastIntToUint32(len(chunk))
+			if !ok {
+				assembled = nil
+				break
+			}
+			offset += delta
 		}
-		if uint32(len(assembled)) != ext.size {
+		assembledLen, ok := meta.SafecastIntToUint32(len(assembled))
+		if !ok || assembledLen != ext.size {
 			continue
 		}
 		if err := jr.XMPReader(bytes.NewReader(assembled)); err != nil {

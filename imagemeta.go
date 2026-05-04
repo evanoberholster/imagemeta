@@ -64,37 +64,37 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 	case imagetype.ImageCRW:
 		return DecodeCRW(r)
 	case imagetype.ImageCR2, imagetype.ImageTiff, imagetype.ImagePanaRAW, imagetype.ImageDNG, imagetype.ImageNEF, imagetype.ImageARW:
-		header, err := exif.ScanTiffHeader(rr, it)
-		if err != nil {
-			return exif.Exif{}, err
+		header, headerErr := exif.ScanTiffHeader(rr, it)
+		if headerErr != nil {
+			return exif.Exif{}, headerErr
 		}
-		if err := ir.DecodeTiff(rr, header); err != nil {
-			return ir.Exif, err
+		if decodeErr := ir.DecodeTiff(rr, header); decodeErr != nil {
+			return ir.Exif, decodeErr
 		}
 	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL, imagetype.ImageHEIF, imagetype.ImageHEIC:
 		bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
 		defer bmr.Close()
-		if err := bmr.ReadFTYP(); err != nil {
-			return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
+		if readErr := bmr.ReadFTYP(); readErr != nil {
+			return ir.Exif, errors.Wrapf(readErr, "ReadFtypBox")
 		}
-		if err := bmr.ReadMetadataUntilEOF(); err != nil {
-			return ir.Exif, err
+		if readErr := bmr.ReadMetadataUntilEOF(); readErr != nil {
+			return ir.Exif, readErr
 		}
 	case imagetype.ImagePNG:
 		if _, err = r.Seek(0, io.SeekStart); err != nil {
 			return exif.Exif{}, err
 		}
-		header, err := png.ScanPngHeader(r)
-		if err != nil {
-			return exif.Exif{}, err
+		header, headerErr := png.ScanPngHeader(r)
+		if headerErr != nil {
+			return exif.Exif{}, headerErr
 		}
 		if err := ir.DecodeTiff(r, header); err != nil {
 			return ir.Exif, err
 		}
 	default:
-		header, err := exif.ScanTiffHeader(rr, it)
-		if err != nil {
-			return exif.Exif{}, err
+		header, headerErr := exif.ScanTiffHeader(rr, it)
+		if headerErr != nil {
+			return exif.Exif{}, headerErr
 		}
 		if err := ir.DecodeTiff(rr, header); err != nil {
 			return ir.Exif, err
@@ -165,8 +165,8 @@ func DecodeARW(r io.ReadSeeker) (exif.Exif, error) {
 
 // DecodeCRW decodes a CRW file from an io.ReadSeeker returning Exif or an error.
 func DecodeCRW(r io.ReadSeeker) (exif.Exif, error) {
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return exif.Exif{}, err
+	if _, seekErr := r.Seek(0, io.SeekStart); seekErr != nil {
+		return exif.Exif{}, seekErr
 	}
 	it, err := imagetype.Scan(r)
 	if err != nil {
@@ -175,8 +175,8 @@ func DecodeCRW(r io.ReadSeeker) (exif.Exif, error) {
 	if it != imagetype.ImageCRW {
 		return exif.Exif{}, ErrMetadataNotSupported
 	}
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return exif.Exif{}, err
+	if _, seekErr := r.Seek(0, io.SeekStart); seekErr != nil {
+		return exif.Exif{}, seekErr
 	}
 	ciff, err := jpeg.ParseCIFFReader(r)
 	if err != nil {

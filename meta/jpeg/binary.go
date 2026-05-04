@@ -1,6 +1,7 @@
 package jpeg
 
 import (
+	"encoding/binary"
 	"math"
 	"strconv"
 	"strings"
@@ -48,11 +49,11 @@ func u32ListString(order utils.ByteOrder, b []byte) string {
 	return strings.Join(parts, " ")
 }
 
-func s15Fixed16(order utils.ByteOrder, b []byte) float64 {
+func s15Fixed16(b []byte) float64 {
 	if len(b) < 4 {
 		return 0
 	}
-	return float64(int32(order.Uint32(b))) / 65536.0
+	return float64(int32(binary.BigEndian.Uint32(b))) / 65536.0
 }
 
 func fixed16(order utils.ByteOrder, b []byte) float64 {

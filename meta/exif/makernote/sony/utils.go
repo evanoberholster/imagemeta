@@ -3,6 +3,7 @@ package sony
 import (
 	"strings"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -25,7 +26,7 @@ func u8At(buf []byte, off int) uint8 {
 }
 
 func i8At(buf []byte, off int) int8 {
-	return int8(u8At(buf, off))
+	return meta.SafecastUint8ToInt8Bits(u8At(buf, off))
 }
 
 func u16At(buf []byte, bo utils.ByteOrder, off int) uint16 {
@@ -36,7 +37,7 @@ func u16At(buf []byte, bo utils.ByteOrder, off int) uint16 {
 }
 
 func i16At(buf []byte, bo utils.ByteOrder, off int) int16 {
-	return int16(u16At(buf, bo, off))
+	return meta.SafecastUint16ToInt16Bits(u16At(buf, bo, off))
 }
 
 func u16RevAt(buf []byte, bo utils.ByteOrder, off int) uint16 {

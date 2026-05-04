@@ -431,17 +431,26 @@ func TestExifMarshalJSONIncludesSiblingFieldsAlongsideFlattenedTime(t *testing.T
 		t.Fatalf("json.Unmarshal(Exif JSON): %v", err)
 	}
 
-	ifd0, _ := got["IFD0"].(map[string]any)
+	ifd0, ok := got["IFD0"].(map[string]any)
+	if !ok {
+		t.Fatalf("IFD0 JSON type = %T", got["IFD0"])
+	}
 	if ifd0["Make"] != "Canon" || ifd0["Model"] != "EOS R6" || ifd0["ModifyDate"] != "2024-01-02T03:04:05Z" {
 		t.Fatalf("IFD0 JSON = %#v", ifd0)
 	}
 
-	exifIFD, _ := got["ExifIFD"].(map[string]any)
+	exifIFD, ok := got["ExifIFD"].(map[string]any)
+	if !ok {
+		t.Fatalf("ExifIFD JSON type = %T", got["ExifIFD"])
+	}
 	if exifIFD["LensModel"] != "RF24-70mm F2.8 L IS USM" || exifIFD["DateTimeOriginal"] != "2024-01-02T03:04:05Z" {
 		t.Fatalf("ExifIFD JSON = %#v", exifIFD)
 	}
 
-	ifd1, _ := got["IFD1"].(map[string]any)
+	ifd1, ok := got["IFD1"].(map[string]any)
+	if !ok {
+		t.Fatalf("IFD1 JSON type = %T", got["IFD1"])
+	}
 	if ifd1["ImageWidth"] != float64(160) || ifd1["ModifyDate"] != "0001-01-01T00:00:00Z" {
 		t.Fatalf("IFD1 JSON = %#v", ifd1)
 	}

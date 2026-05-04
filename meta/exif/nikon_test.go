@@ -26,7 +26,7 @@ func parseNikonBlockForTest(t *testing.T, tagID tag.ID, raw []byte, model string
 		utils.LittleEndian,
 	)
 
-	r := NewReader(metalog.Logger)
+	r := NewReader(metalog.GetLogger())
 	defer r.Close()
 
 	var br bytes.Reader
@@ -199,7 +199,6 @@ func TestParseNikonMakerNoteSamples(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.file, func(t *testing.T) {
 			samplePath := filepath.Join(benchDir, tc.file)
 			if _, err := os.Stat(samplePath); err != nil {
@@ -290,7 +289,6 @@ func TestParseNikonLegacyISOInfoSamples(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.file, func(t *testing.T) {
 			samplePath := filepath.Join(benchDir, tc.file)
 			if _, err := os.Stat(samplePath); err != nil {
