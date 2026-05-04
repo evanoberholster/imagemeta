@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -346,7 +347,7 @@ func parseCIFFImageInfo(c *CIFF, order utils.ByteOrder, value []byte) {
 		c.PixelAspectRatio = ciffFloat32(order, value[8:12])
 	}
 	if len(value) >= 16 {
-		c.Rotation = int32(order.Uint32(value[12:16]))
+		c.Rotation = meta.SafecastUint32ToInt32Bits(order.Uint32(value[12:16]))
 	}
 	if len(value) >= 20 {
 		c.ComponentBitDepth = order.Uint32(value[16:20])
@@ -364,7 +365,7 @@ func parseCIFFTimeStamp(c *CIFF, order utils.ByteOrder, value []byte) {
 		c.DateTimeOriginal = ciffTime(order, value[0:4])
 	}
 	if len(value) >= 8 {
-		c.TimeZoneCode = int32(order.Uint32(value[4:8])) / 3600
+		c.TimeZoneCode = meta.SafecastUint32ToInt32Bits(order.Uint32(value[4:8])) / 3600
 	}
 	if len(value) >= 12 {
 		c.TimeZoneInfo = order.Uint32(value[8:12])

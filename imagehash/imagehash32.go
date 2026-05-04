@@ -21,7 +21,10 @@ func NewPHash64Alt(img image.Image) (phash PHash64, err error) {
 		return
 	}
 
-	pixels := pixelsPool32.Get().(*[]float32)
+	pixels, ok := pixelsPool32.Get().(*[]float32)
+	if !ok || pixels == nil {
+		return 0, errors.New("pixelsPool32 returned non-*[]float32")
+	}
 	defer pixelsPool32.Put(pixels)
 
 	transforms32.ImageToGray(img, pixels)
@@ -30,7 +33,7 @@ func NewPHash64Alt(img image.Image) (phash PHash64, err error) {
 
 	for idx, p := range flattens {
 		if p > median {
-			phash |= 1 << uint(len(flattens)-idx-1) // leftShiftSet
+			phash |= 1 << (63 - idx) // leftShiftSet
 		}
 	}
 	return phash, nil
@@ -49,7 +52,10 @@ func NewPHash256Alt(img image.Image) (phash PHash256, err error) {
 		return
 	}
 
-	pixels := pixelsPool256Alt.Get().(*[]float32)
+	pixels, ok := pixelsPool256Alt.Get().(*[]float32)
+	if !ok || pixels == nil {
+		return PHash256{}, errors.New("pixelsPool256Alt returned non-*[]float32")
+	}
 	defer pixelsPool256Alt.Put(pixels)
 
 	transforms32.ImageToGray(img, pixels)
@@ -60,7 +66,7 @@ func NewPHash256Alt(img image.Image) (phash PHash256, err error) {
 	for idx, p := range flattens {
 		indexOfArray := idx / 64
 		if p > median {
-			phash[indexOfArray] |= 1 << uint(64-idx%64-1) // leftShiftSet
+			phash[indexOfArray] |= 1 << (63 - idx%64) // leftShiftSet
 		}
 	}
 

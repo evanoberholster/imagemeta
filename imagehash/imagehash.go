@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/evanoberholster/imagemeta/imagehash/transforms"
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 //go:generate msgp
@@ -31,7 +32,10 @@ func NewPHash64(img image.Image) (phash PHash64, err error) {
 		return
 	}
 
-	pixels := pixelsPool64.Get().(*[]float64)
+	pixels, ok := pixelsPool64.Get().(*[]float64)
+	if !ok || pixels == nil {
+		return 0, errors.New("pixelsPool64 returned non-*[]float64")
+	}
 
 	transforms.Rgb2GrayFast(img, pixels)
 	flattens := transforms.DCT2DHash64(pixels)
@@ -42,7 +46,7 @@ func NewPHash64(img image.Image) (phash PHash64, err error) {
 
 	for idx, p := range flattens {
 		if p > median {
-			phash |= 1 << uint(len(flattens)-idx-1) // leftShiftSet
+			phash |= 1 << (63 - idx) // leftShiftSet
 		}
 	}
 	return phash, nil
@@ -61,7 +65,10 @@ func NewPHash256(img image.Image) (phash PHash256, err error) {
 		return
 	}
 
-	pixels := pixelsPool256.Get().(*[]float64)
+	pixels, ok := pixelsPool256.Get().(*[]float64)
+	if !ok || pixels == nil {
+		return PHash256{}, errors.New("pixelsPool256 returned non-*[]float64")
+	}
 
 	transforms.Rgb2GrayFast(img, pixels)
 	flattens := transforms.DCT2DHash256(pixels)
@@ -73,7 +80,7 @@ func NewPHash256(img image.Image) (phash PHash256, err error) {
 	for idx, p := range flattens {
 		indexOfArray := idx / 64
 		if p > median {
-			phash[indexOfArray] |= 1 << uint(64-idx%64-1) // leftShiftSet
+			phash[indexOfArray] |= 1 << (63 - idx%64) // leftShiftSet
 		}
 	}
 
@@ -97,7 +104,7 @@ func NewAHash(img image.Image) (ahash Ahash, err error) {
 
 	for idx, p := range flattens {
 		if p > avg {
-			ahash |= 1 << uint(len(flattens)-idx-1)
+			ahash |= 1 << (63 - idx)
 		}
 	}
 
@@ -141,7 +148,11 @@ type PHash64 uint64
 
 // Distance between Phash values
 func (ph PHash64) Distance(hash PHash64) uint8 {
-	return uint8(popcnt(uint64(ph) ^ uint64(hash)))
+	d, ok := meta.SafecastIntToUint8(popcnt(uint64(ph) ^ uint64(hash)))
+	if !ok {
+		return 0
+	}
+	return d
 }
 
 func (ph PHash64) String() string {
@@ -162,15 +173,23 @@ type PHash256 [4]uint64
 // Distance between Phash values
 func (ph PHash256) Distance(hash PHash256) uint {
 	var i uint
-	i += uint(popcnt(ph[0] ^ hash[0]))
-	i += uint(popcnt(ph[1] ^ hash[1]))
-	i += uint(popcnt(ph[2] ^ hash[2]))
-	i += uint(popcnt(ph[3] ^ hash[3]))
+	if d, ok := meta.SafecastIntToUint(popcnt(ph[0] ^ hash[0])); ok {
+		i += d
+	}
+	if d, ok := meta.SafecastIntToUint(popcnt(ph[1] ^ hash[1])); ok {
+		i += d
+	}
+	if d, ok := meta.SafecastIntToUint(popcnt(ph[2] ^ hash[2])); ok {
+		i += d
+	}
+	if d, ok := meta.SafecastIntToUint(popcnt(ph[3] ^ hash[3])); ok {
+		i += d
+	}
 	return i
 }
 
 func (ph PHash256) String() string {
-	return fmt.Sprintf("p:%016x%016x%016x%016x", uint64(ph[0]), uint64(ph[1]), uint64(ph[2]), uint64(ph[3]))
+	return fmt.Sprintf("p:%016x%016x%016x%016x", ph[0], ph[1], ph[2], ph[3])
 }
 
 func (ph PHash256) Encode(buf []byte) {

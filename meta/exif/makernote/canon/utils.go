@@ -112,7 +112,7 @@ func DecodeAFInfo2(af []uint16, cfg AFInfo2DecodeConfig) AFInfo {
 	n := len(af)
 	dst := AFInfo{
 		Source:           cfg.Source,
-		AFAreaMode:       AFAreaMode(u16At(af, n, 1)),
+		AFAreaMode:       NewAFAreaModeFromRAW(u16At(af, n, 1)),
 		NumAFPoints:      u16At(af, n, 2),
 		ValidAFPoints:    u16At(af, n, 3),
 		CanonImageWidth:  u16At(af, n, 4),

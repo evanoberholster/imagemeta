@@ -335,12 +335,12 @@ func seekExifTIFFHeader(b *box) error {
 func discardTIFFOffsetPrefix(b *box, offset uint32) (bool, error) {
 	skip := uint64(4) + uint64(offset)
 	need := skip + 4
-	if need > uint64(b.remain) {
-		return false, nil
-	}
 	needInt, err := uint64ToInt(need)
 	if err != nil {
 		return false, err
+	}
+	if needInt > b.remain {
+		return false, nil
 	}
 	skipInt, err := uint64ToInt(skip)
 	if err != nil {
@@ -567,11 +567,10 @@ func clampIntToUint32(v int) uint32 {
 	if v <= 0 {
 		return 0
 	}
-	if uint64(v) > uint64(^uint32(0)) {
-		return ^uint32(0)
+	if converted, ok := meta.SafecastIntToUint32(v); ok {
+		return converted
 	}
-	//nolint:gosec // G115: value is clamped to uint32 bounds above.
-	return uint32(v)
+	return ^uint32(0)
 }
 
 func uint64ToInt64(v uint64) (int64, error) {
