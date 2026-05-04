@@ -1,47 +1,44 @@
-# Imagemeta
+# imagemeta
 
 [![License][License-Image]][License-Url]
-[![Godoc][Godoc-Image]][Godoc-Url]
-[![ReportCard][ReportCard-Image]][ReportCard-Url]
-[![Coverage Status][Coverage-Image]][Coverage-Url]
+[![Go Reference][GoDoc-Image]][GoDoc-Url]
+[![Go Report Card][ReportCard-Image]][ReportCard-Url]
+[![Coverage][Coverage-Image]][Coverage-Url]
 [![Build][Build-Status-Image]][Build-Status-Url]
 
-Image Metadata (Exif and XMP) extraction for JPEG, HEIC, AVIF, TIFF, and Camera Raw in golang. Imagetype identifcation. Zero allocation Perceptual Image Hash. Goal is features that are precise and performance oriented for working with images.
+`imagemeta` is a high-performance Go library for extracting EXIF and XMP metadata from images and camera RAW formats.
 
-## Documentation
+It is built for:
 
-See [Documentation](https://godoc.org/github.com/evanoberholster/imagemeta) for more information.
+- ExifTool-aligned decoding behavior
+- low-allocation parsing on hot paths
+- broad support for modern and legacy camera formats
+- structured MakerNote decoding (Canon, Nikon, Sony, Panasonic, Apple)
 
-## Example Usage
+## Features
 
-Example usage:
+- Decode EXIF from JPEG, TIFF, CR2, CR3, DNG, NEF, ARW, RW2, HEIC/HEIF/AVIF, PNG, and CRW
+- Parse XMP sidecars and embedded XMP blocks
+- Read Canon/Nikon/Sony/Panasonic/Apple MakerNotes
+- Extract embedded CR3 previews
+- Fast image type detection
+- Allocation-conscious perceptual image hashing (`imagehash`)
 
-```go
-    package main
+## Install
 
-    import (
-    	"fmt"
-    	"os"
-
-    	"github.com/evanoberholster/imagemeta"
-    )
-
-	f, err := os.Open("image.jpg")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	e, err := imagemeta.Decode(f)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(e)
+```bash
+go get github.com/evanoberholster/imagemeta
 ```
 
-## XMP (meta/xmp) Examples
+## Supported Formats
 
-### Parse an `.xmp` sidecar file
+- JPEG: `.jpg`, `.jpeg`
+- TIFF + TIFF-based RAW: `.tif`, `.tiff`, `.cr2`, `.dng`, `.nef`, `.arw`, `.rw2`
+- ISO-BMFF family: `.cr3`, `.heic`, `.heif`, `.avif`
+- PNG (EXIF-in-TIFF payload)
+- CIFF/CRW: `.crw`
+
+## Quick Start
 
 ```go
 package main
@@ -50,41 +47,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/meta/xmp"
-)
-
-func main() {
-	f, err := os.Open("image.xmp")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	data, err := xmp.ParseXmp(f)
-	if err != nil {
-		panic(err)
-	}
-
-	if data.IsParsed(xmp.ExifNS) {
-		fmt.Println("ExposureTime:", data.Exif.ExposureTime)
-	}
-	if data.IsParsed(xmp.CrsNS) {
-		fmt.Println("RawFileName:", data.CRS.RawFileName)
-	}
-}
-```
-
-### Parse XMP embedded in an image (JPEG/HEIC/CR3/AVIF/JXL)
-
-```go
-package main
-
-import (
-	"errors"
-	"fmt"
-	"os"
-
-	"github.com/evanoberholster/imagemeta/meta/xmp"
+	"github.com/evanoberholster/imagemeta"
 )
 
 func main() {
@@ -94,104 +57,129 @@ func main() {
 	}
 	defer f.Close()
 
-	data, err := xmp.Parse(f)
-	if errors.Is(err, xmp.ErrNoXMP) {
-		fmt.Println("no XMP found")
-		return
-	}
+	ex, err := imagemeta.Decode(f)
 	if err != nil {
 		panic(err)
 	}
 
-	if data.IsParsed(xmp.DcNS) {
-		fmt.Println("Title:", data.DC.Title)
-	}
+	fmt.Println("type:", ex.ImageType)
+	fmt.Println("make:", ex.Make)
+	fmt.Println("model:", ex.Model)
+	fmt.Println("datetime:", ex.DateTimeOriginal)
 }
 ```
 
-### Parse with debug warnings enabled
+## Decode API
+
+Top-level decode entry points:
+
+- `Decode(io.ReadSeeker)`
+- `DecodeJPEG(io.ReadSeeker)`
+- `DecodeTiff(io.ReadSeeker)`
+- `DecodeCR3(io.ReadSeeker)`
+- `DecodeCRW(io.ReadSeeker)`
+- `DecodeHeif(io.ReadSeeker)`
+- `DecodePng(io.ReadSeeker)`
+- `PreviewCR3(io.ReadSeeker)`
+
+## XMP Parsing
+
+Parse a sidecar `.xmp` file:
 
 ```go
-package main
-
-import (
-	"os"
-
-	"github.com/evanoberholster/imagemeta/meta/xmp"
-)
-
-func main() {
-	f, err := os.Open("image.xmp")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	_, err = xmp.ParseXmpWithOptions(f, xmp.ParseOptions{Debug: true})
-	if err != nil {
-		panic(err)
-	}
-}
+x, err := xmp.ParseXmp(file)
 ```
 
-## Imagehash
- Zero allocation PerceptualHash algorithm (64Bit and 256Bit) [github.com/evanoberholster/imagemeta/imagehash](github.com/evanoberholster/imagemeta/imagehash). Adapted from [https://github.com/corona10/goimagehash](https://github.com/corona10/goimagehash). Image will need to be resized to 64x64 prior to image hashing.
+Parse embedded XMP from an image:
 
-## Contributing
+```go
+x, err := xmp.Parse(file)
+```
 
-Issues, Suggestions and Pull Requests are welcome.
+Package: `github.com/evanoberholster/imagemeta/meta/xmp`
+
+## Image Type Detection
+
+Use `imagetype` for quick format detection before decode:
+
+```go
+t, err := imagetype.Scan(r)
+```
+
+Package: `github.com/evanoberholster/imagemeta/imagetype`
+
+## Perceptual Hashing
+
+`imagehash` provides 64-bit and 256-bit perceptual hashing with low-allocation paths.
+
+Package: `github.com/evanoberholster/imagemeta/imagehash`
+
+## Performance Notes
+
+- Designed for low allocation and high throughput
+- Uses pooled readers and fixed-size parsing structures on hot paths
+- Suitable for large-batch metadata extraction pipelines
 
 ## Benchmarks
 
-See BENCHMARK.md
-To run your own benchmarks see bench_test.go
+- General benchmarks: `bench_test.go`
 
-## Imagetype Identification
+| Benchmark | ns/op | B/op | allocs/op |
+|---|---:|---:|---:|
+| Canon/CR2 | 6646 | 2440 | 20 |
+| Canon/CR3 | 8015 | 3723 | 22 |
+| Canon/JPG | 2058 | 176 | 9 |
+| Nikon/JPG | 1747 | 104 | 7 |
+| Nikon/NEF | 10306 | 736 | 19 |
+| Sony/ARW | 6584 | 1512 | 12 |
 
-Images can be identified with: "github.com/evanoberholster/imagemeta/imagetype" package.
+Note: benchmark results vary by CPU, Go version, and sample files.
 
 ## TODO
 
-- [x] Stabilize ImageTypes API
-- [x] Add Exif parsing for individual image types (jpg, heic, cr2, tiff, dng)
-- [x] Add CR3 and Heic image metadata support.
-- [x] Add Avif image metadata support
-- [ ] Add Canon Exif Makernote support
-- [ ] Add Nikon Exif Makernote support 
-- [ ] Add Camera Make and Model Lookup tables
-- [ ] Add Preview Image extraction
-- [ ] Refactor XMP parsing as "xmp" package
-- [ ] Stabalize Imagemeta API
-- [ ] Improve test coverage
-- [ ] Add Webp image metadata support
-- [ ] Add CRW image metadata support (ciff format images)
-- [ ] Documentation
+- Expand ExifTool parity coverage across MakerNote fields (Nikon, Sony, Panasonic, Apple, DJI)
+- Resolve known reverse-offset parsing edge case in MakerNote decoding
+- Improve malformed metadata resilience with more targeted fuzz and corpus tests
+- Add more specific benchmarks to compare edge cases
+- Document compatibility matrix by camera model/format 
 
-## Based on and Inspired by
+## Contributing
 
-Inspired by Phil Harvey [http://exiftool.org](http://exiftool.org), go-exif [https://github.com/dsoprea/go-exif](https://github.com/dsoprea/go-exif), and RW Carlsen [https://github.com/rwcarlsen/goexif](https://github.com/rwcarlsen/goexif)
+Pull requests and issue reports are welcome.
 
-## Special Thanks to:
-- The go4 Authors (https://github.com/go4org/go4) for their work on a BMFF parser and HEIF structure in golang.
-- Laurent Clévy (@Lorenzo2472) (https://github.com/lclevy/canon_cr3) for Canon CR3 structure.
-- Lasse Heikkilä (https://trepo.tuni.fi/bitstream/handle/123456789/24147/heikkila.pdf) for HEIF structure from his thesis.
-- Imagehash authors (https://github.com/corona10/goimagehash)
+Before opening a PR, run:
 
-### Contributors
-- Anders Brander [abrander](https://github.com/abrander)
-- Dobrosław Żybort [matrixik](https://github.com/matrixik)
+```bash
+go test ./...
+golangci-lint run
+```
 
-## LICENSE
+## Acknowledgements
 
-Copyright (c) 2020-2023, Evan Oberholster & Contributors
+`imagemeta` is heavily inspired and tested on:
+
+- Phil Harvey's ExifTool: <https://exiftool.org>
+- `rwcarlsen/goexif`
+
+Additional references:
+
+- `go4` (BMFF/HEIF parser concepts)
+- `lclevy/canon_cr3`
+- Lasse Heikkilä's HEIF thesis work
+
+### LLMs were used to assist in writing code, the code has been reviewed and has passed stringent checks.
+
+## License
+
+MIT
 
 [License-Url]: https://opensource.org/licenses/MIT
 [License-Image]: https://img.shields.io/badge/License-MIT-blue.svg?maxAge=2592000
-[Godoc-Url]: https://godoc.org/github.com/evanoberholster/imagemeta
-[Godoc-Image]: https://godoc.org/github.com/evanoberholster/imagemeta?status.svg
+[GoDoc-Url]: https://pkg.go.dev/github.com/evanoberholster/imagemeta
+[GoDoc-Image]: https://pkg.go.dev/badge/github.com/evanoberholster/imagemeta.svg
 [ReportCard-Url]: https://goreportcard.com/report/github.com/evanoberholster/imagemeta
 [ReportCard-Image]: https://goreportcard.com/badge/github.com/evanoberholster/imagemeta
 [Coverage-Image]: https://coveralls.io/repos/github/evanoberholster/imagemeta/badge.svg?branch=master
 [Coverage-Url]: https://coveralls.io/github/evanoberholster/imagemeta?branch=master
-[Build-Status-Url]: https://github.com/evanoberholster/imagemeta/actions?query=branch%3Amaster
-[Build-Status-Image]: https://github.com/evanoberholster/imagemeta/workflows/Build/badge.svg?branch=master
+[Build-Status-Url]: https://github.com/evanoberholster/imagemeta/actions/workflows/golangci-lint.yml?query=branch%3Amaster
+[Build-Status-Image]: https://github.com/evanoberholster/imagemeta/actions/workflows/golangci-lint.yml/badge.svg?branch=master
