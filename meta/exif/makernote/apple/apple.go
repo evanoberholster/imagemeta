@@ -73,7 +73,12 @@ func (r AppleRunTime) Duration() (time.Duration, bool) {
 	if r.Scale == 0 {
 		return 0, false
 	}
-	return time.Duration((r.Value * uint64(time.Second)) / r.Scale), true
+	ns := (r.Value * uint64(time.Second)) / r.Scale
+	nsI64, ok := meta.SafecastUint64ToInt64(ns)
+	if !ok {
+		return 0, false
+	}
+	return time.Duration(nsI64), true
 }
 
 // String renders the runtime in the same numeric form ExifTool reports via its
@@ -141,9 +146,18 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 	trailer := raw[len(raw)-32:]
 	offsetIntSize := int(trailer[6])
 	objRefSize := int(trailer[7])
-	numObjects := int(binary.BigEndian.Uint64(trailer[8:16]))
-	topObject := int(binary.BigEndian.Uint64(trailer[16:24]))
-	offsetTableOffset := int(binary.BigEndian.Uint64(trailer[24:32]))
+	numObjects, convOK := meta.SafecastUint64ToInt(binary.BigEndian.Uint64(trailer[8:16]))
+	if !convOK {
+		return AppleRunTime{}, false
+	}
+	topObject, convOK := meta.SafecastUint64ToInt(binary.BigEndian.Uint64(trailer[16:24]))
+	if !convOK {
+		return AppleRunTime{}, false
+	}
+	offsetTableOffset, convOK := meta.SafecastUint64ToInt(binary.BigEndian.Uint64(trailer[24:32]))
+	if !convOK {
+		return AppleRunTime{}, false
+	}
 	if offsetIntSize <= 0 || objRefSize <= 0 || numObjects <= 0 || topObject < 0 || topObject >= numObjects {
 		return AppleRunTime{}, false
 	}
@@ -158,7 +172,11 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 		if !ok || v > uint64(len(raw)) {
 			return AppleRunTime{}, false
 		}
-		offsets[i] = int(v)
+		offset, convOK := meta.SafecastUint64ToInt(v)
+		if !convOK {
+			return AppleRunTime{}, false
+		}
+		offsets[i] = offset
 	}
 
 	cache := make(map[int]any, numObjects)
@@ -272,7 +290,11 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 				if !ok {
 					return nil, false
 				}
-				item, ok := parseObject(int(ref))
+				refInt, ok := meta.SafecastUint64ToInt(ref)
+				if !ok {
+					return nil, false
+				}
+				item, ok := parseObject(refInt)
 				if !ok {
 					return nil, false
 				}
@@ -294,7 +316,11 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 				if !ok {
 					return nil, false
 				}
-				keyVal, ok := parseObject(int(keyRef))
+				keyRefInt, ok := meta.SafecastUint64ToInt(keyRef)
+				if !ok {
+					return nil, false
+				}
+				keyVal, ok := parseObject(keyRefInt)
 				if !ok {
 					return nil, false
 				}
@@ -306,7 +332,11 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 				if !ok {
 					return nil, false
 				}
-				val, ok := parseObject(int(valRef))
+				valRefInt, ok := meta.SafecastUint64ToInt(valRef)
+				if !ok {
+					return nil, false
+				}
+				val, ok := parseObject(valRefInt)
 				if !ok {
 					return nil, false
 				}
@@ -330,7 +360,9 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 
 	var out AppleRunTime
 	if v, ok := plistUint64(dict["flags"]); ok {
-		out.Flags = uint32(v)
+		if vv, ok := meta.SafecastUint64ToUint32(v); ok {
+			out.Flags = vv
+		}
 	}
 	if v, ok := plistUint64(dict["value"]); ok {
 		out.Value = v
@@ -348,7 +380,9 @@ func parseRunTimeKeyed(raw []byte, timescaleIdx int) (AppleRunTime, bool) {
 	var out AppleRunTime
 	pos := timescaleIdx + len("timescale")
 	if v, n, ok := readPlistInlineUintAt(raw, pos); ok {
-		out.Flags = uint32(v)
+		if vv, ok := meta.SafecastUint64ToUint32(v); ok {
+			out.Flags = vv
+		}
 		pos += n
 	}
 	if v, n, ok := readPlistInlineUintAt(raw, pos); ok {
@@ -401,8 +435,8 @@ func ParseFloat64List(raw []byte, order utils.ByteOrder, typ tag.Type, unitCount
 		for i := 0; i < n; i++ {
 			start := i * 8
 			if typ == tag.TypeSignedRational {
-				num := int32(order.Uint32(raw[start : start+4]))
-				den := int32(order.Uint32(raw[start+4 : start+8]))
+				num := meta.SafecastUint32ToInt32Bits(order.Uint32(raw[start : start+4]))
+				den := meta.SafecastUint32ToInt32Bits(order.Uint32(raw[start+4 : start+8]))
 				if den == 0 {
 					dst[i] = 0
 					continue
@@ -470,7 +504,9 @@ func ParseInt32List(raw []byte, order utils.ByteOrder, typ tag.Type, unitCount u
 		}
 		for i := 0; i < n; i++ {
 			start := i * 4
-			dst[i] = int32(order.Uint32(raw[start : start+4]))
+			if v, ok := meta.SafecastUint32ToInt32(order.Uint32(raw[start : start+4])); ok {
+				dst[i] = v
+			}
 		}
 	case tag.TypeSignedShort:
 		if len(raw) < n*2 {
@@ -478,7 +514,7 @@ func ParseInt32List(raw []byte, order utils.ByteOrder, typ tag.Type, unitCount u
 		}
 		for i := 0; i < n; i++ {
 			start := i * 2
-			dst[i] = int32(int16(order.Uint16(raw[start : start+2])))
+			dst[i] = int32(meta.SafecastUint16ToInt16Bits(order.Uint16(raw[start : start+2])))
 		}
 	case tag.TypeSignedLong:
 		if len(raw) < n*4 {
@@ -486,7 +522,7 @@ func ParseInt32List(raw []byte, order utils.ByteOrder, typ tag.Type, unitCount u
 		}
 		for i := 0; i < n; i++ {
 			start := i * 4
-			dst[i] = int32(order.Uint32(raw[start : start+4]))
+			dst[i] = meta.SafecastUint32ToInt32Bits(order.Uint32(raw[start : start+4]))
 		}
 	}
 	return n
@@ -497,7 +533,7 @@ func ParseText(raw []byte, maxBytes uint32) string {
 	if maxBytes == 0 || len(raw) == 0 {
 		return ""
 	}
-	if uint32(len(raw)) > maxBytes {
+	if rawLen, ok := meta.SafecastIntToUint32(len(raw)); !ok || rawLen > maxBytes {
 		raw = raw[:maxBytes]
 	}
 	raw = trimTrailingNULBytes(raw)
@@ -554,7 +590,7 @@ func ParseMakerNoteVersion(raw []byte, order utils.ByteOrder) (int32, bool) {
 	if order.Uint32(raw[6:10]) != 1 {
 		return 0, false
 	}
-	return int32(order.Uint32(raw[10:14])), true
+	return meta.SafecastUint32ToInt32Bits(order.Uint32(raw[10:14])), true
 }
 
 var applePlistEpoch = time.Date(2001, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -578,7 +614,11 @@ func plistLength(raw []byte, off int, low byte) (length int, headerLen int, ok b
 	if !ok {
 		return 0, 0, false
 	}
-	return int(v), 2 + size, true
+	length, ok = meta.SafecastUint64ToInt(v)
+	if !ok {
+		return 0, 0, false
+	}
+	return length, 2 + size, true
 }
 
 func readUnsigned(raw []byte, size int) (uint64, bool) {

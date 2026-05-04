@@ -3,6 +3,7 @@ package jpeg
 import (
 	"io"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -34,7 +35,8 @@ func parseMPF(payload []byte, segmentOffset uint32) (*MPF, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	firstIFD := order.Uint32(tiff[4:8])
-	if firstIFD > uint32(len(tiff)-2) {
+	limit, ok := meta.SafecastIntToUint32(len(tiff) - 2)
+	if !ok || firstIFD > limit {
 		return nil, io.ErrUnexpectedEOF
 	}
 	pos := int(firstIFD)
@@ -82,9 +84,11 @@ func parseMPImages(mpf *MPF, order utils.ByteOrder, value []byte, segmentOffset 
 		if start != 0 {
 			start += segmentOffset
 		}
+		flags, _ := meta.SafecastUint32ToUint8((attr & 0xf8000000) >> 27)
+		format, _ := meta.SafecastUint32ToUint8((attr & 0x07000000) >> 24)
 		mpf.Images = append(mpf.Images, MPImage{
-			MPImageFlags:               uint8((attr & 0xf8000000) >> 27),
-			MPImageFormat:              uint8((attr & 0x07000000) >> 24),
+			MPImageFlags:               flags,
+			MPImageFormat:              format,
 			MPImageType:                attr & 0x00ffffff,
 			MPImageLength:              order.Uint32(b[4:8]),
 			MPImageStart:               start,
@@ -108,7 +112,11 @@ func tiffValue(data []byte, order utils.ByteOrder, typ uint16, count uint32, raw
 		return nil, false
 	}
 	start := int(offset)
-	end := start + int(total)
+	totalInt, ok := meta.SafecastUint64ToInt(total)
+	if !ok {
+		return nil, false
+	}
+	end := start + totalInt
 	return data[start:end], true
 }
 

@@ -45,7 +45,11 @@ func (pr *previewReader) RenderPreview(r io.Reader, h meta.PreviewHeader) error 
 			break
 		}
 
-		offset += uint32(readLength)
+		delta, ok := meta.SafecastIntToUint32(readLength)
+		if !ok {
+			return io.ErrUnexpectedEOF
+		}
+		offset += delta
 	}
 
 	pr.PreviewImage = img

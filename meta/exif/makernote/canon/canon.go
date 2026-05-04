@@ -1232,6 +1232,10 @@ func AFPointString(v uint16) string {
 //	14: "Large Zone AF",
 type AFAreaMode int16
 
+func NewAFAreaModeFromRAW(raw uint16) AFAreaMode {
+	return AFAreaMode(meta.SafecastUint16ToInt16Bits(raw))
+}
+
 const (
 	AFAreaModeOffManualFocus    AFAreaMode = 0  // Off (Manual Focus)
 	AFAreaModeAFPointExpansion  AFAreaMode = 1  // AF Point Expansion (surround)

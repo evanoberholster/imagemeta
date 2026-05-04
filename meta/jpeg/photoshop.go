@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
@@ -85,13 +86,13 @@ func parsePhotoshopResource(p *Photoshop, iptc **IPTC, id uint16, data []byte) {
 		}
 	case 0x0406:
 		if len(data) >= 2 {
-			p.PhotoshopQuality = int16(jpegEndian.Uint16(data[0:2]))
+			p.PhotoshopQuality = meta.SafecastUint16ToInt16Bits(jpegEndian.Uint16(data[0:2]))
 		}
 		if len(data) >= 4 {
-			p.PhotoshopFormat = int16(jpegEndian.Uint16(data[2:4]))
+			p.PhotoshopFormat = meta.SafecastUint16ToInt16Bits(jpegEndian.Uint16(data[2:4]))
 		}
 		if len(data) >= 6 {
-			p.ProgressiveScans = int16(jpegEndian.Uint16(data[4:6]))
+			p.ProgressiveScans = meta.SafecastUint16ToInt16Bits(jpegEndian.Uint16(data[4:6]))
 		}
 	case 0x040a:
 		if len(data) > 0 {
@@ -101,9 +102,17 @@ func parsePhotoshopResource(p *Photoshop, iptc **IPTC, id uint16, data []byte) {
 	case 0x040b:
 		p.URL = strings.TrimRight(string(data), "\x00")
 	case 0x040c:
-		p.PhotoshopThumbnailLength = uint32(len(data))
+		if n, ok := meta.SafecastIntToUint32(len(data)); ok {
+			p.PhotoshopThumbnailLength = n
+		} else {
+			p.PhotoshopThumbnailLength = 0
+		}
 		if len(data) > 28 {
-			p.PhotoshopThumbnailLength = uint32(len(data) - 28)
+			if n, ok := meta.SafecastIntToUint32(len(data) - 28); ok {
+				p.PhotoshopThumbnailLength = n
+			} else {
+				p.PhotoshopThumbnailLength = 0
+			}
 		}
 	case 0x0425:
 		p.IPTCDigest = hex.EncodeToString(data)

@@ -63,7 +63,7 @@ func pixelToGray(r, g, b, a uint32) float32 {
 //	}
 //}
 
-// yCbCrToGrayAlt convers an *image.YCbCr to array of pixels.
+// yCbCrToGrayAlt converts an *image.YCbCr to array of pixels.
 func yCbCrToGrayAlt(img *image.YCbCr, pixels []float32) {
 	s := img.Rect.Max.X - img.Rect.Min.X
 	for y := 0; y < s; y++ {
