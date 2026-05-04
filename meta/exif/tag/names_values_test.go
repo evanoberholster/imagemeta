@@ -158,6 +158,9 @@ func TestNormalizeValueStringAndParseUint(t *testing.T) {
 	if got, want := normalizeValueString("  Auto_Bracket  "), "auto bracket"; got != want {
 		t.Fatalf("normalizeValueString() = %q, want %q", got, want)
 	}
+	if got, want := normalizeValueString("  Multi__Segment \t Metering  "), "multi segment metering"; got != want {
+		t.Fatalf("normalizeValueString() collapse = %q, want %q", got, want)
+	}
 
 	if got, ok := parseUint("0X10"); !ok || got != 16 {
 		t.Fatalf("parseUint hex = (%d,%v), want (16,true)", got, ok)

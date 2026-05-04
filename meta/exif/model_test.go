@@ -56,6 +56,21 @@ func TestLensInfoStringAndJSON(t *testing.T) {
 	}
 }
 
+func TestIFD0MarshalJSONOmitsRemovedColorFields(t *testing.T) {
+	t.Parallel()
+
+	buf, err := json.Marshal(IFD0Tag{})
+	if err != nil {
+		t.Fatalf("json.Marshal(IFD0Tag{}): %v", err)
+	}
+	got := string(buf)
+	for _, removed := range []string{"WhitePoint", "PrimaryChromaticities", "YCbCrCoefficients"} {
+		if strings.Contains(got, removed) {
+			t.Fatalf("IFD0 JSON unexpectedly contains %q: %s", removed, got)
+		}
+	}
+}
+
 func TestGPSInfoSetDateAndTimeOrder(t *testing.T) {
 	t.Parallel()
 

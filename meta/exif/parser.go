@@ -275,12 +275,6 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 	case tag.TagOrientation:
 		ifd0.Orientation = meta.Orientation(r.parseUint16(t))
 	// Color tags.
-	case tag.TagWhitePoint:
-		r.parseRationalFloat64List(t, ifd0.WhitePoint[:])
-	case tag.TagPrimaryChromaticities:
-		r.parseRationalFloat64List(t, ifd0.PrimaryChromaticities[:])
-	case tag.TagYCbCrCoefficients:
-		r.parseRationalFloat64List(t, ifd0.YCbCrCoefficients[:])
 	case tag.TagYCbCrPositioning:
 		ifd0.YCbCrPositioning = r.parseUint16(t)
 	// Intentionally non-parsed IFD0 tags (recognized but not modeled).
@@ -288,6 +282,7 @@ func (r *Reader) parseIFD0Tag(t tag.Entry) bool {
 	case tag.TagCFARepeatPatternDim, tag.TagCFAPattern2, tag.TagReferenceBlackWhite, tag.TagTIFFEPStandardID,
 		tag.TagCFAPlaneColor, tag.TagBlackLevelRepeatDim, tag.TagBlackLevel, tag.TagWhiteLevel,
 		tag.TagColorMatrix1, tag.TagColorMatrix2, tag.TagAnalogBalance, tag.TagAsShotNeutral,
+		tag.TagWhitePoint, tag.TagPrimaryChromaticities, tag.TagYCbCrCoefficients,
 		tag.TagBaselineExposure, tag.TagBaselineNoise, tag.TagActiveArea, tag.TagDefaultScale,
 		tag.TagDefaultCropOrigin, tag.TagDefaultCropSize, tag.TagDefaultUserCrop, tag.TagNewRawImageDigest,
 		tag.TagCFALayout, tag.TagBayerGreenSplit, tag.TagBaselineSharpness, tag.TagLinearResponseLimit,

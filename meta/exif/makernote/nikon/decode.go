@@ -2,6 +2,7 @@ package nikon
 
 import (
 	"math"
+	"math/bits"
 	"strconv"
 	"strings"
 	"time"
@@ -19,12 +20,12 @@ func VersionString(raw []byte) string {
 		raw = raw[:4]
 	}
 	if raw[0] <= 0x09 {
-		var b strings.Builder
-		b.Grow(8)
-		for i := range raw {
-			b.WriteString(strconv.Itoa(int(raw[i])))
+		var buf [12]byte
+		out := buf[:0]
+		for _, v := range raw {
+			out = strconv.AppendInt(out, int64(v), 10)
 		}
-		return b.String()
+		return string(out)
 	}
 	raw = trimNUL(raw)
 	if len(raw) == 0 {
@@ -38,20 +39,22 @@ func BitsetIndices(raw []byte) []int {
 	if len(raw) == 0 {
 		return nil
 	}
-	out := make([]int, 0, len(raw))
-	for byteIndex, v := range raw {
-		if v == 0 {
-			continue
-		}
-		for bit := 0; bit < 8; bit++ {
-			if v&(1<<bit) == 0 {
-				continue
-			}
-			out = append(out, byteIndex*8+bit)
-		}
+
+	count := 0
+	for _, v := range raw {
+		count += bits.OnesCount8(v)
 	}
-	if len(out) == 0 {
+	if count == 0 {
 		return nil
+	}
+
+	out := make([]int, 0, count)
+	for byteIndex, v := range raw {
+		for v != 0 {
+			bit := bits.TrailingZeros8(v)
+			out = append(out, byteIndex*8+bit)
+			v &^= 1 << bit
+		}
 	}
 	return out
 }
@@ -82,14 +85,19 @@ func U16At(raw []byte, off int, bo utils.ByteOrder) uint16 {
 
 // RationalPart formats a single rational value as a string.
 func RationalPart(v tag.RationalU) string {
+	var buf [32]byte
+	return string(appendRationalPart(buf[:0], v))
+}
+
+func appendRationalPart(dst []byte, v tag.RationalU) []byte {
 	if v.Denominator == 0 {
-		return "undef"
+		return append(dst, "undef"...)
 	}
 	f := v.Float64()
 	if f == float64(int64(f)) {
-		return strconv.FormatInt(int64(f), 10)
+		return strconv.AppendInt(dst, int64(f), 10)
 	}
-	return strconv.FormatFloat(f, 'f', -1, 64)
+	return strconv.AppendFloat(dst, f, 'f', -1, 64)
 }
 
 // LegacyAFPoints decodes AF point indices from a schema-based bitmask.
@@ -115,12 +123,7 @@ func LegacyAFPoints(raw []byte, schema uint8, offset int) []int {
 
 // AFInfo2HasSelectedMask reports whether the AF area mode uses a selected mask.
 func AFInfo2HasSelectedMask(areaMode uint8) bool {
-	switch areaMode {
-	case 8, 9, 13:
-		return true
-	default:
-		return false
-	}
+	return areaMode == 8 || areaMode == 9 || areaMode == 13
 }
 
 // AFInfo2V0400PointsLen returns the AF point bitmask byte count for v0400+.
@@ -201,12 +204,19 @@ func fileInfoValid(dir, file uint16) bool {
 
 func fileInfoPrefersLE(model string) bool {
 	model = strings.ToUpper(strings.TrimSpace(model))
-	for _, token := range []string{"D4S", "D750", "D810", "D3300", "D5200", "D5300", "D5500", "D7100"} {
-		if strings.Contains(model, token) {
-			return true
-		}
+	switch {
+	case strings.Contains(model, "D4S"),
+		strings.Contains(model, "D750"),
+		strings.Contains(model, "D810"),
+		strings.Contains(model, "D3300"),
+		strings.Contains(model, "D5200"),
+		strings.Contains(model, "D5300"),
+		strings.Contains(model, "D5500"),
+		strings.Contains(model, "D7100"):
+		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // ----- struct decoders (follow Canon.Decode* pattern) -----
@@ -268,16 +278,21 @@ func DecodeLens(raw []byte, bo utils.ByteOrder) string {
 	if len(raw) < 32 {
 		return ""
 	}
-	var parts [4]string
-	for i := range parts {
+
+	var out [128]byte
+	buf := out[:0]
+	for i := 0; i < 4; i++ {
+		if i > 0 {
+			buf = append(buf, ' ')
+		}
 		start := i * 8
 		v := tag.RationalU{
 			Numerator:   bo.Uint32(raw[start : start+4]),
 			Denominator: bo.Uint32(raw[start+4 : start+8]),
 		}
-		parts[i] = RationalPart(v)
+		buf = appendRationalPart(buf, v)
 	}
-	return strings.Join(parts[:], " ")
+	return string(buf)
 }
 
 // DecodeLensFStops decodes a Nikon LensFStops payload (tag 0x008b).

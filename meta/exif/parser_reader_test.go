@@ -495,25 +495,6 @@ func TestParseIFD0TagApplicationNotesSkipped(t *testing.T) {
 func TestParseIFD0ColorAndSamplingTags(t *testing.T) {
 	t.Parallel()
 
-	// WhitePoint [2] rationals, PrimaryChromaticities [6], YCbCrCoefficients [3].
-	whitePoint := []byte{
-		55, 12, 0, 0, 16, 39, 0, 0, // 3127/10000
-		218, 12, 0, 0, 16, 39, 0, 0, // 3290/10000
-	}
-	primary := []byte{
-		0x80, 0x19, 0, 0, 0x10, 0x27, 0, 0, // 0.64
-		0xE4, 0x0C, 0, 0, 0x10, 0x27, 0, 0, // 0.33
-		0xB8, 0x0B, 0, 0, 0x10, 0x27, 0, 0, // 0.30
-		0x70, 0x17, 0, 0, 0x10, 0x27, 0, 0, // 0.60
-		0xDC, 0x05, 0, 0, 0x10, 0x27, 0, 0, // 0.15
-		0x58, 0x02, 0, 0, 0x10, 0x27, 0, 0, // 0.06
-	}
-	coeff := []byte{
-		0x2B, 0x01, 0, 0, 0xE8, 0x03, 0, 0, // 0.299
-		0x4B, 0x02, 0, 0, 0xE8, 0x03, 0, 0, // 0.587
-		0x72, 0x00, 0, 0, 0xE8, 0x03, 0, 0, // 0.114
-	}
-
 	tests := []struct {
 		name  string
 		entry tag.Entry
@@ -562,36 +543,6 @@ func TestParseIFD0ColorAndSamplingTags(t *testing.T) {
 			check: func(t *testing.T, r *Reader) {
 				if got := r.Exif.IFD0.YCbCrPositioning; got != 2 {
 					t.Fatalf("YCbCrPositioning = %d, want 2", got)
-				}
-			},
-		},
-		{
-			name:  "WhitePoint",
-			entry: tag.NewEntry(tag.TagWhitePoint, tag.TypeRational, 2, 0, tag.IFD0, 0, utils.LittleEndian),
-			data:  whitePoint,
-			check: func(t *testing.T, r *Reader) {
-				if got := r.Exif.IFD0.WhitePoint[0]; math.Abs(got-0.3127) > 0.00001 {
-					t.Fatalf("WhitePoint[0] = %f, want ~0.3127", got)
-				}
-			},
-		},
-		{
-			name:  "PrimaryChromaticities",
-			entry: tag.NewEntry(tag.TagPrimaryChromaticities, tag.TypeRational, 6, 0, tag.IFD0, 0, utils.LittleEndian),
-			data:  primary,
-			check: func(t *testing.T, r *Reader) {
-				if got := r.Exif.IFD0.PrimaryChromaticities[5]; math.Abs(got-0.06) > 0.00001 {
-					t.Fatalf("PrimaryChromaticities[5] = %f, want ~0.06", got)
-				}
-			},
-		},
-		{
-			name:  "YCbCrCoefficients",
-			entry: tag.NewEntry(tag.TagYCbCrCoefficients, tag.TypeRational, 3, 0, tag.IFD0, 0, utils.LittleEndian),
-			data:  coeff,
-			check: func(t *testing.T, r *Reader) {
-				if got := r.Exif.IFD0.YCbCrCoefficients[1]; math.Abs(got-0.587) > 0.00001 {
-					t.Fatalf("YCbCrCoefficients[1] = %f, want ~0.587", got)
 				}
 			},
 		},
