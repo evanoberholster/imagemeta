@@ -1,6 +1,7 @@
 name: golangci-lint
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -22,6 +23,11 @@ permissions:
 concurrency:
   group: golangci-lint-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  GOLANGCI_LINT_VERSION: v1.64.8
+  # Keep govulncheck pinned to a release compatible with go.mod's Go version.
+  GOVULNCHECK_VERSION: v1.1.4
 
 jobs:
   lint:
@@ -45,14 +51,28 @@ jobs:
       - name: Download modules
         run: go mod download
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.64.8
-          only-new-issues: ${{ github.event_name == 'pull_request' }}
-          args: --config=golangci.yml --timeout=5m
+      - name: Build all packages (smoke)
+        run: go test ./... -run '^$'
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
+
+      - name: Run golangci-lint (typecheck excluded)
+        run: |
+          set -euo pipefail
+          golangci-lint run --config=golangci.yml --timeout=5m --out-format json --issues-exit-code=0 ./... > golangci.json
+
+          non_typecheck_issues="$(jq '[ (.Issues // [])[] | select(.FromLinter != "typecheck") ] | length' golangci.json)"
+          if [ "${non_typecheck_issues}" -eq 0 ]; then
+            echo "No non-typecheck golangci-lint issues found."
+            exit 0
+          fi
+
+          echo "golangci-lint issues (excluding typecheck):"
+          jq -r '.Issues // [] | .[] | select(.FromLinter != "typecheck") | "\(.Pos.Filename):\(.Pos.Line):\(.Pos.Column): \(.Text) (\(.FromLinter))"' golangci.json
+          exit 1
 
       - name: Run govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}
           govulncheck ./...

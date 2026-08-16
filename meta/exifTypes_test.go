@@ -2,6 +2,8 @@ package meta
 
 import (
 	"bytes"
+	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -86,6 +88,71 @@ func TestExposureProgram(t *testing.T) {
 	}
 }
 
+func TestResolutionUnitString(t *testing.T) {
+	tests := []struct {
+		name string
+		got  ResolutionUnit
+		want string
+	}{
+		{"unknown", ResolutionUnitUnknown, "Unknown"},
+		{"none", ResolutionUnitNone, "None"},
+		{"inches", ResolutionUnitInches, "inches"},
+		{"cm", ResolutionUnitCentimeters, "cm"},
+		{"mm", ResolutionUnitMillimeters, "mm"},
+		{"um", ResolutionUnitMicrometers, "um"},
+		{"invalid", ResolutionUnit(99), "Unknown"},
+	}
+
+	for _, tc := range tests {
+		if got := tc.got.String(); got != tc.want {
+			t.Fatalf("%s: ResolutionUnit(%d).String() = %q, want %q", tc.name, uint16(tc.got), got, tc.want)
+		}
+	}
+}
+
+func TestSubfileType(t *testing.T) {
+	tests := []struct {
+		name string
+		got  SubfileType
+		want string
+	}{
+		{"full", SubfileTypeFullResolutionImage, "Full-resolution image"},
+		{"reduced", SubfileTypeReducedResolutionImage, "Reduced-resolution image"},
+		{"page", SubfileTypeSinglePageOfMultiPageImage, "Single page of multi-page image"},
+		{"depth", SubfileTypeDepthMap, "Depth map"},
+		{"enhanced", SubfileTypeEnhancedImageData, "Enhanced image data"},
+		{"alternate", SubfileTypeAlternateReducedResolutionImage, "Alternate reduced-resolution image"},
+		{"semantic", SubfileTypeSemanticMask, "Semantic Mask"},
+		{"invalid", SubfileTypeInvalid, "invalid"},
+		{"bitmask", SubfileType(0x00000011), "Reduced resolution, TIFF-FX mixed raster content"},
+		{"unknown", SubfileType(0x00010000), "Unknown"},
+	}
+
+	for _, tc := range tests {
+		if got := tc.got.String(); got != tc.want {
+			t.Fatalf("%s: SubfileType(%#x).String() = %q, want %q", tc.name, uint32(tc.got), got, tc.want)
+		}
+	}
+}
+
+func TestApertureMarshalJSON(t *testing.T) {
+	buf, err := json.Marshal(Aperture(5.656854))
+	if err != nil {
+		t.Fatalf("json.Marshal(Aperture): %v", err)
+	}
+	if got, want := string(buf), "5.656854"; got != want {
+		t.Fatalf("json.Marshal(Aperture(5.656854)) = %s, want %s", got, want)
+	}
+
+	buf, err = json.Marshal(Aperture(float32(math.Inf(1))))
+	if err != nil {
+		t.Fatalf("json.Marshal(Aperture(+Inf)): %v", err)
+	}
+	if got, want := string(buf), `"Inf"`; got != want {
+		t.Fatalf("json.Marshal(Aperture(+Inf)) = %s, want %s", got, want)
+	}
+}
+
 func TestExposureMode(t *testing.T) {
 	items := []struct {
 		str string
@@ -101,20 +168,6 @@ func TestExposureMode(t *testing.T) {
 		}
 	}
 
-}
-
-func BenchmarkExposureTime(b *testing.B) {
-	for _, bm := range ssList {
-		b.Run(bm.name, func(b *testing.B) {
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				//bm.ss.toBytes()
-				_, _ = bm.ss.MarshalText()
-
-			}
-		})
-	}
 }
 
 var ssList = []struct {
@@ -148,15 +201,6 @@ func TestShutterSpeed(t *testing.T) {
 		if bm.ss.String() != bm.str {
 			t.Errorf("Incorrect ShutterSpeed.String wanted %s got %s ", bm.str, b)
 		}
-
-		//b1 := ExposureTime(0.0)
-		//if err = b1.UnmarshalText([]byte(bm.str)); err != nil {
-		//	t.Error(err)
-		//////}
-
-		//m, _ := b1.MarshalText()
-		//assert.Equal(t, bm.ss, b1, "UnmarshalText #%s, wanted: %s got: %s", bm.name, bm.str, m)
-
 	}
 }
 
@@ -172,6 +216,7 @@ var ebList = []struct {
 	{"test2", ExposureBias(-1021), "-4/3", -4, 3},
 	{"test3", ExposureBias(0), "0/0", 0, 0},
 	{"test4", ExposureBias(1283), "+5/3", 5, 3},
+	{"test5", ExposureBias(0), "0/0", 0, 1},
 }
 
 func TestExposureBias(t *testing.T) {
@@ -202,83 +247,24 @@ func TestExposureBias(t *testing.T) {
 	if eb2.String() != "+"+str {
 		t.Errorf("NewExposureBias #%s, wanted %s got %s", "Unsigned test", eb2.String(), "+"+str)
 	}
-}
 
-func BenchmarkExposureBias(b *testing.B) {
-	for _, eb := range ebList {
-		b.Run(eb.name, func(b *testing.B) {
-			b.ReportAllocs()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				if _, err := eb.eb.MarshalText(); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
+	ebZero := NewExposureBias(0, 1)
+	if got, want := ebZero.String(), "0/0"; got != want {
+		t.Errorf("NewExposureBias zero numerator wanted %s got %s", want, got)
 	}
-	//for _, eb := range ebList {
-	//	b.Run(eb.name, func(b *testing.B) {
-	//		b.ReportAllocs()
-	//		b.ResetTimer()
-	//		for i := 0; i < b.N; i++ {
-	//			testEB := ExposureBias(0)
-	//			testEB.UnmarshalText([]byte(eb.str))
-	//		}
-	//	})
-	//}
+
+	var parsedZero ExposureBias
+	if err := parsedZero.UnmarshalText([]byte("+0/1")); err != nil {
+		t.Fatalf("UnmarshalText(+0/1): %v", err)
+	}
+	if parsedZero != 0 {
+		t.Errorf("UnmarshalText(+0/1) wanted 0 got %d", parsedZero)
+	}
 }
 
 ////
 // Automated Tests for MessagePack
 ////
-
-func TestApertureMsgPack(t *testing.T) {
-	var err error
-	v := NewAperture(10, 5)
-
-	var buf bytes.Buffer
-	if err = msgp.Encode(&buf, &v); err != nil {
-		t.Error(err)
-	}
-
-	m := v.Msgsize()
-	if buf.Len() > m {
-		t.Log("WARNING: TestAperture Msgsize() is inaccurate")
-	}
-
-	vn := NewAperture(0, 0)
-	if err = msgp.Decode(&buf, &vn); err != nil {
-		t.Error(err)
-	}
-
-	buf.Reset()
-	if err = msgp.Encode(&buf, &v); err != nil {
-		t.Error(err)
-	}
-	if err = msgp.NewReader(&buf).Skip(); err != nil {
-		t.Error(err)
-	}
-
-	bts, err := v.MarshalMsg(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	left, err := v.UnmarshalMsg(bts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(left) > 0 {
-		t.Errorf("%d bytes left over after UnmarshalMsg(): %q", len(left), left)
-	}
-
-	left, err = msgp.Skip(bts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(left) > 0 {
-		t.Errorf("%d bytes left over after Skip(): %q", len(left), left)
-	}
-}
 
 type MsgPackInterface interface {
 	//Encode(w io.Writer, e msgp.Encodable) error

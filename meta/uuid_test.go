@@ -27,7 +27,7 @@ func TestUUID(t *testing.T) {
 	}
 
 	_, err = UUIDFromBytes([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11})
-	if !(err != nil) {
+	if err == nil {
 		t.Errorf("Incorrect UUID error got: %s wanted: nil", err)
 	}
 
@@ -86,8 +86,9 @@ func TestUUIDUnmarshalText(t *testing.T) {
 	}
 	for _, v := range tests {
 		u, u2 := UUID{}, UUID{}
-		if err := u.UnmarshalText([]byte(v.str)); !errors.Is(err, v.err) {
-			t.Errorf("error is %v", err)
+		unmarshalErr := u.UnmarshalText([]byte(v.str))
+		if !errors.Is(unmarshalErr, v.err) {
+			t.Errorf("error is %v", unmarshalErr)
 		}
 
 		if !bytes.EqualFold(v.uuid[:], u[:]) {

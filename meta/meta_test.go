@@ -1,10 +1,14 @@
 package meta
 
 import (
+	"bytes"
+	"log/slog"
+	"strings"
 	"testing"
 
-	"github.com/evanoberholster/imagemeta/exif2/ifds"
 	"github.com/evanoberholster/imagemeta/imagetype"
+	"github.com/evanoberholster/imagemeta/meta/exif/tag"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,9 +40,9 @@ func TestXmpHeader(t *testing.T) {
 }
 
 func TestExifHeader(t *testing.T) {
-	h1 := ExifHeader{ByteOrder: utils.BigEndian, FirstIfd: ifds.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
+	h1 := ExifHeader{ByteOrder: utils.BigEndian, FirstIfd: tag.IFD0, FirstIfdOffset: 1234, TiffHeaderOffset: 16, ExifLength: 1024, ImageType: imagetype.ImagePNG}
 	h2 := NewExifHeader(utils.BigEndian, 1234, 16, 1024, imagetype.ImagePNG)
-	h2.FirstIfd = ifds.IFD0
+	h2.FirstIfd = tag.IFD0
 
 	assert.Equal(t, h1, h2, "")
 	assert.True(t, h2.IsValid(), "IsValid")
@@ -65,4 +69,59 @@ func TestMetadata(t *testing.T) {
 
 	assert.NotEqual(t, m.Dim.String(), "")
 
+}
+
+func TestHeaderMarshalLogObjectUsesLowerCamelKeys(t *testing.T) {
+	var buf bytes.Buffer
+	logger := metalog.New(&buf, slog.LevelInfo)
+	metalog.NewEvent(logger, slog.LevelInfo, 2).
+		Object("exifHeader", ExifHeader{
+			ByteOrder:        utils.LittleEndian,
+			FirstIfd:         tag.IFD0,
+			FirstIfdOffset:   8,
+			TiffHeaderOffset: 12,
+			ExifLength:       4096,
+			ImageType:        imagetype.ImageJPEG,
+		}).
+		Object("xmpHeader", XPacketHeader{
+			Offset:       42,
+			Length:       128,
+			HasXPacketPI: true,
+			HasXMPMeta:   true,
+		}).
+		Object("previewHeader", PreviewHeader{
+			Size:      256,
+			Width:     3,
+			Height:    2,
+			ImageType: imagetype.ImageJPEG,
+			Source:    PreviewSourcePRVW,
+		}).
+		Msg("test")
+
+	out := buf.String()
+	for _, want := range []string{
+		`"firstIfd":"IFD0"`,
+		`"firstIfdOffset":8`,
+		`"tiffHeaderOffset":12`,
+		`"exifLength":4096`,
+		`"byteOrder":"LittleEndian"`,
+		`"imageType":"image/jpeg"`,
+		`"offset":42`,
+		`"length":128`,
+		`"hasXPacketPI":true`,
+		`"hasXMPMeta":true`,
+		`"size":256`,
+		`"width":3`,
+		`"height":2`,
+		`"source":"PRVW"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("log output missing %s: %q", want, out)
+		}
+	}
+	for _, unwanted := range []string{`"FirstIfd"`, `"ExifLength"`, `"Endian"`, `"ImageType"`} {
+		if strings.Contains(out, unwanted) {
+			t.Fatalf("log output unexpectedly contains legacy key %s: %q", unwanted, out)
+		}
+	}
 }

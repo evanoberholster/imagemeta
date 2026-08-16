@@ -53,12 +53,14 @@ var NilUUID = UUID{}
 func UUIDFromBytes(buf []byte) (UUID, error) {
 	var u UUID
 	err := u.UnmarshalBinary(buf)
-	return UUID(u), err
+	return u, err
 }
 
 func UUIDFromString(str string) UUID {
 	var u UUID
-	_ = u.UnmarshalText([]byte(str))
+	if err := u.UnmarshalText([]byte(str)); err != nil {
+		return NilUUID
+	}
 	return u
 }
 
@@ -70,7 +72,10 @@ func (u UUID) Bytes() []byte {
 // String returns canonical string representation of UUID:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
 func (u UUID) String() string {
-	str, _ := u.MarshalText()
+	str, err := u.MarshalText()
+	if err != nil {
+		return ""
+	}
 	return string(str)
 }
 

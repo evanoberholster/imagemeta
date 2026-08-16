@@ -46,7 +46,10 @@ func TestGreyPixels(t *testing.T) {
 	}
 	copy(pixels2, pixels)
 
-	yCbCr := img.(*image.YCbCr)
+	yCbCr, ok := img.(*image.YCbCr)
+	if !ok {
+		t.Fatalf("unexpected image type %T", img)
+	}
 	AsmYCbCrToGray(yCbCr, pixels)
 
 	yCbCrToGrayAlt(yCbCr, pixels2)
@@ -173,7 +176,10 @@ func BenchmarkGreyPixels(b *testing.B) {
 		b.Fatal(err)
 	}
 	img = resize.Resize(64, 64, img, resize.Bilinear)
-	yCbCr := img.(*image.YCbCr)
+	yCbCr, ok := img.(*image.YCbCr)
+	if !ok {
+		b.Fatalf("unexpected image type %T", img)
+	}
 
 	pixels := make([]float32, 64*64)
 	pixels2 := make([]float32, 64*64)

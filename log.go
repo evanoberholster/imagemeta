@@ -2,23 +2,18 @@ package imagemeta
 
 import (
 	"io"
+	"log/slog"
 	"os"
 
-	"github.com/evanoberholster/imagemeta/exif2"
-	"github.com/evanoberholster/imagemeta/isobmff"
-	"github.com/evanoberholster/imagemeta/jpeg"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 )
 
 var (
 	// Logger is the logger
-	logger zerolog.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.PanicLevel)
+	logger = metalog.New(os.Stdout, metalog.LevelDisabled)
 )
 
-func SetLogger(w io.Writer, level zerolog.Level) {
-	logger = log.Output(w).Level(level)
-	jpeg.Logger = logger
-	exif2.Logger = logger
-	isobmff.Logger = logger
+func SetLogger(w io.Writer, level slog.Level) {
+	logger = metalog.New(w, level)
+	metalog.SetLogger(logger)
 }

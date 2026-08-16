@@ -2,18 +2,18 @@ package preview
 
 import (
 	"io"
+	"log/slog"
 
 	"github.com/evanoberholster/imagemeta/meta"
-	"github.com/rs/zerolog"
 )
 
 type previewReader struct {
-	logger zerolog.Logger
+	logger *slog.Logger
 
 	PreviewImage []byte
 }
 
-func NewPreviewReader(l zerolog.Logger) previewReader {
+func NewPreviewReader(l *slog.Logger) previewReader {
 	ir := previewReader{
 		logger: l,
 	}
@@ -38,14 +38,18 @@ func (pr *previewReader) RenderPreview(r io.Reader, h meta.PreviewHeader) error 
 			pr.logError(err).
 				Uint32("offset", offset).
 				Uint32("maxOffset", maxOffset).
-				Msgf("error read preview image")
+				Msg("error read preview image")
 			return err
 		}
 		if readLength == 0 {
 			break
 		}
 
-		offset += uint32(readLength)
+		delta, ok := meta.SafecastIntToUint32(readLength)
+		if !ok {
+			return io.ErrUnexpectedEOF
+		}
+		offset += delta
 	}
 
 	pr.PreviewImage = img
