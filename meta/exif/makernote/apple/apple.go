@@ -180,6 +180,7 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 	}
 
 	cache := make(map[int]any, numObjects)
+	visiting := make(map[int]bool)
 	var parseObject func(int) (any, bool)
 	parseObject = func(idx int) (any, bool) {
 		if v, ok := cache[idx]; ok {
@@ -188,6 +189,14 @@ func ParseRunTime(raw []byte) (AppleRunTime, bool) {
 		if idx < 0 || idx >= numObjects {
 			return nil, false
 		}
+		// Reject cyclic object references (e.g. an array or dict that refers
+		// back to itself), which would otherwise recurse until the goroutine
+		// stack is exhausted.
+		if visiting[idx] {
+			return nil, false
+		}
+		visiting[idx] = true
+		defer delete(visiting, idx)
 		off := offsets[idx]
 		if off < 0 || off >= len(raw)-32 {
 			return nil, false
