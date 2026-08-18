@@ -135,3 +135,23 @@ func TestExtractPreviewValidatesSOI(t *testing.T) {
 		t.Fatalf("ExtractPreview error = %v, want ErrNoPreview", err)
 	}
 }
+
+func TestIsRenderableJPEG(t *testing.T) {
+	t.Parallel()
+
+	baseline := encodeTestJPEG(t, 8, 8)
+	if !isRenderableJPEG(baseline) {
+		t.Fatal("isRenderableJPEG(baseline jpeg) = false, want true")
+	}
+
+	// lossless JPEG (SOF3) is what DNG raw sensor payloads use; it starts
+	// with a regular SOI but common decoders cannot render it
+	lossless := []byte{0xff, 0xd8, 0xff, 0xc3, 0x00, 0x0b, 8, 0, 16, 0, 16, 1, 0, 0x11, 0}
+	if isRenderableJPEG(lossless) {
+		t.Fatal("isRenderableJPEG(lossless jpeg) = true, want false")
+	}
+
+	if isRenderableJPEG([]byte{0x42, 0x42, 0x42, 0x42}) {
+		t.Fatal("isRenderableJPEG(garbage) = true, want false")
+	}
+}

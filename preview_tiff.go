@@ -4,7 +4,6 @@ import (
 	"io"
 	"sort"
 
-	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif"
 	"github.com/pkg/errors"
 )
@@ -26,9 +25,17 @@ type PreviewImage struct {
 	Length uint32
 }
 
+// sofScanLimit bounds how many bytes of a candidate stream are inspected
+// for the JPEG SOF marker; metadata segments (APPn, DQT, DHT) rarely exceed
+// a few KB before the SOF appears.
+const sofScanLimit = 64 * 1024
+
 // TIFFPreviews lists the embedded JPEG preview images of a TIFF-based raw
-// file (e.g. NEF, CR2, ARW, DNG), largest first. The offsets are relative
-// to the start of the file.
+// file (e.g. NEF, CR2, ARW, DNG, PEF), largest first. The offsets are
+// relative to the start of the file. Candidates are validated against the
+// actual stream: only renderable JPEGs qualify, which keeps raw sensor
+// payloads out (DNG stores those as lossless JPEG, uncompressed or
+// vendor-compressed strips).
 func TIFFPreviews(r io.ReadSeeker) ([]PreviewImage, error) {
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, errors.Wrapf(err, "seek to file start")
@@ -39,31 +46,31 @@ func TIFFPreviews(r io.ReadSeeker) ([]PreviewImage, error) {
 	}
 
 	var previews []PreviewImage
-	// IFD0 carries the JPEGInterchangeFormat pair in dedicated fields; the
-	// pointed-to stream is a JPEG per TIFF/EP, no compression tag needed.
-	if ex.IFD0.ThumbnailOffset != 0 && ex.IFD0.ThumbnailLength != 0 {
-		previews = append(previews, PreviewImage{
-			IFD:    "IFD0",
-			Offset: ex.IFD0.ThumbnailOffset,
-			Length: ex.IFD0.ThumbnailLength,
-		})
-	}
-	addImageIFD := func(name string, ifd *exif.ImageIFD) {
-		if ifd == nil || ifd.ImageOffset == 0 || ifd.ImageLength == 0 {
+	add := func(name string, width, height, offset, length uint32) {
+		if offset == 0 || length == 0 {
 			return
 		}
-		// ImageOffset also captures strip-based (e.g. uncompressed)
-		// images; only JPEG streams qualify as extractable previews
-		if !isJPEGCompression(ifd.Compression) {
+		if !isRenderableJPEGAt(r, offset, length) {
 			return
 		}
 		previews = append(previews, PreviewImage{
 			IFD:    name,
-			Width:  ifd.ImageWidth,
-			Height: ifd.ImageHeight,
-			Offset: ifd.ImageOffset,
-			Length: ifd.ImageLength,
+			Width:  width,
+			Height: height,
+			Offset: offset,
+			Length: length,
 		})
+	}
+
+	// IFD0 can carry both the JPEGInterchangeFormat pair (thumbnails) and a
+	// strip-based image (CR2 stores its full-size JPEG that way)
+	add("IFD0", 0, 0, ex.IFD0.ThumbnailOffset, ex.IFD0.ThumbnailLength)
+	add("IFD0", ex.IFD0.ImageWidth, ex.IFD0.ImageHeight, ex.IFD0.ImageOffset, ex.IFD0.ImageLength)
+	addImageIFD := func(name string, ifd *exif.ImageIFD) {
+		if ifd == nil {
+			return
+		}
+		add(name, ifd.ImageWidth, ifd.ImageHeight, ifd.ImageOffset, ifd.ImageLength)
 	}
 	addImageIFD("IFD1", ex.IFD1)
 	addImageIFD("IFD2", ex.IFD2)
@@ -114,12 +121,57 @@ func PreviewTIFF(r io.ReadSeeker) ([]byte, error) {
 	return nil, ErrNoPreview
 }
 
-// isJPEGCompression reports whether the TIFF compression value denotes an
-// extractable JPEG stream (old-style, new-style, and their vendor aliases).
-func isJPEGCompression(c meta.Compression) bool {
-	switch c {
-	case 6, 7, 99, 34892:
-		return true
+// isRenderableJPEGAt reads the head of a candidate stream and reports
+// whether it is a JPEG that common decoders can render.
+func isRenderableJPEGAt(r io.ReadSeeker, offset, length uint32) bool {
+	if _, err := r.Seek(int64(offset), io.SeekStart); err != nil {
+		return false
+	}
+	window := min(int(length), sofScanLimit)
+	buf := make([]byte, window)
+	n, err := io.ReadFull(r, buf)
+	if err != nil && n == 0 {
+		return false
+	}
+	return isRenderableJPEG(buf[:n])
+}
+
+// isRenderableJPEG walks the JPEG segments until the SOF marker and accepts
+// only the DCT processes common decoders implement. Raw sensor payloads in
+// DNGs are lossless JPEG (SOF3) and start with the same SOI marker, so the
+// SOI alone does not qualify a stream.
+func isRenderableJPEG(buf []byte) bool {
+	if len(buf) < 4 || buf[0] != 0xff || buf[1] != 0xd8 {
+		return false
+	}
+	i := 2
+	for i+4 <= len(buf) {
+		if buf[i] != 0xff {
+			return false
+		}
+		marker := buf[i+1]
+		switch {
+		case marker == 0xff: // fill byte
+			i++
+			continue
+		case marker >= 0xd0 && marker <= 0xd7: // RST, no length field
+			i += 2
+			continue
+		}
+		switch marker {
+		case 0xc0, 0xc1, 0xc2: // baseline, extended sequential, progressive
+			return true
+		case 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf:
+			// lossless, differential and arithmetic processes
+			return false
+		case 0xd9, 0xda: // EOI or scan start without a SOF
+			return false
+		}
+		segLen := int(buf[i+2])<<8 | int(buf[i+3])
+		if segLen < 2 {
+			return false
+		}
+		i += 2 + segLen
 	}
 	return false
 }
