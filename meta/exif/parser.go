@@ -168,10 +168,16 @@ func (r *Reader) parseTag(t tag.Entry) {
 			return
 		}
 	case tag.IFD1:
+		if r.Exif.IFD1 == nil {
+			r.Exif.IFD1 = &ImageIFD{}
+		}
 		if !r.parseImageIFDTag(t, r.Exif.IFD1) {
 			return
 		}
 	case tag.IFD2:
+		if r.Exif.IFD2 == nil {
+			r.Exif.IFD2 = &ImageIFD{}
+		}
 		if !r.parseImageIFDTag(t, r.Exif.IFD2) {
 			return
 		}
@@ -189,7 +195,13 @@ func (r *Reader) parseTag(t tag.Entry) {
 			return
 		}
 	case tag.SubIFD0, tag.SubIFD1, tag.SubIFD2, tag.SubIFD3, tag.SubIFD4, tag.SubIFD5, tag.SubIFD6, tag.SubIFD7:
-		// SubIFD{0..7} tags are normalized through ExifIFD parsing semantics.
+		idx := int(t.IfdType - tag.SubIFD0)
+		if r.Exif.SubIFDs[idx] == nil {
+			r.Exif.SubIFDs[idx] = &ImageIFD{}
+		}
+		if !r.parseImageIFDTag(t, r.Exif.SubIFDs[idx]) {
+			return
+		}
 	default:
 		return
 	}
