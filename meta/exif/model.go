@@ -13,11 +13,15 @@ import (
 
 // Exif is the parsed EXIF result for the new meta/exif parser.
 type Exif struct {
-	GPS          GPSInfo
-	IFD0         IFD0Tag
-	ExifIFD      ExifIFDTags
-	IFD1         *ImageIFD
-	IFD2         *ImageIFD
+	GPS     GPSInfo
+	IFD0    IFD0Tag
+	ExifIFD ExifIFDTags
+	IFD1    *ImageIFD
+	IFD2    *ImageIFD
+	// SubIFDs holds the image-bearing SubIFDs referenced from IFD0
+	// (tag 0x014a), indexed by their position in the pointer list. Raw
+	// formats store their embedded previews here (e.g. NEF "JpgFromRaw").
+	SubIFDs      [8]*ImageIFD
 	MakerNote    makernote.Info
 	CameraSerial string
 	CameraMakeID makernote.CameraMake

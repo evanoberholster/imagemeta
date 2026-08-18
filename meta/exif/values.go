@@ -505,6 +505,7 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 		switch t.Type {
 		case tag.TypeLong, tag.TypeIfd:
 			dst[0] = t.EmbeddedLong()
+			return 1
 		case tag.TypeShort:
 			var shorts [2]uint16
 			m := min(t.EmbeddedShorts(shorts[:]), n)
