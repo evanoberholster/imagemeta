@@ -193,7 +193,7 @@ func TestExtractPreviewMaxLengthOption(t *testing.T) {
 	data := buildTIFFWithPreviews(thumb, preview)
 
 	// the preview is larger than the configured limit
-	small := PreviewOption(WithMaxPreviewLength(int64(len(preview)) - 1))
+	small := WithMaxPreviewLength(int64(len(preview)) - 1)
 	previews, err := TIFFPreviews(bytes.NewReader(data), small)
 	if err != nil {
 		t.Fatalf("TIFFPreviews: %v", err)
