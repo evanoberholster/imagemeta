@@ -30,6 +30,10 @@ type PreviewImage struct {
 // a few KB before the SOF appears.
 const sofScanLimit = 64 * 1024
 
+// maxJPEGSegments bounds the header segments walked before the SOF marker;
+// real files reach it within a handful, this bounds work on crafted streams.
+const maxJPEGSegments = 32
+
 // TIFFPreviews lists the embedded JPEG preview images of a TIFF-based raw
 // file (e.g. NEF, CR2, ARW, DNG, PEF), largest first. The offsets are
 // relative to the start of the file. Candidates are validated against the
@@ -92,6 +96,16 @@ func ExtractPreview(r io.ReadSeeker, p PreviewImage) ([]byte, error) {
 	if p.Offset == 0 || p.Length == 0 {
 		return nil, ErrNoPreview
 	}
+	// Length is attacker-controlled; reject a preview whose extent lies
+	// outside the file before allocating, so a bogus huge length cannot force
+	// a large allocation
+	size, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "determine file size")
+	}
+	if int64(p.Offset)+int64(p.Length) > size {
+		return nil, ErrNoPreview
+	}
 	if _, err := r.Seek(int64(p.Offset), io.SeekStart); err != nil {
 		return nil, errors.Wrapf(err, "seek to preview offset %d", p.Offset)
 	}
@@ -145,7 +159,7 @@ func isRenderableJPEG(buf []byte) bool {
 		return false
 	}
 	i := 2
-	for i+4 <= len(buf) {
+	for segments := 0; i+4 <= len(buf) && segments < maxJPEGSegments; segments++ {
 		if buf[i] != 0xff {
 			return false
 		}

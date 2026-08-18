@@ -155,3 +155,32 @@ func TestIsRenderableJPEG(t *testing.T) {
 		t.Fatal("isRenderableJPEG(garbage) = true, want false")
 	}
 }
+
+func TestExtractPreviewRejectsOutOfBoundsLength(t *testing.T) {
+	t.Parallel()
+
+	thumb := encodeTestJPEG(t, 16, 8)
+	preview := encodeTestJPEG(t, 64, 32)
+	data := buildTIFFWithPreviews(thumb, preview)
+	r := bytes.NewReader(data)
+
+	// a preview whose declared length runs past the file must not allocate it
+	p := PreviewImage{IFD: "SubIFD0", Offset: 8, Length: 0xffffffff}
+	if _, err := ExtractPreview(r, p); !errors.Is(err, ErrNoPreview) {
+		t.Fatalf("ExtractPreview error = %v, want ErrNoPreview", err)
+	}
+}
+
+func TestIsRenderableJPEGSegmentCap(t *testing.T) {
+	t.Parallel()
+
+	// SOI followed by more than maxJPEGSegments tiny APP1 segments hides the SOF
+	buf := []byte{0xff, 0xd8}
+	for n := 0; n < maxJPEGSegments+5; n++ {
+		buf = append(buf, 0xff, 0xe1, 0x00, 0x04, 0x00, 0x00)
+	}
+	buf = append(buf, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0, 16, 0, 16, 0x01, 0x01, 0x11, 0x00)
+	if isRenderableJPEG(buf) {
+		t.Fatal("isRenderableJPEG walked past the segment cap")
+	}
+}
