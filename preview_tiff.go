@@ -34,13 +34,43 @@ const sofScanLimit = 64 * 1024
 // real files reach it within a handful, this bounds work on crafted streams.
 const maxJPEGSegments = 32
 
+// PreviewOption configures preview extraction.
+type PreviewOption func(*previewConfig)
+
+type previewConfig struct {
+	// maxLength caps the byte length of a preview that will be surfaced or
+	// extracted; 0 means no limit beyond the file size. The declared length
+	// is attacker-controlled, so a consumer should set the size it tolerates.
+	maxLength int64
+}
+
+func newPreviewConfig(opts []PreviewOption) previewConfig {
+	var c previewConfig
+	for _, o := range opts {
+		o(&c)
+	}
+	return c
+}
+
+// WithMaxPreviewLength bounds the byte length of a preview that TIFFPreviews
+// surfaces and ExtractPreview reads. A value <= 0 disables the limit (the
+// preview is still bounded by the file size).
+func WithMaxPreviewLength(n int64) PreviewOption {
+	return func(c *previewConfig) { c.maxLength = n }
+}
+
+func (c previewConfig) exceedsMax(length uint32) bool {
+	return c.maxLength > 0 && int64(length) > c.maxLength
+}
+
 // TIFFPreviews lists the embedded JPEG preview images of a TIFF-based raw
 // file (e.g. NEF, CR2, ARW, DNG, PEF), largest first. The offsets are
 // relative to the start of the file. Candidates are validated against the
 // actual stream: only renderable JPEGs qualify, which keeps raw sensor
 // payloads out (DNG stores those as lossless JPEG, uncompressed or
 // vendor-compressed strips).
-func TIFFPreviews(r io.ReadSeeker) ([]PreviewImage, error) {
+func TIFFPreviews(r io.ReadSeeker, opts ...PreviewOption) ([]PreviewImage, error) {
+	cfg := newPreviewConfig(opts)
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, errors.Wrapf(err, "seek to file start")
 	}
@@ -51,7 +81,7 @@ func TIFFPreviews(r io.ReadSeeker) ([]PreviewImage, error) {
 
 	var previews []PreviewImage
 	add := func(name string, width, height, offset, length uint32) {
-		if offset == 0 || length == 0 {
+		if offset == 0 || length == 0 || cfg.exceedsMax(length) {
 			return
 		}
 		if !isRenderableJPEGAt(r, offset, length) {
@@ -92,13 +122,13 @@ func TIFFPreviews(r io.ReadSeeker) ([]PreviewImage, error) {
 
 // ExtractPreview reads the bytes of one preview and validates the JPEG SOI
 // marker. The returned slice is newly allocated.
-func ExtractPreview(r io.ReadSeeker, p PreviewImage) ([]byte, error) {
-	if p.Offset == 0 || p.Length == 0 {
+func ExtractPreview(r io.ReadSeeker, p PreviewImage, opts ...PreviewOption) ([]byte, error) {
+	cfg := newPreviewConfig(opts)
+	if p.Offset == 0 || p.Length == 0 || cfg.exceedsMax(p.Length) {
 		return nil, ErrNoPreview
 	}
-	// Length is attacker-controlled; reject a preview whose extent lies
-	// outside the file before allocating, so a bogus huge length cannot force
-	// a large allocation
+	// reject a preview whose extent lies outside the file before allocating,
+	// so an attacker-controlled length cannot force a large allocation
 	size, err := r.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "determine file size")
@@ -121,13 +151,13 @@ func ExtractPreview(r io.ReadSeeker, p PreviewImage) ([]byte, error) {
 
 // PreviewTIFF returns the largest embedded JPEG preview of a TIFF-based
 // (raw) file, e.g. NEF/CR2/ARW/DNG, analog to PreviewCR3.
-func PreviewTIFF(r io.ReadSeeker) ([]byte, error) {
-	previews, err := TIFFPreviews(r)
+func PreviewTIFF(r io.ReadSeeker, opts ...PreviewOption) ([]byte, error) {
+	previews, err := TIFFPreviews(r, opts...)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range previews {
-		buf, err := ExtractPreview(r, p)
+		buf, err := ExtractPreview(r, p, opts...)
 		if err == nil {
 			return buf, nil
 		}

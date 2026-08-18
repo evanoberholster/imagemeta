@@ -184,3 +184,31 @@ func TestIsRenderableJPEGSegmentCap(t *testing.T) {
 		t.Fatal("isRenderableJPEG walked past the segment cap")
 	}
 }
+
+func TestExtractPreviewMaxLengthOption(t *testing.T) {
+	t.Parallel()
+
+	thumb := encodeTestJPEG(t, 16, 8)
+	preview := encodeTestJPEG(t, 64, 32)
+	data := buildTIFFWithPreviews(thumb, preview)
+
+	// the preview is larger than the configured limit
+	small := PreviewOption(WithMaxPreviewLength(int64(len(preview)) - 1))
+	previews, err := TIFFPreviews(bytes.NewReader(data), small)
+	if err != nil {
+		t.Fatalf("TIFFPreviews: %v", err)
+	}
+	for _, p := range previews {
+		if p.IFD == "SubIFD0" {
+			t.Fatalf("TIFFPreviews surfaced a preview exceeding the max length: %+v", p)
+		}
+	}
+	full := PreviewImage{IFD: "SubIFD0", Offset: 8, Length: uint32(len(preview))}
+	if _, err := ExtractPreview(bytes.NewReader(data), full, small); !errors.Is(err, ErrNoPreview) {
+		t.Fatalf("ExtractPreview error = %v, want ErrNoPreview", err)
+	}
+	// with no limit (default) it extracts fine
+	if _, err := PreviewTIFF(bytes.NewReader(data)); err != nil {
+		t.Fatalf("PreviewTIFF with default (unlimited): %v", err)
+	}
+}
