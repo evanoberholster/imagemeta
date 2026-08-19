@@ -67,8 +67,13 @@ func (r *Reader) warnTagQueueFull(t tag.Entry) {
 
 // parseSubIFDs parses the requested value from EXIF metadata.
 func (r *Reader) parseSubIFDs(t tag.Entry) {
+	// SubIFD pointers are LONG/IFD (classic) or, in BigTIFF, LONG8/IFD8 with
+	// 8-byte elements. Single BigTIFF pointers are already narrowed to LONG/IFD.
+	elemSize := 4
 	switch t.Type {
 	case tag.TypeLong, tag.TypeIfd:
+	case tag.TypeLong8, tag.TypeIfd8:
+		elemSize = 8
 	default:
 		return
 	}
@@ -93,45 +98,50 @@ func (r *Reader) parseSubIFDs(t tag.Entry) {
 		return
 	}
 
-	if t.UnitCount == 1 {
-		var offset uint32
-		switch {
-		case t.IsType(tag.TypeIfd):
-			offset = t.ValueOffset
-		case t.IsEmbedded():
-			t.EmbeddedValue(r.state.buf[:4])
-			offset = t.ByteOrder.Uint32(r.state.buf[:4])
-		default:
-			buf, err := r.readTagBytes(t, 4)
-			if err != nil || len(buf) < 4 {
-				return
-			}
-			offset = t.ByteOrder.Uint32(buf[:4])
-		}
-		if offset != 0 {
-			r.appendSubIFDOffset(offset)
-			r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, offset, tag.SubIFD0, 0, t.ByteOrder))
+	// A single narrowed IFD pointer carries the offset directly.
+	if t.UnitCount == 1 && t.IsType(tag.TypeIfd) {
+		if t.ValueOffset != 0 {
+			r.appendSubIFDOffset(t.ValueOffset)
+			r.addTag(tag.NewEntry(t.ID, tag.TypeIfd, 1, t.ValueOffset, tag.SubIFD0, 0, t.ByteOrder))
 		}
 		return
 	}
 
-	maxBytes, ok := meta.SafecastIntToUint32(maxEntries * 4)
-	if !ok {
-		return
+	// Gather the raw offset bytes: from the inline value or from the file offset.
+	var buf []byte
+	if t.IsEmbedded() {
+		t.EmbeddedValue(r.state.buf[:8])
+		buf = r.state.buf[:8]
+	} else {
+		maxBytes, ok := meta.SafecastIntToUint32(maxEntries * elemSize)
+		if !ok {
+			return
+		}
+		b, err := r.readTagBytes(t, maxBytes)
+		if err != nil {
+			return
+		}
+		buf = b
 	}
-	buf, err := r.readTagBytes(t, maxBytes)
-	if err != nil {
-		return
-	}
-	limit := min(maxEntries, len(buf)/4)
-	for i := range limit {
+
+	limit := min(maxEntries, len(buf)/elemSize)
+	for i := 0; i < limit; i++ {
 		if r.state.len >= tagQueueMax {
 			if r.WarnEnabled() {
 				r.warnTagContext(t, "subifd queue capacity reached; stopping parse", true)
 			}
 			break
 		}
-		offset := t.ByteOrder.Uint32(buf[i*4 : i*4+4])
+		var offset uint32
+		if elemSize == 8 {
+			v := t.ByteOrder.Uint64(buf[i*8 : i*8+8])
+			if v > maxTiffOffset {
+				continue
+			}
+			offset = uint32(v)
+		} else {
+			offset = t.ByteOrder.Uint32(buf[i*4 : i*4+4])
+		}
 		if offset == 0 {
 			continue
 		}
@@ -361,7 +371,7 @@ func (r *Reader) parseMakeTag(t tag.Entry) (makeID makernote.CameraMake, makeNam
 	var raw []byte
 	if t.IsEmbedded() {
 		size := t.Size()
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		raw = trimTrailingNULBytes(r.state.buf[:size])
 	} else {
 		buf, err := r.readTagBytes(t, uint32(len(r.state.buf)))
@@ -852,7 +862,7 @@ func (r *Reader) parseSubSecTimeParts(t tag.Entry) (uint16, string) {
 	}
 	var raw []byte
 	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		raw = trimASCIIWhitespace(trimNULBuffer(r.state.buf[:4]))
 		n, ok := meta.SafecastUintToUint16(parseStrUint(raw))
 		if !ok {

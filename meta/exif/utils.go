@@ -194,6 +194,24 @@ func rationalDuration(num uint32, den uint32, unit time.Duration) time.Duration 
 
 // readTagBytes reads data from the underlying stream or parser buffers.
 func (r *Reader) readTagBytes(t tag.Entry, maxBytes uint32) (buf []byte, err error) {
+	// A value packed inline in the entry (BigTIFF fits up to 8 bytes there) is
+	// served from the entry itself, leaving the stream position untouched so the
+	// surrounding sequential reads stay aligned. Classic embedded values are
+	// handled by the callers' own fast paths and do not reach here.
+	if t.IsEmbedded() {
+		size := t.Size()
+		if size == 0 {
+			return nil, nil
+		}
+		if size > 8 {
+			size = 8
+		}
+		if maxBytes > 0 && size > maxBytes {
+			size = maxBytes
+		}
+		t.EmbeddedValue(r.state.buf[:8])
+		return r.state.buf[:size], nil
+	}
 	if err = r.seekToTag(t); err != nil {
 		r.warnTagReadError(t, err, "failed seeking to tag payload")
 		return nil, err
@@ -287,6 +305,16 @@ func (r *Reader) readUint32(directory tag.Directory) (uint32, error) {
 		return 0, err
 	}
 	return directory.ByteOrder.Uint32(buf), nil
+}
+
+// readUint64 reads an 8-byte value from the underlying stream (BigTIFF counts
+// and offsets).
+func (r *Reader) readUint64(directory tag.Directory) (uint64, error) {
+	buf, err := r.fastRead(8)
+	if err != nil || len(buf) < 8 {
+		return 0, err
+	}
+	return directory.ByteOrder.Uint64(buf), nil
 }
 
 func (r *Reader) canonModelID() metacanon.CanonCameraModel {

@@ -71,6 +71,11 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 			return ImageTiff, nil
 		case buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A:
 			return ImageTiff, nil
+		// BigTIFF (magic 43), allowed for DNG since spec 1.7.
+		case buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2B && buf[3] == 0x00:
+			return ImageTiff, nil
+		case buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2B:
+			return ImageTiff, nil
 		}
 	}
 	if len(buf) >= 8 {

@@ -20,7 +20,7 @@ const (
 // Returned bytes reference parser buffers and are only valid until next read.
 func (r *Reader) parseASCIIValueBytes(t tag.Entry) []byte {
 	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		return trimNULBuffer(r.state.buf[:t.Size()])
 	}
 	switch t.Type {
@@ -265,7 +265,7 @@ func (r *Reader) parseDisplayBytes(t tag.Entry, maxBytes uint32) []byte {
 		if n > maxBytes {
 			n = maxBytes
 		}
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		return r.state.buf[:n]
 	case t.IsType(tag.TypeUndefined), t.IsType(tag.TypeByte), t.IsType(tag.TypeASCII), t.IsType(tag.TypeASCIINoNul):
 		if maxBytes == 0 {
@@ -323,7 +323,7 @@ func (r *Reader) parseOpaqueBytes(t tag.Entry, maxBytes uint32) []byte {
 	}
 	if t.IsEmbedded() {
 		n := min(t.Size(), maxBytes)
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		return r.state.buf[:n]
 	}
 	buf, err := r.readTagBytes(t, maxBytes)
@@ -427,6 +427,7 @@ func (r *Reader) parseRationalU(t tag.Entry) [2]uint32 {
 	default:
 		return [2]uint32{}
 	}
+	// readTagBytes serves a BigTIFF inline RATIONAL from the 8-byte value field.
 	buf, err := r.readTagBytes(t, 8)
 	if err != nil || len(buf) < 8 {
 		return [2]uint32{}
@@ -463,7 +464,9 @@ func (r *Reader) parseUint16List(t tag.Entry, dst []uint16) int {
 		return 0
 	}
 	n := min(int(t.UnitCount), len(dst))
-	if t.IsEmbedded() {
+	// The fast path packs at most two shorts into ValueOffset; a BigTIFF inline
+	// list of 3-4 shorts (5-8 bytes) is read from the value field via readTagBytes.
+	if t.IsEmbedded() && t.Size() <= 4 {
 		return t.EmbeddedShorts(dst[:n])
 	}
 	maxBytes, ok := meta.SafecastIntToUint32(n * 2)
@@ -501,7 +504,9 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 		return 0
 	}
 	n := min(int(t.UnitCount), len(dst))
-	if t.IsEmbedded() {
+	// The fast path packs a single long (or two shorts) into ValueOffset; a
+	// BigTIFF inline pair of longs (8 bytes) is read via readTagBytes below.
+	if t.IsEmbedded() && t.Size() <= 4 {
 		switch t.Type {
 		case tag.TypeLong, tag.TypeIfd:
 			dst[0] = t.EmbeddedLong()
@@ -615,7 +620,7 @@ func (r *Reader) parseByteList(t tag.Entry, dst []byte) int {
 
 	n := min(int(t.UnitCount), len(dst))
 	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		copy(dst[:n], r.state.buf[:n])
 		return n
 	}

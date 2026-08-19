@@ -87,6 +87,9 @@ type ExifHeader struct {
 	ByteOrder        utils.ByteOrder
 	FirstIfd         tag.IfdType
 	ImageType        imagetype.ImageType
+	// BigTIFF marks a BigTIFF container (DNG 1.7): 8-byte offsets, 20-byte IFD
+	// entries and 64-bit entry counts. Offsets beyond 4 GiB are unsupported.
+	BigTIFF bool
 }
 
 // IsValid returns true if the ExifHeader ByteOrder is not nil and

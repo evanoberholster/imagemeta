@@ -33,6 +33,11 @@ const (
 	TypeFloat          Type = 11
 	TypeDouble         Type = 12
 
+	// BigTIFF (DNG 1.7) 64-bit types.
+	TypeLong8       Type = 16
+	TypeSignedLong8 Type = 17
+	TypeIfd8        Type = 18
+
 	// Pseudo-types used by parser internals.
 	TypeASCIINoNul Type = 0xf0
 	TypeIfd        Type = 0xf1
@@ -50,6 +55,9 @@ const (
 	TypeFloatSize          = 4
 	TypeDoubleSize         = 8
 	TypeIfdSize            = 4
+	TypeLong8Size          = 8
+	TypeSignedLong8Size    = 8
+	TypeIfd8Size           = 8
 )
 
 var typeIsValidLookup = [256]uint8{
@@ -66,6 +74,9 @@ var typeIsValidLookup = [256]uint8{
 	TypeDouble:         1,
 	TypeASCIINoNul:     1,
 	TypeIfd:            1,
+	TypeLong8:          1,
+	TypeSignedLong8:    1,
+	TypeIfd8:           1,
 }
 
 func (tt Type) Is(t Type) bool {
@@ -101,6 +112,12 @@ func (tt Type) Size() uint8 {
 		return TypeASCIINoNulSize
 	case TypeIfd:
 		return TypeIfdSize
+	case TypeLong8:
+		return TypeLong8Size
+	case TypeSignedLong8:
+		return TypeSignedLong8Size
+	case TypeIfd8:
+		return TypeIfd8Size
 	default:
 		return 0
 	}
@@ -134,6 +151,12 @@ func (tt Type) String() string {
 		return "_ASCII_NO_NUL"
 	case TypeIfd:
 		return "IFD"
+	case TypeLong8:
+		return "LONG8"
+	case TypeSignedLong8:
+		return "SLONG8"
+	case TypeIfd8:
+		return "IFD8"
 	default:
 		return "UNKNOWN"
 	}
@@ -171,7 +194,7 @@ func UsesIFDType(directoryType IfdType, id ID) bool {
 
 // NormalizeType resolves parser pseudo-types for known IFD pointer tags.
 func NormalizeType(directoryType IfdType, id ID, typ Type) Type {
-	if (typ.Is(TypeLong) || typ.Is(TypeUndefined)) && UsesIFDType(directoryType, id) {
+	if (typ.Is(TypeLong) || typ.Is(TypeLong8) || typ.Is(TypeIfd8) || typ.Is(TypeUndefined)) && UsesIFDType(directoryType, id) {
 		return TypeIfd
 	}
 	return typ
