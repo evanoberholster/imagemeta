@@ -508,7 +508,7 @@ func (r *Reader) parseGPSRef(t tag.Entry) tag.GPSRef {
 
 func (r *Reader) firstTagByte(t tag.Entry) (byte, bool) {
 	if t.IsEmbedded() {
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		return r.state.buf[0], true
 	}
 	buf, err := r.readTagBytes(t, 1)

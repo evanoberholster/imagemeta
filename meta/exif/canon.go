@@ -339,7 +339,7 @@ func (r *Reader) parseCanonRawUint16List(t tag.Entry, dst []uint16, wordCount in
 			return t.EmbeddedShorts(dst[:wordCount])
 		}
 		// UNDEFINED embedded payload is up to 4 bytes.
-		t.EmbeddedValue(r.state.buf[:4])
+		t.EmbeddedValue(r.state.buf[:8])
 		n := min(wordCount, 2)
 		for i := range n {
 			start := i * 2

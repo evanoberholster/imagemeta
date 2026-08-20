@@ -945,6 +945,10 @@ var (
 	tiffLittleEndianSignature = []byte{0x49, 0x49, 0x2A, 0x00}
 	tiffBigEndianSignature    = []byte{0x4D, 0x4D, 0x00, 0x2A}
 
+	// BigTIFF (magic 43) signatures, allowed for DNG since spec 1.7.
+	bigTiffLittleEndianSignature = []byte{0x49, 0x49, 0x2B, 0x00}
+	bigTiffBigEndianSignature    = []byte{0x4D, 0x4D, 0x00, 0x2B}
+
 	crwByteOrderSignature = []byte{0x49, 0x49}
 	crwHeapSignature      = []byte("HEAPCCDR")
 	cr2Signature          = []byte{0x43, 0x52, 0x02, 0x00}
@@ -1049,9 +1053,15 @@ func hasAnyCompatibleBrand(buf []byte, brands ...[]byte) bool {
 	return false
 }
 
-// isTiff() Checks to see if an Image has the tiff format header.
+// isTiff() Checks to see if an Image has the tiff format header (classic or
+// BigTIFF).
 func isTiff(buf []byte) bool {
-	return IsTiffBigEndian(buf) || IsTiffLittleEndian(buf)
+	return IsTiffBigEndian(buf) || IsTiffLittleEndian(buf) || isBigTiff(buf)
+}
+
+// isBigTiff reports either BigTIFF (magic 43) byte-order signature.
+func isBigTiff(buf []byte) bool {
+	return hasPrefix(buf, bigTiffLittleEndianSignature) || hasPrefix(buf, bigTiffBigEndianSignature)
 }
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature

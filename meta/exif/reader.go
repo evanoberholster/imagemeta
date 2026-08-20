@@ -58,6 +58,7 @@ type Reader struct {
 	exifLength       uint32
 	firstIFDOffset   uint32
 	tiffHeaderOffset uint32
+	bigTiff          bool
 }
 
 // NewReader creates an EXIF reader. Call Close when done.
@@ -285,6 +286,7 @@ func (r *Reader) initDecode(reader io.Reader, header meta.ExifHeader, resetExif 
 	r.Exif.ImageType = header.ImageType
 	r.firstIFDOffset = header.FirstIfdOffset
 	r.tiffHeaderOffset = header.TiffHeaderOffset
+	r.bigTiff = header.BigTIFF
 	// ExifLength == 0 means unknown length (for full TIFF/RAW streams).
 	// Keep parsing unbounded by length in that case to avoid false short-read
 	// failures on large maker-note offsets.
@@ -409,7 +411,7 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 		return nil
 	}
 	infoEnabled := r.InfoEnabled()
-	tagCount, err := r.readUint16(directory)
+	tagCount, err := r.readDirectoryTagCount(directory)
 	if err != nil {
 		if r.WarnEnabled() {
 			r.directoryLogContext(r.Warn(3), directory).
@@ -428,7 +430,12 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 		return nil
 	}
 
-	if err = r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount); err != nil {
+	if r.bigTiff {
+		err = r.parseDirectoryTagHeadersBigTiff(directory, tagCount)
+	} else {
+		err = r.parseDirectoryTagHeadersBulkTrusted(directory, tagCount)
+	}
+	if err != nil {
 		if r.WarnEnabled() {
 			r.directoryLogContext(r.Warn(3), directory).
 				Err(err).
@@ -438,7 +445,7 @@ func (r *Reader) readDirectory(directory tag.Directory, drainQueue bool) error {
 		return err
 	}
 
-	nextIFDOffset, err := r.readUint32(directory)
+	nextIFDOffset, err := r.readNextIFDOffset(directory)
 	if err != nil {
 		if r.WarnEnabled() {
 			r.directoryLogContext(r.Warn(3), directory).
@@ -630,4 +637,185 @@ func (r *Reader) parseDirectoryTagHeadersBulkTrusted(directory tag.Directory, ta
 		r.addTag(t)
 	}
 	return nil
+}
+
+// readDirectoryTagCount reads an IFD entry count: 2 bytes for classic TIFF, 8
+// bytes for BigTIFF. Counts above maxTagCount are clamped to a rejecting value
+// so the caller's limit check drops the directory.
+func (r *Reader) readDirectoryTagCount(directory tag.Directory) (uint16, error) {
+	if !r.bigTiff {
+		return r.readUint16(directory)
+	}
+	count, err := r.readUint64(directory)
+	if err != nil {
+		return 0, err
+	}
+	if count > uint64(maxTagCount) {
+		return maxTagCount + 1, nil
+	}
+	return uint16(count), nil
+}
+
+// readNextIFDOffset reads the pointer to the next IFD: 4 bytes for classic TIFF,
+// 8 bytes for BigTIFF. A BigTIFF offset beyond 4 GiB ends the chain.
+func (r *Reader) readNextIFDOffset(directory tag.Directory) (uint32, error) {
+	if !r.bigTiff {
+		return r.readUint32(directory)
+	}
+	off, err := r.readUint64(directory)
+	if err != nil {
+		return 0, err
+	}
+	if off > maxTiffOffset {
+		return 0, nil
+	}
+	return uint32(off), nil
+}
+
+// parseDirectoryTagHeadersBigTiff decodes BigTIFF IFD entries (20 bytes each:
+// id[2], type[2], count[8], value/offset[8]), mirroring the classic per-entry
+// decode with 64-bit counts and an 8-byte inline value field.
+//
+// The 32-bit value model is kept: numeric scalars (offsets, lengths, dimensions
+// and IFD pointers, LONG8 included) are read at their true width and narrowed to
+// uint32, rejected past 4 GiB; other values up to 8 bytes are carried inline and
+// read back verbatim by the value parsers; larger values are read from their
+// 32-bit file offset as in classic TIFF.
+func (r *Reader) parseDirectoryTagHeadersBigTiff(directory tag.Directory, tagCount uint16) error {
+	byteOrder := directory.ByteOrder
+	directoryType := directory.Type
+	directoryIndex := directory.Index
+	baseOffset := directory.BaseOffset
+	warnEnabled := r.WarnEnabled()
+
+	for i := 0; i < int(tagCount); i++ {
+		h, err := r.fastRead(20)
+		if err != nil {
+			return err
+		}
+		if len(h) < 20 {
+			return io.ErrUnexpectedEOF
+		}
+
+		tagID := tag.ID(byteOrder.Uint16(h[:2]))
+		tagTypeValue, ok := meta.SafecastUint16ToUint8(byteOrder.Uint16(h[2:4]))
+		if !ok {
+			tagTypeValue = 0
+		}
+		wireType := tag.Type(tagTypeValue)
+		unitCount64 := byteOrder.Uint64(h[4:12])
+		slot := h[12:20]
+
+		if unitCount64 == 0 || unitCount64 > maxTiffOffset {
+			continue
+		}
+		unitCount := uint32(unitCount64)
+
+		normType := tag.NormalizeType(directoryType, tagID, wireType)
+		if !normType.IsValid() {
+			if warnEnabled {
+				r.rawTagHeaderLogContext(r.Warn(3), directory, i, tagID, wireType, unitCount, byteOrder.Uint32(slot)).
+					Err(tag.ErrTagTypeNotValid).
+					Msg("invalid exif tag header")
+			}
+			continue
+		}
+		wireSize := uint64(wireType.Size()) * unitCount64
+
+		t, ok := bigTiffEntry(tagID, wireType, normType, unitCount, wireSize, slot, directoryType, directoryIndex, baseOffset, byteOrder)
+		if !ok {
+			continue
+		}
+		if t.IsEmbedded() {
+			r.parseTag(t)
+			continue
+		}
+		r.addTag(t)
+	}
+	return nil
+}
+
+// bigTiffEntry builds a tag.Entry from a BigTIFF entry's fields, mapping the
+// 8-byte value/offset field onto the 32-bit value model. It returns false when
+// the value cannot be represented (offset or count beyond 4 GiB).
+func bigTiffEntry(tagID tag.ID, wireType, normType tag.Type, unitCount uint32, wireSize uint64, slot []byte, dirType tag.IfdType, dirIndex int8, baseOffset uint32, bo utils.ByteOrder) (tag.Entry, bool) {
+	// Numeric scalar: an offset, length, dimension or IFD pointer. Read at its
+	// true width (LONG8 included) and narrow to uint32.
+	if unitCount == 1 && isNumericScalarType(wireType) {
+		v, ok := readNumericScalar(bo, wireType, slot)
+		if !ok || v > maxTiffOffset {
+			return tag.Entry{}, false
+		}
+		outType := narrowNumericType(wireType)
+		if normType == tag.TypeIfd {
+			outType = tag.TypeIfd
+		}
+		offset := uint32(v)
+		if !isEmbeddedScalarType(outType) {
+			// pointer / deferred value read from a file offset
+			offset += baseOffset
+		}
+		return tag.NewEntry(tagID, outType, 1, offset, dirType, dirIndex, bo), true
+	}
+	// Value packed inline in the 8-byte field: carry it verbatim.
+	if wireSize <= 8 {
+		lo := bo.Uint32(slot[0:4])
+		hi := bo.Uint32(slot[4:8])
+		return tag.NewInlineEntry(tagID, normType, unitCount, lo, hi, dirType, dirIndex, bo), true
+	}
+	// Value stored at a file offset: the slot holds an 8-byte offset.
+	off := bo.Uint64(slot[0:8])
+	if off > maxTiffOffset {
+		return tag.Entry{}, false
+	}
+	return tag.NewEntry(tagID, normType, unitCount, uint32(off)+baseOffset, dirType, dirIndex, bo), true
+}
+
+// isNumericScalarType reports whether a wire type is a single integer offset,
+// count or pointer that fits the 32-bit value model once narrowed.
+func isNumericScalarType(t tag.Type) bool {
+	switch t {
+	case tag.TypeShort, tag.TypeSignedShort, tag.TypeLong, tag.TypeSignedLong,
+		tag.TypeIfd, tag.TypeLong8, tag.TypeSignedLong8, tag.TypeIfd8:
+		return true
+	}
+	return false
+}
+
+// readNumericScalar reads a single integer value from the inline field at its
+// declared width, left-justified per the TIFF value layout.
+func readNumericScalar(bo utils.ByteOrder, t tag.Type, slot []byte) (uint64, bool) {
+	switch t {
+	case tag.TypeShort, tag.TypeSignedShort:
+		return uint64(bo.Uint16(slot[0:2])), true
+	case tag.TypeLong, tag.TypeSignedLong, tag.TypeIfd:
+		return uint64(bo.Uint32(slot[0:4])), true
+	case tag.TypeLong8, tag.TypeSignedLong8, tag.TypeIfd8:
+		return bo.Uint64(slot[0:8]), true
+	}
+	return 0, false
+}
+
+// narrowNumericType maps a BigTIFF 64-bit integer type to its 32-bit equivalent
+// so the classic value parsers handle the narrowed value.
+func narrowNumericType(t tag.Type) tag.Type {
+	switch t {
+	case tag.TypeLong8:
+		return tag.TypeLong
+	case tag.TypeSignedLong8:
+		return tag.TypeSignedLong
+	case tag.TypeIfd8:
+		return tag.TypeIfd
+	}
+	return t
+}
+
+// isEmbeddedScalarType reports whether a narrowed numeric scalar is read from
+// its inline value (rather than a file offset), matching Entry.IsEmbedded.
+func isEmbeddedScalarType(t tag.Type) bool {
+	switch t {
+	case tag.TypeShort, tag.TypeSignedShort, tag.TypeLong, tag.TypeSignedLong:
+		return true
+	}
+	return false
 }
