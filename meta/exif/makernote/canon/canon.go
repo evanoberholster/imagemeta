@@ -468,13 +468,13 @@ func NewCameraISOFromRaw(raw uint16) CameraISO {
 // CameraISOValue resolves the raw CameraISO value using ExifTool-style logic.
 //
 // Returns the resolved ISO value, or a sentinel (CameraISOAutoSentinel /
-// CameraISOAutoHighSentinel) for non-numeric modes. Returns 0 for n/a.
-func CameraISOValue(raw int16) int {
+// CameraISOAutoHighSentinel) for non-numeric modes. Returns 0 for n/a. 
+func CameraISOValue(raw int16) int64 {
 	switch {
 	case raw == 0x7fff:
 		return 0
 	case raw&0x4000 != 0:
-		return int(raw & 0x3fff)
+		return int64(raw & 0x3fff)
 	}
 	switch CameraISO(raw) {
 	case 0:
@@ -494,14 +494,14 @@ func CameraISOValue(raw int16) int {
 	case 20:
 		return 800
 	default:
-		return int(raw)
+		return int64(raw)
 	}
 }
 
 // NewResolvedCameraISOFromRaw resolves a raw CameraISO value to ExifTool-style output.
 // Returns 0 if conversion to uint32 fails.
 func NewResolvedCameraISOFromRaw(raw int16) uint32 {
-	value, ok := meta.SafecastIntToUint32(CameraISOValue(raw))
+	value, ok := meta.SafecastInt64ToUint32(CameraISOValue(raw))
 	if !ok {
 		return 0
 	}

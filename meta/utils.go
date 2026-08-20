@@ -3,22 +3,8 @@ package meta
 import (
 	"bytes"
 	"math"
-	"math/bits"
 )
 
-// parseInt parses a []byte of a string representation of an int64 value and returns the value
-//func parseInt(buf []byte) (i int64) {
-//	var neg bool
-//	if buf[0] == '-' {
-//		buf = buf[1:]
-//		neg = true
-//	}
-//	i = int64(parseUint(buf))
-//	if neg {
-//		i *= -1
-//	}
-//	return
-//}
 
 // parseUint parses a []byte of a string representation of a uint64 value and returns the value.
 func parseUint(buf []byte) (u uint64) {
@@ -28,22 +14,6 @@ func parseUint(buf []byte) (u uint64) {
 	}
 	return
 }
-
-// parseUntil parses a []byte and splits the []byte at delimiter.
-// Returns a and b without delimiter present.
-//func parseUntil(buf []byte, delimiter byte) (a []byte, b []byte) {
-//	for i := 0; i < len(buf); i++ {
-//		if buf[i] == delimiter {
-//			a = buf[:i]
-//			if i < len(buf)+1 {
-//				b = buf[i+1:]
-//				return
-//			}
-//			return
-//		}
-//	}
-//	return buf, nil
-//}
 
 var closeTagXMP = []byte("</x:xmpmeta>")
 
@@ -63,14 +33,10 @@ func CleanXMPSuffixWhiteSpace(buf []byte) []byte {
 
 func unsafeGetBytes(s string) (b []byte) {
 	return []byte(s)
-	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
-	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Cap = len(s)
-	//(*reflect.SliceHeader)(unsafe.Pointer(&b)).Len = len(s)
-	//return
 }
 
 func SafecastIntToUint32(v int) (uint32, bool) {
-	if v < 0 || v > math.MaxUint32 {
+	if v < 0 || uint64(v) > math.MaxUint32 {
 		return 0, false
 	}
 	return uint32(v), true
@@ -105,13 +71,7 @@ func SafecastIntToInt8(v int) (int8, bool) {
 }
 
 func SafecastUintToInt(v uint) (int, bool) {
-	if bits.UintSize == 32 {
-		if v > uint(math.MaxInt32) {
-			return 0, false
-		}
-		return int(v), true
-	}
-	if v > uint(math.MaxInt64) {
+	if v > ^uint(0)>>1 {
 		return 0, false
 	}
 	return int(v), true
@@ -195,13 +155,7 @@ func SafecastInt32ToUint32(v int32) (uint32, bool) {
 }
 
 func SafecastUint64ToInt(v uint64) (int, bool) {
-	if bits.UintSize == 32 {
-		if v > math.MaxInt32 {
-			return 0, false
-		}
-		return int(v), true
-	}
-	if v > math.MaxInt64 {
+	if v > uint64(^uint(0)>>1) {
 		return 0, false
 	}
 	return int(v), true
