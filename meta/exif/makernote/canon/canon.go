@@ -468,7 +468,7 @@ func NewCameraISOFromRaw(raw uint16) CameraISO {
 // CameraISOValue resolves the raw CameraISO value using ExifTool-style logic.
 //
 // Returns the resolved ISO value, or a sentinel (CameraISOAutoSentinel /
-// CameraISOAutoHighSentinel) for non-numeric modes. Returns 0 for n/a. 
+// CameraISOAutoHighSentinel) for non-numeric modes. Returns 0 for n/a.
 func CameraISOValue(raw int16) int64 {
 	switch {
 	case raw == 0x7fff:

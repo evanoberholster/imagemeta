@@ -5,7 +5,6 @@ import (
 	"math"
 )
 
-
 // parseUint parses a []byte of a string representation of a uint64 value and returns the value.
 func parseUint(buf []byte) (u uint64) {
 	for i := 0; i < len(buf); i++ {
@@ -36,10 +35,14 @@ func unsafeGetBytes(s string) (b []byte) {
 }
 
 func SafecastIntToUint32(v int) (uint32, bool) {
-	if v < 0 || uint64(v) > math.MaxUint32 {
+	if v < 0 {
 		return 0, false
 	}
-	return uint32(v), true
+	u := uint64(v)
+	if u > math.MaxUint32 {
+		return 0, false
+	}
+	return uint32(u), true
 }
 
 func SafecastIntToUint(v int) (uint, bool) {
