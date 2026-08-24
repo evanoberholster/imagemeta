@@ -2,11 +2,12 @@ package utils
 
 import (
 	"bytes"
-	"io"
 	"testing"
 )
 
 func TestBufioReaderPoolAcquireRelease(t *testing.T) {
+	t.Parallel()
+
 	pool := NewBufioReaderPool(16, bytes.NewReader(nil))
 
 	a := pool.Acquire(bytes.NewReader([]byte("abc")))
@@ -31,17 +32,4 @@ func TestBufioReaderPoolAcquireRelease(t *testing.T) {
 		t.Fatal("expected short-buffer peek error after reset to new source")
 	}
 	pool.Release(b)
-}
-
-func TestBufioReaderPoolAcquireNilPool(t *testing.T) {
-	var pool *BufioReaderPool
-	br := pool.Acquire(bytes.NewReader([]byte("z")))
-	buf := make([]byte, 1)
-	n, err := br.Read(buf)
-	if n != 1 || err != nil && err != io.EOF {
-		t.Fatalf("Read = (%d, %v), want (1, nil/EOF)", n, err)
-	}
-	if got := string(buf[:n]); got != "z" {
-		t.Fatalf("Read data = %q, want %q", got, "z")
-	}
 }

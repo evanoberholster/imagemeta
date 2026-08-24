@@ -10,6 +10,14 @@ const (
 	BigEndian
 )
 
+const (
+	tiffLittleEndianSignature    = "II*\000"
+	tiffBigEndianSignature       = "MM\000*"
+	bigTiffLittleEndianSignature = "II+\000"
+	bigTiffBigEndianSignature    = "MM\000+"
+	tiffSignatureLength          = len(tiffLittleEndianSignature)
+)
+
 func (bo ByteOrder) String() string {
 	switch bo {
 	case LittleEndian:
@@ -73,23 +81,28 @@ func (bo ByteOrder) PutUint64(b []byte, v uint64) {
 // CIPA DC-008-2016; JEITA CP-3451D
 // -> http://www.cipa.jp/std/documents/e/DC-008-Translation-2016-E.pdf
 func BinaryOrder(buf []byte) ByteOrder {
-	if IsTiffBigEndian(buf) || IsBigTiffBigEndian(buf) {
-		return BigEndian
+	if len(buf) < tiffSignatureLength {
+		return UnknownEndian
 	}
-	if IsTiffLittleEndian(buf) || IsBigTiffLittleEndian(buf) {
+
+	switch string(buf[:tiffSignatureLength]) {
+	case tiffLittleEndianSignature, bigTiffLittleEndianSignature:
 		return LittleEndian
+	case tiffBigEndianSignature, bigTiffBigEndianSignature:
+		return BigEndian
+	default:
+		return UnknownEndian
 	}
-	return UnknownEndian
 }
 
 // IsBigTiffLittleEndian reports the BigTIFF (magic 43) little-endian signature.
 func IsBigTiffLittleEndian(buf []byte) bool {
-	return len(buf) >= 4 && string(buf[:4]) == "II+\000"
+	return len(buf) >= tiffSignatureLength && string(buf[:tiffSignatureLength]) == bigTiffLittleEndianSignature
 }
 
 // IsBigTiffBigEndian reports the BigTIFF (magic 43) big-endian signature.
 func IsBigTiffBigEndian(buf []byte) bool {
-	return len(buf) >= 4 && string(buf[:4]) == "MM\000+"
+	return len(buf) >= tiffSignatureLength && string(buf[:tiffSignatureLength]) == bigTiffBigEndianSignature
 }
 
 // IsBigTiff reports whether buf carries either BigTIFF byte-order signature.
@@ -99,18 +112,10 @@ func IsBigTiff(buf []byte) bool {
 
 // IsTiffLittleEndian checks the buf for the Tiff LittleEndian Signature
 func IsTiffLittleEndian(buf []byte) bool {
-	return string(buf[:4]) == "II*\000"
-	//return buf[0] == 0x49 &&
-	//	buf[1] == 0x49 &&
-	//	buf[2] == 0x2a &&
-	//	buf[3] == 0x00
+	return string(buf[:tiffSignatureLength]) == tiffLittleEndianSignature
 }
 
 // IsTiffBigEndian checks the buf for the TiffBigEndianSignature
 func IsTiffBigEndian(buf []byte) bool {
-	return string(buf[:4]) == "MM\000*"
-	//return buf[0] == 0x4d &&
-	//	buf[1] == 0x4d &&
-	//	buf[2] == 0x00 &&
-	//	buf[3] == 0x2a
+	return string(buf[:tiffSignatureLength]) == tiffBigEndianSignature
 }
