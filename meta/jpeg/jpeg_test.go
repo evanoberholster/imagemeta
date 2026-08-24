@@ -6,10 +6,14 @@ package jpeg
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -242,6 +246,62 @@ func TestScanJPEGExtendedXMP(t *testing.T) {
 	}
 }
 
+func TestScanJPEG_nextMarkerNoInfiniteLoop(t *testing.T) {
+	inputs := [][]byte{
+		{0xFF, 0x00},
+		{0xFF, 0xFF},
+	}
+	for _, input := range inputs {
+		name := fmt.Sprintf("%02x_%02x", input[0], input[1])
+		t.Run(name, func(t *testing.T) {
+			done := make(chan error, 1)
+			go func() {
+				done <- ScanJPEG(bytes.NewReader(input), nil, nil)
+			}()
+			select {
+			case err := <-done:
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			case <-time.After(time.Second):
+				t.Fatal("ScanJPEG hung")
+			}
+		})
+	}
+}
+
+func TestScanJPEG_metadataScanLimit(t *testing.T) {
+	data := make([]byte, 0, 2+maxMetadataScanBytes+1024)
+	data = append(data, 0xFF, byte(markerSOI))
+	data = append(data, bytes.Repeat([]byte{0}, maxMetadataScanBytes+1024)...)
+
+	start := time.Now()
+	err := ScanJPEG(bytes.NewReader(data), nil, nil)
+	if !errors.Is(err, ErrMetadataScanLimit) {
+		t.Fatalf("err = %v, want ErrMetadataScanLimit", err)
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("scan took %v, expected to hit limit quickly", elapsed)
+	}
+}
+
+func TestScanJPEG_contextCancel(t *testing.T) {
+	data := append([]byte{0xFF, byte(markerSOI)}, bytes.Repeat([]byte{0}, 512*1024)...)
+	r := &slowReader{r: bytes.NewReader(data), delay: 5 * time.Millisecond}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	err := ScanJPEGContext(ctx, r, nil, nil)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("err = %v, want context.DeadlineExceeded", err)
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("cancel took %v, expected prompt return", elapsed)
+	}
+}
+
 func TestScanMetadataSyntheticAPPFamilies(t *testing.T) {
 	data := testJPEG(
 		testSegment(markerAPP0, testJFIFPayload(1, 2, 1, 300, 200)),
@@ -451,6 +511,16 @@ type onlyReader struct {
 
 func (r onlyReader) Read(p []byte) (int, error) {
 	return r.r.Read(p)
+}
+
+type slowReader struct {
+	r     io.Reader
+	delay time.Duration
+}
+
+func (s *slowReader) Read(p []byte) (int, error) {
+	time.Sleep(s.delay)
+	return s.r.Read(p)
 }
 
 func testJPEG(segments ...[]byte) []byte {

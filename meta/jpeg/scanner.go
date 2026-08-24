@@ -2,6 +2,7 @@ package jpeg
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -10,10 +11,13 @@ import (
 )
 
 const (
-	bufferSize int = 4 * 1024 // 4Kb
+	bufferSize           int = 4 * 1024        // 4Kb
+	maxMetadataScanBytes     = 2 * 1024 * 1024 // 2 MiB metadata scan budget
 )
 
 type jpegReader struct {
+	ctx context.Context
+
 	ExifReader func(r io.Reader, h meta.ExifHeader) error
 	XMPReader  func(r io.Reader) error
 
@@ -44,19 +48,19 @@ var bufferPool = sync.Pool{
 	New: func() interface{} { return bufio.NewReaderSize(nil, bufferSize) },
 }
 
-func scanJPEG(r io.Reader, readerAt io.ReaderAt, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) (err error) {
-	return scanJPEGWithMetadata(r, readerAt, exifReader, xmpReader, nil)
+func scanJPEG(ctx context.Context, r io.Reader, readerAt io.ReaderAt, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) (err error) {
+	return scanJPEGWithMetadata(ctx, r, readerAt, exifReader, xmpReader, nil)
 }
 
 func scanMetadata(r io.Reader, readerAt io.ReaderAt) (m Metadata, err error) {
-	err = scanJPEGWithMetadata(r, readerAt, nil, nil, &m)
+	err = scanJPEGWithMetadata(context.Background(), r, readerAt, nil, nil, &m)
 	if finishErr := m.finish(); err == nil {
 		err = finishErr
 	}
 	return m, err
 }
 
-func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error, metadata *Metadata) (err error) {
+func scanJPEGWithMetadata(ctx context.Context, r io.Reader, readerAt io.ReaderAt, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error, metadata *Metadata) (err error) {
 	defer func() {
 		if state := recover(); state != nil {
 			if recoveredErr, ok := state.(error); ok {
@@ -66,6 +70,10 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 			err = fmt.Errorf("jpeg panic: %v", state)
 		}
 	}()
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	var localBuffer bool
 	br, ok := r.(*bufio.Reader)
@@ -79,7 +87,7 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 		br.Reset(r)
 	}
 
-	jr := &jpegReader{br: br, readerAt: readerAt, ExifReader: exifReader, XMPReader: xmpReader, metadata: metadata}
+	jr := &jpegReader{ctx: ctx, br: br, readerAt: readerAt, ExifReader: exifReader, XMPReader: xmpReader, metadata: metadata}
 
 	defer func() {
 		if localBuffer {
@@ -88,7 +96,13 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 		}
 	}()
 
-	for jr.nextMarker() {
+	for {
+		if !jr.abortIfContextDone() {
+			break
+		}
+		if !jr.nextMarker() {
+			break
+		}
 		switch {
 		case isSOFMarker(jr.marker):
 			jr.readSOFMarker()
@@ -142,8 +156,30 @@ func scanJPEGWithMetadata(r io.Reader, readerAt io.ReaderAt, exifReader func(r i
 	return jr.processExtendedXMP()
 }
 
+func (jr *jpegReader) abortIfContextDone() bool {
+	if jr.ctx.Err() != nil {
+		jr.err = jr.ctx.Err()
+		return false
+	}
+	return true
+}
+
+func (jr *jpegReader) abortIfScanLimitExceeded() bool {
+	if jr.discarded > maxMetadataScanBytes {
+		jr.err = ErrMetadataScanLimit
+		return false
+	}
+	return true
+}
+
 func (jr *jpegReader) nextMarker() bool {
 	for jr.err == nil {
+		if !jr.abortIfContextDone() {
+			return false
+		}
+		if !jr.abortIfScanLimitExceeded() {
+			return false
+		}
 		if jr.buf, jr.err = jr.peek(2); jr.err != nil {
 			jr.err = ErrNoJPEGMarker
 			return false
@@ -169,12 +205,24 @@ func (jr *jpegReader) nextMarker() bool {
 				i--
 			}
 			jr.err = jr.discard(i)
+			if jr.err != nil {
+				return false
+			}
+			if !jr.abortIfScanLimitExceeded() {
+				return false
+			}
 			continue
 		}
 
 		if isSOIMarker(jr.buf) {
 			jr.pos++
 			jr.err = jr.discard(2)
+			if jr.err != nil {
+				return false
+			}
+			if !jr.abortIfScanLimitExceeded() {
+				return false
+			}
 			continue
 		}
 		if jr.pos > 0 {
@@ -197,6 +245,9 @@ func (jr *jpegReader) nextMarker() bool {
 				if jr.err != nil {
 					return false
 				}
+				if !jr.abortIfScanLimitExceeded() {
+					return false
+				}
 				continue
 			}
 			peekLen := int(jr.size) + 2
@@ -211,6 +262,15 @@ func (jr *jpegReader) nextMarker() bool {
 				return false
 			}
 			return true
+		}
+
+		// Leading 0xFF without SOI: advance one byte to avoid infinite Peek loop.
+		jr.err = jr.discard(1)
+		if jr.err != nil {
+			return false
+		}
+		if !jr.abortIfScanLimitExceeded() {
+			return false
 		}
 	}
 	return false
