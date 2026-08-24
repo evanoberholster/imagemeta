@@ -26,9 +26,23 @@ func Rgb2GrayFast(colorImg image.Image, pixels *[]float64) {
 	}
 }
 
-// pixel2Gray converts a pixel to grayscale value base on luminosity
+// pixel2Gray converts a pixel to grayscale value based on luminosity.
+// It uses integer arithmetic and a consistent divisor (257) for all channels
+// to ensure bit-identical results across different CPU architectures (x86 vs ARM),
+// avoiding floating-point non-determinism.
 func pixel2Gray(r, g, b, a uint32) float64 {
-	return 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
+	// Normalize 16-bit color channels to 8-bit [0, 255] using consistent divisor 257.
+	// Note: 65535 / 257 = 255. Using 256 for Blue was an inconsistent optimization.
+	r8 := uint64(r / 257)
+	g8 := uint64(g / 257)
+	b8 := uint64(b / 257)
+
+	// Calculate Grayscale using integer weights (Sum = 1000).
+	// Coefficients: 0.299, 0.587, 0.114
+	y := (299*r8 + 587*g8 + 114*b8)
+
+	// Return float64 in range [0, 255]
+	return float64(y) / 1000.0
 }
 
 // rgb2GrayDefault uses the image.Image interface
@@ -89,7 +103,9 @@ func PixelYCnCRGray(img *image.YCbCr, pixels []float64) {
 			//	b = ^(b >> 31)
 			//}
 
-			pixels[(y*s)+x] = 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b>>8)
+			// Normalize channels using consistent divisor 257 and integer weights for determinism.
+			r16, g16, b16 := int64(r/257), int64(g/257), int64(b/257)
+			pixels[(y*s)+x] = float64(299*r16+587*g16+114*b16) / 1000.0
 		}
 	}
 }
@@ -123,7 +139,9 @@ func Rgb2Gray(colorImg image.Image) [][]float64 {
 		for j := range pixels[i] {
 			color := colorImg.At(j, i)
 			r, g, b, _ := color.RGBA()
-			lum := 0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256)
+			// Normalize channels using consistent divisor 257 and integer weights for determinism.
+			r8, g8, b8 := uint64(r/257), uint64(g/257), uint64(b/257)
+			lum := float64(299*r8+587*g8+114*b8) / 1000.0
 			pixels[i][j] = lum
 		}
 	}
