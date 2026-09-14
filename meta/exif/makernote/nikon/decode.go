@@ -429,8 +429,8 @@ func DecodeAFTune(raw []byte) NikonAFTune {
 	return NikonAFTune{
 		AFFineTune:        raw[0],
 		AFFineTuneIndex:   raw[1],
-		AFFineTuneAdj:     int8(raw[2]),
-		AFFineTuneAdjTele: int8(raw[3]),
+		AFFineTuneAdj:     int8(raw[2]), //nolint:gosec // G115: raw bytes reinterpreted as signed tuning values.
+		AFFineTuneAdjTele: int8(raw[3]), //nolint:gosec // G115: raw bytes reinterpreted as signed tuning values.
 	}
 }
 

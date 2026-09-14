@@ -46,7 +46,7 @@ func EncodeBlurHashFast(img image.Image) (string, error) {
 	if acCount > 0 {
 		var actualMaximumValue float64
 		for i := 0; i < acCount*3; i++ {
-			actualMaximumValue = math.Max(math.Abs(factors[i+3]), actualMaximumValue)
+			actualMaximumValue = math.Max(math.Abs(factors[i+3]), actualMaximumValue) //nolint:gosec // G602: acCount*3+3 == len(factors).
 		}
 		quantisedMaximumValue = int(math.Max(0, math.Min(82, math.Floor(actualMaximumValue*166-0.5))))
 		maximumValue = (float64(quantisedMaximumValue) + 1) / 166

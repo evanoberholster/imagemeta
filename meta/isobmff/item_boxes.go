@@ -302,7 +302,6 @@ func (r *Reader) readIloc(b *box) (err error) {
 			if readErr != nil {
 				return readErr
 			}
-			//nolint:gosec // G115: construction_method is the low 4 bits per ISO BMFF iloc format.
 			ent.constructionMethod = uint8(cmeth & 0x0f)
 		}
 		ent.dataReferenceIndex, err = b.readUint16()

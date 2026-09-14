@@ -480,7 +480,7 @@ func parseXMLNumericEntity(buf []byte) (rune, bool) {
 func appendRuneUTF8(dst []byte, r rune) []byte {
 	switch {
 	case r <= 0x7F:
-		return append(dst, byte(r))
+		return append(dst, byte(r)) //nolint:gosec // G115: r <= 0x7F in this branch.
 	case r <= 0x7FF:
 		dst = append(dst, 0xC0|byte(r>>6))
 		dst = append(dst, 0x80|byte(r&0x3F))
@@ -491,7 +491,7 @@ func appendRuneUTF8(dst []byte, r rune) []byte {
 		dst = append(dst, 0x80|byte(r&0x3F))
 		return dst
 	default:
-		dst = append(dst, 0xF0|byte(r>>18))
+		dst = append(dst, 0xF0|byte(r>>18)) //nolint:gosec // G115: r <= 0x10FFFF so r>>18 fits in a byte.
 		dst = append(dst, 0x80|byte((r>>12)&0x3F))
 		dst = append(dst, 0x80|byte((r>>6)&0x3F))
 		dst = append(dst, 0x80|byte(r&0x3F))

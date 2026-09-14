@@ -143,12 +143,10 @@ func (t Entry) EmbeddedShorts(dst []uint16) int {
 }
 
 func low16(v uint32) uint16 {
-	//nolint:gosec // G115: deliberate lower 16-bit extraction.
 	return uint16(v & 0xFFFF)
 }
 
 func high16(v uint32) uint16 {
-	//nolint:gosec // G115: deliberate upper 16-bit extraction.
 	return uint16((v >> 16) & 0xFFFF)
 }
 

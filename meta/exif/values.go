@@ -516,7 +516,7 @@ func (r *Reader) parseUint32List(t tag.Entry, dst []uint32) int {
 			m := min(t.EmbeddedShorts(shorts[:]), n)
 			dst[0] = uint32(shorts[0])
 			if m == 2 {
-				dst[1] = uint32(shorts[1])
+				dst[1] = uint32(shorts[1]) //nolint:gosec // G602: shorts is a fixed [2]uint16.
 			}
 			return m
 		}
