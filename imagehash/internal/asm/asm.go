@@ -131,9 +131,10 @@ func constPixelsToGrey8() Mem {
 	DATA(3*4, I32(46802))
 	DATA(4*4, I32(22554))
 	DATA(5*4, I32(116130))
-	DATA(6*4, F32(float32(0.299*256/257))) // red
-	DATA(7*4, F32(float32(0.587*256/257))) // green
-	DATA(8*4, F32(float32(0.114)))         // blue
+	DATA(6*4, I32(299)) // red luminosity weight
+	DATA(7*4, I32(587)) // green luminosity weight
+	DATA(8*4, I32(114)) // blue luminosity weight
+	DATA(9*4, F32(1000.0))
 	return val
 }
 
@@ -703,7 +704,7 @@ func yCbCrToGray() {
 	pixels := Load(Param("pixels").Base(), GP64())
 
 	VZEROUPPER()
-	static := make([]reg.VecVirtual, 9)
+	static := make([]reg.VecVirtual, 10)
 	for i := 0; i < len(static); i++ {
 		static[i] = YMM()
 		VPBROADCASTD(pixelsToGray8Values.Offset(i*4), static[i])
@@ -761,8 +762,6 @@ func yCbCrToGray() {
 	VPMULLD(static[2], Cr, red)
 	VPADDD(yy, red, red)
 	VPSRAD(Imm(8), red, red) // Divide by 256 (Shift 8 bytes right)
-	VCVTDQ2PS(red, red)
-	VMULPS(static[6], red, red) // Multiply by adjusting factor
 
 	// Green
 	VPMULLD(static[3], Cr, Cr)
@@ -770,19 +769,20 @@ func yCbCrToGray() {
 	VPSUBD(green, yy, green)
 	VPSUBD(Cr, green, green)
 	VPSRAD(Imm(8), green, green) // Divide by 256 (Shift 8 bytes right)
-	VCVTDQ2PS(green, green)
-	VMULPS(static[7], green, green) // Multiply by adjusting factor
 
 	// Blue
 	VPMULLD(static[5], Cb, blue)
 	VPADDD(yy, blue, blue)
 	VPSRAD(Imm(8), blue, blue) // Divide by 256 (Shift 8 bytes right)
-	VCVTDQ2PS(blue, blue)
-	VMULPS(static[8], blue, blue) // Multiply by adjusting factor
 
-	// Add Red + Blue + Green
-	VADDPS(red, blue, gray)
-	VADDPS(green, gray, gray)
+	// Integer luminosity: 299*red + 587*green + 114*blue, scaled by 1/1000.
+	VPMULLD(static[6], red, red)
+	VPMULLD(static[7], green, green)
+	VPMULLD(static[8], blue, blue)
+	VPADDD(red, green, gray)
+	VPADDD(blue, gray, gray)
+	VCVTDQ2PS(gray, gray)
+	VDIVPS(static[9], gray, gray)
 
 	// Move result to memory
 	VMOVAPS(gray, Mem{Base: pixels, Index: idxyStride, Scale: 4})

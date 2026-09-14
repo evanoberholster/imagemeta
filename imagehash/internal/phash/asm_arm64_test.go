@@ -92,13 +92,6 @@ func BenchmarkGoDCT2DHash64(b *testing.B) {
 	})
 }
 
-func floatAbs(f float32) float32 {
-	if f < 0 {
-		return -f
-	}
-	return f
-}
-
 func TestAsmYCbCrToGray(t *testing.T) {
 	const s = 64
 	for trial := 0; trial < 50; trial++ {
@@ -118,14 +111,10 @@ func TestAsmYCbCrToGray(t *testing.T) {
 		asm.YCbCrToGray(got, img.Rect.Min.X, img.Rect.Min.Y, img.Rect.Max.X, img.Rect.Max.Y,
 			img.Y, img.Cb, img.Cr, img.YStride, img.CStride)
 		yCbCrToGray(img, want)
-		maxd := float32(0)
 		for i := range got {
-			if d := floatAbs(got[i] - want[i]); d > maxd {
-				maxd = d
+			if got[i] != want[i] {
+				t.Fatalf("trial %d: index %d asm %v != go %v", trial, i, got[i], want[i])
 			}
-		}
-		if maxd > 2.0 {
-			t.Fatalf("trial %d: max grey diff %v", trial, maxd)
 		}
 	}
 }
@@ -141,13 +130,9 @@ func TestAsmRGBAtoGray(t *testing.T) {
 	want := make([]float32, s*s)
 	asm.RGBAToGray(got, img.Pix, img.Stride, img.Rect.Min.X, img.Rect.Min.Y, img.Rect.Dx(), img.Rect.Dy())
 	rgbaToGray(img, want)
-	maxd := float32(0)
 	for i := range got {
-		if d := floatAbs(got[i] - want[i]); d > maxd {
-			maxd = d
+		if got[i] != want[i] {
+			t.Fatalf("index %d asm %v != go %v", i, got[i], want[i])
 		}
-	}
-	if maxd > 0.05 {
-		t.Fatalf("max grey diff %v", maxd)
 	}
 }

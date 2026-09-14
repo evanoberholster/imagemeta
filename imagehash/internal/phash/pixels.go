@@ -45,13 +45,20 @@ func imageToGrayDefault(img image.Image, pixels []float32) {
 	}
 }
 
-// pixelToGray converts a 16-bit RGBA pixel to a grayscale value based on luminosity
+// pixelToGray converts a 16-bit RGBA pixel to a grayscale value using the same
+// integer luminosity weights as every other pathway.
 func pixelToGray(r, g, b, a uint32) float32 {
-	return float32(0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b/256))
+	r8, g8, b8 := r/257, g/257, b/257
+	return float32(299*r8+587*g8+114*b8) / 1000
 }
 
 // yCbCrToGray converts an *image.YCbCr to an array of grayscale pixels by
 // indexing the Y/Cb/Cr planes directly.
+//
+// The 16-bit YCbCr-to-RGB conversion is evaluated with 32-bit integer
+// arithmetic and then reduced to grayscale with the integer luminosity weights
+// (299*r + 587*g + 114*b) / 1000. Integer-only arithmetic keeps every
+// architecture's result bit-identical (no float multiply-add fusion).
 func yCbCrToGray(img *image.YCbCr, pixels []float32) {
 	s := img.Rect.Dx()
 	minX, minY := img.Rect.Min.X, img.Rect.Min.Y
@@ -61,19 +68,15 @@ func yCbCrToGray(img *image.YCbCr, pixels []float32) {
 		for x := 0; x < s; x++ {
 			ci := img.COffset(minX+x, minY+y)
 
-			yy := img.Y[yRow+x]
-			cb := img.Cb[ci]
-			cr := img.Cr[ci]
+			yy := int32(img.Y[yRow+x]) * 0x10101
+			cb := int32(img.Cb[ci]) - 128
+			cr := int32(img.Cr[ci]) - 128
 
-			yy1 := int32(yy) * 0x10101
-			cb1 := int32(cb) - 128
-			cr1 := int32(cr) - 128
+			red := (yy + 91881*cr) >> 8
+			green := (yy - 22554*cb - 46802*cr) >> 8
+			blue := (yy + 116130*cb) >> 8
 
-			r := yy1 + 91881*cr1
-			g := yy1 - 22554*cb1 - 46802*cr1
-			b := yy1 + 116130*cb1
-
-			pixels[base+x] = float32(0.299*float64(r/257) + 0.587*float64(g/257) + 0.114*float64(b>>8))
+			pixels[base+x] = float32(299*red+587*green+114*blue) / 1000
 		}
 	}
 }
@@ -93,8 +96,8 @@ func rgbaToGray(img *image.RGBA, pixels []float32) {
 	}
 }
 
-// pixelToGray8 converts an 8-bit RGB pixel to a grayscale value. It is
-// equivalent to pixelToGray applied to the corresponding 16-bit values.
+// pixelToGray8 converts an 8-bit RGB pixel to a grayscale value using the same
+// integer luminosity weights as every other pathway.
 func pixelToGray8(r, g, b uint8) float32 {
-	return float32(0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b))
+	return float32(299*int32(r)+587*int32(g)+114*int32(b)) / 1000
 }

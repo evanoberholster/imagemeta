@@ -313,10 +313,11 @@ DATA constyCbCrGray<>+8(SB)/4, $+91881
 DATA constyCbCrGray<>+12(SB)/4, $+46802
 DATA constyCbCrGray<>+16(SB)/4, $+22554
 DATA constyCbCrGray<>+20(SB)/4, $+116130
-DATA constyCbCrGray<>+24(SB)/4, $(0.29783657)
-DATA constyCbCrGray<>+28(SB)/4, $(0.58471596)
-DATA constyCbCrGray<>+32(SB)/4, $(0.114)
-GLOBL constyCbCrGray<>(SB), RODATA|NOPTR, $36
+DATA constyCbCrGray<>+24(SB)/4, $+299
+DATA constyCbCrGray<>+28(SB)/4, $+587
+DATA constyCbCrGray<>+32(SB)/4, $+114
+DATA constyCbCrGray<>+36(SB)/4, $(1000.0)
+GLOBL constyCbCrGray<>(SB), RODATA|NOPTR, $40
 
 // func asmDCT2DHash64(input []float32) [64]float32
 // Requires: AVX, AVX2, SSE, SSE2, SSE4.1
@@ -4695,6 +4696,7 @@ TEXT ·asmYCbCrToGray(SB), NOSPLIT|NOPTR, $0-144
 	VPBROADCASTD constyCbCrGray<>+24(SB), Y6
 	VPBROADCASTD constyCbCrGray<>+28(SB), Y7
 	VPBROADCASTD constyCbCrGray<>+32(SB), Y8
+	VPBROADCASTD constyCbCrGray<>+36(SB), Y14
 	XORQ         R14, R14
 	XORQ         R15, R15
 
@@ -4724,22 +4726,21 @@ x:
 	VPMULLD   Y2, Y11, Y12
 	VPADDD    Y9, Y12, Y12
 	VPSRAD    $0x08, Y12, Y12
-	VCVTDQ2PS Y12, Y12
-	VMULPS    Y6, Y12, Y12
 	VPMULLD   Y3, Y11, Y11
 	VPMULLD   Y4, Y10, Y13
 	VPSUBD    Y13, Y9, Y13
 	VPSUBD    Y11, Y13, Y13
 	VPSRAD    $0x08, Y13, Y13
-	VCVTDQ2PS Y13, Y13
-	VMULPS    Y7, Y13, Y13
 	VPMULLD   Y5, Y10, Y10
 	VPADDD    Y9, Y10, Y10
 	VPSRAD    $0x08, Y10, Y10
-	VCVTDQ2PS Y10, Y10
-	VMULPS    Y8, Y10, Y10
-	VADDPS    Y12, Y10, Y9
-	VADDPS    Y13, Y9, Y9
+	VPMULLD   Y6, Y12, Y12
+	VPMULLD   Y7, Y13, Y13
+	VPMULLD   Y8, Y10, Y10
+	VPADDD    Y13, Y12, Y9
+	VPADDD    Y10, Y9, Y9
+	VCVTDQ2PS Y9, Y9
+	VDIVPS    Y14, Y9, Y9
 	VMOVAPS   Y9, (R13)(DX*4)
 
 	// End innerloop instructions
