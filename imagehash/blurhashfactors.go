@@ -1,104 +1,89 @@
 package imagehash
 
-import "image"
+import (
+	"image"
+	"image/color"
+)
 
-// factorsYCbCR uses *image.YCbCr to produce factors
-func factorsYCbCR(img *image.YCbCr, factors []float64) {
-	var factor float64
-	var scale float64
-	var lr, lg, lb float64
-
-	height := img.Bounds().Max.Y
-	width := img.Bounds().Max.X
+// multiplyBasisFunction computes the BlurHash DCT factors for img. The basis
+// functions are separable, so the sum over the image is evaluated as two
+// passes: first over x for every row, then over y for every (xc, yc) component.
+func multiplyBasisFunction(img image.Image, factors []float64) {
 	size := float64(width * height)
+	var rowSum [height * 3 * xComponents]float32
+	var lr, lg, lb [width]float32
+	var out [3 * xComponents]float32
+
 	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			rt, gt, bt, _ := img.YCbCrAt(x, y).RGBA()
-			lr = channelToLinear[rt>>8]
-			lg = channelToLinear[gt>>8]
-			lb = channelToLinear[bt>>8]
+		extractRow(img, y, lr[:], lg[:], lb[:])
+		blurRow(out[:], lr[:], lg[:], lb[:])
+		copy(rowSum[y*3*xComponents:], out[:])
+	}
 
-			for yc := 0; yc < yComponents; yc++ {
-				for xc := 0; xc < xComponents; xc++ {
+	finishBasis(rowSum[:], size, factors)
+}
 
-					if xc != 0 || yc != 0 {
-						scale = 2 / size
-					} else {
-						scale = 1 / size
-					}
-					factor = xvalues[x+width*xc] * yvalues[y+height*yc] * scale
-					factors[0+xc*3+yc*3*xComponents] += lr * factor
-					factors[1+xc*3+yc*3*xComponents] += lg * factor
-					factors[2+xc*3+yc*3*xComponents] += lb * factor
-				}
+// blurRowGo is the portable implementation of blurRow.
+func blurRowGo(out, lr, lg, lb []float32) {
+	for c, lin := range [3][]float32{lr, lg, lb} {
+		for xc := 0; xc < xComponents; xc++ {
+			base := xc * width
+			var acc float32
+			for x := 0; x < width; x++ {
+				acc += lin[x] * xvalues32[base+x]
 			}
+			out[c*xComponents+xc] = acc
 		}
 	}
 }
 
-// factorsRGBA uses *image.RGBA to produce factors
-func factorsRGBA(img *image.RGBA, factors []float64) {
-	var factor float64
-	var scale float64
-	var lr, lg, lb float64
-
-	height := img.Bounds().Max.Y
-	width := img.Bounds().Max.X
-	size := float64(width * height)
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			rt, gt, bt, _ := img.RGBAAt(x, y).RGBA()
-			lr = channelToLinear[rt>>8]
-			lg = channelToLinear[gt>>8]
-			lb = channelToLinear[bt>>8]
-
-			for yc := 0; yc < yComponents; yc++ {
-				for xc := 0; xc < xComponents; xc++ {
-
-					if xc != 0 || yc != 0 {
-						scale = 2 / size
-					} else {
-						scale = 1 / size
-					}
-					factor = xvalues[x+width*xc] * yvalues[y+height*yc] * scale
-					factors[0+xc*3+yc*3*xComponents] += lr * factor
-					factors[1+xc*3+yc*3*xComponents] += lg * factor
-					factors[2+xc*3+yc*3*xComponents] += lb * factor
-				}
-			}
+// extractRow writes the linear-light RGB values of one image row (row index y
+// relative to the image bounds) into lr, lg and lb.
+func extractRow(img image.Image, y int, lr, lg, lb []float32) {
+	b := img.Bounds()
+	minX, minY := b.Min.X, b.Min.Y
+	switch c := img.(type) {
+	case *image.YCbCr:
+		yRow := c.YOffset(minX, minY+y)
+		for x := 0; x < b.Dx(); x++ {
+			ci := c.COffset(minX+x, minY+y)
+			r, g, bl := color.YCbCrToRGB(c.Y[yRow+x], c.Cb[ci], c.Cr[ci])
+			lr[x] = float32(channelToLinear[r])
+			lg[x] = float32(channelToLinear[g])
+			lb[x] = float32(channelToLinear[bl])
+		}
+	case *image.RGBA:
+		row := c.PixOffset(minX, minY+y)
+		for x := 0; x < b.Dx(); x++ {
+			p := row + x*4
+			lr[x] = float32(channelToLinear[c.Pix[p]])
+			lg[x] = float32(channelToLinear[c.Pix[p+1]])
+			lb[x] = float32(channelToLinear[c.Pix[p+2]])
+		}
+	default:
+		for x := 0; x < b.Dx(); x++ {
+			rt, gt, bt, _ := img.At(minX+x, minY+y).RGBA()
+			lr[x] = float32(channelToLinear[rt>>8])
+			lg[x] = float32(channelToLinear[gt>>8])
+			lb[x] = float32(channelToLinear[bt>>8])
 		}
 	}
 }
 
-// factorsDefault uses image.Image to produce factors
-func factorsDefault(img image.Image, factors []float64) {
-	var factor float64
-	var scale float64
-	var lr, lg, lb float64
-
-	height := img.Bounds().Max.Y
-	width := img.Bounds().Max.X
-	size := float64(width * height)
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			rt, gt, bt, _ := img.At(x, y).RGBA()
-			lr = channelToLinear[rt>>8]
-			lg = channelToLinear[gt>>8]
-			lb = channelToLinear[bt>>8]
-
-			for yc := 0; yc < yComponents; yc++ {
-				for xc := 0; xc < xComponents; xc++ {
-
-					if xc != 0 || yc != 0 {
-						scale = 2 / size
-					} else {
-						scale = 1 / size
-					}
-					factor = xvalues[x+width*xc] * yvalues[y+height*yc] * scale
-					factors[0+xc*3+yc*3*xComponents] += lr * factor
-					factors[1+xc*3+yc*3*xComponents] += lg * factor
-					factors[2+xc*3+yc*3*xComponents] += lb * factor
+// finishBasis reduces the per-row partial sums over y into the DCT factors.
+func finishBasis(rowSum []float32, size float64, factors []float64) {
+	for yc := 0; yc < yComponents; yc++ {
+		for xc := 0; xc < xComponents; xc++ {
+			scale := 2 / size
+			if xc == 0 && yc == 0 {
+				scale = 1 / size
+			}
+			for c := 0; c < 3; c++ {
+				var acc float64
+				for y := 0; y < height; y++ {
+					acc += float64(rowSum[(y*3+c)*xComponents+xc]) * yvalues[y+height*yc]
 				}
+				factors[c+xc*3+yc*3*xComponents] = acc * scale
 			}
 		}
 	}

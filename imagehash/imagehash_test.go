@@ -2,6 +2,8 @@ package imagehash
 
 import (
 	"bytes"
+	"errors"
+	"image"
 	"image/jpeg"
 	"io"
 	"os"
@@ -9,6 +11,60 @@ import (
 
 	"github.com/nfnt/resize"
 )
+
+func TestHashImageSizeErrors(t *testing.T) {
+	t.Parallel()
+
+	if _, err := NewPHash64(nil); !errors.Is(err, ErrImageObject) {
+		t.Errorf("NewPHash64(nil) err = %v, want ErrImageObject", err)
+	}
+	for _, size := range []image.Point{{100, 100}, {64, 128}, {128, 128}, {63, 63}} {
+		img := image.NewRGBA(image.Rect(0, 0, size.X, size.Y))
+		if _, err := NewPHash64(img); !errors.Is(err, ErrImageSize) {
+			t.Errorf("NewPHash64(%dx%d) err = %v, want ErrImageSize", size.X, size.Y, err)
+		}
+		if _, err := NewAHash(img); !errors.Is(err, ErrImageSize) {
+			t.Errorf("NewAHash(%dx%d) err = %v, want ErrImageSize", size.X, size.Y, err)
+		}
+	}
+	if _, err := NewPHash256(image.NewRGBA(image.Rect(0, 0, 128, 128))); !errors.Is(err, ErrImageSize) {
+		t.Errorf("NewPHash256(128x128) err = %v, want ErrImageSize", err)
+	}
+	if _, err := NewPHash64(image.NewRGBA(image.Rect(0, 0, 64, 64))); err != nil {
+		t.Errorf("NewPHash64(64x64) err = %v", err)
+	}
+	if _, err := NewAHash(image.NewRGBA(image.Rect(0, 0, 8, 8))); err != nil {
+		t.Errorf("NewAHash(8x8) err = %v", err)
+	}
+	if _, err := EncodeBlurHashFast(image.NewRGBA(image.Rect(0, 0, 64, 128))); !errors.Is(err, ErrBlurHashSize) {
+		t.Errorf("EncodeBlurHashFast(64x128) err = %v, want ErrBlurHashSize", err)
+	}
+}
+
+func TestPHashAltAliases(t *testing.T) {
+	f, err := os.Open("../assets/JPEG.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	img, err := jpeg.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resized := resize.Resize(64, 64, img, resize.Bilinear)
+
+	p, err := NewPHash64(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pa, err := NewPHash64Alt(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p != pa {
+		t.Errorf("NewPHash64 %v != NewPHash64Alt %v", p, pa)
+	}
+}
 
 func TestBlurHash(t *testing.T) {
 	f, err := os.Open("../assets/JPEG.jpg")

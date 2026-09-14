@@ -11,7 +11,7 @@ import (
 	"github.com/mmcloughlin/avo/reg"
 )
 
-//go:generate go run asm.go -out asm_x86.s -stubs stub.go
+//go:generate go run asm.go -out asm_amd64.s -stubs asm_amd64.go
 
 // Built with assistance from https://www.officedaytime.com/
 func main() {
@@ -767,8 +767,8 @@ func yCbCrToGray() {
 	// Green
 	VPMULLD(static[3], Cr, Cr)
 	VPMULLD(static[4], Cb, green)
-	VPSUBQ(green, yy, green)
-	VPSUBQ(Cr, green, green)
+	VPSUBD(green, yy, green)
+	VPSUBD(Cr, green, green)
 	VPSRAD(Imm(8), green, green) // Divide by 256 (Shift 8 bytes right)
 	VCVTDQ2PS(green, green)
 	VMULPS(static[7], green, green) // Multiply by adjusting factor
