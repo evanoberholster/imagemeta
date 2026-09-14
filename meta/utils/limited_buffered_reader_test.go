@@ -9,6 +9,8 @@ import (
 )
 
 func TestLimitedBufferedReaderReadBounded(t *testing.T) {
+	t.Parallel()
+
 	src := bufio.NewReader(bytes.NewReader([]byte("abcdef")))
 	lr := NewLimitedBufferedReader(src, 3)
 
@@ -28,6 +30,8 @@ func TestLimitedBufferedReaderReadBounded(t *testing.T) {
 }
 
 func TestLimitedBufferedReaderPeekDiscardBounded(t *testing.T) {
+	t.Parallel()
+
 	src := bufio.NewReader(bytes.NewReader([]byte("abcdef")))
 	lr := NewLimitedBufferedReader(src, 4)
 

@@ -4,71 +4,124 @@ package png
 import (
 	"encoding/binary"
 	"io"
+	"sync"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/utils"
 )
 
-func ScanPngHeader(r io.ReadSeeker) (header meta.ExifHeader, err error) {
-	// 5.2 PNG signature
-	const signature = "\x89PNG\r\n\x1a\n"
+const (
+	pngSignatureValue uint64 = 0x89504e470d0a1a0a
+	exifChunkType     uint32 = 0x65584966
+	pngChunkCRCSize          = 4
+)
 
-	// 5.3 Chunk layout
-	const crcSize = 4
+type scanBuffer [16]byte
 
-	// 8 is the size of both the signature and the chunk
-	// id (4 bytes) + chunk length (4 bytes).
-	// This is just a coincidence.
-	buf := make([]byte, 8)
+var scanBufferPool = sync.Pool{
+	New: func() any { return new(scanBuffer) },
+}
 
-	var n int
-	n, err = r.Read(buf)
-	if err != nil {
-		return
+func acquireScanBuffer() *scanBuffer {
+	buf, ok := scanBufferPool.Get().(*scanBuffer)
+	if !ok || buf == nil {
+		return new(scanBuffer)
 	}
+	return buf
+}
 
-	if n != len(signature) || string(buf) != signature {
-		err = meta.ErrNoExif
+func releaseScanBuffer(buf *scanBuffer) {
+	if buf != nil {
+		scanBufferPool.Put(buf)
+	}
+}
 
-		return
+func ScanPngHeader(r io.ReadSeeker) (header meta.ExifHeader, err error) {
+	buf := acquireScanBuffer()
+	defer releaseScanBuffer(buf)
+
+	if _, err = io.ReadFull(r, buf[:8]); err != nil {
+		return header, err
+	}
+	if binary.BigEndian.Uint64(buf[:8]) != pngSignatureValue {
+		return header, meta.ErrNoExif
 	}
 
 	for {
-		// 5.3 Chunk layout
-		n, err = r.Read(buf)
-		if err != nil {
+		if _, err = io.ReadFull(r, buf[:8]); err != nil {
 			break
 		}
 
-		if n != len(buf) {
-			break
-		}
-
-		length := binary.BigEndian.Uint32(buf[0:4])
-		chunkType := string(buf[4:8])
-
-		switch chunkType {
-		case "eXIf":
+		length := binary.BigEndian.Uint32(buf[:4])
+		if binary.BigEndian.Uint32(buf[4:8]) == exifChunkType {
 			offset, seekErr := r.Seek(0, io.SeekCurrent)
 			if seekErr != nil {
 				return header, seekErr
 			}
-			offset32, ok := meta.SafecastInt64ToUint32(offset)
-			if !ok {
-				return header, meta.ErrNoExif
-			}
+			return scanExifChunkHeader(r, buf, offset, length)
+		}
 
-			return meta.NewExifHeader(utils.BigEndian, 8, offset32, length, imagetype.ImagePNG), nil
-
-		default:
-			// Discard the chunk length + CRC.
-			_, err := r.Seek(int64(length+crcSize), io.SeekCurrent)
-			if err != nil {
-				return header, err
-			}
+		// Skip the chunk payload and its CRC. Convert before addition to avoid
+		// wrapping a maximum uint32 chunk length.
+		if _, err = r.Seek(int64(length)+pngChunkCRCSize, io.SeekCurrent); err != nil {
+			return header, err
 		}
 	}
 
 	return header, meta.ErrNoExif
+}
+
+// scanExifChunkHeader parses the TIFF header at the start of a PNG eXIf chunk
+// and restores the reader to the chunk payload for the EXIF decoder.
+func scanExifChunkHeader(r io.ReadSeeker, buf *scanBuffer, offset int64, length uint32) (meta.ExifHeader, error) {
+	if length < 8 {
+		return meta.ExifHeader{}, meta.ErrNoExif
+	}
+	if _, err := io.ReadFull(r, buf[:8]); err != nil {
+		return meta.ExifHeader{}, err
+	}
+
+	byteOrder := utils.BinaryOrder(buf[:8])
+	if byteOrder == utils.UnknownEndian {
+		return meta.ExifHeader{}, meta.ErrNoExif
+	}
+
+	bigTiff := utils.IsBigTiff(buf[:8])
+	var firstIFDOffset uint32
+	if bigTiff {
+		if length < 16 || byteOrder.Uint16(buf[4:6]) != 8 || byteOrder.Uint16(buf[6:8]) != 0 {
+			return meta.ExifHeader{}, meta.ErrNoExif
+		}
+		if _, err := io.ReadFull(r, buf[8:16]); err != nil {
+			return meta.ExifHeader{}, err
+		}
+		firstIFDOffset64 := byteOrder.Uint64(buf[8:16])
+		if firstIFDOffset64 > uint64(^uint32(0)) {
+			return meta.ExifHeader{}, meta.ErrNoExif
+		}
+		firstIFDOffset = uint32(firstIFDOffset64)
+	} else {
+		firstIFDOffset = byteOrder.Uint32(buf[4:8])
+	}
+
+	minOffset := uint32(8)
+	if bigTiff {
+		minOffset = 16
+	}
+	if firstIFDOffset < minOffset || firstIFDOffset >= length {
+		return meta.ExifHeader{}, meta.ErrNoExif
+	}
+
+	if _, err := r.Seek(offset, io.SeekStart); err != nil {
+		return meta.ExifHeader{}, err
+	}
+	offset32, ok := meta.SafecastInt64ToUint32(offset)
+	if !ok {
+		return meta.ExifHeader{}, meta.ErrNoExif
+	}
+
+	header := meta.NewExifHeader(byteOrder, firstIFDOffset, offset32, length, imagetype.ImagePNG)
+	header.BigTIFF = bigTiff
+	return header, nil
 }
