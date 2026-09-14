@@ -1,14 +1,28 @@
-package transforms32
+package phash
 
-// DCT2DHash64 function returns a result of DCT2D by using the seperable property.
+import (
+	"sync"
+
+	"github.com/evanoberholster/imagemeta/imagehash/internal/asm"
+)
+
+// Scratch buffers used by the column pass. ForwardDCT64/256 are function
+// variables (they may point at assembly), so a stack array passed to them is
+// considered to escape; pooling keeps the hot path allocation free.
+var (
+	rowPool64  = sync.Pool{New: func() any { return new([64]float32) }}
+	rowPool256 = sync.Pool{New: func() any { return new([256]float32) }}
+)
+
+// DCT2DHash64 function returns a result of DCT2D by using the separable property.
 // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
-// Cusstom built for Hash64. Returns flattened pixels
+// Custom built for Hash64. Returns flattened pixels
 func DCT2DHash64(input []float32) [64]float32 {
 	if len(input) != 64*64 {
 		panic("Incorrect forward transform size")
 	}
 	if FlagUseASM {
-		return asmDCT2DHash64(input)
+		return asm.DCT2DHash64(input)
 	}
 
 	var flattens [64]float32
@@ -16,7 +30,11 @@ func DCT2DHash64(input []float32) [64]float32 {
 		ForwardDCT64((input)[i*64 : 64*i+64])
 	}
 
-	var row [64]float32
+	row, ok := rowPool64.Get().(*[64]float32)
+	if !ok || row == nil {
+		row = new([64]float32)
+	}
+	defer rowPool64.Put(row)
 	for i := 0; i < 8; i++ { // width
 		for j := 0; j < 64; j++ {
 			row[j] = (input)[64*j+i]
@@ -29,11 +47,10 @@ func DCT2DHash64(input []float32) [64]float32 {
 	return flattens
 }
 
-// DCT2DHash256 function returns a result of DCT2D by using the seperable property.
+// DCT2DHash256 function returns a result of DCT2D by using the separable property.
 // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
-// Cusstom built for Hash256. Returns flattened pixels
-func DCT2DHash256(input *[]float32) [256]float32 {
-	var flattens [256]float32
+// Custom built for Hash256. Writes the flattened pixels into flattens.
+func DCT2DHash256(input *[]float32, flattens *[256]float32) {
 	if len(*input) != 256*256 {
 		panic("Incorrect forward transform size")
 	}
@@ -41,7 +58,11 @@ func DCT2DHash256(input *[]float32) [256]float32 {
 		ForwardDCT256((*input)[i*256 : 256*i+256])
 	}
 
-	var row [256]float32
+	row, ok := rowPool256.Get().(*[256]float32)
+	if !ok || row == nil {
+		row = new([256]float32)
+	}
+	defer rowPool256.Put(row)
 	for i := 0; i < 16; i++ { // width
 		for j := 0; j < 256; j++ {
 			row[j] = (*input)[256*j+i]
@@ -51,7 +72,6 @@ func DCT2DHash256(input *[]float32) [256]float32 {
 			flattens[16*j+i] = row[j]
 		}
 	}
-	return flattens
 }
 
 // MedianOfPixels64 function returns a median value of pixels.

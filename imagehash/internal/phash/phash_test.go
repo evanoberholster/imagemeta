@@ -1,6 +1,6 @@
 //go:build linux && amd64
 
-package transforms32
+package phash
 
 import (
 	"errors"
@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/nfnt/resize"
+
+	"github.com/evanoberholster/imagemeta/imagehash/internal/asm"
 )
 
 func TestGreyPixels(t *testing.T) {
@@ -52,7 +54,7 @@ func TestGreyPixels(t *testing.T) {
 	}
 	AsmYCbCrToGray(yCbCr, pixels)
 
-	yCbCrToGrayAlt(yCbCr, pixels2)
+	yCbCrToGray(yCbCr, pixels2)
 
 	for i := 0; i < len(pixels); i++ {
 		if math.Abs(float64((pixels2)[i])-float64((pixels)[i])) > 2.0 {
@@ -73,7 +75,7 @@ func TestDCT2DHash64(t *testing.T) {
 	}
 
 	copy(input, source)
-	fl := asmDCT2DHash64(input)
+	fl := asm.DCT2DHash64(input)
 
 	copy(input2, source)
 	flattens := DCT2DHash64(input2)
@@ -106,7 +108,7 @@ func TestDCTHash256(t *testing.T) {
 	}
 
 	copy(input, source)
-	asmForwardDCT256(input)
+	asm.ForwardDCT256(input)
 
 	copy(input2, source)
 	forwardDCT256(input2)
@@ -129,7 +131,7 @@ func TestDCTHash64(t *testing.T) {
 	}
 
 	copy(input, source)
-	asmForwardDCT64(input)
+	asm.ForwardDCT64(input)
 
 	copy(input2, source)
 	forwardDCT64(input2)
@@ -154,7 +156,7 @@ func BenchmarkDCT2DHash64(b *testing.B) {
 	b.Run("ASM", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			copy(input, source)
-			asmDCT2DHash64(input)
+			asm.DCT2DHash64(input)
 		}
 	})
 	FlagUseASM = false
@@ -190,7 +192,7 @@ func BenchmarkGreyPixels(b *testing.B) {
 
 	b.Run("FN", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			yCbCrToGrayAlt(yCbCr, pixels2)
+			yCbCrToGray(yCbCr, pixels2)
 		}
 	})
 

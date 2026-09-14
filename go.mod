@@ -9,6 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/tinylib/msgp v1.6.3
+	golang.org/x/image v0.33.0
 )
 
 require (

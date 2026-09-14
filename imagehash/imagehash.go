@@ -13,126 +13,156 @@ import (
 	"image"
 	"sync"
 
-	"github.com/evanoberholster/imagemeta/imagehash/transforms"
-	"github.com/evanoberholster/imagemeta/meta"
+	"github.com/evanoberholster/imagemeta/imagehash/internal/phash"
 )
 
 //go:generate msgp
 
-// NewPHash64 is a Perception Hash function returns a hash computation of phash.
+const (
+	phash64Side  = 64
+	phash256Side = 256
+	ahashSide    = 8
+)
+
+// Errors returned by the hash constructors.
+var (
+	ErrImageObject = errors.New("image object can not be nil")
+	ErrImageSize   = errors.New("image size incompatible with hash size")
+	ErrPixelPool   = errors.New("pixel pool returned unexpected type")
+)
+
+// NewPHash64 is a Perception Hash function. It returns a 64 bit hash of the
+// image and requires a 64x64 image.
 // Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 // Optimized for performance and reduced memory footprint.
-func NewPHash64(img image.Image) (phash PHash64, err error) {
-	var size image.Point
-	if img != nil {
-		size = img.Bounds().Size()
-	}
-	if size.X != size.Y && size.X != 64 {
-		err = errors.New("error image size incompatible. PHash requires 64x64 image")
-		return
+func NewPHash64(img image.Image) (hash PHash64, err error) {
+	if err = checkImageSize(img, phash64Side); err != nil {
+		return 0, err
 	}
 
-	pixels, ok := pixelsPool64.Get().(*[]float64)
+	pixels, ok := pixelsPool64.Get().(*[]float32)
 	if !ok || pixels == nil {
-		return 0, errors.New("pixelsPool64 returned non-*[]float64")
+		return 0, ErrPixelPool
 	}
+	defer pixelsPool64.Put(pixels)
 
-	transforms.Rgb2GrayFast(img, pixels)
-	flattens := transforms.DCT2DHash64(pixels)
-	//flattens := transforms.FlattenPixelsHash64(pixels)
-	pixelsPool64.Put(pixels)
-
-	median := transforms.MedianOfPixels64(flattens[:])
+	phash.ImageToGray(img, pixels)
+	flattens := phash.DCT2DHash64(*pixels)
+	median := phash.MedianOfPixels64(flattens[:])
 
 	for idx, p := range flattens {
 		if p > median {
-			phash |= 1 << (63 - idx) // leftShiftSet
+			hash |= 1 << (63 - idx) // leftShiftSet
 		}
 	}
-	return phash, nil
+	return hash, nil
 }
 
-// NewPHash256 is a Perception Hash function returns a 256bit hash computation
+// NewPHash256 is a Perception Hash function. It returns a 256 bit hash of the
+// image and requires a 256x256 image.
 // Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 // Optimized for performance and reduced memory footprint.
-func NewPHash256(img image.Image) (phash PHash256, err error) {
-	var size image.Point
-	if img != nil {
-		size = img.Bounds().Size()
-	}
-	if size.X != size.Y && size.X != 256 {
-		err = errors.New("error image size incompatible. PHash256 requires 256x256 image")
-		return
+func NewPHash256(img image.Image) (hash PHash256, err error) {
+	if err = checkImageSize(img, phash256Side); err != nil {
+		return PHash256{}, err
 	}
 
-	pixels, ok := pixelsPool256.Get().(*[]float64)
+	pixels, ok := pixelsPool256.Get().(*[]float32)
 	if !ok || pixels == nil {
-		return PHash256{}, errors.New("pixelsPool256 returned non-*[]float64")
+		return PHash256{}, ErrPixelPool
 	}
+	defer pixelsPool256.Put(pixels)
 
-	transforms.Rgb2GrayFast(img, pixels)
-	flattens := transforms.DCT2DHash256(pixels)
-	//flattens := transforms.FlattenPixelsHash256(pixels)
-	pixelsPool256.Put(pixels)
-
-	median := transforms.MedianOfPixels256(flattens[:])
+	phash.ImageToGray(img, pixels)
+	var flattens [256]float32
+	phash.DCT2DHash256(pixels, &flattens)
+	median := phash.MedianOfPixels256(flattens[:])
 
 	for idx, p := range flattens {
-		indexOfArray := idx / 64
 		if p > median {
-			phash[indexOfArray] |= 1 << (63 - idx%64) // leftShiftSet
+			hash[idx/64] |= 1 << (63 - idx%64) // leftShiftSet
 		}
 	}
-
-	return phash, nil
+	return hash, nil
 }
 
-// NewAHash is an Average Hash fuction that returns a hash computation of average hash.
-// Implementation follows
-// http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+// NewAHash is an Average Hash function that returns a 64 bit hash of the image
+// and requires an 8x8 image.
+// Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 func NewAHash(img image.Image) (ahash Ahash, err error) {
-	if img == nil {
-		err = ErrImageObject
-		return
+	if err = checkImageSize(img, ahashSide); err != nil {
+		return 0, err
 	}
 
-	// Create 64bits hash.
-	//resized := resize.Resize(8, 8, img, resize.Bilinear)
-	pixels := transforms.Rgb2Gray(img)
-	flattens := transforms.FlattenPixels(pixels, 8, 8)
-	avg := transforms.MeanOfPixels(flattens)
+	pixels, ok := pixelsPool64.Get().(*[]float32)
+	if !ok || pixels == nil {
+		return 0, ErrPixelPool
+	}
+	defer pixelsPool64.Put(pixels)
+
+	phash.ImageToGray(img, pixels)
+	flattens := (*pixels)[:ahashSide*ahashSide]
+	avg := meanOfPixels(flattens)
 
 	for idx, p := range flattens {
 		if p > avg {
-			ahash |= 1 << (63 - idx)
+			ahash |= 1 << (63 - idx) // leftShiftSet
 		}
 	}
-
 	return ahash, nil
 }
 
-// Pixel Pools
+// NewPHash64Alt is retained for backwards compatibility and is equivalent to
+// NewPHash64.
+//
+// Deprecated: use NewPHash64.
+func NewPHash64Alt(img image.Image) (PHash64, error) { return NewPHash64(img) }
 
-// Pixel pool 64bit
-var pixelsPool64 = sync.Pool{
-	New: func() interface{} {
-		p := make([]float64, 4096)
-		return &p
-	},
+// NewPHash256Alt is retained for backwards compatibility and is equivalent to
+// NewPHash256.
+//
+// Deprecated: use NewPHash256.
+func NewPHash256Alt(img image.Image) (PHash256, error) { return NewPHash256(img) }
+
+// checkImageSize returns ErrImageObject for a nil image and wraps ErrImageSize
+// when the image is not exactly side x side.
+func checkImageSize(img image.Image, side int) error {
+	if img == nil {
+		return ErrImageObject
+	}
+	size := img.Bounds().Size()
+	if size.X != side || size.Y != side {
+		return fmt.Errorf("%w: got %dx%d, want %dx%d", ErrImageSize, size.X, size.Y, side, side)
+	}
+	return nil
 }
 
-// Pixel pool 256bit
-var pixelsPool256 = sync.Pool{
-	New: func() interface{} {
-		p := make([]float64, 65536)
-		return &p
-	},
+func meanOfPixels(pixels []float32) float32 {
+	var sum float32
+	for _, p := range pixels {
+		sum += p
+	}
+	return sum / float32(len(pixels))
 }
+
+// Pixel pools
+var (
+	pixelsPool64 = sync.Pool{
+		New: func() interface{} {
+			p := make([]float32, phash64Side*phash64Side)
+			return &p
+		},
+	}
+	pixelsPool256 = sync.Pool{
+		New: func() interface{} {
+			p := make([]float32, phash256Side*phash256Side)
+			return &p
+		},
+	}
+)
 
 // Variables
 var (
-	ErrImageObject = errors.New("image object can not be nil")
-
 	encodeFn = binary.LittleEndian.PutUint64
 	decodeFn = binary.LittleEndian.Uint64
 )
@@ -148,11 +178,7 @@ type PHash64 uint64
 
 // Distance between Phash values
 func (ph PHash64) Distance(hash PHash64) uint8 {
-	d, ok := meta.SafecastIntToUint8(popcnt(uint64(ph) ^ uint64(hash)))
-	if !ok {
-		return 0
-	}
-	return d
+	return uint8(popcnt(uint64(ph) ^ uint64(hash))) //nolint:gosec // popcnt is bounded to [0,64].
 }
 
 func (ph PHash64) String() string {
@@ -172,20 +198,11 @@ type PHash256 [4]uint64
 
 // Distance between Phash values
 func (ph PHash256) Distance(hash PHash256) uint {
-	var i uint
-	if d, ok := meta.SafecastIntToUint(popcnt(ph[0] ^ hash[0])); ok {
-		i += d
-	}
-	if d, ok := meta.SafecastIntToUint(popcnt(ph[1] ^ hash[1])); ok {
-		i += d
-	}
-	if d, ok := meta.SafecastIntToUint(popcnt(ph[2] ^ hash[2])); ok {
-		i += d
-	}
-	if d, ok := meta.SafecastIntToUint(popcnt(ph[3] ^ hash[3])); ok {
-		i += d
-	}
-	return i
+	return uint(
+		popcnt(ph[0]^hash[0]) +
+			popcnt(ph[1]^hash[1]) +
+			popcnt(ph[2]^hash[2]) +
+			popcnt(ph[3]^hash[3]))
 }
 
 func (ph PHash256) String() string {
