@@ -330,9 +330,9 @@ func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 func fourCCFromUint32(v uint32) [4]byte {
 	return [4]byte{
 		byte(v >> 24),
-		byte(v >> 16),
-		byte(v >> 8),
-		byte(v),
+		byte(v >> 16), //nolint:gosec // G115: deliberate big-endian byte extraction.
+		byte(v >> 8),  //nolint:gosec // G115: deliberate big-endian byte extraction.
+		byte(v),       //nolint:gosec // G115: deliberate big-endian byte extraction.
 	}
 }
 

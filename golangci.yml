@@ -1,11 +1,10 @@
+version: "2"
 run:
-  timeout: 5m
-  tests: true
   modules-download-mode: readonly
+  tests: true
   allow-parallel-runners: true
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bidichk
@@ -15,9 +14,6 @@ linters:
     - errcheck
     - errchkjson
     - errorlint
-    - gofmt
-    - goimports
-    - gosimple
     - gosec
     - govet
     - ineffassign
@@ -33,31 +29,54 @@ linters:
     - unparam
     - unused
     - wastedassign
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  govet:
-    enable:
-      - shadow
-  misspell:
-    locale: US
-  nolintlint:
-    require-explanation: true
-    require-specific: true
-
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    govet:
+      enable:
+        - shadow
+    misspell:
+      locale: US
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    staticcheck:
+      checks:
+        - SA*
+        - S*
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+          - noctx
+        path: _test\.go
+      - linters:
+          - gosec
+        path: _gen\.go
+      - linters:
+          - gosec
+        path: zz_generated\..*\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
-        - noctx
-    - path: _gen\.go
-      linters:
-        - gosec
-    - path: zz_generated\..*\.go
-      linters:
-        - gosec
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

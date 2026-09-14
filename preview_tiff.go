@@ -211,7 +211,7 @@ func isRenderableJPEG(buf []byte) bool {
 		case 0xd9, 0xda: // EOI or scan start without a SOF
 			return false
 		}
-		segLen := int(buf[i+2])<<8 | int(buf[i+3])
+		segLen := int(buf[i+2])<<8 | int(buf[i+3]) //nolint:gosec // G602: loop guard i+4 <= len(buf) bounds i+3.
 		if segLen < 2 {
 			return false
 		}

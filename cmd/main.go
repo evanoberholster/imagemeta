@@ -22,7 +22,7 @@ func main() {
 		path = os.Args[1]
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(path) //nolint:gosec // G703: path is the user-supplied CLI argument.
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open %q: %v\n", path, err)
 		os.Exit(1)
