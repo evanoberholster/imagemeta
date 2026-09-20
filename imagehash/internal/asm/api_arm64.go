@@ -20,3 +20,15 @@ func RGBAToGray(pixels []float32, pix []uint8, stride, minX, minY, width, height
 func BlurRow(out, lr, lg, lb, xvaluesT []float32) {
 	asmBlurRow(out, lr, lg, lb, xvaluesT)
 }
+
+// PDQLuma444Row computes PDQ luminance for len(out) 1:1-mapped YCbCr pixels.
+// len(out) must be a positive multiple of 8.
+func PDQLuma444Row(out []float32, y, cb, cr []uint8) {
+	asmPDQLuma444Row(out, y, cb, cr)
+}
+
+// PDQLuma420Row computes PDQ luminance for len(out) Y pixels sharing
+// len(out)/2 Cb and Cr pixels. len(out) must be a positive multiple of 8.
+func PDQLuma420Row(out []float32, y, cb, cr []uint8) {
+	asmPDQLuma420Row(out, y, cb, cr)
+}

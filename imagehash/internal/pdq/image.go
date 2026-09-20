@@ -52,28 +52,10 @@ func ycbcrToLuma(y, cb, cr uint8) float32 {
 	// select in image/color.YCbCrToRGB (in-range values pass through,
 	// negatives saturate to 0, large positives to 255). Min/max form keeps
 	// the data flow branch-free and mirrors future SIMD lanes exactly.
-	r := yy + 91881*cr1
-	if uint32(r)&0xff000000 == 0 {
-		r >>= 16
-	} else {
-		r = ^(r >> 31)
-	}
-	g := yy - 22554*cb1 - 46802*cr1
-	if uint32(g)&0xff000000 == 0 {
-		g >>= 16
-	} else {
-		g = ^(g >> 31)
-	}
-	b := yy + 116130*cb1
-	if uint32(b)&0xff000000 == 0 {
-		b >>= 16
-	} else {
-		b = ^(b >> 31)
-	}
-	// r, g, b hold either a clamped [0,255] value or the -1 sentinel for
-	// 255 (matching the uint8 conversion in YCbCrToRGB); masking resolves
-	// the sentinel exactly.
-	return 0.299*float32(r&0xff) + 0.587*float32(g&0xff) + 0.114*float32(b&0xff)
+	r := min(max((yy+91881*cr1)>>16, 0), 255)
+	g := min(max((yy-22554*cb1-46802*cr1)>>16, 0), 255)
+	b := min(max((yy+116130*cb1)>>16, 0), 255)
+	return 0.299*float32(r) + 0.587*float32(g) + 0.114*float32(b)
 }
 
 // toLuminanceDirect writes the luminance of src (w by h pixels) directly into
@@ -138,28 +120,76 @@ func toLuminanceDirect(src image.Image, out []float32, w, h int) {
 	}
 }
 
+// useASMLuma reports whether a SIMD luminance kernel is available. It is
+// enabled by architecture-specific files (arm64 always, amd64 when the CPU
+// supports the required features).
+var useASMLuma = false
+
+// pdqLuma444Row converts kw 1:1-mapped pixels in a row; pdqLuma420Row
+// converts kw Y pixels sharing kw/2 chroma pixels. kw is always a positive
+// multiple of 8. Architecture-specific files redirect these to SIMD kernels;
+// otherwise they run the portable implementation.
+var (
+	pdqLuma444Row = scalarLuma444Row
+	pdqLuma420Row = scalarLuma420Row
+)
+
+func scalarLuma444Row(out []float32, y, cb, cr []uint8) {
+	for i := range out {
+		out[i] = ycbcrToLuma(y[i], cb[i], cr[i])
+	}
+}
+
+func scalarLuma420Row(out []float32, y, cb, cr []uint8) {
+	for i := range out {
+		out[i] = ycbcrToLuma(y[i], cb[i/2], cr[i/2])
+	}
+}
+
+// lumaASMWidth returns the leading pixel count of a row eligible for the SIMD
+// kernels: a multiple of 8 with an even origin (so 420 chroma pairs align).
+// It returns 0 when no kernel is available.
+func lumaASMWidth(minX, w int) int {
+	if !useASMLuma || minX%2 != 0 || w < 8 {
+		return 0
+	}
+	return w / 8 * 8
+}
+
 // lumaYCbCr writes the luminance of a YCbCr image. The chroma index math
 // replicates image.YCbCr.COffset exactly (including odd origins).
 func lumaYCbCr(c *image.YCbCr, out []float32, w, h int) {
 	minX, minY := c.Rect.Min.X, c.Rect.Min.Y
+	kw := lumaASMWidth(minX, w)
 	switch c.SubsampleRatio {
 	case image.YCbCrSubsampleRatio444:
 		for y := 0; y < h; y++ {
-			yLine := c.Y[c.YOffset(minX, minY+y):]
+			yOff := c.YOffset(minX, minY+y)
+			outLine := out[y*w : (y+1)*w]
+			if kw > 0 {
+				pdqLuma444Row(outLine[:kw], c.Y[yOff:yOff+kw],
+					c.Cb[y*c.CStride:y*c.CStride+kw],
+					c.Cr[y*c.CStride:y*c.CStride+kw])
+			}
+			yLine := c.Y[yOff:]
 			cLine := c.Cb[(y * c.CStride):]
 			cLineR := c.Cr[(y * c.CStride):]
-			outLine := out[y*w : (y+1)*w]
-			for x := 0; x < w; x++ {
+			for x := kw; x < w; x++ {
 				outLine[x] = ycbcrToLuma(yLine[x], cLine[x], cLineR[x])
 			}
 		}
 	case image.YCbCrSubsampleRatio422:
 		cx0 := minX / 2
 		for y := 0; y < h; y++ {
-			yLine := c.Y[c.YOffset(minX, minY+y):]
+			yOff := c.YOffset(minX, minY+y)
 			outLine := out[y*w : (y+1)*w]
 			cRow := y * c.CStride
-			for x := 0; x < w; x++ {
+			if kw > 0 {
+				pdqLuma420Row(outLine[:kw], c.Y[yOff:yOff+kw],
+					c.Cb[cRow:cRow+kw/2], c.Cr[cRow:cRow+kw/2])
+			}
+			yLine := c.Y[yOff:]
+			for x := kw; x < w; x++ {
 				ci := cRow + (minX+x)/2 - cx0
 				outLine[x] = ycbcrToLuma(yLine[x], c.Cb[ci], c.Cr[ci])
 			}
@@ -167,10 +197,15 @@ func lumaYCbCr(c *image.YCbCr, out []float32, w, h int) {
 	case image.YCbCrSubsampleRatio440:
 		cy0 := minY / 2
 		for y := 0; y < h; y++ {
-			yLine := c.Y[c.YOffset(minX, minY+y):]
+			yOff := c.YOffset(minX, minY+y)
 			outLine := out[y*w : (y+1)*w]
 			cRow := ((minY+y)/2 - cy0) * c.CStride
-			for x := 0; x < w; x++ {
+			if kw > 0 {
+				pdqLuma444Row(outLine[:kw], c.Y[yOff:yOff+kw],
+					c.Cb[cRow:cRow+kw], c.Cr[cRow:cRow+kw])
+			}
+			yLine := c.Y[yOff:]
+			for x := kw; x < w; x++ {
 				ci := cRow + x
 				outLine[x] = ycbcrToLuma(yLine[x], c.Cb[ci], c.Cr[ci])
 			}
@@ -178,10 +213,15 @@ func lumaYCbCr(c *image.YCbCr, out []float32, w, h int) {
 	case image.YCbCrSubsampleRatio420:
 		cx0, cy0 := minX/2, minY/2
 		for y := 0; y < h; y++ {
-			yLine := c.Y[c.YOffset(minX, minY+y):]
+			yOff := c.YOffset(minX, minY+y)
 			outLine := out[y*w : (y+1)*w]
 			cRow := ((minY+y)/2-cy0)*c.CStride - cx0
-			for x := 0; x < w; x++ {
+			if kw > 0 {
+				pdqLuma420Row(outLine[:kw], c.Y[yOff:yOff+kw],
+					c.Cb[cRow:cRow+kw/2], c.Cr[cRow:cRow+kw/2])
+			}
+			yLine := c.Y[yOff:]
+			for x := kw; x < w; x++ {
 				ci := cRow + (minX+x)/2
 				outLine[x] = ycbcrToLuma(yLine[x], c.Cb[ci], c.Cr[ci])
 			}
