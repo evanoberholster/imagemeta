@@ -1,4 +1,10 @@
-// Package imagehash processes a Perception hash and Average hash from an image.
+// Package imagehash computes perceptual hashes and blur placeholders from an
+// image: 64/256-bit pHash, 64-bit aHash, 256-bit PDQ and BlurHash strings.
+//
+// Binary Encode/Decode use little-endian for PHash64, PHash256 and Ahash, and
+// big-endian for PDQHash (matching Meta's canonical hex). String encodes
+// PHash64/PHash256 with a "p:" prefix and Ahash with an "a:" prefix, while
+// PDQHash renders as plain 64-character hex.
 package imagehash
 
 // Copyright 2022 Evan Oberholster
@@ -8,9 +14,12 @@ package imagehash
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"image"
+	"math/bits"
+	"strings"
 	"sync"
 
 	"github.com/evanoberholster/imagemeta/imagehash/internal/phash"
@@ -31,6 +40,74 @@ var (
 	ErrPixelPool   = errors.New("pixel pool returned unexpected type")
 )
 
+// Ahash is a 64bit Average Hash
+type Ahash uint64
+
+// Distance returns the Hamming distance between two Ahash values.
+func (h Ahash) Distance(other Ahash) uint {
+	return uint(bits.OnesCount64(uint64(h) ^ uint64(other)))
+}
+
+func (h Ahash) String() string {
+	var raw [8]byte
+	binary.BigEndian.PutUint64(raw[:], uint64(h))
+	var out [2 + 16]byte
+	out[0], out[1] = 'a', ':'
+	hex.Encode(out[2:], raw[:])
+	return string(out[:])
+}
+
+// Encode writes the little-endian 8-byte representation of the hash to dst.
+func (h Ahash) Encode(dst []byte) {
+	if len(dst) < 8 {
+		panic("imagehash: Ahash.Encode requires dst len >= 8")
+	}
+	binary.LittleEndian.PutUint64(dst[:8], uint64(h))
+}
+
+// Decode reads the little-endian 8-byte representation of the hash from src.
+func (h *Ahash) Decode(src []byte) {
+	if len(src) < 8 {
+		panic("imagehash: Ahash.Decode requires src len >= 8")
+	}
+	*h = Ahash(binary.LittleEndian.Uint64(src[:8]))
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (h Ahash) MarshalText() ([]byte, error) {
+	return []byte(h.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "a:"
+// prefixed form and plain hex.
+func (h *Ahash) UnmarshalText(text []byte) error {
+	v, err := ParseAhash(string(text))
+	if err != nil {
+		return err
+	}
+	*h = v
+	return nil
+}
+
+// ParseAhash parses the output of Ahash.String, accepting an optional "a:"
+// prefix.
+func ParseAhash(s string) (Ahash, error) {
+	b, err := decodeHashHex(s, "a:", 16)
+	if err != nil {
+		return 0, fmt.Errorf("imagehash: invalid ahash %q: %w", s, err)
+	}
+	return Ahash(binary.BigEndian.Uint64(b)), nil
+}
+
+// PHash64 is a 64bit Perception Hash
+type PHash64 uint64
+
+// PHash256 is a 256bit Perception Hash
+type PHash256 [4]uint64
+
+// Phash is a type alias for PHash64
+type Phash = PHash64
+
 // NewPHash64 is a Perception Hash function. It returns a 64 bit hash of the
 // image and requires a 64x64 image.
 // Implementation follows: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
@@ -40,22 +117,17 @@ func NewPHash64(img image.Image) (hash PHash64, err error) {
 		return 0, err
 	}
 
-	pixels, ok := pixelsPool64.Get().(*[]float32)
-	if !ok || pixels == nil {
-		return 0, ErrPixelPool
+	pixels, err := borrowPixels(&pixelsPool64)
+	if err != nil {
+		return 0, err
 	}
 	defer pixelsPool64.Put(pixels)
 
-	phash.ImageToGray(img, pixels)
+	phash.ImageToGray(img, *pixels)
 	flattens := phash.DCT2DHash64(*pixels)
 	median := phash.MedianOfPixels64(flattens[:])
 
-	for idx, p := range flattens {
-		if p > median {
-			hash |= 1 << (63 - idx) // leftShiftSet
-		}
-	}
-	return hash, nil
+	return PHash64(bits64(flattens[:], median)), nil
 }
 
 // NewPHash256 is a Perception Hash function. It returns a 256 bit hash of the
@@ -67,15 +139,15 @@ func NewPHash256(img image.Image) (hash PHash256, err error) {
 		return PHash256{}, err
 	}
 
-	pixels, ok := pixelsPool256.Get().(*[]float32)
-	if !ok || pixels == nil {
-		return PHash256{}, ErrPixelPool
+	pixels, err := borrowPixels(&pixelsPool256)
+	if err != nil {
+		return PHash256{}, err
 	}
 	defer pixelsPool256.Put(pixels)
 
-	phash.ImageToGray(img, pixels)
+	phash.ImageToGray(img, *pixels)
 	var flattens [256]float32
-	phash.DCT2DHash256(pixels, &flattens)
+	phash.DCT2DHash256(*pixels, &flattens)
 	median := phash.MedianOfPixels256(flattens[:])
 
 	for idx, p := range flattens {
@@ -94,22 +166,13 @@ func NewAHash(img image.Image) (ahash Ahash, err error) {
 		return 0, err
 	}
 
-	pixels, ok := pixelsPool64.Get().(*[]float32)
-	if !ok || pixels == nil {
-		return 0, ErrPixelPool
-	}
-	defer pixelsPool64.Put(pixels)
-
+	// 8x8 needs only 64 floats (256 bytes): keep it on the stack instead of
+	// borrowing a pool.
+	var buf [ahashSide * ahashSide]float32
+	pixels := buf[:]
 	phash.ImageToGray(img, pixels)
-	flattens := (*pixels)[:ahashSide*ahashSide]
-	avg := meanOfPixels(flattens)
 
-	for idx, p := range flattens {
-		if p > avg {
-			ahash |= 1 << (63 - idx) // leftShiftSet
-		}
-	}
-	return ahash, nil
+	return Ahash(bits64(pixels, meanOfPixels(pixels))), nil
 }
 
 // NewPHash64Alt is retained for backwards compatibility and is equivalent to
@@ -137,6 +200,47 @@ func checkImageSize(img image.Image, side int) error {
 	return nil
 }
 
+// Pixel pools hold reusable grayscale buffers. Buffers traffic as pointers:
+// boxing a slice header into the pool would allocate 24 bytes per call,
+// while a pointer is a single word. A failed assertion means a foreign value
+// was Put back.
+var (
+	pixelsPool64 = sync.Pool{
+		New: func() any {
+			p := make([]float32, phash64Side*phash64Side)
+			return &p
+		},
+	}
+	pixelsPool256 = sync.Pool{
+		New: func() any {
+			p := make([]float32, phash256Side*phash256Side)
+			return &p
+		},
+	}
+)
+
+// borrowPixels takes a grayscale buffer from pool; return it with
+// pool.Put(p) when done.
+func borrowPixels(pool *sync.Pool) (*[]float32, error) {
+	p, ok := pool.Get().(*[]float32)
+	if !ok || p == nil {
+		return nil, ErrPixelPool
+	}
+	return p, nil
+}
+
+// bits64 packs values into a 64-bit hash, setting bit (63-idx) for each value
+// above thresh.
+func bits64(values []float32, thresh float32) uint64 {
+	var hash uint64
+	for idx, p := range values {
+		if p > thresh {
+			hash |= 1 << (63 - idx) // leftShiftSet
+		}
+	}
+	return hash
+}
+
 func meanOfPixels(pixels []float32) float32 {
 	var sum float32
 	for _, p := range pixels {
@@ -145,80 +249,139 @@ func meanOfPixels(pixels []float32) float32 {
 	return sum / float32(len(pixels))
 }
 
-// Pixel pools
-var (
-	pixelsPool64 = sync.Pool{
-		New: func() interface{} {
-			p := make([]float32, phash64Side*phash64Side)
-			return &p
-		},
+// decodeHashHex strips prefix and hex-decodes s, requiring hexLen characters.
+func decodeHashHex(s, prefix string, hexLen int) ([]byte, error) {
+	hexStr := strings.TrimPrefix(s, prefix)
+	if len(hexStr) != hexLen {
+		return nil, fmt.Errorf("want %d hex characters, got %d", hexLen, len(hexStr))
 	}
-	pixelsPool256 = sync.Pool{
-		New: func() interface{} {
-			p := make([]float32, phash256Side*phash256Side)
-			return &p
-		},
+	b, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, err
 	}
-)
-
-// Variables
-var (
-	encodeFn = binary.LittleEndian.PutUint64
-	decodeFn = binary.LittleEndian.Uint64
-)
-
-// Ahash is a 64bit Average Hash
-type Ahash uint64
-
-// Phash is a type alias for PHash64
-type Phash = PHash64
-
-// PHash64 is a 64bit Perception Hash
-type PHash64 uint64
+	return b, nil
+}
 
 // Distance between Phash values
 func (ph PHash64) Distance(hash PHash64) uint8 {
-	return uint8(popcnt(uint64(ph) ^ uint64(hash))) //nolint:gosec // popcnt is bounded to [0,64].
+	return uint8(bits.OnesCount64(uint64(ph) ^ uint64(hash))) //nolint:gosec // popcnt is bounded to [0,64].
 }
 
 func (ph PHash64) String() string {
-	return fmt.Sprintf("p:%016x", uint64(ph))
+	var raw [8]byte
+	binary.BigEndian.PutUint64(raw[:], uint64(ph))
+	var out [2 + 16]byte
+	out[0], out[1] = 'p', ':'
+	hex.Encode(out[2:], raw[:])
+	return string(out[:])
 }
 
 func (ph PHash64) Encode(dst []byte) {
-	encodeFn(dst[:8], uint64(ph))
+	if len(dst) < 8 {
+		panic("imagehash: PHash64.Encode requires dst len >= 8")
+	}
+	binary.LittleEndian.PutUint64(dst[:8], uint64(ph))
 }
 
 func (ph *PHash64) Decode(src []byte) {
-	*ph = PHash64(decodeFn(src[:8]))
+	if len(src) < 8 {
+		panic("imagehash: PHash64.Decode requires src len >= 8")
+	}
+	*ph = PHash64(binary.LittleEndian.Uint64(src[:8]))
 }
 
-// PHash256 is a 256bit Perception Hash
-type PHash256 [4]uint64
+// MarshalText implements encoding.TextMarshaler.
+func (ph PHash64) MarshalText() ([]byte, error) {
+	return []byte(ph.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "p:"
+// prefixed form and plain hex.
+func (ph *PHash64) UnmarshalText(text []byte) error {
+	v, err := ParsePHash64(string(text))
+	if err != nil {
+		return err
+	}
+	*ph = v
+	return nil
+}
+
+// ParsePHash64 parses the output of PHash64.String, accepting an optional
+// "p:" prefix.
+func ParsePHash64(s string) (PHash64, error) {
+	b, err := decodeHashHex(s, "p:", 16)
+	if err != nil {
+		return 0, fmt.Errorf("imagehash: invalid phash64 %q: %w", s, err)
+	}
+	return PHash64(binary.BigEndian.Uint64(b)), nil
+}
 
 // Distance between Phash values
 func (ph PHash256) Distance(hash PHash256) uint {
 	return uint(
-		popcnt(ph[0]^hash[0]) +
-			popcnt(ph[1]^hash[1]) +
-			popcnt(ph[2]^hash[2]) +
-			popcnt(ph[3]^hash[3]))
+		bits.OnesCount64(ph[0]^hash[0]) +
+			bits.OnesCount64(ph[1]^hash[1]) +
+			bits.OnesCount64(ph[2]^hash[2]) +
+			bits.OnesCount64(ph[3]^hash[3]))
 }
 
 func (ph PHash256) String() string {
-	return fmt.Sprintf("p:%016x%016x%016x%016x", ph[0], ph[1], ph[2], ph[3])
+	var raw [32]byte
+	for i, w := range ph {
+		binary.BigEndian.PutUint64(raw[i*8:], w)
+	}
+	var out [2 + 64]byte
+	out[0], out[1] = 'p', ':'
+	hex.Encode(out[2:], raw[:])
+	return string(out[:])
 }
 
 func (ph PHash256) Encode(buf []byte) {
-	encodeFn(buf[:8], ph[0])
-	encodeFn(buf[8*1:], ph[1])
-	encodeFn(buf[8*2:], ph[2])
-	encodeFn(buf[8*3:], ph[3])
+	if len(buf) < 32 {
+		panic("imagehash: PHash256.Encode requires buf len >= 32")
+	}
+	binary.LittleEndian.PutUint64(buf[:8], ph[0])
+	binary.LittleEndian.PutUint64(buf[8*1:], ph[1])
+	binary.LittleEndian.PutUint64(buf[8*2:], ph[2])
+	binary.LittleEndian.PutUint64(buf[8*3:], ph[3])
 }
 
 func (ph *PHash256) Decode(buf []byte) {
-	ph[0] = decodeFn(buf[:8])
-	ph[1] = decodeFn(buf[8*1:])
-	ph[2] = decodeFn(buf[8*2:])
-	ph[3] = decodeFn(buf[8*3:])
+	if len(buf) < 32 {
+		panic("imagehash: PHash256.Decode requires buf len >= 32")
+	}
+	ph[0] = binary.LittleEndian.Uint64(buf[:8])
+	ph[1] = binary.LittleEndian.Uint64(buf[8*1:])
+	ph[2] = binary.LittleEndian.Uint64(buf[8*2:])
+	ph[3] = binary.LittleEndian.Uint64(buf[8*3:])
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (ph PHash256) MarshalText() ([]byte, error) {
+	return []byte(ph.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "p:"
+// prefixed form and plain hex.
+func (ph *PHash256) UnmarshalText(text []byte) error {
+	v, err := ParsePHash256(string(text))
+	if err != nil {
+		return err
+	}
+	*ph = v
+	return nil
+}
+
+// ParsePHash256 parses the output of PHash256.String, accepting an optional
+// "p:" prefix.
+func ParsePHash256(s string) (PHash256, error) {
+	b, err := decodeHashHex(s, "p:", 64)
+	if err != nil {
+		return PHash256{}, fmt.Errorf("imagehash: invalid phash256 %q: %w", s, err)
+	}
+	var h PHash256
+	for i := 0; i < 4; i++ {
+		h[i] = binary.BigEndian.Uint64(b[i*8 : (i+1)*8])
+	}
+	return h, nil
 }

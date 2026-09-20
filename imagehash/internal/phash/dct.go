@@ -50,12 +50,12 @@ func DCT2DHash64(input []float32) [64]float32 {
 // DCT2DHash256 function returns a result of DCT2D by using the separable property.
 // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
 // Custom built for Hash256. Writes the flattened pixels into flattens.
-func DCT2DHash256(input *[]float32, flattens *[256]float32) {
-	if len(*input) != 256*256 {
+func DCT2DHash256(input []float32, flattens *[256]float32) {
+	if len(input) != 256*256 {
 		panic("Incorrect forward transform size")
 	}
 	for i := 0; i < 256; i++ { // height
-		ForwardDCT256((*input)[i*256 : 256*i+256])
+		ForwardDCT256(input[i*256 : 256*i+256])
 	}
 
 	row, ok := rowPool256.Get().(*[256]float32)
@@ -65,7 +65,7 @@ func DCT2DHash256(input *[]float32, flattens *[256]float32) {
 	defer rowPool256.Put(row)
 	for i := 0; i < 16; i++ { // width
 		for j := 0; j < 256; j++ {
-			row[j] = (*input)[256*j+i]
+			row[j] = input[256*j+i]
 		}
 		ForwardDCT256(row[:])
 		for j := 0; j < 16; j++ {

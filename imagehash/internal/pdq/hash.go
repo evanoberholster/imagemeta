@@ -5,6 +5,7 @@ package pdq
 
 import (
 	"encoding/hex"
+	"math/bits"
 )
 
 // Hash256 is a 256-bit PDQ perceptual hash stored as 32 bytes.
@@ -31,12 +32,7 @@ func (h Hash256) Distance(otherHash Hash256) int {
 	var distance int
 
 	for i := range h {
-		x := h[i] ^ otherHash[i]
-
-		for x != 0 {
-			distance += int(x & 1)
-			x >>= 1
-		}
+		distance += bits.OnesCount8(h[i] ^ otherHash[i])
 	}
 
 	return distance

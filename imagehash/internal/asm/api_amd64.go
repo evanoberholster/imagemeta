@@ -16,3 +16,15 @@ func ForwardDCT256(input []float32) { asmForwardDCT256(input) }
 func YCbCrToGray(pixels []float32, minX, minY, maxX, maxY int, sY, sCb, sCr []uint8, yStride, cStride int) {
 	asmYCbCrToGray(pixels, minX, minY, maxX, maxY, sY, sCb, sCr, yStride, cStride)
 }
+
+// PDQLuma444Row computes PDQ luminance for len(out) 1:1-mapped YCbCr pixels.
+// len(out) must be a positive multiple of 8.
+func PDQLuma444Row(out []float32, y, cb, cr []uint8) {
+	asmPDQLuma444Row(out, y, cb, cr)
+}
+
+// PDQLuma420Row computes PDQ luminance for len(out) Y pixels sharing
+// len(out)/2 Cb and Cr pixels. len(out) must be a positive multiple of 8.
+func PDQLuma420Row(out []float32, y, cb, cr []uint8) {
+	asmPDQLuma420Row(out, y, cb, cr)
+}

@@ -7,6 +7,7 @@ package phash
 
 import (
 	"image"
+	"image/color"
 )
 
 var (
@@ -16,21 +17,28 @@ var (
 	ForwardDCT256 = forwardDCT256
 	YCbCrToGray   = yCbCrToGray
 	RGBAtoGray    = rgbaToGray
+	NRGBAtoGray   = nrgbaToGray
+	GrayToGray    = grayToGray
 )
 
-// ImageToGray converts an image to a gray scale array.
-func ImageToGray(img image.Image, pixels *[]float32) {
+// ImageToGray converts an image to a gray scale array. pixels must have room
+// for Dx*Dx floats.
+func ImageToGray(img image.Image, pixels []float32) {
 	bounds := img.Bounds()
 	if bounds.Dx() != bounds.Dy() {
 		return
 	}
 	switch c := img.(type) {
 	case *image.YCbCr:
-		YCbCrToGray(c, *pixels)
+		YCbCrToGray(c, pixels)
 	case *image.RGBA:
-		RGBAtoGray(c, *pixels)
+		RGBAtoGray(c, pixels)
+	case *image.NRGBA:
+		NRGBAtoGray(c, pixels)
+	case *image.Gray:
+		GrayToGray(c, pixels)
 	default:
-		imageToGrayDefault(c, *pixels)
+		imageToGrayDefault(c, pixels)
 	}
 }
 
@@ -100,4 +108,40 @@ func rgbaToGray(img *image.RGBA, pixels []float32) {
 // integer luminosity weights as every other pathway.
 func pixelToGray8(r, g, b uint8) float32 {
 	return float32(299*int32(r)+587*int32(g)+114*int32(b)) / 1000
+}
+
+// nrgbaToGray converts an *image.NRGBA to grayscale by indexing the pixel
+// buffer directly. Opaque pixels use the integer luminosity weights
+// directly; translucent pixels replicate At().RGBA() premultiplication
+// exactly, matching the previous generic-path behavior.
+func nrgbaToGray(img *image.NRGBA, pixels []float32) {
+	s := img.Rect.Dx()
+	minX, minY := img.Rect.Min.X, img.Rect.Min.Y
+	for i := 0; i < s; i++ {
+		row := img.PixOffset(minX, minY+i)
+		base := i * s
+		for j := 0; j < s; j++ {
+			p := row + j*4
+			if alpha := img.Pix[p+3]; alpha == 0xff {
+				pixels[base+j] = pixelToGray8(img.Pix[p], img.Pix[p+1], img.Pix[p+2])
+			} else {
+				r, g, b, a := color.NRGBA{R: img.Pix[p], G: img.Pix[p+1], B: img.Pix[p+2], A: alpha}.RGBA()
+				pixels[base+j] = pixelToGray(r, g, b, a)
+			}
+		}
+	}
+}
+
+// grayToGray converts an *image.Gray to grayscale by copying the luma plane.
+// A gray value v equals luminosity( v,v,v ), so no weighting is needed.
+func grayToGray(img *image.Gray, pixels []float32) {
+	s := img.Rect.Dx()
+	minX, minY := img.Rect.Min.X, img.Rect.Min.Y
+	for i := 0; i < s; i++ {
+		row := img.PixOffset(minX, minY+i)
+		base := i * s
+		for j := 0; j < s; j++ {
+			pixels[base+j] = float32(img.Pix[row+j])
+		}
+	}
 }

@@ -9,9 +9,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image"
+	"math/bits"
 
 	"github.com/evanoberholster/imagemeta/imagehash/internal/pdq"
 )
+
+//go:generate msgp
 
 // PDQHash is a 256-bit PDQ (Perceptual Difference Quantization) perceptual
 // hash. It is stored as four uint64 words in big-endian order so that String
@@ -29,14 +32,8 @@ const PDQQualityThreshold = pdq.DefaultQualityThreshold
 // NewPDQ256 computes the 256-bit PDQ perceptual hash of img using Meta's PDQ
 // algorithm. img may be any size; the algorithm handles downscaling internally.
 func NewPDQ256(img image.Image) (PDQHash, error) {
-	if img == nil {
-		return PDQHash{}, ErrImageObject
-	}
-	result, err := pdq.Hash(img)
-	if err != nil {
-		return PDQHash{}, err
-	}
-	return pdqHashFromBytes(result.Hash), nil
+	hash, _, err := NewPDQ256WithQuality(img)
+	return hash, err
 }
 
 // NewPDQ256WithQuality is like NewPDQ256 but also returns the PDQ quality
@@ -56,28 +53,61 @@ func NewPDQ256WithQuality(img image.Image) (PDQHash, int, error) {
 // Distance returns the Hamming distance between two PDQ hashes.
 func (h PDQHash) Distance(other PDQHash) uint {
 	return uint(
-		popcnt(h[0]^other[0]) +
-			popcnt(h[1]^other[1]) +
-			popcnt(h[2]^other[2]) +
-			popcnt(h[3]^other[3]))
+		bits.OnesCount64(h[0]^other[0]) +
+			bits.OnesCount64(h[1]^other[1]) +
+			bits.OnesCount64(h[2]^other[2]) +
+			bits.OnesCount64(h[3]^other[3]))
 }
 
 // String returns the hash as a 64-character lowercase hex string, matching
 // Meta's canonical PDQ representation.
 func (h PDQHash) String() string {
-	return fmt.Sprintf("%016x%016x%016x%016x", h[0], h[1], h[2], h[3])
+	var raw [32]byte
+	for i, w := range h {
+		binary.BigEndian.PutUint64(raw[i*8:], w)
+	}
+	var out [64]byte
+	hex.Encode(out[:], raw[:])
+	return string(out[:])
 }
 
 // Encode writes the big-endian 32-byte representation of the hash to dst.
 func (h PDQHash) Encode(dst []byte) {
+	if len(dst) < 32 {
+		panic("imagehash: PDQHash.Encode requires dst len >= 32")
+	}
 	binary.BigEndian.PutUint64(dst[:8], h[0])
 	binary.BigEndian.PutUint64(dst[8*1:], h[1])
 	binary.BigEndian.PutUint64(dst[8*2:], h[2])
 	binary.BigEndian.PutUint64(dst[8*3:], h[3])
 }
 
+// MarshalText implements encoding.TextMarshaler.
+func (h PDQHash) MarshalText() ([]byte, error) {
+	return []byte(h.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (h *PDQHash) UnmarshalText(text []byte) error {
+	v, err := ParsePDQHash(string(text))
+	if err != nil {
+		return err
+	}
+	*h = v
+	return nil
+}
+
+// ParsePDQHash parses the 64-character hex representation produced by
+// PDQHash.String.
+func ParsePDQHash(s string) (PDQHash, error) {
+	return pdqHashFromHex(s)
+}
+
 // Decode reads the big-endian 32-byte representation of the hash from src.
 func (h *PDQHash) Decode(src []byte) {
+	if len(src) < 32 {
+		panic("imagehash: PDQHash.Decode requires src len >= 32")
+	}
 	h[0] = binary.BigEndian.Uint64(src[:8])
 	h[1] = binary.BigEndian.Uint64(src[8*1:])
 	h[2] = binary.BigEndian.Uint64(src[8*2:])
@@ -102,7 +132,7 @@ func pdqHashFromHex(s string) (PDQHash, error) {
 		return PDQHash{}, err
 	}
 	if len(b) != 32 {
-		return PDQHash{}, fmt.Errorf("pdq: hash must be 32 bytes, got %d", len(b))
+		return PDQHash{}, fmt.Errorf("imagehash: pdq hash must be 32 bytes, got %d", len(b))
 	}
 	return pdqHashFromBytes([32]byte(b)), nil
 }

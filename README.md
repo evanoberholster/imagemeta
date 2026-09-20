@@ -110,9 +110,37 @@ Package: `github.com/evanoberholster/imagemeta/imagetype`
 
 ## Perceptual Hashing
 
-`imagehash` provides 64-bit and 256-bit perceptual hashing with low-allocation paths.
+`imagehash` provides perceptual hashing with allocation-free hot paths
+(pooled buffers, zero heap allocations per hash on steady state).
 
 Package: `github.com/evanoberholster/imagemeta/imagehash`
+
+| Hash | Size | Input | Notes |
+|---|---|---|---|
+| `PHash64` | 64-bit | 64x64 image | DCT-based perception hash |
+| `PHash256` | 256-bit | 256x256 image | higher-precision variant |
+| `Ahash` | 64-bit | 8x8 image | average hash |
+| `PDQHash` | 256-bit | any size | Meta PDQ perceptual hash |
+| BlurHash | string | 64x64 image | compact placeholder via `EncodeBlurHash` |
+
+All hash types support Hamming `Distance`, hex `String`, binary
+`Encode`/`Decode`, `Parse*` round-trips and `encoding.TextMarshaler`
+for JSON use. PDQ additionally reports a quality score via
+`NewPDQ256WithQuality`; Meta recommends treating distance `<= 31`
+(`PDQMatchThreshold`) as a match and discarding hashes at or below the
+quality threshold (`PDQQualityThreshold`).
+
+```go
+h, err := imagehash.NewPHash64(img) // img must be 64x64
+if err != nil {
+    panic(err)
+}
+d := h.Distance(other) // Hamming distance
+```
+
+PDQ luminance uses NEON (arm64) and AVX2 (amd64) kernels with scalar
+fallback; output is bit-identical across implementations on the same
+architecture.
 
 ## Performance Notes
 

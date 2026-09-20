@@ -30,3 +30,9 @@ func RGBAToGray(pixels []float32, pix []uint8, stride, minX, minY, width, height
 
 // BlurRow is a guard; see errUnsupported.
 func BlurRow(out, lr, lg, lb, xvaluesT []float32) { panic(errUnsupported) }
+
+// PDQLuma444Row is a guard; see errUnsupported.
+func PDQLuma444Row(out []float32, y, cb, cr []uint8) { panic(errUnsupported) }
+
+// PDQLuma420Row is a guard; see errUnsupported.
+func PDQLuma420Row(out []float32, y, cb, cr []uint8) { panic(errUnsupported) }

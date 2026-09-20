@@ -83,8 +83,84 @@ func boxAlongRows(src, dst []float32, numRows, numCols, windowSize int) {
 }
 
 func boxAlongCols(src, dst []float32, numRows, numCols, windowSize int) {
+	if numCols <= maxStreamCols {
+		boxColsStream(src, dst, numRows, numCols, windowSize)
+		return
+	}
 	for x := range numCols {
 		box1D(src[x:], dst[x:], numRows, numCols, windowSize)
+	}
+}
+
+// maxStreamCols bounds the stack scratch used by boxColsStream. Larger
+// inputs fall back to the strided boxAlongCols loop.
+const maxStreamCols = ImageSize
+
+// boxColsStream is boxAlongCols with the loop nest interchanged: the filter
+// phase advances outermost while the inner loop streams across columns.
+// Every column sees the exact same operation sequence as box1D (bit-identical
+// output), but all memory access is row-sequential and the inner loop carries
+// no dependency across columns, letting the compiler vectorize it.
+func boxColsStream(src, dst []float32, numRows, numCols, windowSize int) {
+	halfWindowSize := (windowSize + 2) / 2
+	var sumsBuf [maxStreamCols]float32
+	sums := sumsBuf[:numCols]
+
+	li, ri, oi, currentWindowSize := 0, 0, 0, 0
+
+	// accumulate without writing
+	for range halfWindowSize - 1 {
+		row := src[ri*numCols : ri*numCols+numCols]
+		for x := 0; x < numCols; x++ {
+			sums[x] += row[x]
+		}
+		currentWindowSize++
+		ri++
+	}
+
+	// write with growing window
+	for range windowSize - halfWindowSize + 1 {
+		row := src[ri*numCols : ri*numCols+numCols]
+		out := dst[oi*numCols : oi*numCols+numCols]
+		currentWindowSize++
+		for x := 0; x < numCols; x++ {
+			sums[x] += row[x]
+			out[x] = sums[x] / float32(currentWindowSize)
+		}
+		ri++
+		oi++
+	}
+
+	// write with full window (add right, subtract left). The two updates
+	// stay separate statements to match box1D's association exactly:
+	// (sum + add) - sub is not the same float as sum + (add - sub).
+	for range numRows - windowSize {
+		add := src[ri*numCols : ri*numCols+numCols]
+		sub := src[li*numCols : li*numCols+numCols]
+		out := dst[oi*numCols : oi*numCols+numCols]
+		for x := 0; x < numCols; x++ {
+			sums[x] += add[x]
+			sums[x] -= sub[x]
+			out[x] = sums[x] / float32(currentWindowSize)
+		}
+		li++
+		ri++
+		oi++
+	}
+
+	// write with shrinking window
+	for range halfWindowSize - 1 {
+		sub := src[li*numCols : li*numCols+numCols]
+		out := dst[oi*numCols : oi*numCols+numCols]
+		for x := 0; x < numCols; x++ {
+			sums[x] -= sub[x]
+		}
+		currentWindowSize--
+		for x := 0; x < numCols; x++ {
+			out[x] = sums[x] / float32(currentWindowSize)
+		}
+		li++
+		oi++
 	}
 }
 
