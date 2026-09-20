@@ -3,7 +3,6 @@
 package imagehash
 
 import (
-	"math"
 	"math/rand"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 )
 
 // TestAsmBlurRow checks the NEON basis kernel against the portable
-// implementation.
+// implementation. Results must be bit-identical.
 func TestAsmBlurRow(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
 	for trial := 0; trial < 200; trial++ {
@@ -25,8 +24,8 @@ func TestAsmBlurRow(t *testing.T) {
 		asm.BlurRow(got[:], lr[:], lg[:], lb[:], xvaluesT[:])
 		blurRowGo(want[:], lr[:], lg[:], lb[:])
 		for i := range got {
-			if d := math.Abs(float64(got[i] - want[i])); d > 1e-4 {
-				t.Fatalf("trial %d: index %d got %v want %v (diff %v)", trial, i, got[i], want[i], d)
+			if got[i] != want[i] {
+				t.Fatalf("trial %d: index %d got %v want %v", trial, i, got[i], want[i])
 			}
 		}
 	}

@@ -3,9 +3,10 @@
 #include "textflag.h"
 
 // asmYCbCrToGray converts an *image.YCbCr with 4:4:4 chroma to grayscale
-// float32 pixels. It mirrors the x86 asmYCbCrToGray kernel: the 16-bit YCbCr
-// to RGB conversion is done in 32-bit integer SIMD, shifted right by 8 and
-// scaled into linear sRGB space with float32.
+// float32 pixels. The 16-bit YCbCr to RGB conversion is done in 32-bit integer
+// SIMD, shifted right by 8, then reduced to grayscale with the integer
+// luminosity weights (299*r + 587*g + 114*b) / 1000. Integer-only arithmetic
+// keeps the result bit-identical across architectures.
 //
 // The caller (yCbCrToGrayASM) guarantees SubsampleRatio == 444 and a width
 // that is a multiple of 8.
@@ -59,6 +60,8 @@ TEXT ·asmYCbCrToGray(SB), NOSPLIT, $0-144
 	VLD1R	(R7), [V23.S4]
 	ADD	$4, R7, R7
 	VLD1R	(R7), [V24.S4]
+	ADD	$4, R7, R7
+	VLD1R	(R7), [V25.S4]
 
 yloop:
 	CMP	R21, R8
@@ -101,14 +104,13 @@ xloop:
 	VSSHR	$8, V3.S4, V3.S4
 	VSSHR	$8, V4.S4, V4.S4
 	VSSHR	$8, V5.S4, V5.S4
+	VMUL	V22.S4, V3.S4, V3.S4             // 299 * red
+	VMUL	V23.S4, V4.S4, V4.S4             // 587 * green
+	VMUL	V24.S4, V5.S4, V5.S4             // 114 * blue
+	VADD	V4.S4, V3.S4, V3.S4
+	VADD	V5.S4, V3.S4, V3.S4
 	VSCVTF	V3.S4, V3.S4
-	VSCVTF	V4.S4, V4.S4
-	VSCVTF	V5.S4, V5.S4
-	VFMUL	V22.S4, V3.S4, V3.S4
-	VFMUL	V23.S4, V4.S4, V4.S4
-	VFMUL	V24.S4, V5.S4, V5.S4
-	VFADD	V4.S4, V3.S4, V3.S4
-	VFADD	V5.S4, V3.S4, V3.S4
+	VFDIV	V25.S4, V3.S4, V3.S4             // / 1000
 	VMOV	V3.B16, V12.B16
 
 	// High four pixels -> V13
@@ -126,14 +128,13 @@ xloop:
 	VSSHR	$8, V3.S4, V3.S4
 	VSSHR	$8, V4.S4, V4.S4
 	VSSHR	$8, V5.S4, V5.S4
+	VMUL	V22.S4, V3.S4, V3.S4             // 299 * red
+	VMUL	V23.S4, V4.S4, V4.S4             // 587 * green
+	VMUL	V24.S4, V5.S4, V5.S4             // 114 * blue
+	VADD	V4.S4, V3.S4, V3.S4
+	VADD	V5.S4, V3.S4, V3.S4
 	VSCVTF	V3.S4, V3.S4
-	VSCVTF	V4.S4, V4.S4
-	VSCVTF	V5.S4, V5.S4
-	VFMUL	V22.S4, V3.S4, V3.S4
-	VFMUL	V23.S4, V4.S4, V4.S4
-	VFMUL	V24.S4, V5.S4, V5.S4
-	VFADD	V4.S4, V3.S4, V3.S4
-	VFADD	V5.S4, V3.S4, V3.S4
+	VFDIV	V25.S4, V3.S4, V3.S4             // / 1000
 	VMOV	V3.B16, V13.B16
 
 	VST1	[V12.S4], (R16)
@@ -157,8 +158,8 @@ done:
 	RET
 
 // asmRGBAtoGray converts an *image.RGBA to grayscale float32 pixels. RGB
-// channels are de-interleaved with VLD4 and combined with the standard
-// luminosity weights.
+// channels are de-interleaved with VLD4 and reduced with the integer
+// luminosity weights (299*r + 587*g + 114*b) / 1000.
 //
 // The caller guarantees a width that is a multiple of 8.
 //
@@ -192,6 +193,8 @@ TEXT ·asmRGBAtoGray(SB), NOSPLIT, $0-88
 	VLD1R	(R7), [V17.S4]
 	ADD	$4, R7, R7
 	VLD1R	(R7), [V18.S4]
+	ADD	$4, R7, R7
+	VLD1R	(R7), [V19.S4]
 
 yloop:
 	CMP	R21, R8
@@ -215,23 +218,21 @@ xloop:
 	VUXTL	V6.H4, V11.S4            // B low
 	VUXTL2	V6.H8, V12.S4            // B high
 
+	VMUL	V16.S4, V7.S4, V7.S4             // 299 * R
+	VMUL	V17.S4, V9.S4, V9.S4             // 587 * G
+	VMUL	V18.S4, V11.S4, V11.S4           // 114 * B
+	VADD	V9.S4, V7.S4, V7.S4
+	VADD	V11.S4, V7.S4, V7.S4
 	VSCVTF	V7.S4, V7.S4
-	VSCVTF	V9.S4, V9.S4
-	VSCVTF	V11.S4, V11.S4
-	VFMUL	V16.S4, V7.S4, V7.S4
-	VFMUL	V17.S4, V9.S4, V9.S4
-	VFMUL	V18.S4, V11.S4, V11.S4
-	VFADD	V9.S4, V7.S4, V7.S4
-	VFADD	V11.S4, V7.S4, V7.S4
+	VFDIV	V19.S4, V7.S4, V7.S4             // / 1000
 
+	VMUL	V16.S4, V8.S4, V8.S4
+	VMUL	V17.S4, V10.S4, V10.S4
+	VMUL	V18.S4, V12.S4, V12.S4
+	VADD	V10.S4, V8.S4, V8.S4
+	VADD	V12.S4, V8.S4, V8.S4
 	VSCVTF	V8.S4, V8.S4
-	VSCVTF	V10.S4, V10.S4
-	VSCVTF	V12.S4, V12.S4
-	VFMUL	V16.S4, V8.S4, V8.S4
-	VFMUL	V17.S4, V10.S4, V10.S4
-	VFMUL	V18.S4, V12.S4, V12.S4
-	VFADD	V10.S4, V8.S4, V8.S4
-	VFADD	V12.S4, V8.S4, V8.S4
+	VFDIV	V19.S4, V8.S4, V8.S4
 
 	VST1	[V7.S4], (R14)
 	ADD	$16, R14, R15
@@ -255,12 +256,14 @@ DATA ycbcrConst<>+8(SB)/4, $91881
 DATA ycbcrConst<>+12(SB)/4, $46802
 DATA ycbcrConst<>+16(SB)/4, $22554
 DATA ycbcrConst<>+20(SB)/4, $116130
-DATA ycbcrConst<>+24(SB)/4, $0.297836572
-DATA ycbcrConst<>+28(SB)/4, $0.584715962
-DATA ycbcrConst<>+32(SB)/4, $0.114
-GLOBL ycbcrConst<>(SB), RODATA|NOPTR, $36
+DATA ycbcrConst<>+24(SB)/4, $299
+DATA ycbcrConst<>+28(SB)/4, $587
+DATA ycbcrConst<>+32(SB)/4, $114
+DATA ycbcrConst<>+36(SB)/4, $1000.0
+GLOBL ycbcrConst<>(SB), RODATA|NOPTR, $40
 
-DATA rgbaConst<>+0(SB)/4, $0.299
-DATA rgbaConst<>+4(SB)/4, $0.587
-DATA rgbaConst<>+8(SB)/4, $0.114
-GLOBL rgbaConst<>(SB), RODATA|NOPTR, $12
+DATA rgbaConst<>+0(SB)/4, $299
+DATA rgbaConst<>+4(SB)/4, $587
+DATA rgbaConst<>+8(SB)/4, $114
+DATA rgbaConst<>+12(SB)/4, $1000.0
+GLOBL rgbaConst<>(SB), RODATA|NOPTR, $16

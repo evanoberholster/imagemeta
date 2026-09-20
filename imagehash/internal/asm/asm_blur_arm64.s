@@ -31,9 +31,14 @@ loop:
 	VLD1R	(R2), [V4.S4]            // lg[x]
 	VLD1R	(R3), [V5.S4]            // lb[x]
 	VLD1	(R4), [V6.S4]            // xvaluesT[x][0..3]
-	VFMLA	V3.S4, V6.S4, V0.S4      // accR += lr*xv
-	VFMLA	V4.S4, V6.S4, V1.S4      // accG += lg*xv
-	VFMLA	V5.S4, V6.S4, V2.S4      // accB += lb*xv
+	// Separate multiply + add (not VFMLA) so the fused/non-fused results match
+	// the portable implementation bit-for-bit.
+	VFMUL	V3.S4, V6.S4, V7.S4      // lr*xv
+	VFADD	V7.S4, V0.S4, V0.S4      // accR += lr*xv
+	VFMUL	V4.S4, V6.S4, V7.S4      // lg*xv
+	VFADD	V7.S4, V1.S4, V1.S4      // accG += lg*xv
+	VFMUL	V5.S4, V6.S4, V7.S4      // lb*xv
+	VFADD	V7.S4, V2.S4, V2.S4      // accB += lb*xv
 	ADD	$4, R1, R1
 	ADD	$4, R2, R2
 	ADD	$4, R3, R3

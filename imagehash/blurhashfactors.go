@@ -3,6 +3,7 @@ package imagehash
 import (
 	"image"
 	"image/color"
+	"math"
 )
 
 // multiplyBasisFunction computes the BlurHash DCT factors for img. The basis
@@ -30,7 +31,11 @@ func blurRowGo(out, lr, lg, lb []float32) {
 			base := xc * width
 			var acc float32
 			for x := 0; x < width; x++ {
-				acc += lin[x] * xvalues32[base+x]
+				// Round the product before accumulating so the compiler cannot
+				// contract the multiply-add into an FMA. This keeps the result
+				// bit-identical to the NEON kernel and across architectures.
+				p := math.Float32frombits(math.Float32bits(lin[x] * xvalues32[base+x]))
+				acc += p
 			}
 			out[c*xComponents+xc] = acc
 		}
@@ -81,7 +86,9 @@ func finishBasis(rowSum []float32, size float64, factors []float64) {
 			for c := 0; c < 3; c++ {
 				var acc float64
 				for y := 0; y < height; y++ {
-					acc += float64(rowSum[(y*3+c)*xComponents+xc]) * yvalues[y+height*yc]
+					// Same FMA-contraction barrier as blurRowGo.
+					p := math.Float64frombits(math.Float64bits(float64(rowSum[(y*3+c)*xComponents+xc]) * yvalues[y+height*yc]))
+					acc += p
 				}
 				factors[c+xc*3+yc*3*xComponents] = acc * scale
 			}
