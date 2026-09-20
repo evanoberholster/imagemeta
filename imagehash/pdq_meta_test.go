@@ -115,9 +115,14 @@ var (
 
 // pdqFixtureDir returns a directory containing Meta's ThreatExchange PDQ test
 // data, downloading it to a cache directory if a local copy is not available.
-// The test is skipped if the fixtures cannot be located or fetched.
+// The test is skipped if the fixtures cannot be located or fetched. Network
+// downloads are skipped with -short or IMAGEMETA_PDQ_NO_DOWNLOAD=1 so
+// `go test` stays hermetic.
 func pdqFixtureDir(t *testing.T) string {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping Meta PDQ fixtures in -short mode")
+	}
 	pdqDataOnce.Do(func() {
 		dirs := []string{os.Getenv("IMAGEMETA_PDQ_DATA"), filepath.Join("testdata", "pdq")}
 		for _, dir := range dirs {
@@ -128,6 +133,10 @@ func pdqFixtureDir(t *testing.T) string {
 				pdqDataDir = dir
 				return
 			}
+		}
+		if os.Getenv("IMAGEMETA_PDQ_NO_DOWNLOAD") != "" {
+			pdqDataErr = fmt.Errorf("network downloads disabled by IMAGEMETA_PDQ_NO_DOWNLOAD")
+			return
 		}
 		cache := os.Getenv("IMAGEMETA_PDQ_CACHE")
 		if cache == "" {

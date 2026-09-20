@@ -42,6 +42,7 @@ func TestHashImageSizeErrors(t *testing.T) {
 }
 
 func TestPHashAltAliases(t *testing.T) {
+	t.Parallel()
 	f, err := os.Open("../assets/JPEG.jpg")
 	if err != nil {
 		t.Fatal(err)
@@ -67,6 +68,7 @@ func TestPHashAltAliases(t *testing.T) {
 }
 
 func TestBlurHash(t *testing.T) {
+	t.Parallel()
 	f, err := os.Open("../assets/JPEG.jpg")
 	if err != nil {
 		t.Fatal(err)
@@ -86,6 +88,7 @@ func TestBlurHash(t *testing.T) {
 }
 
 func TestImageHash(t *testing.T) {
+	t.Parallel()
 	hashTests := []struct {
 		filename string
 		phash64  string
@@ -101,15 +104,14 @@ func TestImageHash(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer func() {
-			if err = f.Close(); err != nil {
-				t.Error(err)
-			}
-		}()
 
 		img, err := jpeg.Decode(f)
 		if err != nil {
+			_ = f.Close()
 			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Error(err)
 		}
 		resized := resize.Resize(256, 256, img, resize.Bilinear)
 
@@ -160,6 +162,7 @@ func BenchmarkPHash64(b *testing.B) {
 		b.Fatal(err)
 	}
 	resized = resize.Resize(64, 64, resized, resize.Bicubic)
+	b.SetBytes(int64(len(buf)))
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -210,6 +213,7 @@ func BenchmarkPHash256(b *testing.B) {
 		b.Fatal(err)
 	}
 	resized = resize.Resize(256, 256, resized, resize.Bicubic)
+	b.SetBytes(int64(len(buf)))
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -252,7 +256,11 @@ func BenchmarkBlurHash100(b *testing.B) {
 	}
 
 	resized := resize.Resize(64, 64, img, resize.Bilinear)
+	b.SetBytes(int64(64 * 64))
+	b.ReportAllocs()
+	b.ResetTimer()
 	b.Run("BlurHash", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			bh, err := EncodeBlurHashFast(resized)
 			if err != nil {
@@ -261,14 +269,5 @@ func BenchmarkBlurHash100(b *testing.B) {
 			_ = bh
 		}
 	})
-	//b.Run("BlurHashFast", func(b *testing.B) {
-	//	for i := 0; i < b.N; i++ {
-	//		bh, err := EncodeBlurHashFast(resized)
-	//		if err != nil {
-	//			b.Fatal(err)
-	//		}
-	//		_ = bh
-	//	}
-	//})
 
 }

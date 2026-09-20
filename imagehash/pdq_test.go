@@ -152,6 +152,7 @@ func BenchmarkPDQ256(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	b.SetBytes(int64(len(buf)))
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -170,6 +171,7 @@ func BenchmarkPDQ256Large(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	b.SetBytes(int64(len(buf)))
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

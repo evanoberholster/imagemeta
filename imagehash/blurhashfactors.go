@@ -24,6 +24,18 @@ func multiplyBasisFunction(img image.Image, factors []float64) {
 	finishBasis(rowSum[:], size, factors)
 }
 
+// noFMA32 rounds v to float32 precision, which stops the compiler contracting
+// a multiply-add into an FMA. This keeps the result bit-identical to the NEON
+// kernel and across architectures.
+func noFMA32(v float32) float32 {
+	return math.Float32frombits(math.Float32bits(v))
+}
+
+// noFMA64 is the float64 counterpart of noFMA32.
+func noFMA64(v float64) float64 {
+	return math.Float64frombits(math.Float64bits(v))
+}
+
 // blurRowGo is the portable implementation of blurRow.
 func blurRowGo(out, lr, lg, lb []float32) {
 	for c, lin := range [3][]float32{lr, lg, lb} {
@@ -31,11 +43,7 @@ func blurRowGo(out, lr, lg, lb []float32) {
 			base := xc * width
 			var acc float32
 			for x := 0; x < width; x++ {
-				// Round the product before accumulating so the compiler cannot
-				// contract the multiply-add into an FMA. This keeps the result
-				// bit-identical to the NEON kernel and across architectures.
-				p := math.Float32frombits(math.Float32bits(lin[x] * xvalues32[base+x]))
-				acc += p
+				acc += noFMA32(lin[x] * xvalues32[base+x])
 			}
 			out[c*xComponents+xc] = acc
 		}
@@ -58,12 +66,14 @@ func extractRow(img image.Image, y int, lr, lg, lb []float32) {
 			lb[x] = float32(channelToLinear[bl])
 		}
 	case *image.RGBA:
+		extractRowPacked(c.Pix, c.PixOffset(minX, minY+y), b.Dx(), lr, lg, lb)
+	case *image.NRGBA:
+		extractRowNRGBA(c, minX, minY+y, b.Dx(), lr, lg, lb)
+	case *image.Gray:
 		row := c.PixOffset(minX, minY+y)
 		for x := 0; x < b.Dx(); x++ {
-			p := row + x*4
-			lr[x] = float32(channelToLinear[c.Pix[p]])
-			lg[x] = float32(channelToLinear[c.Pix[p+1]])
-			lb[x] = float32(channelToLinear[c.Pix[p+2]])
+			lin := float32(channelToLinear[c.Pix[row+x]])
+			lr[x], lg[x], lb[x] = lin, lin, lin
 		}
 	default:
 		for x := 0; x < b.Dx(); x++ {
@@ -75,20 +85,50 @@ func extractRow(img image.Image, y int, lr, lg, lb []float32) {
 	}
 }
 
+// extractRowPacked writes one row of packed 4-byte RGBA-order pixels as
+// linear-light values.
+func extractRowPacked(pix []uint8, row, dx int, lr, lg, lb []float32) {
+	for x := 0; x < dx; x++ {
+		p := row + x*4
+		lr[x] = float32(channelToLinear[pix[p]])
+		lg[x] = float32(channelToLinear[pix[p+1]])
+		lb[x] = float32(channelToLinear[pix[p+2]])
+	}
+}
+
+// extractRowNRGBA writes one row of an NRGBA image as linear-light values.
+// Opaque pixels share the packed layout; translucent pixels fall back to the
+// generic path to preserve At().RGBA() premultiplication exactly.
+func extractRowNRGBA(c *image.NRGBA, minX, y, dx int, lr, lg, lb []float32) {
+	row := c.PixOffset(minX, y)
+	for x := 0; x < dx; x++ {
+		p := row + x*4
+		if c.Pix[p+3] == 0xff {
+			lr[x] = float32(channelToLinear[c.Pix[p]])
+			lg[x] = float32(channelToLinear[c.Pix[p+1]])
+			lb[x] = float32(channelToLinear[c.Pix[p+2]])
+			continue
+		}
+		rt, gt, bt, _ := c.At(minX+x, y).RGBA()
+		lr[x] = float32(channelToLinear[rt>>8])
+		lg[x] = float32(channelToLinear[gt>>8])
+		lb[x] = float32(channelToLinear[bt>>8])
+	}
+}
+
 // finishBasis reduces the per-row partial sums over y into the DCT factors.
 func finishBasis(rowSum []float32, size float64, factors []float64) {
+	dcScale, acScale := 1/size, 2/size
 	for yc := 0; yc < yComponents; yc++ {
 		for xc := 0; xc < xComponents; xc++ {
-			scale := 2 / size
+			scale := acScale
 			if xc == 0 && yc == 0 {
-				scale = 1 / size
+				scale = dcScale
 			}
 			for c := 0; c < 3; c++ {
 				var acc float64
 				for y := 0; y < height; y++ {
-					// Same FMA-contraction barrier as blurRowGo.
-					p := math.Float64frombits(math.Float64bits(float64(rowSum[(y*3+c)*xComponents+xc]) * yvalues[y+height*yc]))
-					acc += p
+					acc += noFMA64(float64(rowSum[(y*3+c)*xComponents+xc]) * yvalues[y+height*yc])
 				}
 				factors[c+xc*3+yc*3*xComponents] = acc * scale
 			}

@@ -17,8 +17,24 @@ const (
 var ErrBlurHashSize = errors.New("blurhash requires a 64x64 image")
 
 func init() {
-	initLinearTable()
-	initStaticBlurHashValues()
+	for i := range channelToLinear {
+		channelToLinear[i] = srgbToLinear(i)
+	}
+	for xc := 0; xc < xComponents; xc++ {
+		for x := 0; x < width; x++ {
+			xvalues32[x+width*xc] = float32(math.Cos(math.Pi * float64(xc) * float64(x) / float64(width)))
+		}
+	}
+	for yc := 0; yc < yComponents; yc++ {
+		for y := 0; y < height; y++ {
+			yvalues[y+height*yc] = math.Cos(math.Pi * float64(yc) * float64(y) / float64(height))
+		}
+	}
+	for x := 0; x < width; x++ {
+		for xc := 0; xc < xComponents; xc++ {
+			xvaluesT[x*xComponents+xc] = xvalues32[x+width*xc]
+		}
+	}
 }
 
 // EncodeBlurHashFast encodes a 64x64 image as a BlurHash string.
@@ -31,7 +47,7 @@ func EncodeBlurHashFast(img image.Image) (string, error) {
 		return "", fmt.Errorf("%w: got %dx%d", ErrBlurHashSize, size.X, size.Y)
 	}
 
-	b := newBlur()
+	var b blur
 
 	// Size Flag
 	b.encode((xComponents-1)+(yComponents-1)*9, 1)
@@ -69,52 +85,18 @@ func EncodeBlurHashFast(img image.Image) (string, error) {
 
 var (
 	channelToLinear [256]float64
-	xvalues         = [xComponents * width]float64{}
 	yvalues         = [yComponents * height]float64{}
-	// xvalues32 mirrors xvalues as float32 for the SIMD basis kernel.
+	// xvalues32 holds the x basis functions as float32 for the basis kernel.
 	xvalues32 = [xComponents * width]float32{}
 	// xvaluesT is xvalues32 transposed so all components for one column are
 	// contiguous: xvaluesT[x*xComponents+xc] == xvalues32[x+width*xc].
 	xvaluesT = [width * xComponents]float32{}
 )
 
-func initLinearTable() {
-	for i := range channelToLinear {
-		channelToLinear[i] = srgbToLinear(i)
-	}
-}
-
-func initStaticBlurHashValues() {
-	for xc := 0; xc < xComponents; xc++ {
-		for x := 0; x < width; x++ {
-			xvalues[x+width*xc] = math.Cos(math.Pi * float64(xc) * float64(x) / float64(width))
-		}
-	}
-
-	for yc := 0; yc < yComponents; yc++ {
-		for y := 0; y < height; y++ {
-			yvalues[y+height*yc] = math.Cos(math.Pi * float64(yc) * float64(y) / float64(height))
-		}
-	}
-
-	for i := range xvalues32 {
-		xvalues32[i] = float32(xvalues[i])
-	}
-	for x := 0; x < width; x++ {
-		for xc := 0; xc < xComponents; xc++ {
-			xvaluesT[x*xComponents+xc] = xvalues32[x+width*xc]
-		}
-	}
-}
-
 // blur is a blurhash base83 encoder
 type blur struct {
 	b [4 + 2*xComponents*yComponents]byte
 	p int
-}
-
-func newBlur() *blur {
-	return &blur{}
 }
 
 func (b blur) String() string {
@@ -125,8 +107,11 @@ const (
 	characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~"
 )
 
+// pow83 holds 83^n for n in [0,4] so base-83 encoding avoids math.Pow.
+var pow83 = [5]int{1, 83, 83 * 83, 83 * 83 * 83, 83 * 83 * 83 * 83}
+
 func (b *blur) encode(value, length int) {
-	divisor := int(math.Pow(83, float64(length))) / 83
+	divisor := pow83[length-1]
 	for i := 0; i < length; i++ {
 		b.b[b.p] = characters[(value/divisor)%83]
 		b.p++
@@ -139,10 +124,11 @@ func encodeDC(r, g, b float64) int {
 }
 
 func encodeAC(r, g, b, maximumValue float64) int {
-	quant := func(f float64) int {
-		return int(math.Max(0, math.Min(18, math.Floor(signPow(f/maximumValue, 0.5)*9+9.5))))
-	}
-	return quant(r)*19*19 + quant(g)*19 + quant(b)
+	return quantAC(r, maximumValue)*19*19 + quantAC(g, maximumValue)*19 + quantAC(b, maximumValue)
+}
+
+func quantAC(f, maximumValue float64) int {
+	return int(math.Max(0, math.Min(18, math.Floor(signedSqrt(f/maximumValue)*9+9.5))))
 }
 
 // srgbToLinear converts an 8-bit sRGB channel to linear light.
@@ -163,7 +149,7 @@ func linearToSRGB(value float64) int {
 	return int((1.055*math.Pow(v, 1/2.4)-0.055)*255 + 0.5)
 }
 
-// signPow returns sign(value) * |value|^exp.
-func signPow(value, exp float64) float64 {
-	return math.Copysign(math.Pow(math.Abs(value), exp), value)
+// signedSqrt returns sign(value) * sqrt(|value|).
+func signedSqrt(value float64) float64 {
+	return math.Copysign(math.Sqrt(math.Abs(value)), value)
 }
