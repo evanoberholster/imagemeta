@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"image"
 	"math/bits"
+	"strings"
 	"sync"
 
 	"github.com/evanoberholster/imagemeta/imagehash/internal/phash"
@@ -41,6 +42,62 @@ var (
 
 // Ahash is a 64bit Average Hash
 type Ahash uint64
+
+// Distance returns the Hamming distance between two Ahash values.
+func (h Ahash) Distance(other Ahash) uint {
+	return uint(bits.OnesCount64(uint64(h) ^ uint64(other)))
+}
+
+func (h Ahash) String() string {
+	var raw [8]byte
+	binary.BigEndian.PutUint64(raw[:], uint64(h))
+	var out [2 + 16]byte
+	out[0], out[1] = 'a', ':'
+	hex.Encode(out[2:], raw[:])
+	return string(out[:])
+}
+
+// Encode writes the little-endian 8-byte representation of the hash to dst.
+func (h Ahash) Encode(dst []byte) {
+	if len(dst) < 8 {
+		panic("imagehash: Ahash.Encode requires dst len >= 8")
+	}
+	binary.LittleEndian.PutUint64(dst[:8], uint64(h))
+}
+
+// Decode reads the little-endian 8-byte representation of the hash from src.
+func (h *Ahash) Decode(src []byte) {
+	if len(src) < 8 {
+		panic("imagehash: Ahash.Decode requires src len >= 8")
+	}
+	*h = Ahash(binary.LittleEndian.Uint64(src[:8]))
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (h Ahash) MarshalText() ([]byte, error) {
+	return []byte(h.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "a:"
+// prefixed form and plain hex.
+func (h *Ahash) UnmarshalText(text []byte) error {
+	v, err := ParseAhash(string(text))
+	if err != nil {
+		return err
+	}
+	*h = v
+	return nil
+}
+
+// ParseAhash parses the output of Ahash.String, accepting an optional "a:"
+// prefix.
+func ParseAhash(s string) (Ahash, error) {
+	b, err := decodeHashHex(s, "a:", 16)
+	if err != nil {
+		return 0, fmt.Errorf("imagehash: invalid ahash %q: %w", s, err)
+	}
+	return Ahash(binary.BigEndian.Uint64(b)), nil
+}
 
 // PHash64 is a 64bit Perception Hash
 type PHash64 uint64
@@ -192,6 +249,19 @@ func meanOfPixels(pixels []float32) float32 {
 	return sum / float32(len(pixels))
 }
 
+// decodeHashHex strips prefix and hex-decodes s, requiring hexLen characters.
+func decodeHashHex(s, prefix string, hexLen int) ([]byte, error) {
+	hexStr := strings.TrimPrefix(s, prefix)
+	if len(hexStr) != hexLen {
+		return nil, fmt.Errorf("want %d hex characters, got %d", hexLen, len(hexStr))
+	}
+	b, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
 // Distance between Phash values
 func (ph PHash64) Distance(hash PHash64) uint8 {
 	return uint8(bits.OnesCount64(uint64(ph) ^ uint64(hash))) //nolint:gosec // popcnt is bounded to [0,64].
@@ -218,6 +288,32 @@ func (ph *PHash64) Decode(src []byte) {
 		panic("imagehash: PHash64.Decode requires src len >= 8")
 	}
 	*ph = PHash64(binary.LittleEndian.Uint64(src[:8]))
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (ph PHash64) MarshalText() ([]byte, error) {
+	return []byte(ph.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "p:"
+// prefixed form and plain hex.
+func (ph *PHash64) UnmarshalText(text []byte) error {
+	v, err := ParsePHash64(string(text))
+	if err != nil {
+		return err
+	}
+	*ph = v
+	return nil
+}
+
+// ParsePHash64 parses the output of PHash64.String, accepting an optional
+// "p:" prefix.
+func ParsePHash64(s string) (PHash64, error) {
+	b, err := decodeHashHex(s, "p:", 16)
+	if err != nil {
+		return 0, fmt.Errorf("imagehash: invalid phash64 %q: %w", s, err)
+	}
+	return PHash64(binary.BigEndian.Uint64(b)), nil
 }
 
 // Distance between Phash values
@@ -258,4 +354,34 @@ func (ph *PHash256) Decode(buf []byte) {
 	ph[1] = binary.LittleEndian.Uint64(buf[8*1:])
 	ph[2] = binary.LittleEndian.Uint64(buf[8*2:])
 	ph[3] = binary.LittleEndian.Uint64(buf[8*3:])
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (ph PHash256) MarshalText() ([]byte, error) {
+	return []byte(ph.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. It accepts the "p:"
+// prefixed form and plain hex.
+func (ph *PHash256) UnmarshalText(text []byte) error {
+	v, err := ParsePHash256(string(text))
+	if err != nil {
+		return err
+	}
+	*ph = v
+	return nil
+}
+
+// ParsePHash256 parses the output of PHash256.String, accepting an optional
+// "p:" prefix.
+func ParsePHash256(s string) (PHash256, error) {
+	b, err := decodeHashHex(s, "p:", 64)
+	if err != nil {
+		return PHash256{}, fmt.Errorf("imagehash: invalid phash256 %q: %w", s, err)
+	}
+	var h PHash256
+	for i := 0; i < 4; i++ {
+		h[i] = binary.BigEndian.Uint64(b[i*8 : (i+1)*8])
+	}
+	return h, nil
 }

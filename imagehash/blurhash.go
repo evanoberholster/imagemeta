@@ -37,7 +37,15 @@ func init() {
 	}
 }
 
+// EncodeBlurHash encodes a 64x64 image as a BlurHash string.
+func EncodeBlurHash(img image.Image) (string, error) {
+	return EncodeBlurHashFast(img)
+}
+
 // EncodeBlurHashFast encodes a 64x64 image as a BlurHash string.
+//
+// Deprecated: use EncodeBlurHash. It is retained for backwards compatibility
+// and is equivalent to EncodeBlurHash.
 func EncodeBlurHashFast(img image.Image) (string, error) {
 	if img == nil {
 		return "", ErrImageObject

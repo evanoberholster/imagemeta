@@ -14,6 +14,8 @@ import (
 	"github.com/evanoberholster/imagemeta/imagehash/internal/pdq"
 )
 
+//go:generate msgp
+
 // PDQHash is a 256-bit PDQ (Perceptual Difference Quantization) perceptual
 // hash. It is stored as four uint64 words in big-endian order so that String
 // produces Meta's canonical 64-character hex representation.
@@ -78,6 +80,27 @@ func (h PDQHash) Encode(dst []byte) {
 	binary.BigEndian.PutUint64(dst[8*1:], h[1])
 	binary.BigEndian.PutUint64(dst[8*2:], h[2])
 	binary.BigEndian.PutUint64(dst[8*3:], h[3])
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (h PDQHash) MarshalText() ([]byte, error) {
+	return []byte(h.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (h *PDQHash) UnmarshalText(text []byte) error {
+	v, err := ParsePDQHash(string(text))
+	if err != nil {
+		return err
+	}
+	*h = v
+	return nil
+}
+
+// ParsePDQHash parses the 64-character hex representation produced by
+// PDQHash.String.
+func ParsePDQHash(s string) (PDQHash, error) {
+	return pdqHashFromHex(s)
 }
 
 // Decode reads the big-endian 32-byte representation of the hash from src.
