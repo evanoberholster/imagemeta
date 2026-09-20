@@ -85,8 +85,9 @@ func TestPDQParseRoundTrip(t *testing.T) {
 		t.Errorf("ParsePDQHash(String(h)) = %v, want %v", parsed, h)
 	}
 	var text PDQHash
-	if err := text.UnmarshalText([]byte(h.String())); err != nil || text != h {
-		t.Errorf("UnmarshalText(String(h)) = %v, %v; want %v, nil", text, err, h)
+	textErr := text.UnmarshalText([]byte(h.String()))
+	if textErr != nil || text != h {
+		t.Errorf("UnmarshalText(String(h)) = %v, %v; want %v, nil", text, textErr, h)
 	}
 	var buf [32]byte
 	h.Encode(buf[:])
@@ -127,7 +128,8 @@ func TestPixelPathEquivalence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := NewAHash(nrgba); err != nil || got != want {
+	got, err := NewAHash(nrgba)
+	if err != nil || got != want {
 		t.Errorf("NewAHash(NRGBA) = %v, %v; want %v, nil", got, err, want)
 	}
 	grayRGBA := image.NewRGBA(image.Rect(0, 0, 8, 8))
@@ -141,8 +143,9 @@ func TestPixelPathEquivalence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := NewAHash(gray); err != nil || got != wantGray {
-		t.Errorf("NewAHash(Gray) = %v, %v; want %v, nil", got, err, wantGray)
+	gotGray, err := NewAHash(gray)
+	if err != nil || gotGray != wantGray {
+		t.Errorf("NewAHash(Gray) = %v, %v; want %v, nil", gotGray, err, wantGray)
 	}
 }
 
@@ -167,15 +170,17 @@ func TestBlurHashPixelPathEquivalence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := EncodeBlurHashFast(nrgba); err != nil || got != want {
+	got, err := EncodeBlurHashFast(nrgba)
+	if err != nil || got != want {
 		t.Errorf("EncodeBlurHashFast(NRGBA) = %q, %v; want %q, nil", got, err, want)
 	}
 	wantGray, err := EncodeBlurHashFast(grayRGBA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := EncodeBlurHashFast(gray); err != nil || got != wantGray {
-		t.Errorf("EncodeBlurHashFast(Gray) = %q, %v; want %q, nil", got, err, wantGray)
+	gotGray, err := EncodeBlurHashFast(gray)
+	if err != nil || gotGray != wantGray {
+		t.Errorf("EncodeBlurHashFast(Gray) = %q, %v; want %q, nil", gotGray, err, wantGray)
 	}
 }
 

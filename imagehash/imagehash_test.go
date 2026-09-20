@@ -110,8 +110,8 @@ func TestImageHash(t *testing.T) {
 			_ = f.Close()
 			t.Fatal(err)
 		}
-		if err := f.Close(); err != nil {
-			t.Error(err)
+		if cerr := f.Close(); cerr != nil {
+			t.Error(cerr)
 		}
 		resized := resize.Resize(256, 256, img, resize.Bilinear)
 
