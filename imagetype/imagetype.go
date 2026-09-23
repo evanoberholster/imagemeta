@@ -232,10 +232,9 @@ func (ft FileType) IsISOBMFF() bool {
 // FromString returns a FileType for the given content-type string, extension,
 // or filename.
 //
-// Resolution order: exact MIME match, MIME with parameters stripped,
-// exact extension, dotted extension, filename extension, parameter suffix,
-// query/fragment suffix, dotted suffix token, bare token. Anything else is
-// ImageUnknown.
+// Resolution order: exact MIME match, MIME with parameters, dotted
+// extension suffix (covers bare tokens, dotted tokens, paths and URLs
+// with query/fragment suffixes). Anything else is ImageUnknown.
 func FromString(str string) FileType {
 	str = strings.TrimSpace(str)
 	if str == "" {
@@ -244,61 +243,36 @@ func FromString(str string) FileType {
 
 	normalized := strings.ToLower(str)
 
-	// from content-type
+	// from content-type, exact or with parameters
 	if it, ok := mimeTypeValues[MIMEType(normalized)]; ok {
 		return it
 	}
-
-	// from content-type with optional parameters
-	if mediaType, _, err := mime.ParseMediaType(normalized); err == nil {
-		if it, ok := mimeTypeValues[MIMEType(mediaType)]; ok {
-			return it
-		}
-	}
-
-	// from extension
-	if it, ok := fileTypeExtensions[FileTypeExtension(normalized)]; ok {
-		return it
-	}
-	if !strings.HasPrefix(normalized, ".") {
-		if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
-			return it
-		}
-	}
-
-	// from file path / file name extension
-	if ext := strings.ToLower(filepath.Ext(normalized)); ext != "" {
-		if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
-			return it
-		}
-	}
-
-	// from common MIME shorthand "image/jpg; charset=..."
 	if idx := strings.IndexByte(normalized, ';'); idx > 0 {
+		if mediaType, _, err := mime.ParseMediaType(normalized); err == nil {
+			if it, ok := mimeTypeValues[MIMEType(mediaType)]; ok {
+				return it
+			}
+		}
 		if it, ok := mimeTypeValues[MIMEType(strings.TrimSpace(normalized[:idx]))]; ok {
 			return it
 		}
 	}
 
-	// from common query-like suffixes: "file.jpg?foo=bar"
-	if idx := strings.IndexAny(normalized, "?#"); idx > 0 {
-		if ext := strings.ToLower(filepath.Ext(normalized[:idx])); ext != "" {
-			if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
-				return it
-			}
-		}
+	// from extension: strip query/fragment suffixes, then take the dotted
+	// suffix. A bare token ("jpeg") probes its dotted form (".jpeg").
+	candidate := normalized
+	if idx := strings.IndexAny(candidate, "?#"); idx > 0 {
+		candidate = candidate[:idx]
 	}
-
-	// from extension token in path-like inputs without a leading dot
-	if idx := strings.LastIndexByte(normalized, '.'); idx > 0 && idx < len(normalized)-1 {
-		if it, ok := fileTypeExtensions[FileTypeExtension(normalized[idx:])]; ok {
+	if ext := filepath.Ext(candidate); ext != "" {
+		if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
 			return it
 		}
 	}
-
-	// from file names where ext is the full token (e.g. "jpeg")
-	if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
-		return it
+	if !strings.HasPrefix(candidate, ".") {
+		if it, ok := fileTypeExtensions[FileTypeExtension("."+candidate)]; ok {
+			return it
+		}
 	}
 
 	return ImageUnknown
