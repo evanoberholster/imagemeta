@@ -6,6 +6,7 @@
 package jpeg
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -72,6 +73,19 @@ func ScanJPEGWithSourceContext(ctx context.Context, stream io.Reader, source io.
 // independent segment reads when source implements io.ReaderAt.
 func ScanJPEGWithSource(stream io.Reader, source io.Reader, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) error {
 	return ScanJPEGWithSourceContext(context.Background(), stream, source, exifReader, xmpReader)
+}
+
+// ScanBytesContext scans JPEG markers in an in-memory buffer. The buffer
+// backs both the forward stream and the independent segment reads, so
+// segment payloads never copy and callbacks receive seekable readers.
+func ScanBytesContext(ctx context.Context, buf []byte, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) error {
+	r := bytes.NewReader(buf)
+	return scanJPEGWithMetadata(ctx, r, r, exifReader, xmpReader, nil)
+}
+
+// ScanBytes scans JPEG markers in an in-memory buffer. See ScanBytesContext.
+func ScanBytes(buf []byte, exifReader func(r io.Reader, header meta.ExifHeader) error, xmpReader func(r io.Reader) error) error {
+	return ScanBytesContext(context.Background(), buf, exifReader, xmpReader)
 }
 
 // ScanMetadata scans a JPEG stream and returns metadata stored directly in JPEG

@@ -345,6 +345,55 @@ func TestScanJPEGExtendedXMPDeterministicOrder(t *testing.T) {
 	}
 }
 
+// TestScanJPEGTruncatedNeverPanics feeds every truncation of a
+// multi-segment JPEG through the scanner with draining callbacks.
+// Truncations before SOS must error; anything reaching SOS decodes (the
+// scanner returns at the SOS marker without consuming image data). A panic
+// fails the test outright; hangs are bounded by the test binary timeout.
+func TestScanJPEGTruncatedNeverPanics(t *testing.T) {
+	t.Parallel()
+	full := testJPEG(
+		testSegment(markerAPP1, append(append([]byte(exifPrefix), testTIFFHeader()...), bytes.Repeat([]byte{0xa5}, 96)...)),
+		testSegment(markerAPP1, append([]byte(xmpPrefix), []byte("<x:xmpmeta></x:xmpmeta>")...)),
+		testSegment(markerAPP2, testMPFPayload(2, 100, 200)),
+		testSegment(markerAPP13, testPhotoshopPayload(testPhotoshopResource(0x040a, []byte{1}))),
+	)
+	sosOff := bytes.Index(full, []byte{0xff, byte(markerSOS)})
+	if sosOff < 0 {
+		t.Fatal("test image lacks an SOS marker")
+	}
+	// The scanner peeks up to 64 bytes of lookahead at each marker, so
+	// decoding needs that window past SOS; anything shorter must error.
+	// (The SOS payload itself is never consumed.)
+	sosEnd := sosOff + 64
+	for n := 0; n <= len(full); n++ {
+		exifCalls, xmpCalls := 0, 0
+		err := ScanBytes(full[:n],
+			func(r io.Reader, _ meta.ExifHeader) error {
+				exifCalls++
+				_, err := io.Copy(io.Discard, r)
+				return err
+			},
+			func(r io.Reader) error {
+				xmpCalls++
+				_, err := io.Copy(io.Discard, r)
+				return err
+			})
+		if n < sosEnd {
+			if err == nil {
+				t.Fatalf("truncation %d: expected error, got nil", n)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("truncation %d: unexpected error: %v", n, err)
+		}
+		if exifCalls != 1 || xmpCalls != 1 {
+			t.Fatalf("truncation %d: callbacks exif=%d xmp=%d, want 1/1", n, exifCalls, xmpCalls)
+		}
+	}
+}
+
 func TestScanJPEG_nextMarkerNoInfiniteLoop(t *testing.T) {
 	inputs := [][]byte{
 		{0xFF, 0x00},
