@@ -123,7 +123,7 @@ func (ft FileType) BaseType() BaseType {
 	case ImageTiff, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCR2, ImageGPR,
 		ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ, Image3FR, ImageX3F,
 		ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2, ImageSRF, ImageFFF,
-		ImageMOS, ImageK25:
+		ImageMOS, ImageK25, ImageMEF:
 		return BaseTypeTIFF
 	case ImageCRW:
 		return BaseTypeCIFF
@@ -209,7 +209,7 @@ func (ft FileType) IsRAW() bool {
 	case ImageRAW, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCRW, ImageGPR,
 		ImageCR3, ImageCR2, ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ,
 		Image3FR, ImageX3F, ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2,
-		ImageSRF, ImageFFF, ImageMOS, ImageK25:
+		ImageSRF, ImageFFF, ImageMOS, ImageK25, ImageMEF:
 		return true
 	default:
 		return false
@@ -450,6 +450,7 @@ const (
 	// always append new types here, never insert or reorder.
 	ImageJ2C  // JPEG 2000 codestream (SOC+SIZ), distinct from the JP2 container
 	ImageXISF // XISF (astronomy, "XISF0100" signature)
+	ImageMEF  // Mamiya MEF
 )
 
 // MediaType groups file types into high-level semantic classes.
@@ -685,6 +686,7 @@ var fileTypeCanonicalMIME = map[FileType]MIMEType{
 	ImageK25:     "image/x-kodak-k25",
 	ImageJ2C:     "image/j2c",
 	ImageXISF:    "image/xisf",
+	ImageMEF:     "image/x-mamiya-mef",
 }
 
 var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
@@ -763,6 +765,7 @@ var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
 	ImageK25:     "k25",
 	ImageJ2C:     "j2c",
 	ImageXISF:    "xisf",
+	ImageMEF:     "mef",
 }
 
 // mimeTypeValues maps a content-type string with a file type.
@@ -794,6 +797,7 @@ var mimeTypeValues = map[MIMEType]FileType{
 	"image/jxr":                     ImageJXR, // uncommon, but seen
 	"image/j2c":                     ImageJ2C,
 	"image/xisf":                    ImageXISF,
+	"image/x-mamiya-mef":            ImageMEF,
 	"image/magick":                  ImageMAGICK,
 	"image/mpo":                     ImageMPO,
 	"image/pgf":                     ImagePGF,
@@ -919,6 +923,7 @@ var fileTypeExtensions = map[FileTypeExtension]FileType{
 	".jxr":    ImageJXR,
 	".j2c":    ImageJ2C,
 	".xisf":   ImageXISF,
+	".mef":    ImageMEF,
 	".k25":    ImageK25,
 	".kdc":    ImageKDC,
 	".magick": ImageMAGICK,
@@ -1322,6 +1327,254 @@ func tiffReadU32(buf []byte, offset int, littleEndian bool) (uint32, bool) {
 		(uint32(buf[offset+1]) << 16) |
 		(uint32(buf[offset+2]) << 8) |
 		uint32(buf[offset+3]), true
+}
+
+// tiffMakeModel scans the first IFD of a TIFF or BigTIFF image in buf for
+// Make (0x010F), Model (0x0110) and DNGVersion (0xC612) tags. It returns
+// ok=false when the structure is truncated or malformed. All reads are
+// bounds-checked and iterative: no recursion, no unbounded loops.
+func tiffMakeModel(buf []byte) (manufacturer, model string, hasDNGVersion, ok bool) {
+	if len(buf) < 8 {
+		return "", "", false, false
+	}
+	big := isBigTiff(buf)
+	var littleEndian bool
+	switch {
+	case IsTiffLittleEndian(buf) || (big && buf[0] == 0x49):
+		littleEndian = true
+	case IsTiffBigEndian(buf) || (big && buf[0] == 0x4D):
+		littleEndian = false
+	default:
+		return "", "", false, false
+	}
+
+	var ifdOffset uint64
+	var entrySize, countSize int
+	if big {
+		// BigTIFF: byte order, magic 43, offset byte size, 0, 8-byte IFD offset.
+		if len(buf) < 16 {
+			return "", "", false, false
+		}
+		off, readOK := tiffReadU64(buf, 8, littleEndian)
+		if !readOK {
+			return "", "", false, false
+		}
+		ifdOffset, entrySize, countSize = off, 20, 8
+	} else {
+		off, readOK := tiffReadU32(buf, 4, littleEndian)
+		if !readOK {
+			return "", "", false, false
+		}
+		ifdOffset, entrySize, countSize = uint64(off), 12, 2
+	}
+
+	count, ok := tiffReadCount(buf, ifdOffset, countSize, littleEndian)
+	if !ok || count == 0 || count > maxTiffEntries {
+		return "", "", false, false
+	}
+	entriesAt := ifdOffset + uint64(countSize)
+	for i := uint64(0); i < count; i++ {
+		base := entriesAt + i*uint64(entrySize)
+		tag, ok := tiffReadU16At(buf, base, littleEndian)
+		if !ok {
+			return "", "", false, false
+		}
+		switch tag {
+		case tiffTagMake, tiffTagModel, tiffTagDNGVersion:
+		default:
+			continue
+		}
+		typ, ok := tiffReadU16At(buf, base+2, littleEndian)
+		if !ok {
+			return "", "", false, false
+		}
+		if tag == tiffTagDNGVersion {
+			hasDNGVersion = true
+			continue
+		}
+		if typ != tiffTypeASCII {
+			continue
+		}
+		var elen uint64
+		if big {
+			elen, ok = tiffReadU64(buf, base+4, littleEndian)
+		} else {
+			var elen32 uint32
+			//nolint:gosec // G115: base+4 <= len(buf) is proven by the tag/type/count reads above.
+			elen32, ok = tiffReadU32(buf, int(base)+4, littleEndian)
+			elen = uint64(elen32)
+		}
+		if !ok || elen == 0 || elen > maxTiffString {
+			continue
+		}
+		// Inline values live in the entry tail (4 bytes classic, 8
+		// bytes BigTIFF); longer ones sit at an offset.
+		var valAt uint64
+		var inlineCap uint64
+		if big {
+			valAt, inlineCap = base+12, 8
+		} else {
+			valAt, inlineCap = base+8, 4
+		}
+		var s string
+		if elen <= inlineCap {
+			s, ok = tiffASCII(buf, valAt, elen)
+		} else {
+			var off uint64
+			if big {
+				off, ok = tiffReadU64(buf, valAt, littleEndian)
+			} else {
+				var off32 uint32
+				//nolint:gosec // G115: valAt = base+8 with base proven readable above; tiffReadU32 re-checks bounds.
+				off32, ok = tiffReadU32(buf, int(valAt), littleEndian)
+				off = uint64(off32)
+			}
+			if !ok {
+				continue
+			}
+			s, ok = tiffASCII(buf, off, elen)
+		}
+		if !ok || s == "" {
+			continue
+		}
+		if tag == tiffTagMake {
+			manufacturer = s
+		} else {
+			model = s
+		}
+		if manufacturer != "" && model != "" && hasDNGVersion {
+			break
+		}
+	}
+	return manufacturer, model, hasDNGVersion, true
+}
+
+// TIFF IFD constants for subtype detection.
+const (
+	tiffTagMake       = 0x010F
+	tiffTagModel      = 0x0110
+	tiffTagDNGVersion = 0xC612
+	tiffTypeASCII     = 2
+
+	// maxTiffEntries caps the first-IFD walk; real IFDs stay far below it
+	// and garbage counts must not cause long loops.
+	maxTiffEntries = 512
+	// maxTiffString caps Make/Model value reads.
+	maxTiffString = 64
+)
+
+// tiffReadCount reads an entry count of countSize bytes at offset.
+func tiffReadCount(buf []byte, offset uint64, countSize int, littleEndian bool) (uint64, bool) {
+	if countSize == 8 {
+		return tiffReadU64(buf, offset, littleEndian)
+	}
+	v, ok := tiffReadU16At(buf, offset, littleEndian)
+	return uint64(v), ok
+}
+
+// tiffReadU16At reads a uint16 at an absolute uint64 offset.
+func tiffReadU16At(buf []byte, offset uint64, littleEndian bool) (uint16, bool) {
+	if offset > uint64(len(buf))-2 {
+		return 0, false
+	}
+	//nolint:gosec // G115: offset+2 <= len(buf) <= maxInt per the check above.
+	return tiffReadU16(buf, int(offset), littleEndian)
+}
+
+// tiffReadU64 reads a uint64 at offset with bounds checking.
+func tiffReadU64(buf []byte, offset uint64, littleEndian bool) (uint64, bool) {
+	if offset > uint64(len(buf))-8 {
+		return 0, false
+	}
+	//nolint:gosec // G115: offset+8 <= len(buf) <= maxInt per the check above.
+	off := int(offset)
+	if littleEndian {
+		return uint64(buf[off]) |
+			(uint64(buf[off+1]) << 8) |
+			(uint64(buf[off+2]) << 16) |
+			(uint64(buf[off+3]) << 24) |
+			(uint64(buf[off+4]) << 32) |
+			(uint64(buf[off+5]) << 40) |
+			(uint64(buf[off+6]) << 48) |
+			(uint64(buf[off+7]) << 56), true
+	}
+	return (uint64(buf[off]) << 56) |
+		(uint64(buf[off+1]) << 48) |
+		(uint64(buf[off+2]) << 40) |
+		(uint64(buf[off+3]) << 32) |
+		(uint64(buf[off+4]) << 24) |
+		(uint64(buf[off+5]) << 16) |
+		(uint64(buf[off+6]) << 8) |
+		uint64(buf[off+7]), true
+}
+
+// tiffASCII reads an ASCII value of elen bytes at offset, stopping at the
+// first NUL. The value must lie entirely inside buf.
+func tiffASCII(buf []byte, offset, elen uint64) (string, bool) {
+	if elen == 0 || offset > uint64(len(buf)) || elen > uint64(len(buf))-offset {
+		return "", false
+	}
+	//nolint:gosec // G115: offset+elen <= len(buf) <= maxInt per the check above.
+	raw := buf[int(offset):int(offset+elen)]
+	if i := bytes.IndexByte(raw, 0); i >= 0 {
+		raw = raw[:i]
+	}
+	return string(raw), true
+}
+
+// tiffMakeModelType maps Make/Model strings to a RAW type. hasDNGVersion
+// wins for any maker. Makes without a defensible mapping return
+// ImageUnknown so callers fall back to the entry-count heuristics.
+func tiffMakeModelType(manufacturer, model string, hasDNGVersion bool) FileType {
+	if hasDNGVersion {
+		return ImageDNG
+	}
+	mk := strings.ToUpper(strings.Trim(manufacturer, " \x00"))
+	md := strings.ToUpper(strings.Trim(model, " \x00"))
+	switch {
+	case strings.HasPrefix(mk, "OLYMPUS") || strings.HasPrefix(mk, "OM DIGITAL"):
+		return ImageORF
+	case mk == "SIGMA":
+		return ImageX3F
+	case mk == "PENTAX" || strings.HasPrefix(mk, "RICOH"):
+		return ImagePEF
+	case mk == "SAMSUNG":
+		return ImageSRW
+	case strings.Contains(mk, "MINOLTA"):
+		return ImageMRW
+	case strings.Contains(mk, "EPSON"):
+		return ImageERF
+	case strings.Contains(mk, "LEAF"):
+		return ImageMOS
+	case strings.Contains(mk, "PHASE ONE") || mk == "PHASEONE":
+		return ImageIIQ
+	case strings.Contains(mk, "GOPRO"):
+		return ImageGPR
+	case strings.Contains(mk, "MAMIYA"):
+		return ImageMEF
+	case strings.HasPrefix(mk, "NIKON"):
+		if strings.HasPrefix(md, "COOLPIX P") || md == "COOLPIX A" {
+			return ImageNRW
+		}
+		return ImageNEF
+	case mk == "SONY":
+		if md == "DSLR-A100" {
+			return ImageSR2
+		}
+		if strings.HasPrefix(md, "DSC-") {
+			return ImageSRF
+		}
+		return ImageARW
+	case strings.Contains(mk, "KODAK"):
+		if strings.Contains(md, "DC25") {
+			return ImageK25
+		}
+		if strings.Contains(md, "DCS PRO") {
+			return ImageDCR
+		}
+		return ImageKDC
+	}
+	return ImageUnknown
 }
 
 // tiffSecondarySubtype performs best-effort subtype detection for TIFF-based files.

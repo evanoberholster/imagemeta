@@ -14,6 +14,10 @@ var (
 const (
 	// scanHeaderLength is the number of bytes to read while scanning image headers.
 	scanHeaderLength = 64
+	// deepProbeLength bounds the follow-up peek used for TIFF Make/Model
+	// sniffing. IFD0 and its string pool conventionally sit near the
+	// start; anything beyond this falls back to the 64-byte heuristics.
+	deepProbeLength = 4096
 )
 
 // Scan reads from the reader and returns a fileType based on
@@ -42,7 +46,37 @@ func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 		return detectShortBuffer(buf)
 	}
 
-	return Buf(buf[:])
+	if fileType, err = Buf(buf[:]); err != nil {
+		return fileType, err
+	}
+
+	// Unsubtyped TIFF-based files get a bounded deeper probe for
+	// Make/Model/DNGVersion. Already-subtyped results stand.
+	if fileType == ImageTiff && isTiff(buf) {
+		if sub := tiffDeepSubtype(br); sub != ImageUnknown {
+			return sub, nil
+		}
+	}
+	return fileType, nil
+}
+
+// tiffDeepSubtype peeks up to deepProbeLength bytes for TIFF Make/Model
+// sniffing. It returns ImageUnknown when the data is insufficient or
+// carries no recognizable maker tags.
+func tiffDeepSubtype(br *bufio.Reader) FileType {
+	r := br
+	if br.Size() < deepProbeLength {
+		r = bufio.NewReaderSize(br, deepProbeLength)
+	}
+	buf, peekErr := r.Peek(deepProbeLength)
+	if peekErr != nil && len(buf) <= scanHeaderLength {
+		return ImageUnknown
+	}
+	manufacturer, model, hasDNGVersion, ok := tiffMakeModel(buf)
+	if !ok {
+		return ImageUnknown
+	}
+	return tiffMakeModelType(manufacturer, model, hasDNGVersion)
 }
 
 // ReadAt reads from the reader at the given offset and returns a fileType based on
@@ -58,7 +92,28 @@ func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
 		return detectShortBuffer(buf[:n])
 	}
 
-	return Buf(buf[:])
+	if fileType, err = Buf(buf[:]); err != nil {
+		return fileType, err
+	}
+
+	// Same bounded deep probe as ScanBuf, via offset reads. A short
+	// read still leaves usable prefix bytes; only the count matters.
+	if fileType == ImageTiff && isTiff(buf[:]) {
+		var deep [deepProbeLength]byte
+		n, readErr := r.ReadAt(deep[:], 0)
+		if readErr != nil && n <= scanHeaderLength {
+			return fileType, nil
+		}
+		if n > scanHeaderLength {
+			manufacturer, model, hasDNGVersion, ok := tiffMakeModel(deep[:n])
+			if ok {
+				if sub := tiffMakeModelType(manufacturer, model, hasDNGVersion); sub != ImageUnknown {
+					return sub, nil
+				}
+			}
+		}
+	}
+	return fileType, nil
 }
 
 func detectShortBuffer(buf []byte) (FileType, error) {
