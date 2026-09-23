@@ -42,6 +42,11 @@ func TestImageTypeIndices(t *testing.T) {
 		ImageJXR:     {"jxr", "image/vnd.ms-photo"},
 		ImageFITS:    {"fits", "image/fits"},
 		ImageDCM:     {"dcm", "application/dicom"},
+		ImageJ2C:     {"j2c", "image/j2c"},
+		ImageXISF:    {"xisf", "image/xisf"},
+		ImagePCX:     {"pcx", "image/x-pcx"},
+		ImagePGF:     {"pgf", "image/pgf"},
+		ImageWPG:     {"wpg", "application/x-wpg"},
 	}
 
 	for it, exp := range cases {
@@ -147,6 +152,10 @@ func TestImageType(t *testing.T) {
 		"image/jp2":                 ImageJP2K,
 		".jxl":                      ImageJXL,
 		".dcm":                      ImageDCM,
+		".j2c":                      ImageJ2C,
+		".xisf":                     ImageXISF,
+		"image/j2c":                 ImageJ2C,
+		"image/xisf":                ImageXISF,
 	} {
 		if got := FromString(input); got != expected {
 			t.Errorf("FromString(%q) = %s, expected %s", input, got, expected)
@@ -334,6 +343,42 @@ func TestScanImageType(t *testing.T) {
 	}
 }
 
+// TestScanShortBuffers checks the short-buffer path detects truncated
+// headers that still carry an unambiguous signature.
+func TestScanShortBuffers(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		buf      []byte
+		expected FileType
+	}{
+		{name: "PCX", buf: []byte{0x0A, 0x05}, expected: ImagePCX},
+		{name: "J2C", buf: []byte{0xFF, 0x4F, 0xFF, 0x51}, expected: ImageJ2C},
+		{name: "PGF", buf: []byte("PGF"), expected: ImagePGF},
+		{name: "WPG", buf: []byte{0xFF, 0x57, 0x50, 0x43}, expected: ImageWPG},
+		{name: "XISF", buf: []byte("XISF0100"), expected: ImageXISF},
+		{name: "TooShort", buf: []byte{0x0A}, expected: ImageUnknown},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := Scan(bytes.NewReader(tc.buf))
+			if tc.expected == ImageUnknown {
+				if got != ImageUnknown {
+					t.Fatalf("Scan() = %s, expected unknown", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Scan() returned unexpected error: %v", err)
+			}
+			if got != tc.expected {
+				t.Fatalf("Scan() = %s, expected %s", got, tc.expected)
+			}
+		})
+	}
+}
+
 func TestBufDetectsJPEGXL(t *testing.T) {
 	container := []byte{
 		0x00, 0x00, 0x00, 0x0C, // box size
@@ -403,6 +448,12 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 		{name: "PGM", header: []byte("P5 "), expected: ImagePGM},
 		{name: "PPM", header: []byte("P6 "), expected: ImagePPM},
 		{name: "PAM", header: []byte("P7\t"), expected: ImagePAM},
+		{name: "PCX/v5", header: []byte{0x0A, 0x05, 0x01, 0x08}, expected: ImagePCX},
+		{name: "PCX/bad-version", header: []byte{0x0A, 0x09, 0x01, 0x08}, expected: ImageUnknown},
+		{name: "PGF", header: []byte("PGFv6"), expected: ImagePGF},
+		{name: "WPG", header: []byte{0xFF, 0x57, 0x50, 0x43}, expected: ImageWPG},
+		{name: "J2C", header: []byte{0xFF, 0x4F, 0xFF, 0x51, 0x00, 0x29}, expected: ImageJ2C},
+		{name: "XISF", header: []byte("XISF0100"), expected: ImageXISF},
 	}
 
 	for _, tc := range cases {
@@ -411,6 +462,12 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 			copy(buf, tc.header)
 
 			got, err := Buf(buf)
+			if tc.expected == ImageUnknown {
+				if got != ImageUnknown {
+					t.Fatalf("Buf() = %s, expected unknown", got)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("Buf() returned unexpected error: %v", err)
 			}

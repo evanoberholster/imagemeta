@@ -187,6 +187,10 @@ func (ft FileType) BaseType() BaseType {
 		return BaseTypeXCF
 	case ImageQTIF:
 		return BaseTypeQTIF
+	case ImageJ2C:
+		return BaseTypeJP2
+	case ImageXISF:
+		return BaseTypeXISF
 	case ImageRAW:
 		return BaseTypeUnknown
 	default:
@@ -441,6 +445,11 @@ const (
 	ImageFFF // Hasselblad FFF
 	ImageMOS // Leaf MOS
 	ImageK25 // Kodak K25
+
+	// NOTE: FileType values are serialized (msgp) and must stay stable:
+	// always append new types here, never insert or reorder.
+	ImageJ2C  // JPEG 2000 codestream (SOC+SIZ), distinct from the JP2 container
+	ImageXISF // XISF (astronomy, "XISF0100" signature)
 )
 
 // MediaType groups file types into high-level semantic classes.
@@ -512,6 +521,7 @@ const (
 	BaseTypePGF
 	BaseTypeXCF
 	BaseTypeQTIF
+	BaseTypeXISF
 )
 
 func (b BaseType) String() string {
@@ -592,6 +602,8 @@ func (b BaseType) String() string {
 		return "xcf"
 	case BaseTypeQTIF:
 		return "qtif"
+	case BaseTypeXISF:
+		return "xisf"
 	default:
 		return "unknown"
 	}
@@ -671,6 +683,8 @@ var fileTypeCanonicalMIME = map[FileType]MIMEType{
 	ImageFFF:     "image/x-hasselblad-fff",
 	ImageMOS:     "image/x-leaf-mos",
 	ImageK25:     "image/x-kodak-k25",
+	ImageJ2C:     "image/j2c",
+	ImageXISF:    "image/xisf",
 }
 
 var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
@@ -747,6 +761,8 @@ var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
 	ImageFFF:     "fff",
 	ImageMOS:     "mos",
 	ImageK25:     "k25",
+	ImageJ2C:     "j2c",
+	ImageXISF:    "xisf",
 }
 
 // mimeTypeValues maps a content-type string with a file type.
@@ -776,6 +792,8 @@ var mimeTypeValues = map[MIMEType]FileType{
 	"image/jp2":                     ImageJP2K,
 	"image/jxl":                     ImageJXL,
 	"image/jxr":                     ImageJXR, // uncommon, but seen
+	"image/j2c":                     ImageJ2C,
+	"image/xisf":                    ImageXISF,
 	"image/magick":                  ImageMAGICK,
 	"image/mpo":                     ImageMPO,
 	"image/pgf":                     ImagePGF,
@@ -899,6 +917,8 @@ var fileTypeExtensions = map[FileTypeExtension]FileType{
 	".jpx":    ImageJP2K,
 	".jxl":    ImageJXL,
 	".jxr":    ImageJXR,
+	".j2c":    ImageJ2C,
+	".xisf":   ImageXISF,
 	".k25":    ImageK25,
 	".kdc":    ImageKDC,
 	".magick": ImageMAGICK,
@@ -1015,6 +1035,11 @@ var (
 	xmpSignature     = []byte("<x:xmpmeta")
 	gif87aSignature  = []byte("GIF87a")
 	gif89aSignature  = []byte("GIF89a")
+
+	pgfSignature  = []byte("PGF")
+	wpgSignature  = []byte{0xFF, 0x57, 0x50, 0x43}
+	j2cSignature  = []byte{0xFF, 0x4F, 0xFF, 0x51}
+	xisfSignature = []byte("XISF0100")
 )
 
 func hasPrefix(buf, sig []byte) bool {
@@ -1443,6 +1468,34 @@ func isSVG(buf []byte) bool {
 // or 89a.
 func isGIF(buf []byte) bool {
 	return hasPrefix(buf, gif87aSignature) || hasPrefix(buf, gif89aSignature)
+}
+
+// isPCX returns true for the PCX manufacturer byte and a defined version
+// (0: 2.5, 2/3: 2.8, 5: 3.0).
+func isPCX(buf []byte) bool {
+	return len(buf) >= 2 && buf[0] == 0x0A &&
+		(buf[1] == 0 || buf[1] == 2 || buf[1] == 3 || buf[1] == 5)
+}
+
+// isPGF returns true for the Progressive Graphics File magic.
+func isPGF(buf []byte) bool {
+	return hasPrefix(buf, pgfSignature)
+}
+
+// isWPG returns true for the WordPerfect Graphics magic ("ÿWPC").
+func isWPG(buf []byte) bool {
+	return hasPrefix(buf, wpgSignature)
+}
+
+// isJ2C returns true for a JPEG 2000 codestream (SOC followed by SIZ),
+// distinct from the JP2 container.
+func isJ2C(buf []byte) bool {
+	return hasPrefix(buf, j2cSignature)
+}
+
+// isXISF returns true for the XISF 1.0 file signature.
+func isXISF(buf []byte) bool {
+	return hasPrefix(buf, xisfSignature)
 }
 
 func netpbmType(buf []byte) (FileType, bool) {

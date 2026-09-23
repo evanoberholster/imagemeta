@@ -65,6 +65,12 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 	if len(buf) >= 2 && buf[0] == 0xFF && buf[1] == 0xD8 {
 		return ImageJPEG, nil
 	}
+	if len(buf) >= 4 && isJ2C(buf) {
+		return ImageJ2C, nil
+	}
+	if isPCX(buf) {
+		return ImagePCX, nil
+	}
 	if len(buf) >= 4 {
 		switch {
 		case buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00:
@@ -78,9 +84,18 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 			return ImageTiff, nil
 		}
 	}
+	if len(buf) >= 3 && isPGF(buf) {
+		return ImagePGF, nil
+	}
+	if len(buf) >= 4 && isWPG(buf) {
+		return ImageWPG, nil
+	}
 	if len(buf) >= 8 {
 		if isPNG(buf) {
 			return ImagePNG, nil
+		}
+		if isXISF(buf) {
+			return ImageXISF, nil
 		}
 		if isCRW(buf) {
 			return ImageCRW, nil
@@ -158,6 +173,12 @@ func parseBuffer(buf []byte) FileType {
 		if isJXL(buf) {
 			return ImageJXL
 		}
+		if isWPG(buf) {
+			return ImageWPG
+		}
+		if isJ2C(buf) {
+			return ImageJ2C
+		}
 	case 0x8A:
 		if isMNG(buf) {
 			return ImageMNG
@@ -198,6 +219,9 @@ func parseBuffer(buf []byte) FileType {
 		if isDPX(buf) {
 			return ImageDPX
 		}
+		if isXISF(buf) {
+			return ImageXISF
+		}
 	case 'F':
 		if isRAF(buf) {
 			return ImageRAF
@@ -237,6 +261,11 @@ func parseBuffer(buf []byte) FileType {
 			return ImageWebP
 		}
 	case '<', ' ', '\t', '\n', '\r', 0xEF:
+		// 0x0A doubles as the PCX manufacturer byte; the version gate
+		// keeps text files starting with a newline out.
+		if isPCX(buf) {
+			return ImagePCX
+		}
 		if isXMP(buf) {
 			return ImageXMP
 		}
@@ -248,6 +277,9 @@ func parseBuffer(buf []byte) FileType {
 			return ImageGIF
 		}
 	case 'P':
+		if isPGF(buf) {
+			return ImagePGF
+		}
 		// Netpbm family (PBM/PGM/PPM/PAM)
 		if it, ok := netpbmType(buf); ok {
 			return it
