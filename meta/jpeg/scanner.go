@@ -12,8 +12,12 @@ import (
 )
 
 const (
-	bufferSize           int = 4 * 1024        // 4Kb
-	maxMetadataScanBytes     = 2 * 1024 * 1024 // 2 MiB metadata scan budget
+	bufferSize int = 4 * 1024 // 4Kb
+	// maxMetadataScanBytes bounds header scanning before image data.
+	// Sized for legitimate large metadata blocks (100MP-class files
+	// carry multi-MB APP segments); anything past it is treated as a
+	// malformed stream.
+	maxMetadataScanBytes = 4 * 1024 * 1024 // 4 MiB metadata scan budget
 )
 
 type jpegReader struct {
