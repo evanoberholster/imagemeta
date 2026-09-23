@@ -11,9 +11,10 @@ import (
 // readAPP0 handles APP0 JFIF/JFXX markers.
 func (jr *jpegReader) readAPP0() {
 	// Is JFIF Marker
-	if isJFIFPrefix(jr.buf) || isJFIFPrefixExt(jr.buf) {
+	jfif := isJFIFPrefix(jr.buf)
+	if jfif || isJFIFPrefixExt(jr.buf) {
 		jr.logMarker("APP0 JFIF")
-		if jr.metadata != nil && isJFIFPrefix(jr.buf) {
+		if jr.metadata != nil && jfif {
 			payload, ok := jr.readMetadataPayload()
 			if !ok {
 				return

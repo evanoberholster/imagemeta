@@ -121,6 +121,17 @@ func BenchmarkScanMetadata(b *testing.B) {
 	}
 }
 
+// BenchmarkResyncZeros tracks the marker-resync path on markerless data.
+func BenchmarkResyncZeros(b *testing.B) {
+	data := append([]byte{0xFF, byte(markerSOI)}, bytes.Repeat([]byte{0}, 512*1024)...)
+	b.SetBytes(int64(len(data)))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = ScanJPEG(bytes.NewReader(data), nil, nil)
+	}
+}
+
 func TestScanJPEG(t *testing.T) {
 	testJPEGs := []struct {
 		filename string

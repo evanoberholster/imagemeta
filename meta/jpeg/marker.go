@@ -26,13 +26,12 @@ const (
 	markerSOF11 markerType = 0xCB
 
 	// Other Markers
-	markerDHT       markerType = 0xC4
-	markerSOI       markerType = 0xD8
-	markerEOI       markerType = 0xD9
-	markerSOS       markerType = 0xDA
-	markerImageData markerType = 0xDA
-	markerDQT       markerType = 0xDB
-	markerDRI       markerType = 0xDD
+	markerDHT markerType = 0xC4
+	markerSOI markerType = 0xD8
+	markerEOI markerType = 0xD9
+	markerSOS markerType = 0xDA
+	markerDQT markerType = 0xDB
+	markerDRI markerType = 0xDD
 
 	// APP Markers
 	markerAPP0  markerType = 0xE0

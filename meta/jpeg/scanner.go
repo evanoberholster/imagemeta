@@ -2,6 +2,7 @@ package jpeg
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -190,19 +191,14 @@ func (jr *jpegReader) nextMarker() bool {
 				jr.err = ErrNoJPEGMarker
 				return false
 			}
-			var i int
-			for i = 0; i < len(jr.buf); i++ {
-				if isMarkerFirstByte(jr.buf[i:]) {
-					break
-				}
-			}
-			if i == len(jr.buf) {
-				if i == 0 {
+			i := bytes.IndexByte(jr.buf, byte(markerFirstByte))
+			if i < 0 {
+				if len(jr.buf) == 0 {
 					jr.err = ErrNoJPEGMarker
 					return false
 				}
 				// Keep the final byte in case it is the 0xff marker prefix.
-				i--
+				i = len(jr.buf) - 1
 			}
 			jr.err = jr.discard(i)
 			if jr.err != nil {
