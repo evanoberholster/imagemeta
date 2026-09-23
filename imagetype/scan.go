@@ -14,6 +14,10 @@ var (
 const (
 	// scanHeaderLength is the number of bytes to read while scanning image headers.
 	scanHeaderLength = 64
+	// deepProbeLength bounds the follow-up peek used for TIFF Make/Model
+	// sniffing. IFD0 and its string pool conventionally sit near the
+	// start; anything beyond this falls back to the 64-byte heuristics.
+	deepProbeLength = 4096
 )
 
 // Scan reads from the reader and returns a fileType based on
@@ -42,7 +46,37 @@ func ScanBuf(br *bufio.Reader) (fileType FileType, err error) {
 		return detectShortBuffer(buf)
 	}
 
-	return Buf(buf[:])
+	if fileType, err = Buf(buf[:]); err != nil {
+		return fileType, err
+	}
+
+	// Unsubtyped TIFF-based files get a bounded deeper probe for
+	// Make/Model/DNGVersion. Already-subtyped results stand.
+	if fileType == ImageTiff && isTiff(buf) {
+		if sub := tiffDeepSubtype(br); sub != ImageUnknown {
+			return sub, nil
+		}
+	}
+	return fileType, nil
+}
+
+// tiffDeepSubtype peeks up to deepProbeLength bytes for TIFF Make/Model
+// sniffing. It returns ImageUnknown when the data is insufficient or
+// carries no recognizable maker tags.
+func tiffDeepSubtype(br *bufio.Reader) FileType {
+	r := br
+	if br.Size() < deepProbeLength {
+		r = bufio.NewReaderSize(br, deepProbeLength)
+	}
+	buf, peekErr := r.Peek(deepProbeLength)
+	if peekErr != nil && len(buf) <= scanHeaderLength {
+		return ImageUnknown
+	}
+	manufacturer, model, hasDNGVersion, ok := tiffMakeModel(buf)
+	if !ok {
+		return ImageUnknown
+	}
+	return tiffMakeModelType(manufacturer, model, hasDNGVersion)
 }
 
 // ReadAt reads from the reader at the given offset and returns a fileType based on
@@ -58,12 +92,39 @@ func ReadAt(r io.ReaderAt) (fileType FileType, err error) {
 		return detectShortBuffer(buf[:n])
 	}
 
-	return Buf(buf[:])
+	if fileType, err = Buf(buf[:]); err != nil {
+		return fileType, err
+	}
+
+	// Same bounded deep probe as ScanBuf, via offset reads. A short
+	// read still leaves usable prefix bytes; only the count matters.
+	if fileType == ImageTiff && isTiff(buf[:]) {
+		var deep [deepProbeLength]byte
+		n, readErr := r.ReadAt(deep[:], 0)
+		if readErr != nil && n <= scanHeaderLength {
+			return fileType, nil
+		}
+		if n > scanHeaderLength {
+			manufacturer, model, hasDNGVersion, ok := tiffMakeModel(deep[:n])
+			if ok {
+				if sub := tiffMakeModelType(manufacturer, model, hasDNGVersion); sub != ImageUnknown {
+					return sub, nil
+				}
+			}
+		}
+	}
+	return fileType, nil
 }
 
 func detectShortBuffer(buf []byte) (FileType, error) {
 	if len(buf) >= 2 && buf[0] == 0xFF && buf[1] == 0xD8 {
 		return ImageJPEG, nil
+	}
+	if len(buf) >= 4 && isJ2C(buf) {
+		return ImageJ2C, nil
+	}
+	if isPCX(buf) {
+		return ImagePCX, nil
 	}
 	if len(buf) >= 4 {
 		switch {
@@ -78,9 +139,18 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 			return ImageTiff, nil
 		}
 	}
+	if len(buf) >= 3 && isPGF(buf) {
+		return ImagePGF, nil
+	}
+	if len(buf) >= 4 && isWPG(buf) {
+		return ImageWPG, nil
+	}
 	if len(buf) >= 8 {
 		if isPNG(buf) {
 			return ImagePNG, nil
+		}
+		if isXISF(buf) {
+			return ImageXISF, nil
 		}
 		if isCRW(buf) {
 			return ImageCRW, nil
@@ -104,7 +174,10 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 }
 
 // Buf parses a []byte for image magic numbers that identify the file type.
-// If []byte is less than scanHeaderLength returns ImageUnknown and ErrDataLength
+// Buffers shorter than scanHeaderLength return ImageUnknown and
+// ErrDataLength; that error contract matters because callers keep their own
+// type hints when detection cannot run on a full window (see ScanBuf and
+// ReadAt for the best-effort short paths).
 // If fileType was not identified returns ImageUnknown and ErrImageTypeNotFound
 func Buf(buf []byte) (fileType FileType, err error) {
 	if len(buf) < scanHeaderLength {
@@ -158,6 +231,12 @@ func parseBuffer(buf []byte) FileType {
 		if isJXL(buf) {
 			return ImageJXL
 		}
+		if isWPG(buf) {
+			return ImageWPG
+		}
+		if isJ2C(buf) {
+			return ImageJ2C
+		}
 	case 0x8A:
 		if isMNG(buf) {
 			return ImageMNG
@@ -198,6 +277,9 @@ func parseBuffer(buf []byte) FileType {
 		if isDPX(buf) {
 			return ImageDPX
 		}
+		if isXISF(buf) {
+			return ImageXISF
+		}
 	case 'F':
 		if isRAF(buf) {
 			return ImageRAF
@@ -237,6 +319,11 @@ func parseBuffer(buf []byte) FileType {
 			return ImageWebP
 		}
 	case '<', ' ', '\t', '\n', '\r', 0xEF:
+		// 0x0A doubles as the PCX manufacturer byte; the version gate
+		// keeps text files starting with a newline out.
+		if isPCX(buf) {
+			return ImagePCX
+		}
 		if isXMP(buf) {
 			return ImageXMP
 		}
@@ -248,6 +335,9 @@ func parseBuffer(buf []byte) FileType {
 			return ImageGIF
 		}
 	case 'P':
+		if isPGF(buf) {
+			return ImagePGF
+		}
 		// Netpbm family (PBM/PGM/PPM/PAM)
 		if it, ok := netpbmType(buf); ok {
 			return it

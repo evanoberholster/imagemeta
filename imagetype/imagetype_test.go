@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/tinylib/msgp/msgp"
@@ -12,6 +13,7 @@ import (
 
 // Tests
 func TestImageTypeIndices(t *testing.T) {
+	t.Parallel()
 	cases := map[FileType]struct {
 		ext string
 		mt  string
@@ -42,6 +44,11 @@ func TestImageTypeIndices(t *testing.T) {
 		ImageJXR:     {"jxr", "image/vnd.ms-photo"},
 		ImageFITS:    {"fits", "image/fits"},
 		ImageDCM:     {"dcm", "application/dicom"},
+		ImageJ2C:     {"j2c", "image/j2c"},
+		ImageXISF:    {"xisf", "image/xisf"},
+		ImagePCX:     {"pcx", "image/x-pcx"},
+		ImagePGF:     {"pgf", "image/pgf"},
+		ImageWPG:     {"wpg", "application/x-wpg"},
 	}
 
 	for it, exp := range cases {
@@ -56,6 +63,7 @@ func TestImageTypeIndices(t *testing.T) {
 }
 
 func TestImageTypeFamilyAndContainer(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		imageType FileType
 		mediaType MediaType
@@ -87,6 +95,7 @@ func TestImageTypeFamilyAndContainer(t *testing.T) {
 }
 
 func TestImageType(t *testing.T) {
+	t.Parallel()
 
 	str := "image/jpeg"
 	ext := "jpg"
@@ -98,7 +107,7 @@ func TestImageType(t *testing.T) {
 
 	itbuf, err := it.MarshalText()
 	if err != nil {
-		t.Errorf("Error Imagetype could not be marshaled")
+		t.Fatalf("Error Imagetype could not be marshaled: %v", err)
 	}
 
 	if !bytes.Equal(itbuf, []byte(str)) {
@@ -112,7 +121,7 @@ func TestImageType(t *testing.T) {
 
 	err = it.UnmarshalText(itbuf)
 	if err != nil {
-		t.Errorf("Error Imagetype could not be unmarshalled")
+		t.Fatalf("Error Imagetype could not be unmarshalled: %v", err)
 	}
 
 	if it2 != it {
@@ -147,6 +156,10 @@ func TestImageType(t *testing.T) {
 		"image/jp2":                 ImageJP2K,
 		".jxl":                      ImageJXL,
 		".dcm":                      ImageDCM,
+		".j2c":                      ImageJ2C,
+		".xisf":                     ImageXISF,
+		"image/j2c":                 ImageJ2C,
+		"image/xisf":                ImageXISF,
 	} {
 		if got := FromString(input); got != expected {
 			t.Errorf("FromString(%q) = %s, expected %s", input, got, expected)
@@ -160,13 +173,13 @@ func TestImageType(t *testing.T) {
 
 	err = it.EncodeMsg(msgp.NewWriterSize(&msgp.Writer{}, 0))
 	if err != nil {
-		t.Errorf("Incorrect Error for EncodeMsg wanted %s got %s", err, err)
-
+		t.Fatalf("EncodeMsg returned unexpected error: %v", err)
 	}
 
 }
 
 func TestFromBytes(t *testing.T) {
+	t.Parallel()
 	tests := map[string]FileType{
 		"image/jpeg":                ImageJPEG,
 		"image/jpeg; charset=utf-8": ImageJPEG,
@@ -187,7 +200,82 @@ func TestFromBytes(t *testing.T) {
 	}
 }
 
+// TestFromBytesNoMutation checks that FromBytes never modifies the caller's
+// buffer while still matching case-insensitively.
+func TestFromBytesNoMutation(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]FileType{
+		"IMAGE/JPEG":          ImageJPEG,
+		"JPG":                 ImageJPEG,
+		".JPG":                ImageJPEG,
+		"Image/Heic; Q=1.0":   ImageHEIC,
+		" .DNG ":              ImageDNG,
+		"TIFF":                ImageTiff,
+		"Application/RDF+XML": ImageXMP,
+		"IMAGE/X-CANON-CR3":   ImageCR3,
+		"photo.JPG?width=100": ImageJPEG,
+		"/srv/img/PHOTO.Jpeg": ImageJPEG,
+		"unknown/value":       ImageUnknown,
+		"":                    ImageUnknown,
+		"   ":                 ImageUnknown,
+		"averylonginputthatexceedssixtyfourbytespaddingpaddingpaddingpad": ImageUnknown,
+	}
+
+	for input, expected := range inputs {
+		buf := []byte(input)
+		snapshot := append([]byte(nil), buf...)
+		if got := FromBytes(buf); got != expected {
+			t.Errorf("FromBytes(%q) = %s, expected %s", input, got, expected)
+		}
+		if string(buf) != string(snapshot) {
+			t.Errorf("FromBytes(%q) modified caller buffer to %q", input, string(buf))
+		}
+	}
+}
+
+// TestLookupTokenParity keeps the lookupToken switch in sync with the
+// canonical tables: every MIME and extension key (plus bare forms of
+// dotted extensions) must resolve to the same type through both paths.
+func TestLookupTokenParity(t *testing.T) {
+	t.Parallel()
+	for mime, want := range mimeTypeValues {
+		if got, ok := lookupToken([]byte(mime)); !ok || got != want {
+			t.Errorf("lookupToken(%q) = %s, %v; want %s, true", mime, got, ok, want)
+		}
+	}
+	for ext, want := range fileTypeExtensions {
+		if ext == "" {
+			continue
+		}
+		if got, ok := lookupToken([]byte(ext)); !ok || got != want {
+			t.Errorf("lookupToken(%q) = %s, %v; want %s, true", ext, got, ok, want)
+		}
+		if bare := strings.TrimPrefix(string(ext), "."); bare != string(ext) {
+			if got, ok := lookupToken([]byte(bare)); !ok || got != want {
+				t.Errorf("lookupToken(%q) = %s, %v; want %s, true", bare, got, ok, want)
+			}
+		}
+	}
+}
+
+// TestFromBytesZeroAllocs checks the token fast paths allocate nothing.
+// It must not run in parallel: testing.AllocsPerRun forbids that.
+func TestFromBytesZeroAllocs(t *testing.T) {
+	bufs := [][]byte{
+		[]byte("image/jpeg"), []byte("IMAGE/JPEG"), []byte(".dng"),
+		[]byte("image/heic; q=1.0"), []byte("tiff"), []byte("TIF"),
+	}
+	if n := testing.AllocsPerRun(100, func() {
+		for _, b := range bufs {
+			FromBytes(b)
+		}
+	}); n != 0 {
+		t.Errorf("FromBytes allocated %v times, want 0", n)
+	}
+}
+
 func TestScanImageType(t *testing.T) {
+	t.Parallel()
 	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
 
@@ -220,17 +308,22 @@ func TestScanImageType(t *testing.T) {
 		{".BMP", "0.bmp", "image/bmp"},
 	}
 
-	// Open file
-	f, err := os.Open(testDataFilename)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-
-	buf := make([]byte, fileOffset)
-
 	for i, header := range headerTests {
 		t.Run(header.name, func(t *testing.T) {
+			t.Parallel()
+			// Open per subtest: the parent returns (running its defers)
+			// before parallel subtests resume, so a shared handle would
+			// already be closed.
+			f, err := os.Open(testDataFilename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					t.Error(err)
+				}
+			}()
+			buf := make([]byte, fileOffset)
 			n, readErr := f.ReadAt(buf, int64(i*fileOffset))
 			if n != fileOffset || readErr != nil {
 				t.Fatal(readErr)
@@ -275,8 +368,8 @@ func TestScanImageType(t *testing.T) {
 		t.Errorf("Incorrect Error wanted %s or EOF got %v", ErrImageTypeNotFound.Error(), err)
 	}
 
-	buf = make([]byte, 10)
-	imageType, err = Buf(buf)
+	short := make([]byte, 10)
+	imageType, err = Buf(short)
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
@@ -285,7 +378,44 @@ func TestScanImageType(t *testing.T) {
 	}
 }
 
+// TestScanShortBuffers checks the short-buffer path detects truncated
+// headers that still carry an unambiguous signature.
+func TestScanShortBuffers(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		buf      []byte
+		expected FileType
+	}{
+		{name: "PCX", buf: []byte{0x0A, 0x05}, expected: ImagePCX},
+		{name: "J2C", buf: []byte{0xFF, 0x4F, 0xFF, 0x51}, expected: ImageJ2C},
+		{name: "PGF", buf: []byte("PGF"), expected: ImagePGF},
+		{name: "WPG", buf: []byte{0xFF, 0x57, 0x50, 0x43}, expected: ImageWPG},
+		{name: "XISF", buf: []byte("XISF0100"), expected: ImageXISF},
+		{name: "TooShort", buf: []byte{0x0A}, expected: ImageUnknown},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := Scan(bytes.NewReader(tc.buf))
+			if tc.expected == ImageUnknown {
+				if got != ImageUnknown {
+					t.Fatalf("Scan() = %s, expected unknown", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Scan() returned unexpected error: %v", err)
+			}
+			if got != tc.expected {
+				t.Fatalf("Scan() = %s, expected %s", got, tc.expected)
+			}
+		})
+	}
+}
+
 func TestBufDetectsJPEGXL(t *testing.T) {
+	t.Parallel()
 	container := []byte{
 		0x00, 0x00, 0x00, 0x0C, // box size
 		0x4A, 0x58, 0x4C, 0x20, // "JXL "
@@ -318,6 +448,7 @@ func TestBufDetectsJPEGXL(t *testing.T) {
 }
 
 func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name     string
 		header   []byte
@@ -354,6 +485,12 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 		{name: "PGM", header: []byte("P5 "), expected: ImagePGM},
 		{name: "PPM", header: []byte("P6 "), expected: ImagePPM},
 		{name: "PAM", header: []byte("P7\t"), expected: ImagePAM},
+		{name: "PCX/v5", header: []byte{0x0A, 0x05, 0x01, 0x08}, expected: ImagePCX},
+		{name: "PCX/bad-version", header: []byte{0x0A, 0x09, 0x01, 0x08}, expected: ImageUnknown},
+		{name: "PGF", header: []byte("PGFv6"), expected: ImagePGF},
+		{name: "WPG", header: []byte{0xFF, 0x57, 0x50, 0x43}, expected: ImageWPG},
+		{name: "J2C", header: []byte{0xFF, 0x4F, 0xFF, 0x51, 0x00, 0x29}, expected: ImageJ2C},
+		{name: "XISF", header: []byte("XISF0100"), expected: ImageXISF},
 	}
 
 	for _, tc := range cases {
@@ -362,6 +499,12 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 			copy(buf, tc.header)
 
 			got, err := Buf(buf)
+			if tc.expected == ImageUnknown {
+				if got != ImageUnknown {
+					t.Fatalf("Buf() = %s, expected unknown", got)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("Buf() returned unexpected error: %v", err)
 			}
@@ -374,23 +517,28 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 
 func makeFTYPHeader(major string, compatible ...string) []byte {
 	buf := make([]byte, scanHeaderLength)
-	buf[0], buf[1], buf[2], buf[3] = 0x00, 0x00, 0x00, 0x20
 	copy(buf[4:8], []byte("ftyp"))
 	copy(buf[8:12], []byte(major))
 	copy(buf[12:16], []byte("0001"))
 
 	offset := 16
 	for _, brand := range compatible {
+		if len(brand) != 4 {
+			panic("compatible brand must be 4 bytes")
+		}
 		if offset+4 > len(buf) {
 			break
 		}
 		copy(buf[offset:offset+4], []byte(brand))
 		offset += 4
 	}
+	// Declare the true box size so brand scans stay in bounds.
+	buf[0], buf[1], buf[2], buf[3] = byte(offset>>24), byte(offset>>16), byte(offset>>8), byte(offset)
 	return buf
 }
 
 func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		major      string
@@ -406,6 +554,8 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 		{name: "HEVS major", major: "hevs", expected: ImageHEIC},
 		{name: "MIAF major", major: "miaf", expected: ImageHEIF},
 		{name: "HEIF major", major: "heif", expected: ImageHEIF},
+		{name: "AVIS late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "avis"}, expected: ImageAVIF},
+		{name: "HEIC late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "zzzz", "hevc"}, expected: ImageHEIC},
 	}
 
 	for _, tc := range cases {
@@ -423,6 +573,7 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 }
 
 func TestMsgp(t *testing.T) {
+	t.Parallel()
 	it, it2 := ImageJPEG, ImageUnknown
 	b, err := it.MarshalMsg(nil)
 	if err != nil {

@@ -1,4 +1,11 @@
-// Package imagetype provides types and functions for identifying Image document types
+// Package imagetype provides types and functions for identifying Image document types.
+//
+// Detection model: Scan/ScanBuf/ReadAt classify from magic bytes in a
+// 64-byte header window, with a bounded deeper probe for TIFF Make/Model
+// sniffing. Types without a byte signature (TGA, FPX, MAGICK, MPO and
+// friends) resolve through extensions and MIME types only via FromString.
+// SVG detection is best-effort inside the window. Extension() returns the
+// canonical extension without a leading dot.
 package imagetype
 
 import (
@@ -67,7 +74,8 @@ func (ft FileType) MIMEType() MIMEType {
 	return fileTypeCanonicalMIME[ImageUnknown]
 }
 
-// Extension returns the canonical file extension for the file type.
+// Extension returns the canonical file extension for the file type,
+// without a leading dot ("jpg", not ".jpg").
 func (ft FileType) Extension() string {
 	return ft.FileTypeExtension().String()
 }
@@ -123,7 +131,7 @@ func (ft FileType) BaseType() BaseType {
 	case ImageTiff, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCR2, ImageGPR,
 		ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ, Image3FR, ImageX3F,
 		ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2, ImageSRF, ImageFFF,
-		ImageMOS, ImageK25:
+		ImageMOS, ImageK25, ImageMEF:
 		return BaseTypeTIFF
 	case ImageCRW:
 		return BaseTypeCIFF
@@ -187,6 +195,10 @@ func (ft FileType) BaseType() BaseType {
 		return BaseTypeXCF
 	case ImageQTIF:
 		return BaseTypeQTIF
+	case ImageJ2C:
+		return BaseTypeJP2
+	case ImageXISF:
+		return BaseTypeXISF
 	case ImageRAW:
 		return BaseTypeUnknown
 	default:
@@ -205,7 +217,7 @@ func (ft FileType) IsRAW() bool {
 	case ImageRAW, ImageDNG, ImageNEF, ImagePanaRAW, ImageARW, ImageCRW, ImageGPR,
 		ImageCR3, ImageCR2, ImageRAF, ImageORF, ImageSRW, ImagePEF, ImageRWL, ImageIIQ,
 		Image3FR, ImageX3F, ImageMRW, ImageKDC, ImageDCR, ImageERF, ImageNRW, ImageSR2,
-		ImageSRF, ImageFFF, ImageMOS, ImageK25:
+		ImageSRF, ImageFFF, ImageMOS, ImageK25, ImageMEF:
 		return true
 	default:
 		return false
@@ -219,6 +231,10 @@ func (ft FileType) IsISOBMFF() bool {
 
 // FromString returns a FileType for the given content-type string, extension,
 // or filename.
+//
+// Resolution order: exact MIME match, MIME with parameters, dotted
+// extension suffix (covers bare tokens, dotted tokens, paths and URLs
+// with query/fragment suffixes). Anything else is ImageUnknown.
 func FromString(str string) FileType {
 	str = strings.TrimSpace(str)
 	if str == "" {
@@ -227,82 +243,80 @@ func FromString(str string) FileType {
 
 	normalized := strings.ToLower(str)
 
-	// from content-type
+	// from content-type, exact or with parameters
 	if it, ok := mimeTypeValues[MIMEType(normalized)]; ok {
 		return it
 	}
-
-	// from content-type with optional parameters
-	if mediaType, _, err := mime.ParseMediaType(normalized); err == nil {
-		if it, ok := mimeTypeValues[MIMEType(mediaType)]; ok {
-			return it
-		}
-	}
-
-	// from extension
-	if it, ok := fileTypeExtensions[FileTypeExtension(normalized)]; ok {
-		return it
-	}
-	if !strings.HasPrefix(normalized, ".") {
-		if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
-			return it
-		}
-	}
-
-	// from file path / file name extension
-	if ext := strings.ToLower(filepath.Ext(normalized)); ext != "" {
-		if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
-			return it
-		}
-	}
-
-	// from common MIME shorthand "image/jpg; charset=..."
 	if idx := strings.IndexByte(normalized, ';'); idx > 0 {
+		if mediaType, _, err := mime.ParseMediaType(normalized); err == nil {
+			if it, ok := mimeTypeValues[MIMEType(mediaType)]; ok {
+				return it
+			}
+		}
 		if it, ok := mimeTypeValues[MIMEType(strings.TrimSpace(normalized[:idx]))]; ok {
 			return it
 		}
 	}
 
-	// from common query-like suffixes: "file.jpg?foo=bar"
-	if idx := strings.IndexAny(normalized, "?#"); idx > 0 {
-		if ext := strings.ToLower(filepath.Ext(normalized[:idx])); ext != "" {
-			if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
-				return it
-			}
-		}
+	// from extension: strip query/fragment suffixes, then take the dotted
+	// suffix. A bare token ("jpeg") probes its dotted form (".jpeg").
+	candidate := normalized
+	if idx := strings.IndexAny(candidate, "?#"); idx > 0 {
+		candidate = candidate[:idx]
 	}
-
-	// from extension token in path-like inputs without a leading dot
-	if idx := strings.LastIndexByte(normalized, '.'); idx > 0 && idx < len(normalized)-1 {
-		if it, ok := fileTypeExtensions[FileTypeExtension(normalized[idx:])]; ok {
+	if ext := filepath.Ext(candidate); ext != "" {
+		if it, ok := fileTypeExtensions[FileTypeExtension(ext)]; ok {
 			return it
 		}
 	}
-
-	// from file names where ext is the full token (e.g. "jpeg")
-	if it, ok := fileTypeExtensions[FileTypeExtension("."+normalized)]; ok {
-		return it
+	if !strings.HasPrefix(candidate, ".") {
+		if it, ok := fileTypeExtensions[FileTypeExtension("."+candidate)]; ok {
+			return it
+		}
 	}
 
 	return ImageUnknown
 }
 
+// maxTokenLen bounds the stack buffer used for case-insensitive matching.
+// MIME types and extensions are well under this size; longer inputs (file
+// paths, URLs) fall back to FromString.
+const maxTokenLen = 64
+
 // FromBytes returns a FileType for content-type bytes, extensions, or filenames.
 //
-// It performs a fast path for common MIME and extension values, and falls back
-// to FromString for full compatibility.
+// It never modifies buf. Token lookups allocate nothing; only inputs that
+// need the full FromString fallback (paths, parameters beyond the fast
+// paths) may allocate.
 func FromBytes(buf []byte) FileType {
 	buf = bytes.TrimSpace(buf)
 	if len(buf) == 0 {
 		return ImageUnknown
 	}
 
-	if it, ok := fromBytesCommon(buf); ok {
+	if it, ok := lookupToken(buf); ok {
 		return it
 	}
 
-	if idx := bytes.IndexByte(buf, ';'); idx > 0 {
-		if it, ok := fromBytesCommon(bytes.TrimSpace(buf[:idx])); ok {
+	// Case-insensitive retry on a bounded stack copy; the caller's buffer
+	// is never modified.
+	if len(buf) > maxTokenLen {
+		return FromString(string(buf))
+	}
+	var tmp [maxTokenLen]byte
+	lower := tmp[:len(buf)]
+	for i, c := range buf {
+		if c >= 'A' && c <= 'Z' {
+			c |= 0x20
+		}
+		lower[i] = c
+	}
+	if it, ok := lookupToken(lower); ok {
+		return it
+	}
+
+	if idx := bytes.IndexByte(lower, ';'); idx > 0 {
+		if it, ok := lookupToken(bytes.TrimSpace(lower[:idx])); ok {
 			return it
 		}
 	}
@@ -310,48 +324,587 @@ func FromBytes(buf []byte) FileType {
 	return FromString(string(buf))
 }
 
-func fromBytesCommon(buf []byte) (FileType, bool) {
-	toLowercaseBytes(buf)
-
+// lookupToken matches a MIME type, dotted extension or bare extension
+// token in a single switch. It mirrors mimeTypeValues and
+// fileTypeExtensions (including bare forms of dotted extensions) and is
+// kept in sync by TestLookupTokenParity. The string(buf) switch over
+// constants allocates nothing. Unknown tokens fall through to FromString.
+func lookupToken(buf []byte) (FileType, bool) {
 	switch string(buf) {
-	case "jpg", ".jpg", "jpeg", ".jpeg", "image/jpg", "image/jpeg":
-		return ImageJPEG, true
-	case "png", ".png", "image/png":
-		return ImagePNG, true
-	case "xmp", ".xmp", "application/rdf+xml":
-		return ImageXMP, true
-	case "dng", ".dng", "image/x-dng", "image/x-adobe-dng":
-		return ImageDNG, true
-	case "nef", ".nef", "image/x-nikon-nef":
-		return ImageNEF, true
-	case "cr2", ".cr2", "image/x-canon-cr2":
-		return ImageCR2, true
-	case "cr3", ".cr3", "image/x-canon-cr3":
-		return ImageCR3, true
-	case "psd", ".psd", "image/vnd.adobe.photoshop":
-		return ImagePSD, true
-	case "tif", ".tif", ".tiff", "image/tiff":
-		return ImageTiff, true
-	case "jxl", ".jxl", "image/jxl":
-		return ImageJXL, true
-	case "jp2", ".jp2", "image/jp2":
-		return ImageJP2K, true
-	case "heic", ".heic", "image/heic":
-		return ImageHEIC, true
-	case "heif", ".heif", "image/heif":
-		return ImageHEIF, true
-	case "avif", ".avif", "image/avif":
+	case ".3fr":
+		return Image3FR, true
+	case ".apng":
+		return ImageAPNG, true
+	case ".arw":
+		return ImageARW, true
+	case ".avif":
 		return ImageAVIF, true
+	case ".bmp":
+		return ImageBMP, true
+	case ".bpg":
+		return ImageBPG, true
+	case ".cr2":
+		return ImageCR2, true
+	case ".cr3":
+		return ImageCR3, true
+	case ".crw":
+		return ImageCRW, true
+	case ".cur":
+		return ImageCUR, true
+	case ".dcm":
+		return ImageDCM, true
+	case ".dcr":
+		return ImageDCR, true
+	case ".dds":
+		return ImageDDS, true
+	case ".djv":
+		return ImageDJVU, true
+	case ".djvu":
+		return ImageDJVU, true
+	case ".dng":
+		return ImageDNG, true
+	case ".dpx":
+		return ImageDPX, true
+	case ".erf":
+		return ImageERF, true
+	case ".exr":
+		return ImageEXR, true
+	case ".fff":
+		return ImageFFF, true
+	case ".fit":
+		return ImageFITS, true
+	case ".fits":
+		return ImageFITS, true
+	case ".flif":
+		return ImageFLIF, true
+	case ".fpx":
+		return ImageFPX, true
+	case ".fts":
+		return ImageFITS, true
+	case ".gif":
+		return ImageGIF, true
+	case ".gpr":
+		return ImageGPR, true
+	case ".hdp":
+		return ImageJXR, true
+	case ".hdr":
+		return ImageHDR, true
+	case ".heic":
+		return ImageHEIC, true
+	case ".heics":
+		return ImageHEIC, true
+	case ".heif":
+		return ImageHEIF, true
+	case ".heifs":
+		return ImageHEIF, true
+	case ".ico":
+		return ImageICO, true
+	case ".iiq":
+		return ImageIIQ, true
+	case ".j2c":
+		return ImageJ2C, true
+	case ".j2k":
+		return ImageJP2K, true
+	case ".jfif":
+		return ImageJPEG, true
+	case ".jng":
+		return ImageJNG, true
+	case ".jp2":
+		return ImageJP2K, true
+	case ".jpe":
+		return ImageJPEG, true
+	case ".jpeg":
+		return ImageJPEG, true
+	case ".jpg":
+		return ImageJPEG, true
+	case ".jpm":
+		return ImageJP2K, true
+	case ".jpx":
+		return ImageJP2K, true
+	case ".jxl":
+		return ImageJXL, true
+	case ".jxr":
+		return ImageJXR, true
+	case ".k25":
+		return ImageK25, true
+	case ".kdc":
+		return ImageKDC, true
+	case ".magick":
+		return ImageMAGICK, true
+	case ".mef":
+		return ImageMEF, true
+	case ".mng":
+		return ImageMNG, true
+	case ".mos":
+		return ImageMOS, true
+	case ".mpo":
+		return ImageMPO, true
+	case ".mrw":
+		return ImageMRW, true
+	case ".nef":
+		return ImageNEF, true
+	case ".nrw":
+		return ImageNRW, true
+	case ".orf":
+		return ImageORF, true
+	case ".pam":
+		return ImagePAM, true
+	case ".pbm":
+		return ImagePBM, true
+	case ".pcd":
+		return ImagePCD, true
+	case ".pct":
+		return ImagePICT, true
+	case ".pcx":
+		return ImagePCX, true
+	case ".pef":
+		return ImagePEF, true
+	case ".pgf":
+		return ImagePGF, true
+	case ".pgm":
+		return ImagePGM, true
+	case ".pic":
+		return ImagePICT, true
+	case ".pict":
+		return ImagePICT, true
+	case ".png":
+		return ImagePNG, true
+	case ".pnm":
+		return ImagePNM, true
+	case ".ppm":
+		return ImagePPM, true
+	case ".psd":
+		return ImagePSD, true
+	case ".qti":
+		return ImageQTIF, true
+	case ".qtif":
+		return ImageQTIF, true
+	case ".raf":
+		return ImageRAF, true
+	case ".raw":
+		return ImageRAW, true
+	case ".rw2":
+		return ImagePanaRAW, true
+	case ".rwl":
+		return ImageRWL, true
+	case ".sr2":
+		return ImageSR2, true
+	case ".srf":
+		return ImageSRF, true
+	case ".srw":
+		return ImageSRW, true
+	case ".svg":
+		return ImageSVG, true
+	case ".svgz":
+		return ImageSVG, true
+	case ".tga":
+		return ImageTGA, true
+	case ".tif":
+		return ImageTiff, true
+	case ".tiff":
+		return ImageTiff, true
+	case ".wdp":
+		return ImageJXR, true
+	case ".webp":
+		return ImageWebP, true
+	case ".wpg":
+		return ImageWPG, true
+	case ".x3f":
+		return ImageX3F, true
+	case ".xcf":
+		return ImageXCF, true
+	case ".xisf":
+		return ImageXISF, true
+	case ".xmp":
+		return ImageXMP, true
+	case "3fr":
+		return Image3FR, true
+	case "apng":
+		return ImageAPNG, true
+	case "application/dicom":
+		return ImageDCM, true
+	case "application/dicom+json":
+		return ImageDCM, true
+	case "application/dicom+xml":
+		return ImageDCM, true
+	case "application/fits":
+		return ImageFITS, true
+	case "application/octet-stream":
+		return ImageUnknown, true
+	case "application/rdf+xml":
+		return ImageXMP, true
+	case "application/x-pcx":
+		return ImagePCX, true
+	case "application/x-wpg":
+		return ImageWPG, true
+	case "application/x-xcf":
+		return ImageXCF, true
+	case "arw":
+		return ImageARW, true
+	case "avif":
+		return ImageAVIF, true
+	case "bmp":
+		return ImageBMP, true
+	case "bpg":
+		return ImageBPG, true
+	case "cr2":
+		return ImageCR2, true
+	case "cr3":
+		return ImageCR3, true
+	case "crw":
+		return ImageCRW, true
+	case "cur":
+		return ImageCUR, true
+	case "dcm":
+		return ImageDCM, true
+	case "dcr":
+		return ImageDCR, true
+	case "dds":
+		return ImageDDS, true
+	case "djv":
+		return ImageDJVU, true
+	case "djvu":
+		return ImageDJVU, true
+	case "dng":
+		return ImageDNG, true
+	case "dpx":
+		return ImageDPX, true
+	case "erf":
+		return ImageERF, true
+	case "exr":
+		return ImageEXR, true
+	case "fff":
+		return ImageFFF, true
+	case "fit":
+		return ImageFITS, true
+	case "fits":
+		return ImageFITS, true
+	case "flif":
+		return ImageFLIF, true
+	case "fpx":
+		return ImageFPX, true
+	case "fts":
+		return ImageFITS, true
+	case "gif":
+		return ImageGIF, true
+	case "gpr":
+		return ImageGPR, true
+	case "hdp":
+		return ImageJXR, true
+	case "hdr":
+		return ImageHDR, true
+	case "heic":
+		return ImageHEIC, true
+	case "heics":
+		return ImageHEIC, true
+	case "heif":
+		return ImageHEIF, true
+	case "heifs":
+		return ImageHEIF, true
+	case "ico":
+		return ImageICO, true
+	case "iiq":
+		return ImageIIQ, true
+	case "image/aces":
+		return ImageEXR, true
+	case "image/apng":
+		return ImageAPNG, true
+	case "image/avif":
+		return ImageAVIF, true
+	case "image/bmp":
+		return ImageBMP, true
+	case "image/bpg":
+		return ImageBPG, true
+	case "image/fits":
+		return ImageFITS, true
+	case "image/flif":
+		return ImageFLIF, true
+	case "image/gif":
+		return ImageGIF, true
+	case "image/heic":
+		return ImageHEIC, true
+	case "image/heic-sequence":
+		return ImageHEIC, true
+	case "image/heif":
+		return ImageHEIF, true
+	case "image/heif-sequence":
+		return ImageHEIF, true
+	case "image/j2c":
+		return ImageJ2C, true
+	case "image/jp2":
+		return ImageJP2K, true
+	case "image/jpeg":
+		return ImageJPEG, true
+	case "image/jxl":
+		return ImageJXL, true
+	case "image/jxr":
+		return ImageJXR, true
+	case "image/magick":
+		return ImageMAGICK, true
+	case "image/mpo":
+		return ImageMPO, true
+	case "image/pgf":
+		return ImagePGF, true
+	case "image/png":
+		return ImagePNG, true
+	case "image/qtif":
+		return ImageQTIF, true
+	case "image/raw":
+		return ImageRAW, true
+	case "image/svg+xml":
+		return ImageSVG, true
+	case "image/tiff":
+		return ImageTiff, true
+	case "image/vnd-ms.dds":
+		return ImageDDS, true
+	case "image/vnd.adobe.photoshop":
+		return ImagePSD, true
+	case "image/vnd.djvu":
+		return ImageDJVU, true
+	case "image/vnd.fpx":
+		return ImageFPX, true
+	case "image/vnd.microsoft.icon":
+		return ImageICO, true
+	case "image/vnd.ms-photo":
+		return ImageJXR, true
+	case "image/vnd.radiance":
+		return ImageHDR, true
+	case "image/webp":
+		return ImageWebP, true
+	case "image/x-adobe-dng":
+		return ImageDNG, true
+	case "image/x-canon-cr2":
+		return ImageCR2, true
+	case "image/x-canon-cr3":
+		return ImageCR3, true
+	case "image/x-canon-crw":
+		return ImageCRW, true
+	case "image/x-cursor":
+		return ImageCUR, true
+	case "image/x-dds":
+		return ImageDDS, true
+	case "image/x-djvu":
+		return ImageDJVU, true
+	case "image/x-dpx":
+		return ImageDPX, true
+	case "image/x-epson-erf":
+		return ImageERF, true
+	case "image/x-exr":
+		return ImageEXR, true
+	case "image/x-flif":
+		return ImageFLIF, true
+	case "image/x-fuji-raf":
+		return ImageRAF, true
+	case "image/x-gopro-gpr":
+		return ImageGPR, true
+	case "image/x-hasselblad-3fr":
+		return Image3FR, true
+	case "image/x-hasselblad-fff":
+		return ImageFFF, true
+	case "image/x-hdp":
+		return ImageJXR, true
+	case "image/x-hdr":
+		return ImageHDR, true
+	case "image/x-icon":
+		return ImageICO, true
+	case "image/x-jng":
+		return ImageJNG, true
+	case "image/x-jxr":
+		return ImageJXR, true
+	case "image/x-kodak-dcr":
+		return ImageDCR, true
+	case "image/x-kodak-k25":
+		return ImageK25, true
+	case "image/x-kodak-kdc":
+		return ImageKDC, true
+	case "image/x-leaf-mos":
+		return ImageMOS, true
+	case "image/x-leica-rwl":
+		return ImageRWL, true
+	case "image/x-mamiya-mef":
+		return ImageMEF, true
+	case "image/x-minolta-mrw":
+		return ImageMRW, true
+	case "image/x-mng":
+		return ImageMNG, true
+	case "image/x-mpo":
+		return ImageMPO, true
+	case "image/x-nikon-nef":
+		return ImageNEF, true
+	case "image/x-nikon-nrw":
+		return ImageNRW, true
+	case "image/x-olympus-orf":
+		return ImageORF, true
+	case "image/x-panasonic-raw":
+		return ImagePanaRAW, true
+	case "image/x-pcx":
+		return ImagePCX, true
+	case "image/x-pentax-pef":
+		return ImagePEF, true
+	case "image/x-pgf":
+		return ImagePGF, true
+	case "image/x-phaseone-iiq":
+		return ImageIIQ, true
+	case "image/x-photo-cd":
+		return ImagePCD, true
+	case "image/x-pic":
+		return ImagePICT, true
+	case "image/x-pict":
+		return ImagePICT, true
+	case "image/x-portable-anymap":
+		return ImagePNM, true
+	case "image/x-portable-arbitrarymap":
+		return ImagePAM, true
+	case "image/x-portable-bitmap":
+		return ImagePBM, true
+	case "image/x-portable-graymap":
+		return ImagePGM, true
+	case "image/x-portable-pixmap":
+		return ImagePPM, true
+	case "image/x-qtif":
+		return ImageQTIF, true
+	case "image/x-samsung-srw":
+		return ImageSRW, true
+	case "image/x-sigma-x3f":
+		return ImageX3F, true
+	case "image/x-sony-arw":
+		return ImageARW, true
+	case "image/x-sony-sr2":
+		return ImageSR2, true
+	case "image/x-sony-srf":
+		return ImageSRF, true
+	case "image/x-targa":
+		return ImageTGA, true
+	case "image/x-tga":
+		return ImageTGA, true
+	case "image/x-wdp":
+		return ImageJXR, true
+	case "image/x-win-bitmap":
+		return ImageICO, true
+	case "image/x-xcf":
+		return ImageXCF, true
+	case "image/xisf":
+		return ImageXISF, true
+	case "j2c":
+		return ImageJ2C, true
+	case "j2k":
+		return ImageJP2K, true
+	case "jfif":
+		return ImageJPEG, true
+	case "jng":
+		return ImageJNG, true
+	case "jp2":
+		return ImageJP2K, true
+	case "jpe":
+		return ImageJPEG, true
+	case "jpeg":
+		return ImageJPEG, true
+	case "jpg":
+		return ImageJPEG, true
+	case "jpm":
+		return ImageJP2K, true
+	case "jpx":
+		return ImageJP2K, true
+	case "jxl":
+		return ImageJXL, true
+	case "jxr":
+		return ImageJXR, true
+	case "k25":
+		return ImageK25, true
+	case "kdc":
+		return ImageKDC, true
+	case "magick":
+		return ImageMAGICK, true
+	case "mef":
+		return ImageMEF, true
+	case "mng":
+		return ImageMNG, true
+	case "mos":
+		return ImageMOS, true
+	case "mpo":
+		return ImageMPO, true
+	case "mrw":
+		return ImageMRW, true
+	case "nef":
+		return ImageNEF, true
+	case "nrw":
+		return ImageNRW, true
+	case "orf":
+		return ImageORF, true
+	case "pam":
+		return ImagePAM, true
+	case "pbm":
+		return ImagePBM, true
+	case "pcd":
+		return ImagePCD, true
+	case "pct":
+		return ImagePICT, true
+	case "pcx":
+		return ImagePCX, true
+	case "pef":
+		return ImagePEF, true
+	case "pgf":
+		return ImagePGF, true
+	case "pgm":
+		return ImagePGM, true
+	case "pic":
+		return ImagePICT, true
+	case "pict":
+		return ImagePICT, true
+	case "png":
+		return ImagePNG, true
+	case "pnm":
+		return ImagePNM, true
+	case "ppm":
+		return ImagePPM, true
+	case "psd":
+		return ImagePSD, true
+	case "qti":
+		return ImageQTIF, true
+	case "qtif":
+		return ImageQTIF, true
+	case "raf":
+		return ImageRAF, true
+	case "raw":
+		return ImageRAW, true
+	case "rw2":
+		return ImagePanaRAW, true
+	case "rwl":
+		return ImageRWL, true
+	case "sr2":
+		return ImageSR2, true
+	case "srf":
+		return ImageSRF, true
+	case "srw":
+		return ImageSRW, true
+	case "svg":
+		return ImageSVG, true
+	case "svgz":
+		return ImageSVG, true
+	case "tga":
+		return ImageTGA, true
+	case "tif":
+		return ImageTiff, true
+	case "tiff":
+		return ImageTiff, true
+	case "video/x-mng":
+		return ImageMNG, true
+	case "wdp":
+		return ImageJXR, true
+	case "webp":
+		return ImageWebP, true
+	case "wpg":
+		return ImageWPG, true
+	case "x3f":
+		return ImageX3F, true
+	case "xcf":
+		return ImageXCF, true
+	case "xisf":
+		return ImageXISF, true
+	case "xmp":
+		return ImageXMP, true
 	}
 	return ImageUnknown, false
-}
-
-func toLowercaseBytes(buf []byte) {
-	for i := 0; i < len(buf); i++ {
-		if buf[i] >= 'A' && buf[i] <= 'Z' {
-			buf[i] |= 0x20
-		}
-	}
 }
 
 // Image file types Raw/Compressed/JPEG
@@ -437,6 +990,12 @@ const (
 	ImageFFF // Hasselblad FFF
 	ImageMOS // Leaf MOS
 	ImageK25 // Kodak K25
+
+	// NOTE: FileType values are serialized (msgp) and must stay stable:
+	// always append new types here, never insert or reorder.
+	ImageJ2C  // JPEG 2000 codestream (SOC+SIZ), distinct from the JP2 container
+	ImageXISF // XISF (astronomy, "XISF0100" signature)
+	ImageMEF  // Mamiya MEF
 )
 
 // MediaType groups file types into high-level semantic classes.
@@ -508,6 +1067,7 @@ const (
 	BaseTypePGF
 	BaseTypeXCF
 	BaseTypeQTIF
+	BaseTypeXISF
 )
 
 func (b BaseType) String() string {
@@ -588,6 +1148,8 @@ func (b BaseType) String() string {
 		return "xcf"
 	case BaseTypeQTIF:
 		return "qtif"
+	case BaseTypeXISF:
+		return "xisf"
 	default:
 		return "unknown"
 	}
@@ -667,6 +1229,9 @@ var fileTypeCanonicalMIME = map[FileType]MIMEType{
 	ImageFFF:     "image/x-hasselblad-fff",
 	ImageMOS:     "image/x-leaf-mos",
 	ImageK25:     "image/x-kodak-k25",
+	ImageJ2C:     "image/j2c",
+	ImageXISF:    "image/xisf",
+	ImageMEF:     "image/x-mamiya-mef",
 }
 
 var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
@@ -743,6 +1308,9 @@ var fileTypeCanonicalExtension = map[FileType]FileTypeExtension{
 	ImageFFF:     "fff",
 	ImageMOS:     "mos",
 	ImageK25:     "k25",
+	ImageJ2C:     "j2c",
+	ImageXISF:    "xisf",
+	ImageMEF:     "mef",
 }
 
 // mimeTypeValues maps a content-type string with a file type.
@@ -772,6 +1340,9 @@ var mimeTypeValues = map[MIMEType]FileType{
 	"image/jp2":                     ImageJP2K,
 	"image/jxl":                     ImageJXL,
 	"image/jxr":                     ImageJXR, // uncommon, but seen
+	"image/j2c":                     ImageJ2C,
+	"image/xisf":                    ImageXISF,
+	"image/x-mamiya-mef":            ImageMEF,
 	"image/magick":                  ImageMAGICK,
 	"image/mpo":                     ImageMPO,
 	"image/pgf":                     ImagePGF,
@@ -895,6 +1466,9 @@ var fileTypeExtensions = map[FileTypeExtension]FileType{
 	".jpx":    ImageJP2K,
 	".jxl":    ImageJXL,
 	".jxr":    ImageJXR,
+	".j2c":    ImageJ2C,
+	".xisf":   ImageXISF,
+	".mef":    ImageMEF,
 	".k25":    ImageK25,
 	".kdc":    ImageKDC,
 	".magick": ImageMAGICK,
@@ -1011,6 +1585,11 @@ var (
 	xmpSignature     = []byte("<x:xmpmeta")
 	gif87aSignature  = []byte("GIF87a")
 	gif89aSignature  = []byte("GIF89a")
+
+	pgfSignature  = []byte("PGF")
+	wpgSignature  = []byte{0xFF, 0x57, 0x50, 0x43}
+	j2cSignature  = []byte{0xFF, 0x4F, 0xFF, 0x51}
+	xisfSignature = []byte("XISF0100")
 )
 
 func hasPrefix(buf, sig []byte) bool {
@@ -1041,7 +1620,23 @@ func hasAt(buf []byte, offset int, sig []byte) bool {
 }
 
 func hasCompatibleBrand(buf []byte, brand []byte) bool {
-	return hasAt(buf, 16, brand) || hasAt(buf, 20, brand)
+	// Walk every compatible-brand slot in the ftyp box instead of only
+	// the first two: files with long brand lists otherwise miss.
+	if len(buf) < 8 {
+		return false
+	}
+	size := uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
+	limit := len(buf)
+	// A zero box size means "to end of file" per the spec.
+	if size != 0 && int(size) < limit {
+		limit = int(size)
+	}
+	for off := 16; off+4 <= limit; off += 4 {
+		if hasAt(buf, off, brand) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasAnyCompatibleBrand(buf []byte, brands ...[]byte) bool {
@@ -1295,7 +1890,258 @@ func tiffReadU32(buf []byte, offset int, littleEndian bool) (uint32, bool) {
 		uint32(buf[offset+3]), true
 }
 
-// tiffSecondarySubtype performs best-effort subtype detection for TIFF-based files.
+// tiffMakeModel scans the first IFD of a TIFF or BigTIFF image in buf for
+// Make (0x010F), Model (0x0110) and DNGVersion (0xC612) tags. It returns
+// ok=false when the structure is truncated or malformed. All reads are
+// bounds-checked and iterative: no recursion, no unbounded loops.
+func tiffMakeModel(buf []byte) (manufacturer, model string, hasDNGVersion, ok bool) {
+	if len(buf) < 8 {
+		return "", "", false, false
+	}
+	big := isBigTiff(buf)
+	var littleEndian bool
+	switch {
+	case IsTiffLittleEndian(buf) || (big && buf[0] == 0x49):
+		littleEndian = true
+	case IsTiffBigEndian(buf) || (big && buf[0] == 0x4D):
+		littleEndian = false
+	default:
+		return "", "", false, false
+	}
+
+	var ifdOffset uint64
+	var entrySize, countSize int
+	if big {
+		// BigTIFF: byte order, magic 43, offset byte size, 0, 8-byte IFD offset.
+		if len(buf) < 16 {
+			return "", "", false, false
+		}
+		off, readOK := tiffReadU64(buf, 8, littleEndian)
+		if !readOK {
+			return "", "", false, false
+		}
+		ifdOffset, entrySize, countSize = off, 20, 8
+	} else {
+		off, readOK := tiffReadU32(buf, 4, littleEndian)
+		if !readOK {
+			return "", "", false, false
+		}
+		ifdOffset, entrySize, countSize = uint64(off), 12, 2
+	}
+
+	count, ok := tiffReadCount(buf, ifdOffset, countSize, littleEndian)
+	if !ok || count == 0 || count > maxTiffEntries {
+		return "", "", false, false
+	}
+	entriesAt := ifdOffset + uint64(countSize)
+	for i := uint64(0); i < count; i++ {
+		base := entriesAt + i*uint64(entrySize)
+		tag, ok := tiffReadU16At(buf, base, littleEndian)
+		if !ok {
+			return "", "", false, false
+		}
+		switch tag {
+		case tiffTagMake, tiffTagModel, tiffTagDNGVersion:
+		default:
+			continue
+		}
+		typ, ok := tiffReadU16At(buf, base+2, littleEndian)
+		if !ok {
+			return "", "", false, false
+		}
+		if tag == tiffTagDNGVersion {
+			hasDNGVersion = true
+			continue
+		}
+		if typ != tiffTypeASCII {
+			continue
+		}
+		var elen uint64
+		if big {
+			elen, ok = tiffReadU64(buf, base+4, littleEndian)
+		} else {
+			var elen32 uint32
+			//nolint:gosec // G115: base+4 <= len(buf) is proven by the tag/type/count reads above.
+			elen32, ok = tiffReadU32(buf, int(base)+4, littleEndian)
+			elen = uint64(elen32)
+		}
+		if !ok || elen == 0 || elen > maxTiffString {
+			continue
+		}
+		// Inline values live in the entry tail (4 bytes classic, 8
+		// bytes BigTIFF); longer ones sit at an offset.
+		var valAt uint64
+		var inlineCap uint64
+		if big {
+			valAt, inlineCap = base+12, 8
+		} else {
+			valAt, inlineCap = base+8, 4
+		}
+		var s string
+		if elen <= inlineCap {
+			s, ok = tiffASCII(buf, valAt, elen)
+		} else {
+			var off uint64
+			if big {
+				off, ok = tiffReadU64(buf, valAt, littleEndian)
+			} else {
+				var off32 uint32
+				//nolint:gosec // G115: valAt = base+8 with base proven readable above; tiffReadU32 re-checks bounds.
+				off32, ok = tiffReadU32(buf, int(valAt), littleEndian)
+				off = uint64(off32)
+			}
+			if !ok {
+				continue
+			}
+			s, ok = tiffASCII(buf, off, elen)
+		}
+		if !ok || s == "" {
+			continue
+		}
+		if tag == tiffTagMake {
+			manufacturer = s
+		} else {
+			model = s
+		}
+		if manufacturer != "" && model != "" && hasDNGVersion {
+			break
+		}
+	}
+	return manufacturer, model, hasDNGVersion, true
+}
+
+// TIFF IFD constants for subtype detection.
+const (
+	tiffTagMake       = 0x010F
+	tiffTagModel      = 0x0110
+	tiffTagDNGVersion = 0xC612
+	tiffTypeASCII     = 2
+
+	// maxTiffEntries caps the first-IFD walk; real IFDs stay far below it
+	// and garbage counts must not cause long loops.
+	maxTiffEntries = 512
+	// maxTiffString caps Make/Model value reads.
+	maxTiffString = 64
+)
+
+// tiffReadCount reads an entry count of countSize bytes at offset.
+func tiffReadCount(buf []byte, offset uint64, countSize int, littleEndian bool) (uint64, bool) {
+	if countSize == 8 {
+		return tiffReadU64(buf, offset, littleEndian)
+	}
+	v, ok := tiffReadU16At(buf, offset, littleEndian)
+	return uint64(v), ok
+}
+
+// tiffReadU16At reads a uint16 at an absolute uint64 offset.
+func tiffReadU16At(buf []byte, offset uint64, littleEndian bool) (uint16, bool) {
+	if offset > uint64(len(buf))-2 {
+		return 0, false
+	}
+	//nolint:gosec // G115: offset+2 <= len(buf) <= maxInt per the check above.
+	return tiffReadU16(buf, int(offset), littleEndian)
+}
+
+// tiffReadU64 reads a uint64 at offset with bounds checking.
+func tiffReadU64(buf []byte, offset uint64, littleEndian bool) (uint64, bool) {
+	if offset > uint64(len(buf))-8 {
+		return 0, false
+	}
+	//nolint:gosec // G115: offset+8 <= len(buf) <= maxInt per the check above.
+	off := int(offset)
+	if littleEndian {
+		return uint64(buf[off]) |
+			(uint64(buf[off+1]) << 8) |
+			(uint64(buf[off+2]) << 16) |
+			(uint64(buf[off+3]) << 24) |
+			(uint64(buf[off+4]) << 32) |
+			(uint64(buf[off+5]) << 40) |
+			(uint64(buf[off+6]) << 48) |
+			(uint64(buf[off+7]) << 56), true
+	}
+	return (uint64(buf[off]) << 56) |
+		(uint64(buf[off+1]) << 48) |
+		(uint64(buf[off+2]) << 40) |
+		(uint64(buf[off+3]) << 32) |
+		(uint64(buf[off+4]) << 24) |
+		(uint64(buf[off+5]) << 16) |
+		(uint64(buf[off+6]) << 8) |
+		uint64(buf[off+7]), true
+}
+
+// tiffASCII reads an ASCII value of elen bytes at offset, stopping at the
+// first NUL. The value must lie entirely inside buf.
+func tiffASCII(buf []byte, offset, elen uint64) (string, bool) {
+	if elen == 0 || offset > uint64(len(buf)) || elen > uint64(len(buf))-offset {
+		return "", false
+	}
+	//nolint:gosec // G115: offset+elen <= len(buf) <= maxInt per the check above.
+	raw := buf[int(offset):int(offset+elen)]
+	if i := bytes.IndexByte(raw, 0); i >= 0 {
+		raw = raw[:i]
+	}
+	return string(raw), true
+}
+
+// tiffMakeModelType maps Make/Model strings to a RAW type. hasDNGVersion
+// wins for any maker. Makes without a defensible mapping return
+// ImageUnknown so callers fall back to the entry-count heuristics.
+func tiffMakeModelType(manufacturer, model string, hasDNGVersion bool) FileType {
+	if hasDNGVersion {
+		return ImageDNG
+	}
+	mk := strings.ToUpper(strings.Trim(manufacturer, " \x00"))
+	md := strings.ToUpper(strings.Trim(model, " \x00"))
+	switch {
+	case strings.HasPrefix(mk, "OLYMPUS") || strings.HasPrefix(mk, "OM DIGITAL"):
+		return ImageORF
+	case mk == "SIGMA":
+		return ImageX3F
+	case mk == "PENTAX" || strings.HasPrefix(mk, "RICOH"):
+		return ImagePEF
+	case mk == "SAMSUNG":
+		return ImageSRW
+	case strings.Contains(mk, "MINOLTA"):
+		return ImageMRW
+	case strings.Contains(mk, "EPSON"):
+		return ImageERF
+	case strings.Contains(mk, "LEAF"):
+		return ImageMOS
+	case strings.Contains(mk, "PHASE ONE") || mk == "PHASEONE":
+		return ImageIIQ
+	case strings.Contains(mk, "GOPRO"):
+		return ImageGPR
+	case strings.Contains(mk, "MAMIYA"):
+		return ImageMEF
+	case strings.HasPrefix(mk, "NIKON"):
+		if strings.HasPrefix(md, "COOLPIX P") || md == "COOLPIX A" {
+			return ImageNRW
+		}
+		return ImageNEF
+	case mk == "SONY":
+		if md == "DSLR-A100" {
+			return ImageSR2
+		}
+		if strings.HasPrefix(md, "DSC-") {
+			return ImageSRF
+		}
+		return ImageARW
+	case strings.Contains(mk, "KODAK"):
+		if strings.Contains(md, "DC25") {
+			return ImageK25
+		}
+		if strings.Contains(md, "DCS PRO") {
+			return ImageDCR
+		}
+		return ImageKDC
+	}
+	return ImageUnknown
+}
+
+// tiffSecondarySubtype performs best-effort subtype detection for TIFF-based
+// files from the 64-byte header using IFD entry-count heuristics. It stays as
+// the fallback wherever Make/Model sniffing (tiffMakeModelType) finds nothing:
+// the heuristics are firmware-sensitive, but they need no string pool.
 func tiffSecondarySubtype(buf []byte) FileType {
 	// RW2 has its own TIFF-like signature.
 	if isRW2(buf) {
@@ -1439,6 +2285,34 @@ func isSVG(buf []byte) bool {
 // or 89a.
 func isGIF(buf []byte) bool {
 	return hasPrefix(buf, gif87aSignature) || hasPrefix(buf, gif89aSignature)
+}
+
+// isPCX returns true for the PCX manufacturer byte and a defined version
+// (0: 2.5, 2/3: 2.8, 5: 3.0).
+func isPCX(buf []byte) bool {
+	return len(buf) >= 2 && buf[0] == 0x0A &&
+		(buf[1] == 0 || buf[1] == 2 || buf[1] == 3 || buf[1] == 5)
+}
+
+// isPGF returns true for the Progressive Graphics File magic.
+func isPGF(buf []byte) bool {
+	return hasPrefix(buf, pgfSignature)
+}
+
+// isWPG returns true for the WordPerfect Graphics magic ("ÿWPC").
+func isWPG(buf []byte) bool {
+	return hasPrefix(buf, wpgSignature)
+}
+
+// isJ2C returns true for a JPEG 2000 codestream (SOC followed by SIZ),
+// distinct from the JP2 container.
+func isJ2C(buf []byte) bool {
+	return hasPrefix(buf, j2cSignature)
+}
+
+// isXISF returns true for the XISF 1.0 file signature.
+func isXISF(buf []byte) bool {
+	return hasPrefix(buf, xisfSignature)
 }
 
 func netpbmType(buf []byte) (FileType, bool) {
