@@ -258,20 +258,39 @@ func (iptc *IPTC) empty() bool {
 }
 
 func iptcDate(value []byte) string {
-	s := string(value)
-	if len(s) == 8 {
-		return s[:4] + ":" + s[4:6] + ":" + s[6:8]
+	if len(value) == 8 {
+		var out [10]byte
+		copy(out[0:4], value[0:4])
+		out[4] = ':'
+		copy(out[5:7], value[4:6])
+		out[7] = ':'
+		copy(out[8:10], value[6:8])
+		return string(out[:])
 	}
-	return s
+	return string(value)
 }
 
 func iptcTime(value []byte) string {
-	s := string(value)
-	if len(s) == 11 && (s[6] == '+' || s[6] == '-') {
-		return s[:2] + ":" + s[2:4] + ":" + s[4:6] + s[6:9] + ":" + s[9:11]
+	if len(value) == 11 && (value[6] == '+' || value[6] == '-') {
+		var out [14]byte
+		copy(out[0:2], value[0:2])
+		out[2] = ':'
+		copy(out[3:5], value[2:4])
+		out[5] = ':'
+		copy(out[6:8], value[4:6])
+		copy(out[8:11], value[6:9])
+		out[11] = ':'
+		copy(out[12:14], value[9:11])
+		return string(out[:])
 	}
-	if len(s) >= 6 {
-		return s[:2] + ":" + s[2:4] + ":" + s[4:]
+	if len(value) >= 6 {
+		out := make([]byte, 0, len(value)+2)
+		out = append(out, value[:2]...)
+		out = append(out, ':')
+		out = append(out, value[2:4]...)
+		out = append(out, ':')
+		out = append(out, value[4:]...)
+		return string(out)
 	}
-	return s
+	return string(value)
 }

@@ -3,6 +3,7 @@ package jpeg
 import (
 	"bytes"
 	"io"
+	"slices"
 
 	"github.com/evanoberholster/imagemeta/meta"
 )
@@ -71,7 +72,15 @@ func (jr *jpegReader) processExtendedXMP() error {
 		return nil
 	}
 
-	for _, ext := range jr.extendedXMP {
+	// Iterate GUIDs in sorted order so multi-part documents assemble
+	// deterministically instead of in Go map order.
+	guids := make([]string, 0, len(jr.extendedXMP))
+	for guid := range jr.extendedXMP {
+		guids = append(guids, guid)
+	}
+	slices.Sort(guids)
+	for _, guid := range guids {
+		ext := jr.extendedXMP[guid]
 		if ext == nil || ext.size == 0 || ext.size > maxExtendedXMP {
 			continue
 		}

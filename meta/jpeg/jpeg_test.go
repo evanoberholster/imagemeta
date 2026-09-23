@@ -315,6 +315,34 @@ func TestScanJPEGExtendedXMP(t *testing.T) {
 	}
 }
 
+func TestScanJPEGExtendedXMPDeterministicOrder(t *testing.T) {
+	guidB := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	guidA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	partA := []byte("<x:xmpmeta>")
+	partB := []byte("</x:xmpmeta>")
+	// Segments arrive B-first; sorted GUID order must still assemble A first.
+	data := testJPEG(
+		testExtendedXMPSegment(guidB, uint32(len(partB)), 0, partB),
+		testExtendedXMPSegment(guidA, uint32(len(partA)), 0, partA),
+	)
+
+	var order []string
+	err := ScanJPEG(onlyReader{r: bytes.NewReader(data)}, nil, func(r io.Reader) error {
+		buf, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		order = append(order, string(buf))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(order) != 2 || order[0] != string(partA) || order[1] != string(partB) {
+		t.Fatalf("XMP callback order = %q, want [%q %q]", order, partA, partB)
+	}
+}
+
 func TestScanJPEG_nextMarkerNoInfiniteLoop(t *testing.T) {
 	inputs := [][]byte{
 		{0xFF, 0x00},

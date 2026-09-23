@@ -106,7 +106,7 @@ func parseICCProfile(data []byte) (*ICCProfile, error) {
 	if len(data) < 132 {
 		return nil, errShortSegment("ICC profile")
 	}
-	if string(data[36:40]) != "acsp" {
+	if !bytes.Equal(data[36:40], []byte("acsp")) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	icc := &ICCProfile{
@@ -226,10 +226,10 @@ func parseICCText(data []byte) string {
 	if len(data) < 8 {
 		return ""
 	}
-	switch string(data[:4]) {
-	case "text":
+	switch {
+	case bytes.Equal(data[:4], []byte("text")):
 		return trimNULString(data[8:])
-	case "desc":
+	case bytes.Equal(data[:4], []byte("desc")):
 		return parseICCDesc(data)
 	default:
 		return ""
@@ -237,7 +237,7 @@ func parseICCText(data []byte) string {
 }
 
 func parseICCDesc(data []byte) string {
-	if len(data) < 12 || string(data[:4]) != "desc" {
+	if len(data) < 12 || !bytes.Equal(data[:4], []byte("desc")) {
 		return parseICCText(data)
 	}
 	n := int(jpegEndian.Uint32(data[8:12]))
@@ -253,7 +253,7 @@ func parseICCDesc(data []byte) string {
 }
 
 func parseICCXYZ(data []byte) [3]float64 {
-	if len(data) < 20 || string(data[:4]) != "XYZ " {
+	if len(data) < 20 || !bytes.Equal(data[:4], []byte("XYZ ")) {
 		return [3]float64{}
 	}
 	return parseICCXYZData(data[8:20])
