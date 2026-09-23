@@ -1,6 +1,7 @@
 package jpeg
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
@@ -90,18 +91,120 @@ func (jr *jpegReader) readAPP2() {
 
 // readAPP13 handles APP13 Photoshop markers.
 func (jr *jpegReader) readAPP13() {
-	if isPhotoshopPrefix(jr.buf) {
-		jr.logMarker("APP13 Photoshop")
-		if jr.metadata != nil {
-			payload, ok := jr.readMetadataPayload()
-			if !ok {
-				return
-			}
-			jr.metadata.Photoshop, jr.metadata.IPTC, jr.err = parsePhotoshop(payload)
-			return
-		}
+	if !isPhotoshopPrefix(jr.buf) {
+		jr.ignoreMarker()
+		return
 	}
-	jr.ignoreMarker()
+	jr.logMarker("APP13 Photoshop")
+	if jr.metadata == nil {
+		jr.ignoreMarker()
+		return
+	}
+	compact, thumbLen, thumbSeen := jr.selectPhotoshopPayload()
+	p, iptc, err := parsePhotoshop(compact)
+	if err != nil {
+		jr.err = err
+		return
+	}
+	if thumbSeen {
+		if p == nil {
+			p = &Photoshop{}
+		}
+		p.PhotoshopThumbnailLength = thumbLen
+	}
+	jr.metadata.Photoshop, jr.metadata.IPTC = p, iptc
+}
+
+// wantPhotoshopResource reports whether a resource ID is parsed (its data
+// kept) or skipped. 0x040c thumbnails only contribute their length, handled
+// separately by the walker.
+func wantPhotoshopResource(id uint16) bool {
+	switch id {
+	case 0x03ed, 0x0404, 0x0406, 0x040a, 0x040b, 0x040c, 0x0425:
+		return true
+	}
+	return false
+}
+
+// selectPhotoshopPayload walks the resource directory and compacts only the
+// parsed resources, skipping bulky payloads such as thumbnails in place. It
+// returns the compact payload plus the thumbnail length recorded separately.
+// Declared sizes are bounded by the segment so a lying size cannot consume
+// the next marker; truncation keeps already-parsed resources.
+func (jr *jpegReader) selectPhotoshopPayload() (compact []byte, thumbLen uint32, thumbSeen bool) {
+	budget := int(jr.size) + 2 - 4 - len(photoshopPrefix)
+	if err := jr.discard(4 + len(photoshopPrefix)); err != nil {
+		return nil, 0, false
+	}
+	// Pre-size for the prefix plus typical small resources; IPTC-heavy
+	// segments grow once more instead of per resource.
+	compact = make([]byte, 0, 256)
+	compact = append(compact, photoshopPrefix...)
+	for budget > 0 {
+		head, err := jr.peek(7)
+		if err != nil {
+			break
+		}
+		if !bytes.Equal(head[0:4], []byte("8BIM")) && !bytes.Equal(head[0:4], []byte("8B64")) {
+			break
+		}
+		id := jpegEndian.Uint16(head[4:6])
+		nameBytes := 1 + int(head[6])
+		if nameBytes&1 != 0 {
+			nameBytes++
+		}
+		headerLen := 4 + 2 + nameBytes + 4
+		if headerLen > budget {
+			break
+		}
+		head, err = jr.peek(headerLen)
+		if err != nil {
+			break
+		}
+		size := int(jpegEndian.Uint32(head[headerLen-4:]))
+		dataPad := size & 1
+		if size+dataPad > budget-headerLen {
+			break
+		}
+		if err := jr.discard(headerLen); err != nil {
+			break
+		}
+		budget -= headerLen
+		if id == 0x040c {
+			thumbLen, thumbSeen = thumbnailLength(size), true
+			if err := jr.discard(size + dataPad); err != nil {
+				break
+			}
+			budget -= size + dataPad
+			continue
+		}
+		if !wantPhotoshopResource(id) {
+			if err := jr.discard(size + dataPad); err != nil {
+				break
+			}
+			budget -= size + dataPad
+			continue
+		}
+		data := make([]byte, size)
+		if _, err := io.ReadFull(jr.br, data); err != nil {
+			break
+		}
+		if delta, ok := meta.SafecastIntToUint32(size); ok {
+			jr.discarded += delta
+		}
+		compact = append(compact, head...)
+		compact = append(compact, data...)
+		if dataPad == 1 {
+			compact = append(compact, 0)
+			if err := jr.discard(1); err != nil {
+				break
+			}
+			budget -= size + dataPad
+			continue
+		}
+		budget -= size
+	}
+	return compact, thumbLen, thumbSeen
 }
 
 func (jr *jpegReader) readAPP14() {

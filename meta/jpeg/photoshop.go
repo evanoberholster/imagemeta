@@ -102,21 +102,27 @@ func parsePhotoshopResource(p *Photoshop, iptc **IPTC, id uint16, data []byte) {
 	case 0x040b:
 		p.URL = strings.TrimRight(string(data), "\x00")
 	case 0x040c:
-		if n, ok := meta.SafecastIntToUint32(len(data)); ok {
-			p.PhotoshopThumbnailLength = n
-		} else {
-			p.PhotoshopThumbnailLength = 0
-		}
-		if len(data) > 28 {
-			if n, ok := meta.SafecastIntToUint32(len(data) - 28); ok {
-				p.PhotoshopThumbnailLength = n
-			} else {
-				p.PhotoshopThumbnailLength = 0
-			}
-		}
+		p.PhotoshopThumbnailLength = thumbnailLength(len(data))
 	case 0x0425:
 		p.IPTCDigest = hex.EncodeToString(data)
 	}
+}
+
+// thumbnailLength converts an APP13 thumbnail resource size to the stored
+// PhotoshopThumbnailLength: the size itself, or size minus the 28-byte
+// header it carries.
+func thumbnailLength(size int) uint32 {
+	n, ok := meta.SafecastIntToUint32(size)
+	if !ok {
+		return 0
+	}
+	if size > 28 {
+		n, ok = meta.SafecastIntToUint32(size - 28)
+		if !ok {
+			return 0
+		}
+	}
+	return n
 }
 
 func isEmptyPhotoshop(p *Photoshop) bool {
@@ -187,19 +193,23 @@ func parseIPTC(data []byte) *IPTC {
 }
 
 func parseIPTCDataset(iptc *IPTC, record, dataset uint8, value []byte) {
-	if record == 1 && dataset == 90 {
-		iptc.CodedCharacterSet = string(value)
-		return
-	}
-	if record == 1 && dataset == 0 {
-		if len(value) >= 2 {
-			iptc.EnvelopeRecordVersion = jpegEndian.Uint16(value)
+	switch record {
+	case 1:
+		switch dataset {
+		case 90:
+			iptc.CodedCharacterSet = string(value)
+		case 0:
+			if len(value) >= 2 {
+				iptc.EnvelopeRecordVersion = jpegEndian.Uint16(value)
+			}
 		}
-		return
+	case 2:
+		parseIPTCApplicationRecord(iptc, dataset, value)
 	}
-	if record != 2 {
-		return
-	}
+}
+
+// parseIPTCApplicationRecord handles record-2 (application) datasets.
+func parseIPTCApplicationRecord(iptc *IPTC, dataset uint8, value []byte) {
 	switch dataset {
 	case 0:
 		if len(value) >= 2 {

@@ -394,6 +394,61 @@ func TestScanJPEGTruncatedNeverPanics(t *testing.T) {
 	}
 }
 
+// TestScanMetadataSkipsThumbnailData checks that a large thumbnail
+// resource contributes only its length: the payload must decode
+// identically while allocating a fraction of the segment size.
+// Not parallel: testing.AllocsPerRun forbids it.
+func TestScanMetadataSkipsThumbnailData(t *testing.T) {
+	data := testJPEG(
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 20028)),
+		)),
+	)
+	got, err := ScanMetadata(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Photoshop == nil || !got.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v", got.Photoshop)
+	}
+	// 20028 bytes of thumbnail data minus its 28-byte header.
+	if want := uint32(20000); got.Photoshop.PhotoshopThumbnailLength != want {
+		t.Fatalf("PhotoshopThumbnailLength = %d, want %d", got.Photoshop.PhotoshopThumbnailLength, want)
+	}
+	allocs := testing.AllocsPerRun(20, func() {
+		if _, err := ScanMetadata(bytes.NewReader(data)); err != nil {
+			t.Error(err)
+		}
+	})
+	// A full-segment copy would move the 20KB thumbnail; selective
+	// parsing keeps this to the small resources.
+	if allocs > 12 {
+		t.Fatalf("ScanMetadata allocated %v times, want <= 12", allocs)
+	}
+}
+
+// TestScanMetadataTruncatedAPP13 checks that cutting a segment short keeps
+// already-parsed resources alongside the truncation error instead of
+// dropping everything.
+func TestScanMetadataTruncatedAPP13(t *testing.T) {
+	t.Parallel()
+	full := testJPEG(
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 1000)),
+		)),
+	)
+	cut := len(full) - 500
+	got, err := ScanMetadata(bytes.NewReader(full[:cut]))
+	if err == nil {
+		t.Fatal("expected error for truncated segment, got nil")
+	}
+	if got.Photoshop == nil || !got.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v, want copyright flag kept from truncated segment", got.Photoshop)
+	}
+}
+
 func TestScanJPEG_nextMarkerNoInfiniteLoop(t *testing.T) {
 	inputs := [][]byte{
 		{0xFF, 0x00},
