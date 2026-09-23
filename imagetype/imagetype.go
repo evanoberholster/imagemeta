@@ -287,22 +287,45 @@ func FromString(str string) FileType {
 	return ImageUnknown
 }
 
+// maxTokenLen bounds the stack buffer used for case-insensitive matching.
+// MIME types and extensions are well under this size; longer inputs (file
+// paths, URLs) fall back to FromString.
+const maxTokenLen = 64
+
 // FromBytes returns a FileType for content-type bytes, extensions, or filenames.
 //
-// It performs a fast path for common MIME and extension values, and falls back
-// to FromString for full compatibility.
+// It never modifies buf. Token lookups allocate nothing; only inputs that
+// need the full FromString fallback (paths, parameters beyond the fast
+// paths) may allocate.
 func FromBytes(buf []byte) FileType {
 	buf = bytes.TrimSpace(buf)
 	if len(buf) == 0 {
 		return ImageUnknown
 	}
 
-	if it, ok := fromBytesCommon(buf); ok {
+	if it, ok := lookupToken(buf); ok {
 		return it
 	}
 
-	if idx := bytes.IndexByte(buf, ';'); idx > 0 {
-		if it, ok := fromBytesCommon(bytes.TrimSpace(buf[:idx])); ok {
+	// Case-insensitive retry on a bounded stack copy; the caller's buffer
+	// is never modified.
+	if len(buf) > maxTokenLen {
+		return FromString(string(buf))
+	}
+	var tmp [maxTokenLen]byte
+	lower := tmp[:len(buf)]
+	for i, c := range buf {
+		if c >= 'A' && c <= 'Z' {
+			c |= 0x20
+		}
+		lower[i] = c
+	}
+	if it, ok := lookupToken(lower); ok {
+		return it
+	}
+
+	if idx := bytes.IndexByte(lower, ';'); idx > 0 {
+		if it, ok := lookupToken(bytes.TrimSpace(lower[:idx])); ok {
 			return it
 		}
 	}
@@ -310,48 +333,29 @@ func FromBytes(buf []byte) FileType {
 	return FromString(string(buf))
 }
 
-func fromBytesCommon(buf []byte) (FileType, bool) {
-	toLowercaseBytes(buf)
-
-	switch string(buf) {
-	case "jpg", ".jpg", "jpeg", ".jpeg", "image/jpg", "image/jpeg":
-		return ImageJPEG, true
-	case "png", ".png", "image/png":
-		return ImagePNG, true
-	case "xmp", ".xmp", "application/rdf+xml":
-		return ImageXMP, true
-	case "dng", ".dng", "image/x-dng", "image/x-adobe-dng":
-		return ImageDNG, true
-	case "nef", ".nef", "image/x-nikon-nef":
-		return ImageNEF, true
-	case "cr2", ".cr2", "image/x-canon-cr2":
-		return ImageCR2, true
-	case "cr3", ".cr3", "image/x-canon-cr3":
-		return ImageCR3, true
-	case "psd", ".psd", "image/vnd.adobe.photoshop":
-		return ImagePSD, true
-	case "tif", ".tif", ".tiff", "image/tiff":
-		return ImageTiff, true
-	case "jxl", ".jxl", "image/jxl":
-		return ImageJXL, true
-	case "jp2", ".jp2", "image/jp2":
-		return ImageJP2K, true
-	case "heic", ".heic", "image/heic":
-		return ImageHEIC, true
-	case "heif", ".heif", "image/heif":
-		return ImageHEIF, true
-	case "avif", ".avif", "image/avif":
-		return ImageAVIF, true
+// lookupToken matches a MIME type, extension, or dotted extension against
+// the canonical tables. The string conversions in map-index position do not
+// allocate.
+func lookupToken(buf []byte) (FileType, bool) {
+	if it, ok := mimeTypeValues[MIMEType(buf)]; ok {
+		return it, true
 	}
-	return ImageUnknown, false
-}
-
-func toLowercaseBytes(buf []byte) {
-	for i := 0; i < len(buf); i++ {
-		if buf[i] >= 'A' && buf[i] <= 'Z' {
-			buf[i] |= 0x20
+	if it, ok := fileTypeExtensions[FileTypeExtension(buf)]; ok {
+		return it, true
+	}
+	if len(buf) > 0 && buf[0] != '.' {
+		// Dotted-extension retry without allocating: bound the probe to
+		// tokens that fit alongside the dot.
+		var tmp [maxTokenLen]byte
+		if len(buf)+1 <= len(tmp) {
+			tmp[0] = '.'
+			copy(tmp[1:], buf)
+			if it, ok := fileTypeExtensions[FileTypeExtension(tmp[:len(buf)+1])]; ok {
+				return it, true
+			}
 		}
 	}
+	return ImageUnknown, false
 }
 
 // Image file types Raw/Compressed/JPEG

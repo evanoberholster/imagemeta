@@ -187,6 +187,55 @@ func TestFromBytes(t *testing.T) {
 	}
 }
 
+// TestFromBytesNoMutation checks that FromBytes never modifies the caller's
+// buffer while still matching case-insensitively.
+func TestFromBytesNoMutation(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]FileType{
+		"IMAGE/JPEG":          ImageJPEG,
+		"JPG":                 ImageJPEG,
+		".JPG":                ImageJPEG,
+		"Image/Heic; Q=1.0":   ImageHEIC,
+		" .DNG ":              ImageDNG,
+		"TIFF":                ImageTiff,
+		"Application/RDF+XML": ImageXMP,
+		"IMAGE/X-CANON-CR3":   ImageCR3,
+		"photo.JPG?width=100": ImageJPEG,
+		"/srv/img/PHOTO.Jpeg": ImageJPEG,
+		"unknown/value":       ImageUnknown,
+		"":                    ImageUnknown,
+		"   ":                 ImageUnknown,
+		"averylonginputthatexceedssixtyfourbytespaddingpaddingpaddingpad": ImageUnknown,
+	}
+
+	for input, expected := range inputs {
+		buf := []byte(input)
+		snapshot := append([]byte(nil), buf...)
+		if got := FromBytes(buf); got != expected {
+			t.Errorf("FromBytes(%q) = %s, expected %s", input, got, expected)
+		}
+		if string(buf) != string(snapshot) {
+			t.Errorf("FromBytes(%q) modified caller buffer to %q", input, string(buf))
+		}
+	}
+}
+
+// TestFromBytesZeroAllocs checks the token fast paths allocate nothing.
+// It must not run in parallel: testing.AllocsPerRun forbids that.
+func TestFromBytesZeroAllocs(t *testing.T) {
+	bufs := [][]byte{
+		[]byte("image/jpeg"), []byte("IMAGE/JPEG"), []byte(".dng"),
+		[]byte("image/heic; q=1.0"), []byte("tiff"), []byte("TIF"),
+	}
+	if n := testing.AllocsPerRun(100, func() {
+		for _, b := range bufs {
+			FromBytes(b)
+		}
+	}); n != 0 {
+		t.Errorf("FromBytes allocated %v times, want 0", n)
+	}
+}
+
 func TestScanImageType(t *testing.T) {
 	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
