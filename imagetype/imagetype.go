@@ -1,4 +1,11 @@
-// Package imagetype provides types and functions for identifying Image document types
+// Package imagetype provides types and functions for identifying Image document types.
+//
+// Detection model: Scan/ScanBuf/ReadAt classify from magic bytes in a
+// 64-byte header window, with a bounded deeper probe for TIFF Make/Model
+// sniffing. Types without a byte signature (TGA, FPX, MAGICK, MPO and
+// friends) resolve through extensions and MIME types only via FromString.
+// SVG detection is best-effort inside the window. Extension() returns the
+// canonical extension without a leading dot.
 package imagetype
 
 import (
@@ -67,7 +74,8 @@ func (ft FileType) MIMEType() MIMEType {
 	return fileTypeCanonicalMIME[ImageUnknown]
 }
 
-// Extension returns the canonical file extension for the file type.
+// Extension returns the canonical file extension for the file type,
+// without a leading dot ("jpg", not ".jpg").
 func (ft FileType) Extension() string {
 	return ft.FileTypeExtension().String()
 }
@@ -223,6 +231,11 @@ func (ft FileType) IsISOBMFF() bool {
 
 // FromString returns a FileType for the given content-type string, extension,
 // or filename.
+//
+// Resolution order: exact MIME match, MIME with parameters stripped,
+// exact extension, dotted extension, filename extension, parameter suffix,
+// query/fragment suffix, dotted suffix token, bare token. Anything else is
+// ImageUnknown.
 func FromString(str string) FileType {
 	str = strings.TrimSpace(str)
 	if str == "" {
@@ -1593,7 +1606,10 @@ func tiffMakeModelType(manufacturer, model string, hasDNGVersion bool) FileType 
 	return ImageUnknown
 }
 
-// tiffSecondarySubtype performs best-effort subtype detection for TIFF-based files.
+// tiffSecondarySubtype performs best-effort subtype detection for TIFF-based
+// files from the 64-byte header using IFD entry-count heuristics. It stays as
+// the fallback wherever Make/Model sniffing (tiffMakeModelType) finds nothing:
+// the heuristics are firmware-sensitive, but they need no string pool.
 func tiffSecondarySubtype(buf []byte) FileType {
 	// RW2 has its own TIFF-like signature.
 	if isRW2(buf) {

@@ -174,7 +174,10 @@ func detectShortBuffer(buf []byte) (FileType, error) {
 }
 
 // Buf parses a []byte for image magic numbers that identify the file type.
-// If []byte is less than scanHeaderLength returns ImageUnknown and ErrDataLength
+// Buffers shorter than scanHeaderLength return ImageUnknown and
+// ErrDataLength; that error contract matters because callers keep their own
+// type hints when detection cannot run on a full window (see ScanBuf and
+// ReadAt for the best-effort short paths).
 // If fileType was not identified returns ImageUnknown and ErrImageTypeNotFound
 func Buf(buf []byte) (fileType FileType, err error) {
 	if len(buf) < scanHeaderLength {
