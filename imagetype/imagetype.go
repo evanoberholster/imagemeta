@@ -324,27 +324,585 @@ func FromBytes(buf []byte) FileType {
 	return FromString(string(buf))
 }
 
-// lookupToken matches a MIME type, extension, or dotted extension against
-// the canonical tables. The string conversions in map-index position do not
-// allocate.
+// lookupToken matches a MIME type, dotted extension or bare extension
+// token in a single switch. It mirrors mimeTypeValues and
+// fileTypeExtensions (including bare forms of dotted extensions) and is
+// kept in sync by TestLookupTokenParity. The string(buf) switch over
+// constants allocates nothing. Unknown tokens fall through to FromString.
 func lookupToken(buf []byte) (FileType, bool) {
-	if it, ok := mimeTypeValues[MIMEType(buf)]; ok {
-		return it, true
-	}
-	if it, ok := fileTypeExtensions[FileTypeExtension(buf)]; ok {
-		return it, true
-	}
-	if len(buf) > 0 && buf[0] != '.' {
-		// Dotted-extension retry without allocating: bound the probe to
-		// tokens that fit alongside the dot.
-		var tmp [maxTokenLen]byte
-		if len(buf)+1 <= len(tmp) {
-			tmp[0] = '.'
-			copy(tmp[1:], buf)
-			if it, ok := fileTypeExtensions[FileTypeExtension(tmp[:len(buf)+1])]; ok {
-				return it, true
-			}
-		}
+	switch string(buf) {
+	case ".3fr":
+		return Image3FR, true
+	case ".apng":
+		return ImageAPNG, true
+	case ".arw":
+		return ImageARW, true
+	case ".avif":
+		return ImageAVIF, true
+	case ".bmp":
+		return ImageBMP, true
+	case ".bpg":
+		return ImageBPG, true
+	case ".cr2":
+		return ImageCR2, true
+	case ".cr3":
+		return ImageCR3, true
+	case ".crw":
+		return ImageCRW, true
+	case ".cur":
+		return ImageCUR, true
+	case ".dcm":
+		return ImageDCM, true
+	case ".dcr":
+		return ImageDCR, true
+	case ".dds":
+		return ImageDDS, true
+	case ".djv":
+		return ImageDJVU, true
+	case ".djvu":
+		return ImageDJVU, true
+	case ".dng":
+		return ImageDNG, true
+	case ".dpx":
+		return ImageDPX, true
+	case ".erf":
+		return ImageERF, true
+	case ".exr":
+		return ImageEXR, true
+	case ".fff":
+		return ImageFFF, true
+	case ".fit":
+		return ImageFITS, true
+	case ".fits":
+		return ImageFITS, true
+	case ".flif":
+		return ImageFLIF, true
+	case ".fpx":
+		return ImageFPX, true
+	case ".fts":
+		return ImageFITS, true
+	case ".gif":
+		return ImageGIF, true
+	case ".gpr":
+		return ImageGPR, true
+	case ".hdp":
+		return ImageJXR, true
+	case ".hdr":
+		return ImageHDR, true
+	case ".heic":
+		return ImageHEIC, true
+	case ".heics":
+		return ImageHEIC, true
+	case ".heif":
+		return ImageHEIF, true
+	case ".heifs":
+		return ImageHEIF, true
+	case ".ico":
+		return ImageICO, true
+	case ".iiq":
+		return ImageIIQ, true
+	case ".j2c":
+		return ImageJ2C, true
+	case ".j2k":
+		return ImageJP2K, true
+	case ".jfif":
+		return ImageJPEG, true
+	case ".jng":
+		return ImageJNG, true
+	case ".jp2":
+		return ImageJP2K, true
+	case ".jpe":
+		return ImageJPEG, true
+	case ".jpeg":
+		return ImageJPEG, true
+	case ".jpg":
+		return ImageJPEG, true
+	case ".jpm":
+		return ImageJP2K, true
+	case ".jpx":
+		return ImageJP2K, true
+	case ".jxl":
+		return ImageJXL, true
+	case ".jxr":
+		return ImageJXR, true
+	case ".k25":
+		return ImageK25, true
+	case ".kdc":
+		return ImageKDC, true
+	case ".magick":
+		return ImageMAGICK, true
+	case ".mef":
+		return ImageMEF, true
+	case ".mng":
+		return ImageMNG, true
+	case ".mos":
+		return ImageMOS, true
+	case ".mpo":
+		return ImageMPO, true
+	case ".mrw":
+		return ImageMRW, true
+	case ".nef":
+		return ImageNEF, true
+	case ".nrw":
+		return ImageNRW, true
+	case ".orf":
+		return ImageORF, true
+	case ".pam":
+		return ImagePAM, true
+	case ".pbm":
+		return ImagePBM, true
+	case ".pcd":
+		return ImagePCD, true
+	case ".pct":
+		return ImagePICT, true
+	case ".pcx":
+		return ImagePCX, true
+	case ".pef":
+		return ImagePEF, true
+	case ".pgf":
+		return ImagePGF, true
+	case ".pgm":
+		return ImagePGM, true
+	case ".pic":
+		return ImagePICT, true
+	case ".pict":
+		return ImagePICT, true
+	case ".png":
+		return ImagePNG, true
+	case ".pnm":
+		return ImagePNM, true
+	case ".ppm":
+		return ImagePPM, true
+	case ".psd":
+		return ImagePSD, true
+	case ".qti":
+		return ImageQTIF, true
+	case ".qtif":
+		return ImageQTIF, true
+	case ".raf":
+		return ImageRAF, true
+	case ".raw":
+		return ImageRAW, true
+	case ".rw2":
+		return ImagePanaRAW, true
+	case ".rwl":
+		return ImageRWL, true
+	case ".sr2":
+		return ImageSR2, true
+	case ".srf":
+		return ImageSRF, true
+	case ".srw":
+		return ImageSRW, true
+	case ".svg":
+		return ImageSVG, true
+	case ".svgz":
+		return ImageSVG, true
+	case ".tga":
+		return ImageTGA, true
+	case ".tif":
+		return ImageTiff, true
+	case ".tiff":
+		return ImageTiff, true
+	case ".wdp":
+		return ImageJXR, true
+	case ".webp":
+		return ImageWebP, true
+	case ".wpg":
+		return ImageWPG, true
+	case ".x3f":
+		return ImageX3F, true
+	case ".xcf":
+		return ImageXCF, true
+	case ".xisf":
+		return ImageXISF, true
+	case ".xmp":
+		return ImageXMP, true
+	case "3fr":
+		return Image3FR, true
+	case "apng":
+		return ImageAPNG, true
+	case "application/dicom":
+		return ImageDCM, true
+	case "application/dicom+json":
+		return ImageDCM, true
+	case "application/dicom+xml":
+		return ImageDCM, true
+	case "application/fits":
+		return ImageFITS, true
+	case "application/octet-stream":
+		return ImageUnknown, true
+	case "application/rdf+xml":
+		return ImageXMP, true
+	case "application/x-pcx":
+		return ImagePCX, true
+	case "application/x-wpg":
+		return ImageWPG, true
+	case "application/x-xcf":
+		return ImageXCF, true
+	case "arw":
+		return ImageARW, true
+	case "avif":
+		return ImageAVIF, true
+	case "bmp":
+		return ImageBMP, true
+	case "bpg":
+		return ImageBPG, true
+	case "cr2":
+		return ImageCR2, true
+	case "cr3":
+		return ImageCR3, true
+	case "crw":
+		return ImageCRW, true
+	case "cur":
+		return ImageCUR, true
+	case "dcm":
+		return ImageDCM, true
+	case "dcr":
+		return ImageDCR, true
+	case "dds":
+		return ImageDDS, true
+	case "djv":
+		return ImageDJVU, true
+	case "djvu":
+		return ImageDJVU, true
+	case "dng":
+		return ImageDNG, true
+	case "dpx":
+		return ImageDPX, true
+	case "erf":
+		return ImageERF, true
+	case "exr":
+		return ImageEXR, true
+	case "fff":
+		return ImageFFF, true
+	case "fit":
+		return ImageFITS, true
+	case "fits":
+		return ImageFITS, true
+	case "flif":
+		return ImageFLIF, true
+	case "fpx":
+		return ImageFPX, true
+	case "fts":
+		return ImageFITS, true
+	case "gif":
+		return ImageGIF, true
+	case "gpr":
+		return ImageGPR, true
+	case "hdp":
+		return ImageJXR, true
+	case "hdr":
+		return ImageHDR, true
+	case "heic":
+		return ImageHEIC, true
+	case "heics":
+		return ImageHEIC, true
+	case "heif":
+		return ImageHEIF, true
+	case "heifs":
+		return ImageHEIF, true
+	case "ico":
+		return ImageICO, true
+	case "iiq":
+		return ImageIIQ, true
+	case "image/aces":
+		return ImageEXR, true
+	case "image/apng":
+		return ImageAPNG, true
+	case "image/avif":
+		return ImageAVIF, true
+	case "image/bmp":
+		return ImageBMP, true
+	case "image/bpg":
+		return ImageBPG, true
+	case "image/fits":
+		return ImageFITS, true
+	case "image/flif":
+		return ImageFLIF, true
+	case "image/gif":
+		return ImageGIF, true
+	case "image/heic":
+		return ImageHEIC, true
+	case "image/heic-sequence":
+		return ImageHEIC, true
+	case "image/heif":
+		return ImageHEIF, true
+	case "image/heif-sequence":
+		return ImageHEIF, true
+	case "image/j2c":
+		return ImageJ2C, true
+	case "image/jp2":
+		return ImageJP2K, true
+	case "image/jpeg":
+		return ImageJPEG, true
+	case "image/jxl":
+		return ImageJXL, true
+	case "image/jxr":
+		return ImageJXR, true
+	case "image/magick":
+		return ImageMAGICK, true
+	case "image/mpo":
+		return ImageMPO, true
+	case "image/pgf":
+		return ImagePGF, true
+	case "image/png":
+		return ImagePNG, true
+	case "image/qtif":
+		return ImageQTIF, true
+	case "image/raw":
+		return ImageRAW, true
+	case "image/svg+xml":
+		return ImageSVG, true
+	case "image/tiff":
+		return ImageTiff, true
+	case "image/vnd-ms.dds":
+		return ImageDDS, true
+	case "image/vnd.adobe.photoshop":
+		return ImagePSD, true
+	case "image/vnd.djvu":
+		return ImageDJVU, true
+	case "image/vnd.fpx":
+		return ImageFPX, true
+	case "image/vnd.microsoft.icon":
+		return ImageICO, true
+	case "image/vnd.ms-photo":
+		return ImageJXR, true
+	case "image/vnd.radiance":
+		return ImageHDR, true
+	case "image/webp":
+		return ImageWebP, true
+	case "image/x-adobe-dng":
+		return ImageDNG, true
+	case "image/x-canon-cr2":
+		return ImageCR2, true
+	case "image/x-canon-cr3":
+		return ImageCR3, true
+	case "image/x-canon-crw":
+		return ImageCRW, true
+	case "image/x-cursor":
+		return ImageCUR, true
+	case "image/x-dds":
+		return ImageDDS, true
+	case "image/x-djvu":
+		return ImageDJVU, true
+	case "image/x-dpx":
+		return ImageDPX, true
+	case "image/x-epson-erf":
+		return ImageERF, true
+	case "image/x-exr":
+		return ImageEXR, true
+	case "image/x-flif":
+		return ImageFLIF, true
+	case "image/x-fuji-raf":
+		return ImageRAF, true
+	case "image/x-gopro-gpr":
+		return ImageGPR, true
+	case "image/x-hasselblad-3fr":
+		return Image3FR, true
+	case "image/x-hasselblad-fff":
+		return ImageFFF, true
+	case "image/x-hdp":
+		return ImageJXR, true
+	case "image/x-hdr":
+		return ImageHDR, true
+	case "image/x-icon":
+		return ImageICO, true
+	case "image/x-jng":
+		return ImageJNG, true
+	case "image/x-jxr":
+		return ImageJXR, true
+	case "image/x-kodak-dcr":
+		return ImageDCR, true
+	case "image/x-kodak-k25":
+		return ImageK25, true
+	case "image/x-kodak-kdc":
+		return ImageKDC, true
+	case "image/x-leaf-mos":
+		return ImageMOS, true
+	case "image/x-leica-rwl":
+		return ImageRWL, true
+	case "image/x-mamiya-mef":
+		return ImageMEF, true
+	case "image/x-minolta-mrw":
+		return ImageMRW, true
+	case "image/x-mng":
+		return ImageMNG, true
+	case "image/x-mpo":
+		return ImageMPO, true
+	case "image/x-nikon-nef":
+		return ImageNEF, true
+	case "image/x-nikon-nrw":
+		return ImageNRW, true
+	case "image/x-olympus-orf":
+		return ImageORF, true
+	case "image/x-panasonic-raw":
+		return ImagePanaRAW, true
+	case "image/x-pcx":
+		return ImagePCX, true
+	case "image/x-pentax-pef":
+		return ImagePEF, true
+	case "image/x-pgf":
+		return ImagePGF, true
+	case "image/x-phaseone-iiq":
+		return ImageIIQ, true
+	case "image/x-photo-cd":
+		return ImagePCD, true
+	case "image/x-pic":
+		return ImagePICT, true
+	case "image/x-pict":
+		return ImagePICT, true
+	case "image/x-portable-anymap":
+		return ImagePNM, true
+	case "image/x-portable-arbitrarymap":
+		return ImagePAM, true
+	case "image/x-portable-bitmap":
+		return ImagePBM, true
+	case "image/x-portable-graymap":
+		return ImagePGM, true
+	case "image/x-portable-pixmap":
+		return ImagePPM, true
+	case "image/x-qtif":
+		return ImageQTIF, true
+	case "image/x-samsung-srw":
+		return ImageSRW, true
+	case "image/x-sigma-x3f":
+		return ImageX3F, true
+	case "image/x-sony-arw":
+		return ImageARW, true
+	case "image/x-sony-sr2":
+		return ImageSR2, true
+	case "image/x-sony-srf":
+		return ImageSRF, true
+	case "image/x-targa":
+		return ImageTGA, true
+	case "image/x-tga":
+		return ImageTGA, true
+	case "image/x-wdp":
+		return ImageJXR, true
+	case "image/x-win-bitmap":
+		return ImageICO, true
+	case "image/x-xcf":
+		return ImageXCF, true
+	case "image/xisf":
+		return ImageXISF, true
+	case "j2c":
+		return ImageJ2C, true
+	case "j2k":
+		return ImageJP2K, true
+	case "jfif":
+		return ImageJPEG, true
+	case "jng":
+		return ImageJNG, true
+	case "jp2":
+		return ImageJP2K, true
+	case "jpe":
+		return ImageJPEG, true
+	case "jpeg":
+		return ImageJPEG, true
+	case "jpg":
+		return ImageJPEG, true
+	case "jpm":
+		return ImageJP2K, true
+	case "jpx":
+		return ImageJP2K, true
+	case "jxl":
+		return ImageJXL, true
+	case "jxr":
+		return ImageJXR, true
+	case "k25":
+		return ImageK25, true
+	case "kdc":
+		return ImageKDC, true
+	case "magick":
+		return ImageMAGICK, true
+	case "mef":
+		return ImageMEF, true
+	case "mng":
+		return ImageMNG, true
+	case "mos":
+		return ImageMOS, true
+	case "mpo":
+		return ImageMPO, true
+	case "mrw":
+		return ImageMRW, true
+	case "nef":
+		return ImageNEF, true
+	case "nrw":
+		return ImageNRW, true
+	case "orf":
+		return ImageORF, true
+	case "pam":
+		return ImagePAM, true
+	case "pbm":
+		return ImagePBM, true
+	case "pcd":
+		return ImagePCD, true
+	case "pct":
+		return ImagePICT, true
+	case "pcx":
+		return ImagePCX, true
+	case "pef":
+		return ImagePEF, true
+	case "pgf":
+		return ImagePGF, true
+	case "pgm":
+		return ImagePGM, true
+	case "pic":
+		return ImagePICT, true
+	case "pict":
+		return ImagePICT, true
+	case "png":
+		return ImagePNG, true
+	case "pnm":
+		return ImagePNM, true
+	case "ppm":
+		return ImagePPM, true
+	case "psd":
+		return ImagePSD, true
+	case "qti":
+		return ImageQTIF, true
+	case "qtif":
+		return ImageQTIF, true
+	case "raf":
+		return ImageRAF, true
+	case "raw":
+		return ImageRAW, true
+	case "rw2":
+		return ImagePanaRAW, true
+	case "rwl":
+		return ImageRWL, true
+	case "sr2":
+		return ImageSR2, true
+	case "srf":
+		return ImageSRF, true
+	case "srw":
+		return ImageSRW, true
+	case "svg":
+		return ImageSVG, true
+	case "svgz":
+		return ImageSVG, true
+	case "tga":
+		return ImageTGA, true
+	case "tif":
+		return ImageTiff, true
+	case "tiff":
+		return ImageTiff, true
+	case "video/x-mng":
+		return ImageMNG, true
+	case "wdp":
+		return ImageJXR, true
+	case "webp":
+		return ImageWebP, true
+	case "wpg":
+		return ImageWPG, true
+	case "x3f":
+		return ImageX3F, true
+	case "xcf":
+		return ImageXCF, true
+	case "xisf":
+		return ImageXISF, true
+	case "xmp":
+		return ImageXMP, true
 	}
 	return ImageUnknown, false
 }

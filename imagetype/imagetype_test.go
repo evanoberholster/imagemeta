@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/tinylib/msgp/msgp"
@@ -228,6 +229,31 @@ func TestFromBytesNoMutation(t *testing.T) {
 		}
 		if string(buf) != string(snapshot) {
 			t.Errorf("FromBytes(%q) modified caller buffer to %q", input, string(buf))
+		}
+	}
+}
+
+// TestLookupTokenParity keeps the lookupToken switch in sync with the
+// canonical tables: every MIME and extension key (plus bare forms of
+// dotted extensions) must resolve to the same type through both paths.
+func TestLookupTokenParity(t *testing.T) {
+	t.Parallel()
+	for mime, want := range mimeTypeValues {
+		if got, ok := lookupToken([]byte(mime)); !ok || got != want {
+			t.Errorf("lookupToken(%q) = %s, %v; want %s, true", mime, got, ok, want)
+		}
+	}
+	for ext, want := range fileTypeExtensions {
+		if ext == "" {
+			continue
+		}
+		if got, ok := lookupToken([]byte(ext)); !ok || got != want {
+			t.Errorf("lookupToken(%q) = %s, %v; want %s, true", ext, got, ok, want)
+		}
+		if bare := strings.TrimPrefix(string(ext), "."); bare != string(ext) {
+			if got, ok := lookupToken([]byte(bare)); !ok || got != want {
+				t.Errorf("lookupToken(%q) = %s, %v; want %s, true", bare, got, ok, want)
+			}
 		}
 	}
 }
