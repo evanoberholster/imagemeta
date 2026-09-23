@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	dir            = "../assets/"
+	dir            = "../../assets/"
 	benchmarksJPEG = []struct {
 		fileName  string
 		noExifErr bool
@@ -45,6 +45,7 @@ func BenchmarkScanJPEG100(b *testing.B) {
 			b.Fatal(readErr)
 		}
 		r := bytes.NewReader(buf)
+		b.SetBytes(int64(len(buf)))
 		b.ReportAllocs()
 		b.ResetTimer()
 
@@ -63,6 +64,63 @@ func BenchmarkScanJPEG100(b *testing.B) {
 	}
 }
 
+func BenchmarkScanMetadata(b *testing.B) {
+	synthetic := testJPEG(
+		testSegment(markerAPP0, testJFIFPayload(1, 2, 1, 300, 200)),
+		testSegment(markerAPP2, testMPFPayload(2, 100, 200)),
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x0404, append(
+				testIPTCDataset(2, 25, []byte("codex")),
+				testIPTCDataset(2, 80, []byte("Jane Doe"))...,
+			)),
+		)),
+		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
+	)
+	profile := testICCProfile()
+	syntheticICC := testJPEG(
+		testSegment(markerAPP2, testICCPayload(1, 2, profile)),
+	)
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"synthetic", synthetic},
+		{"synthetic-icc", syntheticICC},
+	}
+	for _, path := range []string{
+		"../../assets/JPEG.jpg",
+		"../../download_samples/Canon/Canon/CanonEOS_R8.jpg",
+		"../../download_samples/Canon/Canon/CanonMP220.jpg",
+		"../../download_samples/Canon/Canon/CanonIXUS285HS.jpg",
+	} {
+		buf, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		files = append(files, struct {
+			name string
+			data []byte
+		}{path, buf})
+	}
+	for _, f := range files {
+		b.Run(f.name, func(b *testing.B) {
+			r := bytes.NewReader(f.data)
+			b.SetBytes(int64(len(f.data)))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
+				if _, err := ScanMetadataWithReaderAt(r, r); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
 func TestScanJPEG(t *testing.T) {
 	testJPEGs := []struct {
 		filename string
@@ -71,10 +129,10 @@ func TestScanJPEG(t *testing.T) {
 		width    uint32
 		height   uint32
 	}{
-		{"../assets/JPEG.jpg", true, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
-		{"../assets/NoExif.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
-		{"../assets/a2.jpg", false, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
-		{"../assets/a1.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
+		{"../../assets/JPEG.jpg", true, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
+		{"../../assets/NoExif.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
+		{"../../assets/a2.jpg", false, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
+		{"../../assets/a1.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
 	}
 
 	for _, jpg := range testJPEGs {
