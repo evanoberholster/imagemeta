@@ -12,6 +12,7 @@ import (
 
 // Tests
 func TestImageTypeIndices(t *testing.T) {
+	t.Parallel()
 	cases := map[FileType]struct {
 		ext string
 		mt  string
@@ -61,6 +62,7 @@ func TestImageTypeIndices(t *testing.T) {
 }
 
 func TestImageTypeFamilyAndContainer(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		imageType FileType
 		mediaType MediaType
@@ -92,6 +94,7 @@ func TestImageTypeFamilyAndContainer(t *testing.T) {
 }
 
 func TestImageType(t *testing.T) {
+	t.Parallel()
 
 	str := "image/jpeg"
 	ext := "jpg"
@@ -103,7 +106,7 @@ func TestImageType(t *testing.T) {
 
 	itbuf, err := it.MarshalText()
 	if err != nil {
-		t.Errorf("Error Imagetype could not be marshaled")
+		t.Fatalf("Error Imagetype could not be marshaled: %v", err)
 	}
 
 	if !bytes.Equal(itbuf, []byte(str)) {
@@ -117,7 +120,7 @@ func TestImageType(t *testing.T) {
 
 	err = it.UnmarshalText(itbuf)
 	if err != nil {
-		t.Errorf("Error Imagetype could not be unmarshalled")
+		t.Fatalf("Error Imagetype could not be unmarshalled: %v", err)
 	}
 
 	if it2 != it {
@@ -169,13 +172,13 @@ func TestImageType(t *testing.T) {
 
 	err = it.EncodeMsg(msgp.NewWriterSize(&msgp.Writer{}, 0))
 	if err != nil {
-		t.Errorf("Incorrect Error for EncodeMsg wanted %s got %s", err, err)
-
+		t.Fatalf("EncodeMsg returned unexpected error: %v", err)
 	}
 
 }
 
 func TestFromBytes(t *testing.T) {
+	t.Parallel()
 	tests := map[string]FileType{
 		"image/jpeg":                ImageJPEG,
 		"image/jpeg; charset=utf-8": ImageJPEG,
@@ -246,6 +249,7 @@ func TestFromBytesZeroAllocs(t *testing.T) {
 }
 
 func TestScanImageType(t *testing.T) {
+	t.Parallel()
 	fileOffset := scanHeaderLength
 	testDataFilename := "test.dat"
 
@@ -278,17 +282,22 @@ func TestScanImageType(t *testing.T) {
 		{".BMP", "0.bmp", "image/bmp"},
 	}
 
-	// Open file
-	f, err := os.Open(testDataFilename)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-
-	buf := make([]byte, fileOffset)
-
 	for i, header := range headerTests {
 		t.Run(header.name, func(t *testing.T) {
+			t.Parallel()
+			// Open per subtest: the parent returns (running its defers)
+			// before parallel subtests resume, so a shared handle would
+			// already be closed.
+			f, err := os.Open(testDataFilename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					t.Error(err)
+				}
+			}()
+			buf := make([]byte, fileOffset)
 			n, readErr := f.ReadAt(buf, int64(i*fileOffset))
 			if n != fileOffset || readErr != nil {
 				t.Fatal(readErr)
@@ -333,8 +342,8 @@ func TestScanImageType(t *testing.T) {
 		t.Errorf("Incorrect Error wanted %s or EOF got %v", ErrImageTypeNotFound.Error(), err)
 	}
 
-	buf = make([]byte, 10)
-	imageType, err = Buf(buf)
+	short := make([]byte, 10)
+	imageType, err = Buf(short)
 	if imageType != ImageUnknown {
 		t.Errorf("Incorrect Imagetype wanted %s got %s", ImageUnknown, imageType.String())
 	}
@@ -380,6 +389,7 @@ func TestScanShortBuffers(t *testing.T) {
 }
 
 func TestBufDetectsJPEGXL(t *testing.T) {
+	t.Parallel()
 	container := []byte{
 		0x00, 0x00, 0x00, 0x0C, // box size
 		0x4A, 0x58, 0x4C, 0x20, // "JXL "
@@ -412,6 +422,7 @@ func TestBufDetectsJPEGXL(t *testing.T) {
 }
 
 func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name     string
 		header   []byte
@@ -501,6 +512,7 @@ func makeFTYPHeader(major string, compatible ...string) []byte {
 }
 
 func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		major      string
@@ -535,6 +547,7 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 }
 
 func TestMsgp(t *testing.T) {
+	t.Parallel()
 	it, it2 := ImageJPEG, ImageUnknown
 	b, err := it.MarshalMsg(nil)
 	if err != nil {
