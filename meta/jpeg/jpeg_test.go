@@ -5,6 +5,7 @@
 package jpeg
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -425,6 +426,41 @@ func TestScanMetadataSkipsThumbnailData(t *testing.T) {
 	// parsing keeps this to the small resources.
 	if allocs > 12 {
 		t.Fatalf("ScanMetadata allocated %v times, want <= 12", allocs)
+	}
+}
+
+// TestSelectPhotoshopPayloadSkipsThumbnail drives the selective walker
+// directly with a tiny buffer so the fast in-place path cannot trigger:
+// the 20KB thumbnail must contribute only its length.
+func TestSelectPhotoshopPayloadSkipsThumbnail(t *testing.T) {
+	t.Parallel()
+	payload := testPhotoshopPayload(
+		testPhotoshopResource(0x040a, []byte{1}),
+		testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 20028)),
+	)
+	seg := append([]byte{0xff, byte(markerAPP13), 0, 0}, payload...)
+	binary.BigEndian.PutUint16(seg[2:4], uint16(len(payload)+2))
+	jr := &jpegReader{
+		br:       bufio.NewReaderSize(bytes.NewReader(seg), 64),
+		metadata: &Metadata{},
+		marker:   markerAPP13,
+		size:     uint16(len(payload) + 2),
+		offset:   0,
+	}
+	// Prime jr.buf the way nextMarker would (marker header peek).
+	var err error
+	if jr.buf, err = jr.peek(18); err != nil {
+		t.Fatal(err)
+	}
+	jr.readAPP13()
+	if jr.err != nil {
+		t.Fatal(jr.err)
+	}
+	if jr.metadata.Photoshop == nil || !jr.metadata.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v", jr.metadata.Photoshop)
+	}
+	if want := uint32(20000); jr.metadata.Photoshop.PhotoshopThumbnailLength != want {
+		t.Fatalf("PhotoshopThumbnailLength = %d, want %d", jr.metadata.Photoshop.PhotoshopThumbnailLength, want)
 	}
 }
 

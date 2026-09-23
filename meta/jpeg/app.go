@@ -100,6 +100,20 @@ func (jr *jpegReader) readAPP13() {
 		jr.ignoreMarker()
 		return
 	}
+	// Fast path: the whole segment is already buffered; parse it in place
+	// with no copy. Larger segments fall through to the selective walk.
+	if segLen := int(jr.size) + 2; segLen <= jr.br.Buffered() {
+		if buf, err := jr.peek(segLen); err == nil {
+			p, iptc, err := parsePhotoshop(buf[4:])
+			if err != nil {
+				jr.err = err
+				return
+			}
+			jr.metadata.Photoshop, jr.metadata.IPTC = p, iptc
+			jr.err = jr.discard(segLen)
+			return
+		}
+	}
 	compact, thumbLen, thumbSeen := jr.selectPhotoshopPayload()
 	p, iptc, err := parsePhotoshop(compact)
 	if err != nil {
@@ -136,9 +150,10 @@ func (jr *jpegReader) selectPhotoshopPayload() (compact []byte, thumbLen uint32,
 	if err := jr.discard(4 + len(photoshopPrefix)); err != nil {
 		return nil, 0, false
 	}
-	// Pre-size for the prefix plus typical small resources; IPTC-heavy
-	// segments grow once more instead of per resource.
-	compact = make([]byte, 0, 256)
+	// Pre-size for the prefix plus typical small resources, capped so
+	// tiny segments fit exactly; IPTC-heavy segments grow once more
+	// instead of per resource.
+	compact = make([]byte, 0, min(budget, 256))
 	compact = append(compact, photoshopPrefix...)
 	for budget > 0 {
 		head, err := jr.peek(7)
