@@ -146,10 +146,11 @@ func isAPPMarker(marker markerType) bool {
 }
 
 func markerHasNoLength(marker markerType) bool {
-	return marker == markerSOI ||
-		marker == markerEOI ||
-		marker == 0x01 ||
-		(marker >= 0xD0 && marker <= 0xD7)
+	switch marker {
+	case markerSOI, markerEOI, 0x01:
+		return true
+	}
+	return marker >= 0xD0 && marker <= 0xD7
 }
 
 // PhotoshopPrefix returns true if marker matches photoshopPrefix

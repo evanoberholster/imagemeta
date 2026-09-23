@@ -3,6 +3,17 @@
 // found in the LICENSE file.
 
 // Package jpeg reads metadata information (Exif and XMP) from a JPEG Image.
+//
+// The scanner walks JPEG markers and dispatches APP segments: APP0 carries
+// JFIF and Canon CIFF records, APP1 Exif/XMP (including extended XMP
+// reassembly), APP2 ICC profiles and MPF, APP13 Photoshop/IPTC and APP14
+// Adobe data. ScanMetadata additionally reports SOF image dimensions.
+//
+// Header scanning is bounded (4 MiB metadata budget, 64 MiB extended-XMP
+// cap); malformed streams fail fast with an error, never hang. When only
+// EXIF is requested the scan returns right after decoding it instead of
+// walking trailing markers. Passing an io.ReaderAt (or using ScanBytes)
+// lets segment payloads read independently with seekable callbacks.
 package jpeg
 
 import (
@@ -90,7 +101,9 @@ func ScanBytes(buf []byte, exifReader func(r io.Reader, header meta.ExifHeader) 
 
 // ScanMetadata scans a JPEG stream and returns metadata stored directly in JPEG
 // marker segments, such as JFIF, CIFF, MPF, ICC, Photoshop/IPTC, Adobe APP14 and
-// SOF image dimensions.
+// SOF image dimensions. Photoshop resources parse selectively: only decoded
+// fields materialize (thumbnail pixels contribute just their length), so
+// large APP13 segments cost a fraction of their size.
 func ScanMetadata(r io.Reader) (Metadata, error) {
 	var readerAt io.ReaderAt
 	if ra, ok := r.(io.ReaderAt); ok {
