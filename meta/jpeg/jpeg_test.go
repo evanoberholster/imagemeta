@@ -5,6 +5,7 @@
 package jpeg
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -21,7 +22,7 @@ import (
 )
 
 var (
-	dir            = "../assets/"
+	dir            = "../../assets/"
 	benchmarksJPEG = []struct {
 		fileName  string
 		noExifErr bool
@@ -45,6 +46,7 @@ func BenchmarkScanJPEG100(b *testing.B) {
 			b.Fatal(readErr)
 		}
 		r := bytes.NewReader(buf)
+		b.SetBytes(int64(len(buf)))
 		b.ReportAllocs()
 		b.ResetTimer()
 
@@ -63,6 +65,76 @@ func BenchmarkScanJPEG100(b *testing.B) {
 	}
 }
 
+func BenchmarkScanMetadata(b *testing.B) {
+	synthetic := testJPEG(
+		testSegment(markerAPP0, testJFIFPayload(1, 2, 1, 300, 200)),
+		testSegment(markerAPP2, testMPFPayload(2, 100, 200)),
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x0404, append(
+				testIPTCDataset(25, []byte("codex")),
+				testIPTCDataset(80, []byte("Jane Doe"))...,
+			)),
+		)),
+		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
+	)
+	profile := testICCProfile()
+	syntheticICC := testJPEG(
+		testSegment(markerAPP2, testICCPayload(1, 2, profile)),
+	)
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"synthetic", synthetic},
+		{"synthetic-icc", syntheticICC},
+	}
+	for _, path := range []string{
+		"../../assets/JPEG.jpg",
+		"../../download_samples/Canon/Canon/CanonEOS_R8.jpg",
+		"../../download_samples/Canon/Canon/CanonMP220.jpg",
+		"../../download_samples/Canon/Canon/CanonIXUS285HS.jpg",
+	} {
+		buf, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		files = append(files, struct {
+			name string
+			data []byte
+		}{path, buf})
+	}
+	for _, f := range files {
+		b.Run(f.name, func(b *testing.B) {
+			r := bytes.NewReader(f.data)
+			b.SetBytes(int64(len(f.data)))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := r.Seek(0, 0); err != nil {
+					b.Fatal(err)
+				}
+				if _, err := ScanMetadataWithReaderAt(r, r); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+// BenchmarkResyncZeros tracks the marker-resync path on markerless data.
+func BenchmarkResyncZeros(b *testing.B) {
+	data := append([]byte{0xFF, byte(markerSOI)}, bytes.Repeat([]byte{0}, 512*1024)...)
+	b.SetBytes(int64(len(data)))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := ScanJPEG(bytes.NewReader(data), nil, nil); err == nil {
+			b.Fatal("expected error scanning markerless data")
+		}
+	}
+}
+
 func TestScanJPEG(t *testing.T) {
 	testJPEGs := []struct {
 		filename string
@@ -71,10 +143,10 @@ func TestScanJPEG(t *testing.T) {
 		width    uint32
 		height   uint32
 	}{
-		{"../assets/JPEG.jpg", true, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
-		{"../assets/NoExif.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
-		{"../assets/a2.jpg", false, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
-		{"../assets/a1.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
+		{"../../assets/JPEG.jpg", true, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1000, 563},
+		{"../../assets/NoExif.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 140, imagetype.ImageJPEG), 50, 50},
+		{"../../assets/a2.jpg", false, meta.NewExifHeader(utils.LittleEndian, 13746, 12, 13872, imagetype.ImageJPEG), 1024, 1280},
+		{"../../assets/a1.jpg", true, meta.NewExifHeader(utils.BigEndian, 8, 30, 752, imagetype.ImageJPEG), 389, 259},
 	}
 
 	for _, jpg := range testJPEGs {
@@ -246,6 +318,173 @@ func TestScanJPEGExtendedXMP(t *testing.T) {
 	}
 }
 
+func TestScanJPEGExtendedXMPDeterministicOrder(t *testing.T) {
+	guidB := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	guidA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	partA := []byte("<x:xmpmeta>")
+	partB := []byte("</x:xmpmeta>")
+	// Segments arrive B-first; sorted GUID order must still assemble A first.
+	data := testJPEG(
+		testExtendedXMPSegment(guidB, uint32(len(partB)), 0, partB),
+		testExtendedXMPSegment(guidA, uint32(len(partA)), 0, partA),
+	)
+
+	var order []string
+	err := ScanJPEG(onlyReader{r: bytes.NewReader(data)}, nil, func(r io.Reader) error {
+		buf, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		order = append(order, string(buf))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(order) != 2 || order[0] != string(partA) || order[1] != string(partB) {
+		t.Fatalf("XMP callback order = %q, want [%q %q]", order, partA, partB)
+	}
+}
+
+// TestScanJPEGTruncatedNeverPanics feeds every truncation of a
+// multi-segment JPEG through the scanner with draining callbacks.
+// Truncations before SOS must error; anything reaching SOS decodes (the
+// scanner returns at the SOS marker without consuming image data). A panic
+// fails the test outright; hangs are bounded by the test binary timeout.
+func TestScanJPEGTruncatedNeverPanics(t *testing.T) {
+	t.Parallel()
+	full := testJPEG(
+		testSegment(markerAPP1, append(append([]byte(exifPrefix), testTIFFHeader()...), bytes.Repeat([]byte{0xa5}, 96)...)),
+		testSegment(markerAPP1, append([]byte(xmpPrefix), []byte("<x:xmpmeta></x:xmpmeta>")...)),
+		testSegment(markerAPP2, testMPFPayload(2, 100, 200)),
+		testSegment(markerAPP13, testPhotoshopPayload(testPhotoshopResource(0x040a, []byte{1}))),
+	)
+	sosOff := bytes.Index(full, []byte{0xff, byte(markerSOS)})
+	if sosOff < 0 {
+		t.Fatal("test image lacks an SOS marker")
+	}
+	// The scanner peeks up to 64 bytes of lookahead at each marker, so
+	// decoding needs that window past SOS; anything shorter must error.
+	// (The SOS payload itself is never consumed.)
+	sosEnd := sosOff + 64
+	for n := 0; n <= len(full); n++ {
+		exifCalls, xmpCalls := 0, 0
+		err := ScanBytes(full[:n],
+			func(r io.Reader, _ meta.ExifHeader) error {
+				exifCalls++
+				_, err := io.Copy(io.Discard, r)
+				return err
+			},
+			func(r io.Reader) error {
+				xmpCalls++
+				_, err := io.Copy(io.Discard, r)
+				return err
+			})
+		if n < sosEnd {
+			if err == nil {
+				t.Fatalf("truncation %d: expected error, got nil", n)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("truncation %d: unexpected error: %v", n, err)
+		}
+		if exifCalls != 1 || xmpCalls != 1 {
+			t.Fatalf("truncation %d: callbacks exif=%d xmp=%d, want 1/1", n, exifCalls, xmpCalls)
+		}
+	}
+}
+
+// TestScanMetadataSkipsThumbnailData checks that a large thumbnail
+// resource contributes only its length: the payload must decode
+// identically while allocating a fraction of the segment size.
+// Not parallel: testing.AllocsPerRun forbids it.
+func TestScanMetadataSkipsThumbnailData(t *testing.T) {
+	data := testJPEG(
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 20028)),
+		)),
+	)
+	got, err := ScanMetadata(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Photoshop == nil || !got.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v", got.Photoshop)
+	}
+	// 20028 bytes of thumbnail data minus its 28-byte header.
+	if want := uint32(20000); got.Photoshop.PhotoshopThumbnailLength != want {
+		t.Fatalf("PhotoshopThumbnailLength = %d, want %d", got.Photoshop.PhotoshopThumbnailLength, want)
+	}
+	allocs := testing.AllocsPerRun(20, func() {
+		if _, err := ScanMetadata(bytes.NewReader(data)); err != nil {
+			t.Error(err)
+		}
+	})
+	// A full-segment copy would move the 20KB thumbnail; selective
+	// parsing keeps this to the small resources.
+	if allocs > 12 {
+		t.Fatalf("ScanMetadata allocated %v times, want <= 12", allocs)
+	}
+}
+
+// TestSelectPhotoshopPayloadSkipsThumbnail drives the selective walker
+// directly with a tiny buffer so the fast in-place path cannot trigger:
+// the 20KB thumbnail must contribute only its length.
+func TestSelectPhotoshopPayloadSkipsThumbnail(t *testing.T) {
+	t.Parallel()
+	payload := testPhotoshopPayload(
+		testPhotoshopResource(0x040a, []byte{1}),
+		testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 20028)),
+	)
+	seg := append([]byte{0xff, byte(markerAPP13), 0, 0}, payload...)
+	binary.BigEndian.PutUint16(seg[2:4], uint16(len(payload)+2))
+	jr := &jpegReader{
+		br:       bufio.NewReaderSize(bytes.NewReader(seg), 64),
+		metadata: &Metadata{},
+		marker:   markerAPP13,
+		size:     uint16(len(payload) + 2),
+		offset:   0,
+	}
+	// Prime jr.buf the way nextMarker would (marker header peek).
+	var err error
+	if jr.buf, err = jr.peek(18); err != nil {
+		t.Fatal(err)
+	}
+	jr.readAPP13()
+	if jr.err != nil {
+		t.Fatal(jr.err)
+	}
+	if jr.metadata.Photoshop == nil || !jr.metadata.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v", jr.metadata.Photoshop)
+	}
+	if want := uint32(20000); jr.metadata.Photoshop.PhotoshopThumbnailLength != want {
+		t.Fatalf("PhotoshopThumbnailLength = %d, want %d", jr.metadata.Photoshop.PhotoshopThumbnailLength, want)
+	}
+}
+
+// TestScanMetadataTruncatedAPP13 checks that cutting a segment short keeps
+// already-parsed resources alongside the truncation error instead of
+// dropping everything.
+func TestScanMetadataTruncatedAPP13(t *testing.T) {
+	t.Parallel()
+	full := testJPEG(
+		testSegment(markerAPP13, testPhotoshopPayload(
+			testPhotoshopResource(0x040a, []byte{1}),
+			testPhotoshopResource(0x040c, bytes.Repeat([]byte{0xab}, 1000)),
+		)),
+	)
+	cut := len(full) - 500
+	got, err := ScanMetadata(bytes.NewReader(full[:cut]))
+	if err == nil {
+		t.Fatal("expected error for truncated segment, got nil")
+	}
+	if got.Photoshop == nil || !got.Photoshop.CopyrightFlagSet {
+		t.Fatalf("Photoshop = %+v, want copyright flag kept from truncated segment", got.Photoshop)
+	}
+}
+
 func TestScanJPEG_nextMarkerNoInfiniteLoop(t *testing.T) {
 	inputs := [][]byte{
 		{0xFF, 0x00},
@@ -309,8 +548,8 @@ func TestScanMetadataSyntheticAPPFamilies(t *testing.T) {
 		testSegment(markerAPP13, testPhotoshopPayload(
 			testPhotoshopResource(0x040a, []byte{1}),
 			testPhotoshopResource(0x0404, append(
-				testIPTCDataset(2, 25, []byte("codex")),
-				testIPTCDataset(2, 80, []byte("Jane Doe"))...,
+				testIPTCDataset(25, []byte("codex")),
+				testIPTCDataset(80, []byte("Jane Doe"))...,
 			)),
 		)),
 		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
@@ -623,8 +862,8 @@ func testPhotoshopResource(id uint16, data []byte) []byte {
 	return out
 }
 
-func testIPTCDataset(record, dataset uint8, value []byte) []byte {
-	out := []byte{0x1c, record, dataset, 0, 0}
+func testIPTCDataset(dataset uint8, value []byte) []byte {
+	out := []byte{0x1c, 2, dataset, 0, 0}
 	binary.BigEndian.PutUint16(out[3:5], uint16(len(value)))
 	return append(out, value...)
 }

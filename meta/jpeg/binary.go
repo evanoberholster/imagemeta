@@ -1,6 +1,7 @@
 package jpeg
 
 import (
+	"bytes"
 	"encoding/binary"
 	"math"
 	"strconv"
@@ -12,10 +13,10 @@ import (
 )
 
 func trimNULString(b []byte) string {
-	if i := strings.IndexByte(string(b), 0); i >= 0 {
+	if i := bytes.IndexByte(b, 0); i >= 0 {
 		b = b[:i]
 	}
-	return strings.TrimSpace(string(b))
+	return string(bytes.TrimSpace(b))
 }
 
 func u16ListString(order utils.ByteOrder, b []byte) string {

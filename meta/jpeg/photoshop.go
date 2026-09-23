@@ -102,21 +102,27 @@ func parsePhotoshopResource(p *Photoshop, iptc **IPTC, id uint16, data []byte) {
 	case 0x040b:
 		p.URL = strings.TrimRight(string(data), "\x00")
 	case 0x040c:
-		if n, ok := meta.SafecastIntToUint32(len(data)); ok {
-			p.PhotoshopThumbnailLength = n
-		} else {
-			p.PhotoshopThumbnailLength = 0
-		}
-		if len(data) > 28 {
-			if n, ok := meta.SafecastIntToUint32(len(data) - 28); ok {
-				p.PhotoshopThumbnailLength = n
-			} else {
-				p.PhotoshopThumbnailLength = 0
-			}
-		}
+		p.PhotoshopThumbnailLength = thumbnailLength(len(data))
 	case 0x0425:
 		p.IPTCDigest = hex.EncodeToString(data)
 	}
+}
+
+// thumbnailLength converts an APP13 thumbnail resource size to the stored
+// PhotoshopThumbnailLength: the size itself, or size minus the 28-byte
+// header it carries.
+func thumbnailLength(size int) uint32 {
+	n, ok := meta.SafecastIntToUint32(size)
+	if !ok {
+		return 0
+	}
+	if size > 28 {
+		n, ok = meta.SafecastIntToUint32(size - 28)
+		if !ok {
+			return 0
+		}
+	}
+	return n
 }
 
 func isEmptyPhotoshop(p *Photoshop) bool {
@@ -187,19 +193,23 @@ func parseIPTC(data []byte) *IPTC {
 }
 
 func parseIPTCDataset(iptc *IPTC, record, dataset uint8, value []byte) {
-	if record == 1 && dataset == 90 {
-		iptc.CodedCharacterSet = string(value)
-		return
-	}
-	if record == 1 && dataset == 0 {
-		if len(value) >= 2 {
-			iptc.EnvelopeRecordVersion = jpegEndian.Uint16(value)
+	switch record {
+	case 1:
+		switch dataset {
+		case 90:
+			iptc.CodedCharacterSet = string(value)
+		case 0:
+			if len(value) >= 2 {
+				iptc.EnvelopeRecordVersion = jpegEndian.Uint16(value)
+			}
 		}
-		return
+	case 2:
+		parseIPTCApplicationRecord(iptc, dataset, value)
 	}
-	if record != 2 {
-		return
-	}
+}
+
+// parseIPTCApplicationRecord handles record-2 (application) datasets.
+func parseIPTCApplicationRecord(iptc *IPTC, dataset uint8, value []byte) {
 	switch dataset {
 	case 0:
 		if len(value) >= 2 {
@@ -258,20 +268,39 @@ func (iptc *IPTC) empty() bool {
 }
 
 func iptcDate(value []byte) string {
-	s := string(value)
-	if len(s) == 8 {
-		return s[:4] + ":" + s[4:6] + ":" + s[6:8]
+	if len(value) == 8 {
+		var out [10]byte
+		copy(out[0:4], value[0:4])
+		out[4] = ':'
+		copy(out[5:7], value[4:6])
+		out[7] = ':'
+		copy(out[8:10], value[6:8])
+		return string(out[:])
 	}
-	return s
+	return string(value)
 }
 
 func iptcTime(value []byte) string {
-	s := string(value)
-	if len(s) == 11 && (s[6] == '+' || s[6] == '-') {
-		return s[:2] + ":" + s[2:4] + ":" + s[4:6] + s[6:9] + ":" + s[9:11]
+	if len(value) == 11 && (value[6] == '+' || value[6] == '-') {
+		var out [14]byte
+		copy(out[0:2], value[0:2])
+		out[2] = ':'
+		copy(out[3:5], value[2:4])
+		out[5] = ':'
+		copy(out[6:8], value[4:6])
+		copy(out[8:11], value[6:9])
+		out[11] = ':'
+		copy(out[12:14], value[9:11])
+		return string(out[:])
 	}
-	if len(s) >= 6 {
-		return s[:2] + ":" + s[2:4] + ":" + s[4:]
+	if len(value) >= 6 {
+		out := make([]byte, 0, len(value)+2)
+		out = append(out, value[:2]...)
+		out = append(out, ':')
+		out = append(out, value[2:4]...)
+		out = append(out, ':')
+		out = append(out, value[4:]...)
+		return string(out)
 	}
-	return s
+	return string(value)
 }

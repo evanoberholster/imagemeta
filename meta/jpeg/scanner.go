@@ -2,6 +2,7 @@ package jpeg
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,8 +12,15 @@ import (
 )
 
 const (
-	bufferSize           int = 4 * 1024        // 4Kb
-	maxMetadataScanBytes     = 2 * 1024 * 1024 // 2 MiB metadata scan budget
+	bufferSize int = 4 * 1024 // 4Kb
+	// scanProbeLength bounds marker lookahead peeks; payloads stream
+	// through callbacks or discards instead.
+	scanProbeLength = 64
+	// maxMetadataScanBytes bounds header scanning before image data.
+	// Sized for legitimate large metadata blocks (100MP-class files
+	// carry multi-MB APP segments); anything past it is treated as a
+	// malformed stream.
+	maxMetadataScanBytes = 4 * 1024 * 1024 // 4 MiB metadata scan budget
 )
 
 type jpegReader struct {
@@ -26,16 +34,13 @@ type jpegReader struct {
 	readerAt io.ReaderAt
 	err      error
 
-	// SOF Header
-	sofHeader
-
 	// Marker
 	buf    []byte
 	offset uint32
 	size   uint16
 	marker markerType
 
-	// Reader
+	// Position
 	pos       uint8
 	discarded uint32
 
@@ -96,49 +101,48 @@ func scanJPEGWithMetadata(ctx context.Context, r io.Reader, readerAt io.ReaderAt
 		}
 	}()
 
+	// exifOnly is loop-invariant: with no XMP/metadata consumer, decoding
+	// stops right after EXIF instead of walking trailing markers.
+	exifOnly := jr.ExifReader != nil && jr.XMPReader == nil && jr.metadata == nil
+
+	// Note: context cancellation is checked inside nextMarker (loop top and
+	// every resync iteration), which sets jr.err before returning false.
 	for {
-		if !jr.abortIfContextDone() {
-			break
-		}
 		if !jr.nextMarker() {
 			break
 		}
-		switch {
-		case isSOFMarker(jr.marker):
-			jr.readSOFMarker()
-		case isAPPMarker(jr.marker):
-			jr.readAPPMarker()
+		switch jr.marker {
+		case markerSOS:
+			if err = jr.processExtendedXMP(); err != nil {
+				return err
+			}
+			jr.logMarker("")
+			return nil
+		case markerDHT:
+			jr.logMarker("")
+			// Ignore DHT Markers
+			jr.ignoreMarker()
+		case markerEOI:
+			jr.logMarker("")
+			if err = jr.processExtendedXMP(); err != nil {
+				return err
+			}
+			jr.pos--
+			if jr.err = jr.discard(2); jr.err != nil {
+				return jr.err
+			}
+			return nil
+		case markerDQT:
+			jr.logMarker("")
+			jr.ignoreMarker()
+		case markerDRI:
+			jr.err = jr.discard(6)
 		default:
-			switch jr.marker {
-			case markerSOS:
-				if err = jr.processExtendedXMP(); err != nil {
-					return err
-				}
-				jr.logMarker("")
-				return nil
-			case markerDHT:
-				jr.logMarker("")
-				// Ignore DHT Markers
-				jr.ignoreMarker()
-			case markerSOI:
-				jr.logMarker("")
-				jr.pos++
-				jr.err = jr.discard(2)
-			case markerEOI:
-				jr.logMarker("")
-				if err = jr.processExtendedXMP(); err != nil {
-					return err
-				}
-				jr.pos--
-				if jr.err = jr.discard(2); jr.err != nil {
-					return jr.err
-				}
-				return nil
-			case markerDQT:
-				jr.logMarker("")
-				jr.ignoreMarker()
-			case markerDRI:
-				jr.err = jr.discard(6)
+			switch {
+			case isSOFMarker(jr.marker):
+				jr.readSOFMarker()
+			case isAPPMarker(jr.marker):
+				jr.readAPPMarker()
 			default: // unknown marker
 				jr.logMarker("")
 				jr.ignoreMarker()
@@ -146,7 +150,7 @@ func scanJPEGWithMetadata(ctx context.Context, r io.Reader, readerAt io.ReaderAt
 		}
 		// When only EXIF is requested, return immediately after decoding it.
 		// This avoids walking potentially malformed trailing marker streams.
-		if jr.err == nil && jr.foundExif && jr.ExifReader != nil && jr.XMPReader == nil && jr.metadata == nil {
+		if jr.err == nil && jr.foundExif && exifOnly {
 			return nil
 		}
 	}
@@ -185,24 +189,18 @@ func (jr *jpegReader) nextMarker() bool {
 			return false
 		}
 		if !isMarkerFirstByte(jr.buf) {
-			scanLen := 64
-			if jr.buf, jr.err = jr.peek(scanLen); jr.err != nil && len(jr.buf) == 0 {
+			if jr.buf, jr.err = jr.peek(scanProbeLength); jr.err != nil && len(jr.buf) == 0 {
 				jr.err = ErrNoJPEGMarker
 				return false
 			}
-			var i int
-			for i = 0; i < len(jr.buf); i++ {
-				if isMarkerFirstByte(jr.buf[i:]) {
-					break
-				}
-			}
-			if i == len(jr.buf) {
-				if i == 0 {
+			i := bytes.IndexByte(jr.buf, byte(markerFirstByte))
+			if i < 0 {
+				if len(jr.buf) == 0 {
 					jr.err = ErrNoJPEGMarker
 					return false
 				}
 				// Keep the final byte in case it is the 0xff marker prefix.
-				i--
+				i = len(jr.buf) - 1
 			}
 			jr.err = jr.discard(i)
 			if jr.err != nil {
@@ -250,12 +248,11 @@ func (jr *jpegReader) nextMarker() bool {
 				}
 				continue
 			}
+			// size >= 2 is guaranteed above, so at least marker
+			// length bytes are peeked; payloads stream afterwards.
 			peekLen := int(jr.size) + 2
-			if peekLen > 64 {
-				peekLen = 64
-			}
-			if peekLen < 4 {
-				peekLen = 4
+			if peekLen > scanProbeLength {
+				peekLen = scanProbeLength
 			}
 			if jr.buf, jr.err = jr.peek(peekLen); jr.err != nil {
 				jr.err = ErrNoJPEGMarker
@@ -300,9 +297,6 @@ func (jr *jpegReader) readSOFMarker() {
 	height := jpegEndian.Uint16(jr.buf[5:7])
 	width := jpegEndian.Uint16(jr.buf[7:9])
 	comp := jr.buf[9]
-	if jr.pos == 1 {
-		jr.sofHeader = sofHeader{height, width, comp}
-	}
 	if jr.metadata != nil {
 		jr.metadata.SOF = SOF{
 			Marker:          jr.marker.String(),
@@ -314,13 +308,6 @@ func (jr *jpegReader) readSOFMarker() {
 		}
 	}
 	jr.err = jr.discard(int(jr.size) + 2)
-}
-
-// sofHeader contains height, width and number of components.
-type sofHeader struct {
-	height     uint16
-	width      uint16
-	components uint8
 }
 
 // ignoreMarker discards the marker size
