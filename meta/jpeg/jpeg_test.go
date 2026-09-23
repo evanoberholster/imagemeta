@@ -71,8 +71,8 @@ func BenchmarkScanMetadata(b *testing.B) {
 		testSegment(markerAPP13, testPhotoshopPayload(
 			testPhotoshopResource(0x040a, []byte{1}),
 			testPhotoshopResource(0x0404, append(
-				testIPTCDataset(2, 25, []byte("codex")),
-				testIPTCDataset(2, 80, []byte("Jane Doe"))...,
+				testIPTCDataset(25, []byte("codex")),
+				testIPTCDataset(80, []byte("Jane Doe"))...,
 			)),
 		)),
 		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
@@ -128,7 +128,9 @@ func BenchmarkResyncZeros(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = ScanJPEG(bytes.NewReader(data), nil, nil)
+		if err := ScanJPEG(bytes.NewReader(data), nil, nil); err == nil {
+			b.Fatal("expected error scanning markerless data")
+		}
 	}
 }
 
@@ -406,8 +408,8 @@ func TestScanMetadataSyntheticAPPFamilies(t *testing.T) {
 		testSegment(markerAPP13, testPhotoshopPayload(
 			testPhotoshopResource(0x040a, []byte{1}),
 			testPhotoshopResource(0x0404, append(
-				testIPTCDataset(2, 25, []byte("codex")),
-				testIPTCDataset(2, 80, []byte("Jane Doe"))...,
+				testIPTCDataset(25, []byte("codex")),
+				testIPTCDataset(80, []byte("Jane Doe"))...,
 			)),
 		)),
 		testSegment(markerAPP14, testAdobePayload(100, 1, 2, 1)),
@@ -720,8 +722,8 @@ func testPhotoshopResource(id uint16, data []byte) []byte {
 	return out
 }
 
-func testIPTCDataset(record, dataset uint8, value []byte) []byte {
-	out := []byte{0x1c, record, dataset, 0, 0}
+func testIPTCDataset(dataset uint8, value []byte) []byte {
+	out := []byte{0x1c, 2, dataset, 0, 0}
 	binary.BigEndian.PutUint16(out[3:5], uint16(len(value)))
 	return append(out, value...)
 }
