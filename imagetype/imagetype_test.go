@@ -480,19 +480,23 @@ func TestBufDetectsAdditionalMagicNumbers(t *testing.T) {
 
 func makeFTYPHeader(major string, compatible ...string) []byte {
 	buf := make([]byte, scanHeaderLength)
-	buf[0], buf[1], buf[2], buf[3] = 0x00, 0x00, 0x00, 0x20
 	copy(buf[4:8], []byte("ftyp"))
 	copy(buf[8:12], []byte(major))
 	copy(buf[12:16], []byte("0001"))
 
 	offset := 16
 	for _, brand := range compatible {
+		if len(brand) != 4 {
+			panic("compatible brand must be 4 bytes")
+		}
 		if offset+4 > len(buf) {
 			break
 		}
 		copy(buf[offset:offset+4], []byte(brand))
 		offset += 4
 	}
+	// Declare the true box size so brand scans stay in bounds.
+	buf[0], buf[1], buf[2], buf[3] = byte(offset>>24), byte(offset>>16), byte(offset>>8), byte(offset)
 	return buf
 }
 
@@ -512,6 +516,8 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 		{name: "HEVS major", major: "hevs", expected: ImageHEIC},
 		{name: "MIAF major", major: "miaf", expected: ImageHEIF},
 		{name: "HEIF major", major: "heif", expected: ImageHEIF},
+		{name: "AVIS late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "avis"}, expected: ImageAVIF},
+		{name: "HEIC late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "zzzz", "hevc"}, expected: ImageHEIC},
 	}
 
 	for _, tc := range cases {

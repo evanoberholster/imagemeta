@@ -1075,7 +1075,23 @@ func hasAt(buf []byte, offset int, sig []byte) bool {
 }
 
 func hasCompatibleBrand(buf []byte, brand []byte) bool {
-	return hasAt(buf, 16, brand) || hasAt(buf, 20, brand)
+	// Walk every compatible-brand slot in the ftyp box instead of only
+	// the first two: files with long brand lists otherwise miss.
+	if len(buf) < 8 {
+		return false
+	}
+	size := uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
+	limit := len(buf)
+	// A zero box size means "to end of file" per the spec.
+	if size != 0 && int(size) < limit {
+		limit = int(size)
+	}
+	for off := 16; off+4 <= limit; off += 4 {
+		if hasAt(buf, off, brand) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasAnyCompatibleBrand(buf []byte, brands ...[]byte) bool {
