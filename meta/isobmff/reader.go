@@ -122,6 +122,29 @@ func NewReader(r io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader
 	return &reader
 }
 
+// NewReaderWithSource wires a Reader around a buffered stream while retaining
+// the underlying seekable source for seeks and buffer resets. It mirrors the
+// dual-reader pattern of jpeg.ScanJPEGWithSource: stream carries the buffered
+// read position (typically a caller-provided *bufio.Reader that hides the
+// seeker), while source must be that stream's underlying reader. Seeks only
+// engage when source implements io.Seeker.
+func NewReaderWithSource(stream io.Reader, source io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *Reader {
+	var br *bufio.Reader
+	pooled := false
+	// Reuse caller-provided bufio.Reader when large enough to avoid stacking buffers.
+	if b, ok := stream.(*bufio.Reader); ok && b.Size() >= bufReaderSize {
+		br = b
+	} else {
+		br = readerPool.Acquire(stream)
+		pooled = true
+	}
+	reader := newReaderWithBufio(br, source, pooled)
+	reader.exifReader = exifReader
+	reader.xmpReader = xmpReader
+	reader.previewImageReader = previewImageReader
+	return &reader
+}
+
 func newReader(r io.Reader) Reader {
 	// Reuse caller-provided bufio.Reader when large enough to avoid stacking buffers.
 	if br, ok := r.(*bufio.Reader); ok && br.Size() >= bufReaderSize {
