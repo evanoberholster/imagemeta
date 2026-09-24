@@ -482,6 +482,101 @@ func TestReadMetadataReadsMinimalExifHeader(t *testing.T) {
 	}
 }
 
+// TestReadMetadataResolvesIlocBeforeIinf checks that an iloc box ordered
+// ahead of iinf (legal per ISO/IEC 14496-12) still dispatches its Exif item:
+// extents are retained during iloc and attributed once infe IDs are known.
+func TestReadMetadataResolvesIlocBeforeIinf(t *testing.T) {
+	tiff := []byte{
+		'I', 'I', 0x2A, 0x00,
+		0x08, 0x00, 0x00, 0x00,
+		0x00, 0x00,
+	}
+	pitm := []byte{
+		0x00, 0x00, 0x00, 0x0E,
+		'p', 'i', 't', 'm',
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+	}
+	iloc := []byte{
+		0x00, 0x00, 0x00, 0x1E,
+		'i', 'l', 'o', 'c',
+		0x00, 0x00, 0x00, 0x00,
+		0x44, 0x00,
+		0x00, 0x01,
+		0x00, 0x01,
+		0x00, 0x00,
+		0x00, 0x01,
+		0x00, 0x00, 0x00, 0x00, // extent offset (patched below)
+		0x00, 0x00, 0x00, 0x00, // extent length (patched below)
+	}
+	infe := []byte{
+		0x00, 0x00, 0x00, 0x19,
+		'i', 'n', 'f', 'e',
+		0x02, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+		0x00, 0x00,
+		'E', 'x', 'i', 'f',
+		'E', 'x', 'i', 'f', 0x00,
+	}
+	iinf := []byte{
+		0x00, 0x00, 0x00, 0x27,
+		'i', 'i', 'n', 'f',
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+	}
+	iinf = append(iinf, infe...)
+	// Patch the iloc extent before assembling: append copies payload bytes,
+	// so later writes to iloc would miss the assembled stream.
+	metaSize := 8 + 4 + len(pitm) + len(iloc) + len(iinf)
+	mdatPayload := 16 + metaSize + 8
+	binary.BigEndian.PutUint32(iloc[22:26], uint32(mdatPayload))
+	binary.BigEndian.PutUint32(iloc[26:30], uint32(len(tiff)))
+	children := append(append(pitm, iloc...), iinf...)
+
+	var data []byte
+	data = append(data,
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'h', 'e', 'i', 'c',
+		0x00, 0x00, 0x00, 0x00,
+	)
+	metaHeader := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		'm', 'e', 't', 'a',
+		0x00, 0x00, 0x00, 0x00,
+	}
+	binary.BigEndian.PutUint32(metaHeader[0:4], uint32(metaSize))
+	data = append(append(data, metaHeader...), children...)
+	mdatHeader := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		'm', 'd', 'a', 't',
+	}
+	binary.BigEndian.PutUint32(mdatHeader[0:4], uint32(8+len(tiff)))
+	data = append(append(data, mdatHeader...), tiff...)
+
+	var exifHits int
+	r := NewReader(bytes.NewReader(data),
+		func(r io.Reader, _ meta.ExifHeader) error {
+			exifHits++
+			_, err := io.Copy(io.Discard, r)
+			return err
+		}, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadataUntilEOF(); err != nil {
+		t.Fatalf("ReadMetadataUntilEOF() error = %v", err)
+	}
+	if exifHits != 1 {
+		t.Fatalf("exif callbacks = %d, want 1", exifHits)
+	}
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
 func TestReadMetadataSkipsUnknownTopLevelBox(t *testing.T) {
 	data := []byte{
 		// ftyp

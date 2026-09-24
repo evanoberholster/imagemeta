@@ -28,6 +28,13 @@ type heicMeta struct {
 	exif item
 	xml  item
 
+	// itemExtents retains every resolved iloc first-extent so items whose
+	// infe entry appears after iloc can still be attributed at dispatch.
+	// Only populated when iloc precedes iinf; nil otherwise.
+	itemExtents []itemExtent
+	// iinfParsed records that item types are final, so later iloc boxes
+	// need no retention (inline attribution suffices).
+	iinfParsed    bool
 	idatData      offsetLength
 	references    []itemReference
 	properties    []itemProperty

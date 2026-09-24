@@ -9,6 +9,11 @@ import (
 
 const mimeContentTypeMaxLen = 64
 
+// maxRetainedItemExtents caps the exact prealloc for deferred iloc extent
+// retention: ilb.count is file-controlled, and pathological counts must not
+// cause huge preallocs (incremental growth bounds those instead).
+const maxRetainedItemExtents = 4096
+
 // readIinf parses the HEIF item info box and dispatches contained infe entries.
 func (r *Reader) readIinf(b *box) (err error) {
 	if err = b.readFlags(); err != nil {
@@ -48,6 +53,7 @@ func (r *Reader) readIinf(b *box) (err error) {
 	if logLevelDebug() && parsed != count {
 		logDebugBox(b).Uint32("declared", count).Uint32("parsed", parsed).Msg("item info entry count mismatch")
 	}
+	r.heic.iinfParsed = true
 	return nil
 }
 
@@ -269,6 +275,12 @@ type offsetLength struct {
 	length int
 }
 
+// itemExtent pairs an iloc item ID with its resolved first extent.
+type itemExtent struct {
+	id itemID
+	ol offsetLength
+}
+
 // MarshalLogObject is a structured logging interface
 func (ol offsetLength) MarshalLogObject(e *metalog.Event) {
 	e.Int("length", ol.length).Uint64("offset", ol.offset)
@@ -280,6 +292,20 @@ func (r *Reader) readIloc(b *box) (err error) {
 	ilb, err := readIlocHeader(b)
 	if err != nil {
 		return err
+	}
+
+	// Retain extents only when item types are still unknown (iloc precedes
+	// iinf); once iinf is parsed the inline attribution below is complete
+	// and retention would just cost an allocation. The prealloc is exact
+	// (count is known) but capped against file-controlled huge counts.
+	if !r.heic.iinfParsed && r.heic.itemExtents == nil {
+		n := ilb.count
+		if n > maxRetainedItemExtents {
+			n = 0
+		}
+		if n > 0 {
+			r.heic.itemExtents = make([]itemExtent, 0, n)
+		}
 	}
 
 	for i := uint32(0); i < ilb.count; i++ {
@@ -371,6 +397,9 @@ func (r *Reader) readIloc(b *box) (err error) {
 			if firstExtentResolved {
 				r.heic.xml.ol = ent.firstExtent
 			}
+		}
+		if firstExtentResolved && !r.heic.iinfParsed {
+			r.heic.itemExtents = append(r.heic.itemExtents, itemExtent{id: ent.id, ol: ent.firstExtent})
 		}
 	}
 	return b.close()

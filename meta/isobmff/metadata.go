@@ -67,6 +67,30 @@ func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
 	}
 }
 
+// resolveItemExtents attributes retained iloc extents to the Exif/XMP items
+// identified later by iinf. Boxes may legally order iloc ahead of iinf, in
+// which case the inline attribution in readIloc found unknown IDs.
+func (r *Reader) resolveItemExtents() {
+	if len(r.heic.itemExtents) == 0 {
+		return
+	}
+	if r.heic.exif.id != 0 && r.heic.exif.ol.length == 0 {
+		r.heic.exif.ol = r.lookupItemExtent(r.heic.exif.id)
+	}
+	if r.heic.xml.id != 0 && r.heic.xml.ol.length == 0 {
+		r.heic.xml.ol = r.lookupItemExtent(r.heic.xml.id)
+	}
+}
+
+func (r *Reader) lookupItemExtent(id itemID) offsetLength {
+	for _, e := range r.heic.itemExtents {
+		if e.id == id {
+			return e.ol
+		}
+	}
+	return offsetLength{}
+}
+
 func (r *Reader) readMdat(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read media data box")
@@ -85,6 +109,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 
 	var items [2]mdatItem
 	itemCount := 0
+	r.resolveItemExtents()
 	if r.hasGoal(metadataKindExif) && !r.hasHave(metadataKindExif) && r.heic.exif.ol.length > 0 {
 		items[itemCount] = mdatItem{
 			kind:     mdatItemExif,
