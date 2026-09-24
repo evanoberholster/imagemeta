@@ -19,7 +19,8 @@ func (r *Reader) readIinf(b *box) (err error) {
 	switch b.flags.version() {
 	case 0:
 		use32 = false
-	case 1:
+	case 1, 2, 3:
+		// Versions 1-3 all store entry_count as uint32 (ISO/IEC 14496-12).
 		use32 = true
 	default:
 		return fmt.Errorf("readIinf: unsupported version %d", b.flags.version())
