@@ -345,26 +345,6 @@ func fourCCString(v uint32) string {
 // readCrxTrakBox is a placeholder for optional CR3 /trak parsing.
 // The current metadata pipeline intentionally avoids track/sample-table parsing.
 func readCrxTrakBox(b *box) (err error) {
-	//var inner box
-	//var ok bool
-	////for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
-	//	switch inner.boxType {
-	//	case typeMdia:
-	//		err = readCrxMdia(&inner)
-	//	case typeHdlr:
-	//
-	//	case typeStsd:
-	//
-	//	case typeStsz:
-	//
-	//	case typeCo64:
-	//
-	//	}
-	//	if logLevelInfo() {
-	//		logInfoBox(inner)
-	//	}
-	//	inner.close()
-	//}
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read cr3 track box")
 	}
