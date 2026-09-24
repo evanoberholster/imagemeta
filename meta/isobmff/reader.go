@@ -281,6 +281,28 @@ func (r *Reader) Close() {
 	r.pooledBufio = false
 }
 
+// boxSizeToEOF resolves a zero-size box header ("extends to end of file",
+// ISO/IEC 14496-12) on seekable sources by measuring EOF relative to the box
+// start. The buffered header is dropped and re-read by the caller, so the
+// reader ends positioned exactly as if the declared size had been parsed.
+func (r *Reader) boxSizeToEOF(boxOffset int64) (int, error) {
+	if r.seeker == nil {
+		return 0, fmt.Errorf("readBox: %w", ErrBoxSizeZero)
+	}
+	end, err := r.seeker.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, fmt.Errorf("readBox size 0: %w", errors.Join(ErrBoxSizeZero, err))
+	}
+	if _, err := r.seeker.Seek(boxOffset, io.SeekStart); err != nil {
+		return 0, fmt.Errorf("readBox size 0: %w", errors.Join(ErrBoxSizeZero, err))
+	}
+	r.br.Reset(r.source)
+	if size := end - boxOffset; size >= 8 && uint64(size) <= uint64(maxIntValue) {
+		return int(size), nil
+	}
+	return 0, fmt.Errorf("readBox invalid size 0: %w", ErrBufLength)
+}
+
 // readBox reads an ISOBMFF box
 func (r *Reader) readBox() (b box, err error) {
 	// Read box size and box type (8-byte header)
@@ -313,6 +335,12 @@ func (r *Reader) readBox() (b box, err error) {
 			return b, err
 		}
 		headerSize = 16
+	}
+	if size == 0 {
+		size, err = r.boxSizeToEOF(r.offset)
+		if err != nil {
+			return b, err
+		}
 	}
 	if err = validateBoxSize(size, headerSize, boxType); err != nil {
 		return b, err

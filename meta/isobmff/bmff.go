@@ -12,6 +12,7 @@ var (
 	ErrRemainLengthInsufficient = errors.New("remain length insufficient")
 	ErrUnsupportedFieldSize     = errors.New("unsupported field size")
 	ErrBoxStringTooLong         = errors.New("box string too long")
+	ErrBoxSizeZero              = errors.New("zero box size on non-seekable source")
 	errLargeBox                 = errors.New("unexpectedly large box")
 	ErrWrongBoxType             = errors.New("wrong box type")
 )

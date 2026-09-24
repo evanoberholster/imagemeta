@@ -182,6 +182,11 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 		}
 		headerSize = 16
 	}
+	if size == 0 {
+		// Nested zero-size boxes are malformed per spec (0 means end of
+		// file), so bound them by the outer container instead of failing.
+		size = b.remain
+	}
 	if err = validateBoxSize(size, headerSize, bt); err != nil {
 		return inner, false, err
 	}
