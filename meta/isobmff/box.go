@@ -68,6 +68,8 @@ func (b *box) Discard(n int) (int, error) {
 }
 
 // Read copies bytes from the underlying reader while respecting box bounds.
+// Consumed bytes advance the reader's absolute offset exactly like Discard,
+// so later boxes resolve correct absolute positions after callbacks Read.
 func (b *box) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
@@ -82,6 +84,9 @@ func (b *box) Read(p []byte) (n int, err error) {
 	}
 
 	n, err = b.reader.br.Read(p[:readLen])
+	if n > 0 {
+		b.reader.offset += int64(n)
+	}
 	b.adjust(n)
 	if n == 0 && err == nil {
 		return 0, io.EOF
