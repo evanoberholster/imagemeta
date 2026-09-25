@@ -105,6 +105,9 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 	if err != nil {
 		return err
 	}
+	// THMB completion is recorded through the shared preview path
+	// (callPreviewReader sets the THMB have-bit); here only clear the goal
+	// when no THMB box appeared at all.
 	if r.hasGoal(metadataKindTHMB) && !sawTHMB {
 		// Some CR3 variants do not include a THMB box.
 		r.setGoal(metadataKindTHMB, false)
