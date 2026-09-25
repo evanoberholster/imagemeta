@@ -168,6 +168,9 @@ type cctpEntry struct {
 	index     uint32
 }
 
+// cctpEntrySize is the encoded size of one CCTP track descriptor record.
+const cctpEntrySize = 5 * 4
+
 // readCCTPBox reads Canon CCTP entries for diagnostics/logging.
 func readCCTPBox(b *box) (err error) {
 	if !b.isType(typeCCTP) {
@@ -187,7 +190,7 @@ func readCCTPBox(b *box) (err error) {
 	if err != nil {
 		return err
 	}
-	maxEntries := b.remain / 24
+	maxEntries := b.remain / cctpEntrySize
 	if entryCount > maxEntries {
 		entryCount = maxEntries
 	}
