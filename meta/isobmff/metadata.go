@@ -22,10 +22,10 @@ func (r *Reader) ReadMetadata() (err error) {
 
 	// Reuse one box across iterations: taking its address escapes to the
 	// heap, so a loop-scoped box would allocate per top-level box.
+	// readBox zeroes flags, the one field it does not otherwise set.
 	var b box
 	var readErr error
 	for {
-		b = box{}
 		b, readErr = r.readBox()
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
