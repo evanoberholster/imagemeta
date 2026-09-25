@@ -141,15 +141,22 @@ func (r *Reader) readInfe(b *box) (err error) {
 	return nil
 }
 
+var (
+	xmpMIMETypeRDFXML = []byte("application/rdf+xml")
+	xmpMIMETypeXML    = []byte("application/xml")
+	xmpMIMETypeText   = []byte("text/xml")
+	xmpMIMESubstrXMP  = []byte("xmp")
+	xmpMIMESubstrRDF  = []byte("rdf+xml")
+)
+
 func isXMPMIMETypeBytes(contentType []byte) bool {
 	ct := bytes.TrimSpace(contentType)
-	switch {
-	case asciiEqualFoldBytes(ct, []byte("application/rdf+xml")),
-		asciiEqualFoldBytes(ct, []byte("application/xml")),
-		asciiEqualFoldBytes(ct, []byte("text/xml")):
+	if asciiEqualFoldBytes(ct, xmpMIMETypeRDFXML) ||
+		asciiEqualFoldBytes(ct, xmpMIMETypeXML) ||
+		asciiEqualFoldBytes(ct, xmpMIMETypeText) {
 		return true
 	}
-	return asciiContainsFoldBytes(ct, []byte("xmp")) || asciiContainsFoldBytes(ct, []byte("rdf+xml"))
+	return asciiContainsFoldBytes(ct, xmpMIMESubstrXMP) || asciiContainsFoldBytes(ct, xmpMIMESubstrRDF)
 }
 
 func asciiContainsFoldBytes(s, sub []byte) bool {
@@ -173,6 +180,9 @@ func asciiContainsFoldBytes(s, sub []byte) bool {
 }
 
 func asciiEqualFoldBytes(a, b []byte) bool {
+	if len(a) < len(b) {
+		return false
+	}
 	for i := 0; i < len(b); i++ {
 		if toASCIILowerByte(a[i]) != toASCIILowerByte(b[i]) {
 			return false
