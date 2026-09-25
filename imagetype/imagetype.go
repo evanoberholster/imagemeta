@@ -1539,6 +1539,7 @@ var (
 	brandHEVX   = []byte("hevx")
 	brandMIAF   = []byte("miaf")
 	brandMIF1   = []byte("mif1")
+	brandMIF3   = []byte("mif3")
 	brandMSF1   = []byte("msf1")
 	brandHEVC   = []byte("hevc")
 	brandAVIF   = []byte("avif")
@@ -1727,10 +1728,11 @@ func isobmffSubtype(buf []byte) FileType {
 		return ImageHEIC
 	}
 
-	// Generic HEIF (mif1/msf1/heif without explicit HEIC branding).
+	// Generic HEIF (mif1/mif3/msf1/heif without explicit HEIC branding).
 	if isFTYPBrand(buf[8:], brandHEIF) ||
 		isFTYPBrand(buf[8:], brandMIAF) ||
 		isFTYPBrand(buf[8:], brandMIF1) ||
+		isFTYPBrand(buf[8:], brandMIF3) ||
 		isFTYPBrand(buf[8:], brandMSF1) ||
 		hasAnyCompatibleBrand(buf, brandHEIF, brandMIAF, brandMIF1, brandMSF1) {
 		return ImageHEIF

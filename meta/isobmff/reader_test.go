@@ -482,6 +482,101 @@ func TestReadMetadataReadsMinimalExifHeader(t *testing.T) {
 	}
 }
 
+// TestReadMetadataResolvesIlocBeforeIinf checks that an iloc box ordered
+// ahead of iinf (legal per ISO/IEC 14496-12) still dispatches its Exif item:
+// extents are retained during iloc and attributed once infe IDs are known.
+func TestReadMetadataResolvesIlocBeforeIinf(t *testing.T) {
+	tiff := []byte{
+		'I', 'I', 0x2A, 0x00,
+		0x08, 0x00, 0x00, 0x00,
+		0x00, 0x00,
+	}
+	pitm := []byte{
+		0x00, 0x00, 0x00, 0x0E,
+		'p', 'i', 't', 'm',
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+	}
+	iloc := []byte{
+		0x00, 0x00, 0x00, 0x1E,
+		'i', 'l', 'o', 'c',
+		0x00, 0x00, 0x00, 0x00,
+		0x44, 0x00,
+		0x00, 0x01,
+		0x00, 0x01,
+		0x00, 0x00,
+		0x00, 0x01,
+		0x00, 0x00, 0x00, 0x00, // extent offset (patched below)
+		0x00, 0x00, 0x00, 0x00, // extent length (patched below)
+	}
+	infe := []byte{
+		0x00, 0x00, 0x00, 0x19,
+		'i', 'n', 'f', 'e',
+		0x02, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+		0x00, 0x00,
+		'E', 'x', 'i', 'f',
+		'E', 'x', 'i', 'f', 0x00,
+	}
+	iinf := []byte{
+		0x00, 0x00, 0x00, 0x27,
+		'i', 'i', 'n', 'f',
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x01,
+	}
+	iinf = append(iinf, infe...)
+	// Patch the iloc extent before assembling: append copies payload bytes,
+	// so later writes to iloc would miss the assembled stream.
+	metaSize := 8 + 4 + len(pitm) + len(iloc) + len(iinf)
+	mdatPayload := 16 + metaSize + 8
+	binary.BigEndian.PutUint32(iloc[22:26], uint32(mdatPayload))
+	binary.BigEndian.PutUint32(iloc[26:30], uint32(len(tiff)))
+	children := append(append(pitm, iloc...), iinf...)
+
+	var data []byte
+	data = append(data,
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'h', 'e', 'i', 'c',
+		0x00, 0x00, 0x00, 0x00,
+	)
+	metaHeader := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		'm', 'e', 't', 'a',
+		0x00, 0x00, 0x00, 0x00,
+	}
+	binary.BigEndian.PutUint32(metaHeader[0:4], uint32(metaSize))
+	data = append(append(data, metaHeader...), children...)
+	mdatHeader := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		'm', 'd', 'a', 't',
+	}
+	binary.BigEndian.PutUint32(mdatHeader[0:4], uint32(8+len(tiff)))
+	data = append(append(data, mdatHeader...), tiff...)
+
+	var exifHits int
+	r := NewReader(bytes.NewReader(data),
+		func(r io.Reader, _ meta.ExifHeader) error {
+			exifHits++
+			_, err := io.Copy(io.Discard, r)
+			return err
+		}, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadataUntilEOF(); err != nil {
+		t.Fatalf("ReadMetadataUntilEOF() error = %v", err)
+	}
+	if exifHits != 1 {
+		t.Fatalf("exif callbacks = %d, want 1", exifHits)
+	}
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
 func TestReadMetadataSkipsUnknownTopLevelBox(t *testing.T) {
 	data := []byte{
 		// ftyp
@@ -543,31 +638,32 @@ func TestReadMetadataReturnsEOF(t *testing.T) {
 	}
 }
 
-func TestReadMetaSkipsNonExifItemGraphBoxesForHEIF(t *testing.T) {
-	// Malformed iprp/ipma payload that would fail if parsed.
-	badIPMA := makeReaderTestBox("ipma", []byte{
-		0x00, 0x00, 0x00, 0x00, // flags
-		0x00, 0x00, // truncated entry_count
-	})
-	metaPayload := append([]byte{
-		0x00, 0x00, 0x00, 0x00, // meta full box flags
-	}, makeReaderTestBox("iprp", badIPMA)...)
-
-	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
-	t.Cleanup(r.Close)
-	r.ftyp.MajorBrand = brandHeic
-
-	b, err := r.readBox()
-	if err != nil {
-		t.Fatalf("readBox() error = %v", err)
+func TestReadMetadataUntilEOFReturnsNilOnCleanEOF(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'h', 'e', 'i', 'c',
+		0x00, 0x00, 0x00, 0x00,
 	}
-	if err := r.readMeta(&b); err != nil {
-		t.Fatalf("readMeta() error = %v, want nil for HEIF skip path", err)
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadataUntilEOF(); err != nil {
+		t.Fatalf("ReadMetadataUntilEOF() error = %v", err)
+	}
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
 	}
 }
 
-func TestReadMetaParsesItemGraphBoxesForCR3(t *testing.T) {
-	// Same malformed payload as above, but CR3 path should parse iprp/ipma and fail.
+func TestReadMetaParsesItemGraphForAllBrands(t *testing.T) {
+	// Malformed iprp/ipma payload fails parsing for every brand: pitm and
+	// iprp are parsed unconditionally so primary-item dimensions resolve.
 	badIPMA := makeReaderTestBox("ipma", []byte{
 		0x00, 0x00, 0x00, 0x00, // flags
 		0x00, 0x00, // truncated entry_count
@@ -576,16 +672,80 @@ func TestReadMetaParsesItemGraphBoxesForCR3(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // meta full box flags
 	}, makeReaderTestBox("iprp", badIPMA)...)
 
-	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
-	t.Cleanup(r.Close)
-	r.ftyp.MajorBrand = brandCrx
+	for _, major := range []brand{brandHeic, brandCrx} {
+		t.Run(major.String(), func(t *testing.T) {
+			r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
+			t.Cleanup(r.Close)
+			r.ftyp.MajorBrand = major
 
-	b, err := r.readBox()
-	if err != nil {
-		t.Fatalf("readBox() error = %v", err)
+			b, err := r.readBox()
+			if err != nil {
+				t.Fatalf("readBox() error = %v", err)
+			}
+			if err := r.readMeta(&b); !errors.Is(err, ErrBufLength) {
+				t.Fatalf("readMeta() error = %v, want %v", err, ErrBufLength)
+			}
+		})
 	}
-	if err := r.readMeta(&b); !errors.Is(err, ErrBufLength) {
-		t.Fatalf("readMeta() error = %v, want %v", err, ErrBufLength)
+}
+
+func TestPrimaryItemDimensions(t *testing.T) {
+	ispe := makeReaderTestBox("ispe", []byte{
+		0x00, 0x00, 0x00, 0x00, // flags
+		0x00, 0x00, 0x02, 0x80, // width 640
+		0x00, 0x00, 0x01, 0xE0, // height 480
+	})
+	ipco := makeReaderTestBox("ipco", ispe)
+	ipma := makeReaderTestBox("ipma", []byte{
+		0x00, 0x00, 0x00, 0x00, // flags
+		0x00, 0x00, 0x00, 0x01, // entry_count 1
+		0x00, 0x01, // item 1
+		0x01, // association_count 1
+		0x01, // property 1, non-essential
+	})
+	iprp := makeReaderTestBox("iprp", append(ipco, ipma...))
+
+	for _, tc := range []struct {
+		name   string
+		pitmID uint16
+		want   meta.Dimensions
+		wantOK bool
+	}{
+		{name: "primary linked to ispe", pitmID: 1, want: meta.Dimensions{Width: 640, Height: 480}, wantOK: true},
+		{name: "primary not linked", pitmID: 9, wantOK: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pitm := makeReaderTestBox("pitm", []byte{
+				0x00, 0x00, 0x00, 0x00, // flags
+				byte(tc.pitmID >> 8), byte(tc.pitmID),
+			})
+			metaPayload := append([]byte{
+				0x00, 0x00, 0x00, 0x00, // meta full box flags
+			}, append(pitm, iprp...)...)
+			data := append([]byte{
+				0x00, 0x00, 0x00, 0x10,
+				'f', 't', 'y', 'p',
+				'h', 'e', 'i', 'c',
+				0x00, 0x00, 0x00, 0x00,
+			}, makeReaderTestBox("meta", metaPayload)...)
+
+			r := NewReader(bytes.NewReader(data), nil, nil, nil)
+			t.Cleanup(r.Close)
+
+			if err := r.ReadFTYP(); err != nil {
+				t.Fatalf("ReadFTYP() error = %v", err)
+			}
+			if err := r.ReadMetadata(); err != nil {
+				t.Fatalf("ReadMetadata() error = %v", err)
+			}
+			got, ok := r.PrimaryItemDimensions()
+			if ok != tc.wantOK {
+				t.Fatalf("PrimaryItemDimensions() ok = %v, want %v", ok, tc.wantOK)
+			}
+			if got != tc.want {
+				t.Fatalf("PrimaryItemDimensions() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 
@@ -650,10 +810,8 @@ func TestHdlrTypeString(t *testing.T) {
 }
 
 func TestParseExtendedBoxSizeMaxInt(t *testing.T) {
-	buf := make([]byte, 16)
-	binary.BigEndian.PutUint32(buf[:4], 1)
-	copy(buf[4:8], []byte("mdat"))
-	binary.BigEndian.PutUint64(buf[8:16], uint64(maxIntValue))
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(maxIntValue))
 
 	size, err := parseExtendedBoxSize(buf, typeMdat)
 	if err != nil {
@@ -665,10 +823,8 @@ func TestParseExtendedBoxSizeMaxInt(t *testing.T) {
 }
 
 func TestParseExtendedBoxSizeAboveIntFails(t *testing.T) {
-	buf := make([]byte, 16)
-	binary.BigEndian.PutUint32(buf[:4], 1)
-	copy(buf[4:8], []byte("mdat"))
-	binary.BigEndian.PutUint64(buf[8:16], uint64(maxIntValue)+1)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(maxIntValue)+1)
 
 	_, err := parseExtendedBoxSize(buf, typeMdat)
 	if !errors.Is(err, errLargeBox) {

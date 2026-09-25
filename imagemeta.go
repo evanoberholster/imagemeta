@@ -72,13 +72,16 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 			return ir.Exif, decodeErr
 		}
 	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL, imagetype.ImageHEIF, imagetype.ImageHEIC:
-		bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
+		bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
 		defer bmr.Close()
 		if readErr := bmr.ReadFTYP(); readErr != nil {
 			return ir.Exif, errors.Wrapf(readErr, "ReadFtypBox")
 		}
 		if readErr := bmr.ReadMetadataUntilEOF(); readErr != nil {
 			return ir.Exif, readErr
+		}
+		if dims, ok := bmr.PrimaryItemDimensions(); ok {
+			ir.Exif.Dimensions = dims
 		}
 	case imagetype.ImagePNG:
 		if _, err = r.Seek(0, io.SeekStart); err != nil {
@@ -116,7 +119,7 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
-	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
+	bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
@@ -206,13 +209,16 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
-	bmr := isobmff.NewReader(rr, ir.DecodeIfdAppend, nil, nil)
+	bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
 	defer bmr.Close()
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
 	if err := bmr.ReadMetadataUntilEOF(); err != nil {
 		return ir.Exif, err
+	}
+	if dims, ok := bmr.PrimaryItemDimensions(); ok {
+		ir.Exif.Dimensions = dims
 	}
 	return ir.Exif, nil
 }
@@ -272,7 +278,7 @@ func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
 
 	pr := preview.NewPreviewReader(preview.Logger)
 
-	bmr := isobmff.NewReader(rr, nil, nil, pr.RenderPreview)
+	bmr := isobmff.NewReaderWithSource(rr, r, nil, nil, pr.RenderPreview)
 	defer bmr.Close()
 
 	if err := bmr.ReadFTYP(); err != nil {
