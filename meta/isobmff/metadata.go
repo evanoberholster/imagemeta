@@ -580,6 +580,9 @@ func handleCallbackError(b *box, err error) error {
 	if errors.Is(err, io.EOF) {
 		return io.EOF
 	}
+	// Non-EOF callback errors are swallowed by design: one corrupt payload
+	// must not abort the whole scan. The have-bit stays unset so scanning
+	// continues for other items.
 	if logLevelError() {
 		if b == nil {
 			logError().Err(err).Msg("metadata callback error")

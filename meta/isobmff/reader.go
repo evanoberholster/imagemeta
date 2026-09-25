@@ -465,6 +465,8 @@ func (r *Reader) callXMPReader(b *box, h meta.XPacketHeader) error {
 }
 
 // callPreviewReader dispatches preview bytes to the configured callback.
+// The PRVW have-bit gates every preview kind: only one preview is ever
+// emitted per scan, whether it comes from THMB or PRVW.
 func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind) error {
 	if r.previewImageReader == nil {
 		return nil
