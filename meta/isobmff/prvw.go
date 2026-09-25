@@ -94,7 +94,7 @@ func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 		return prvw, ErrWrongBoxType
 	}
 
-	buf, err := b.Peek(24)
+	buf, err := b.consume(24)
 	if err != nil {
 		return prvw, fmt.Errorf("parsePreviewBoxPeek: %w", ErrBufLength)
 	}
@@ -103,10 +103,6 @@ func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 	prvw.Height = bmffEndian.Uint16(buf[16:18])
 	prvw.Size = bmffEndian.Uint32(buf[20:24])
 
-	_, err = b.Discard(24)
-	if err != nil {
-		return prvw, fmt.Errorf("parsePreviewBoxDiscard: %w", ErrBufLength)
-	}
 	if int(prvw.Size) > b.remain {
 		return prvw, ErrRemainLengthInsufficient
 	}

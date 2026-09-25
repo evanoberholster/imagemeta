@@ -311,7 +311,7 @@ func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 	if b.remain < 16 {
 		return thmb, ErrBufLength
 	}
-	buf, err := b.Peek(16)
+	buf, err := b.consume(16)
 	if err != nil {
 		return thmb, err
 	}
@@ -320,9 +320,6 @@ func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 	thmb.height = bmffEndian.Uint16(buf[6:8])
 	thmb.size = bmffEndian.Uint32(buf[8:12])
 
-	if _, err = b.Discard(16); err != nil {
-		return thmb, err
-	}
 	return thmb, nil
 }
 

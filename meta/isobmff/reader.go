@@ -180,6 +180,23 @@ func (r *Reader) peek(n int) ([]byte, error) {
 	return r.br.Peek(n)
 }
 
+// consume returns the next n bytes, discards them and advances the absolute
+// offset. A partial buffer may accompany an EOF error, like Peek.
+func (r *Reader) consume(n int) ([]byte, error) {
+	if n < 0 {
+		return nil, ErrBufLength
+	}
+	buf, err := r.br.Peek(n)
+	if err != nil {
+		return buf, err
+	}
+	if _, err := r.br.Discard(n); err != nil {
+		return nil, err
+	}
+	r.offset += int64(n)
+	return buf, nil
+}
+
 // discard advances the stream and updates absolute offset.
 // Large skips on seekable sources are delegated to discardWithSeek.
 func (r *Reader) discard(n int) (int, error) {
@@ -360,7 +377,7 @@ func (r *Reader) readBox() (b box, err error) {
 			}
 			return b, fmt.Errorf("readBox: failed to read extended header: %w", errors.Join(ErrBufLength, err))
 		}
-		size, err = parseExtendedBoxSize(buf, boxType)
+		size, err = parseExtendedBoxSize(buf[8:], boxType)
 		if err != nil {
 			return b, err
 		}

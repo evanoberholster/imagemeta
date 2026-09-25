@@ -40,6 +40,32 @@ func (b *box) Peek(n int) ([]byte, error) {
 	return nil, ErrRemainLengthInsufficient
 }
 
+// consume returns the next n bytes and advances past them in one step.
+// It fuses the Peek/Discard pair used by fixed-width field reads into a
+// single bounds check and a single delegation hop.
+func (b *box) consume(n int) ([]byte, error) {
+	if n < 0 || b.remain < n {
+		if n < 0 {
+			return nil, ErrBufLength
+		}
+		return nil, ErrRemainLengthInsufficient
+	}
+	var (
+		buf []byte
+		err error
+	)
+	if b.outer != nil {
+		buf, err = b.outer.consume(n)
+	} else {
+		buf, err = b.reader.consume(n)
+	}
+	if err != nil {
+		return nil, err
+	}
+	b.remain -= n
+	return buf, nil
+}
+
 // Discard advances by n bytes, bounded by the current box.
 func (b *box) Discard(n int) (int, error) {
 	if n < 0 {
@@ -124,35 +150,36 @@ func parseBoxSizeAndType(buf []byte) (size int, bt boxType, err error) {
 	return size, bt, nil
 }
 
-// parseBoxSizeAndType reads and parses the next 8 bytes as a BMFF box header.
+// parseBoxSizeAndType consumes the next 8 bytes as a BMFF box header.
 func (b *box) parseBoxSizeAndType() (size int, bt boxType, err error) {
-	buf, err := b.Peek(8)
+	buf, err := b.consume(8)
 	if err != nil {
 		return 0, typeUnknown, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
 	return parseBoxSizeAndType(buf)
 }
 
-// parseExtendedBoxSize parses a BMFF "largesize" header (size32 == 1),
-// where bytes 8..15 contain the 64-bit box size.
-func parseExtendedBoxSize(buf []byte, bt boxType) (int, error) {
-	if len(buf) < 16 {
+// parseExtendedBoxSize parses a BMFF "largesize" value: the 8 bytes
+// following a size32 == 1 header.
+func parseExtendedBoxSize(ext []byte, bt boxType) (int, error) {
+	if len(ext) < 8 {
 		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
-	size := bmffEndian.Uint64(buf[8:16])
+	size := bmffEndian.Uint64(ext[:8])
 	if size > uint64(maxIntValue) {
 		return 0, fmt.Errorf("readBox '%s': %w", bt, errLargeBox)
 	}
 	return int(size), nil
 }
 
-// parseExtendedBoxSize reads and parses a 16-byte BMFF extended-size header.
+// parseExtendedBoxSize consumes a 16-byte BMFF extended-size header's
+// 8-byte largesize suffix (the leading 8 bytes were already consumed).
 func (b *box) parseExtendedBoxSize(bt boxType) (int, error) {
-	buf, err := b.Peek(16)
+	ext, err := b.consume(8)
 	if err != nil {
 		return 0, fmt.Errorf("readBox: %w", ErrBufLength)
 	}
-	return parseExtendedBoxSize(buf, bt)
+	return parseExtendedBoxSize(ext, bt)
 }
 
 // validateBoxSize ensures the declared box size is sane for this parser:
@@ -185,7 +212,8 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if size == 0 {
 		// Nested zero-size boxes are malformed per spec (0 means end of
 		// file), so bound them by the outer container instead of failing.
-		size = b.remain
+		// The header is already consumed; the child takes all that remains.
+		size = headerSize + b.remain
 	}
 	if err = validateBoxSize(size, headerSize, bt); err != nil {
 		return inner, false, err
@@ -197,40 +225,36 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 		offset:  b.offset + int64(b.size-b.remain),
 		size:    size,
 		boxType: bt,
-		remain:  size,
+		remain:  size - headerSize,
 	}
-	_, err = inner.Discard(headerSize)
-	return inner, true, err
+	return inner, true, nil
 }
 
 // readUint16 reads a big-endian uint16 and advances the box cursor.
 func (b *box) readUint16() (uint16, error) {
-	buf, err := b.Peek(2)
+	buf, err := b.consume(2)
 	if err != nil {
 		return 0, fmt.Errorf("readUint16: %w", ErrBufLength)
 	}
-	_, err = b.Discard(2)
-	return bmffEndian.Uint16(buf[:2]), err
+	return bmffEndian.Uint16(buf), nil
 }
 
 // readUint32 reads a big-endian uint32 and advances the box cursor.
 func (b *box) readUint32() (uint32, error) {
-	buf, err := b.Peek(4)
+	buf, err := b.consume(4)
 	if err != nil {
 		return 0, fmt.Errorf("readUint32: %w", ErrBufLength)
 	}
-	_, err = b.Discard(4)
-	return bmffEndian.Uint32(buf[:4]), err
+	return bmffEndian.Uint32(buf), nil
 }
 
 // readUint64 reads a big-endian uint64 and advances the box cursor.
 func (b *box) readUint64() (uint64, error) {
-	buf, err := b.Peek(8)
+	buf, err := b.consume(8)
 	if err != nil {
 		return 0, fmt.Errorf("readUint64: %w", ErrBufLength)
 	}
-	_, err = b.Discard(8)
-	return bmffEndian.Uint64(buf[:8]), err
+	return bmffEndian.Uint64(buf), nil
 }
 
 // readUintN reads a 0/1/2/4/8-byte unsigned integer from the box.
@@ -239,12 +263,11 @@ func (b *box) readUintN(size uint8) (uint64, error) {
 	case 0:
 		return 0, nil
 	case 1:
-		buf, err := b.Peek(1)
+		buf, err := b.consume(1)
 		if err != nil {
 			return 0, fmt.Errorf("readUintN: %w", ErrBufLength)
 		}
-		_, err = b.Discard(1)
-		return uint64(buf[0]), err
+		return uint64(buf[0]), nil
 	case 2:
 		v, err := b.readUint16()
 		return uint64(v), err
@@ -336,15 +359,14 @@ func (b *box) readCStringBytes(dst []byte, maxLen int) ([]byte, error) {
 
 // readUUID reads a 16 byte UUID from the box.
 func (b *box) readUUID() (u meta.UUID, err error) {
-	buf, err := b.Peek(16)
+	buf, err := b.consume(16)
 	if err != nil {
 		return u, fmt.Errorf("readUUID: %w", ErrBufLength)
 	}
 	if err = u.UnmarshalBinary(buf); err != nil {
 		return u, err
 	}
-	_, err = b.Discard(16)
-	return u, err
+	return u, nil
 }
 
 func discardBoxBytes(b *box, n int) error {

@@ -284,7 +284,10 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 
 // readExifHeader parses byte-order and IFD0 offset from the TIFF header prefix.
 func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
-	buf, err := b.Peek(8)
+	// Capture the extent length before consuming: it bounds downstream
+	// reads and includes the TIFF header itself.
+	length := clampIntToUint32(b.remain)
+	buf, err := b.consume(8)
 	if err != nil {
 		err = fmt.Errorf("readExifHeader: %w", err)
 		return
@@ -293,13 +296,12 @@ func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (h
 	if endian == utils.UnknownEndian {
 		return header, ErrBufLength
 	}
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampIntToUint32(b.remain), it)
+	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, length, it)
 	header.FirstIfd = firstIfd
 	if logLevelDebug() {
 		logDebugBox(b).Object("header", header).Msg("read exif header")
 	}
-	_, err = b.Discard(8)
-	return header, err
+	return header, nil
 }
 
 // seekExifTIFFHeader advances through common Exif wrappers until TIFF bytes.

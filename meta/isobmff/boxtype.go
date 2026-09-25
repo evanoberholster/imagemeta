@@ -346,13 +346,12 @@ const (
 
 // readFlags parses and consumes a FullBox version/flags field.
 func (b *box) readFlags() error {
-	buf, err := b.Peek(4)
+	buf, err := b.consume(4)
 	if err != nil {
 		return fmt.Errorf("readFlags: %w", ErrBufLength)
 	}
 	b.readFlagsFromBuf(buf)
-	_, err = b.Discard(4)
-	return err
+	return nil
 }
 
 // readFlagsFromBuf decodes a FullBox 32-bit version/flags field

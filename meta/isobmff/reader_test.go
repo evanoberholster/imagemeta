@@ -745,10 +745,8 @@ func TestHdlrTypeString(t *testing.T) {
 }
 
 func TestParseExtendedBoxSizeMaxInt(t *testing.T) {
-	buf := make([]byte, 16)
-	binary.BigEndian.PutUint32(buf[:4], 1)
-	copy(buf[4:8], []byte("mdat"))
-	binary.BigEndian.PutUint64(buf[8:16], uint64(maxIntValue))
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(maxIntValue))
 
 	size, err := parseExtendedBoxSize(buf, typeMdat)
 	if err != nil {
@@ -760,10 +758,8 @@ func TestParseExtendedBoxSizeMaxInt(t *testing.T) {
 }
 
 func TestParseExtendedBoxSizeAboveIntFails(t *testing.T) {
-	buf := make([]byte, 16)
-	binary.BigEndian.PutUint32(buf[:4], 1)
-	copy(buf[4:8], []byte("mdat"))
-	binary.BigEndian.PutUint64(buf[8:16], uint64(maxIntValue)+1)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, uint64(maxIntValue)+1)
 
 	_, err := parseExtendedBoxSize(buf, typeMdat)
 	if !errors.Is(err, errLargeBox) {

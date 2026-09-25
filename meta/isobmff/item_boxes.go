@@ -452,7 +452,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 		return ilb, err
 	}
 
-	buf, err := b.Peek(2)
+	buf, err := b.consume(2)
 	if err != nil {
 		return ilb, fmt.Errorf("readIlocHeader: %w", ErrBufLength)
 	}
@@ -461,9 +461,6 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	ilb.baseOffsetSize = buf[1] >> 4
 	if b.flags.version() > 0 { // versions 1 and 2
 		ilb.indexSize = buf[1] & 15
-	}
-	if _, err = b.Discard(2); err != nil {
-		return ilb, err
 	}
 
 	switch b.flags.version() {
