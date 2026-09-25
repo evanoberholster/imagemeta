@@ -10,6 +10,11 @@ import (
 
 // box is a bounded view over an ISOBMFF box payload.
 // Nested boxes share the same underlying Reader and enforce limits via remain.
+//
+//	size is the total declared box size including its header.
+//	remain counts the still-unread bytes including any unconsumed header;
+//	it only shrinks as the box (or its children) advance.
+//	offset is the absolute stream offset of the box start.
 type box struct {
 	size    int
 	remain  int
@@ -85,9 +90,6 @@ func (b *box) Discard(n int) (int, error) {
 			discarded, err = b.reader.discard(n)
 		}
 		b.remain -= discarded
-		if b.remain < 0 {
-			b.remain = 0
-		}
 		return discarded, err
 	}
 	return 0, ErrRemainLengthInsufficient
@@ -113,6 +115,9 @@ func (b *box) Read(p []byte) (n int, err error) {
 	if n > 0 {
 		b.reader.offset += int64(n)
 	}
+	// adjust propagates to outer boxes; reading straight from the shared
+	// buffered reader (instead of delegating through outer) saves a hop
+	// per call with identical accounting.
 	b.adjust(n)
 	if n == 0 && err == nil {
 		return 0, io.EOF
