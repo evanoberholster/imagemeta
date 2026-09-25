@@ -2,6 +2,8 @@ package isobmff
 
 import (
 	"fmt"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // readHdlr reads an "hdlr" box
@@ -227,6 +229,33 @@ func (r *Reader) readIrefEntry(b *box, itemIDSize uint8) error {
 		r.addItemReference(b.boxType, fromID, toID)
 	}
 	return nil
+}
+
+// PrimaryItemDimensions returns the ispe dimensions of the primary item,
+// resolved through the ipma/ipco association graph. It reports false when
+// the primary item is unknown or not linked to an ispe property. Image
+// sequences carry dimensions in moov tracks, which this parser skips, so
+// they also report false.
+// Dimensions are stored order (rotation is reported separately by ExifTool,
+// and likewise left unapplied here).
+func (r *Reader) PrimaryItemDimensions() (meta.Dimensions, bool) {
+	if r.heic.pitm == invalidItemID {
+		return meta.Dimensions{}, false
+	}
+	for _, link := range r.heic.propertyLinks {
+		if link.itemID != r.heic.pitm {
+			continue
+		}
+		idx := int(link.propertyIndex) - 1
+		if idx < 0 || idx >= len(r.heic.properties) {
+			continue
+		}
+		if prop := r.heic.properties[idx]; prop.boxType == typeIspe &&
+			prop.width != 0 && prop.height != 0 {
+			return meta.Dimensions{Width: prop.width, Height: prop.height}, true
+		}
+	}
+	return meta.Dimensions{}, false
 }
 
 // readIprp walks item property boxes and parses ipco/ipma payloads.

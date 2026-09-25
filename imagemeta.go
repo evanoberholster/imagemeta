@@ -80,6 +80,9 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 		if readErr := bmr.ReadMetadataUntilEOF(); readErr != nil {
 			return ir.Exif, readErr
 		}
+		if dims, ok := bmr.PrimaryItemDimensions(); ok {
+			ir.Exif.Dimensions = dims
+		}
 	case imagetype.ImagePNG:
 		if _, err = r.Seek(0, io.SeekStart); err != nil {
 			return exif.Exif{}, err
@@ -213,6 +216,9 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 	}
 	if err := bmr.ReadMetadataUntilEOF(); err != nil {
 		return ir.Exif, err
+	}
+	if dims, ok := bmr.PrimaryItemDimensions(); ok {
+		ir.Exif.Dimensions = dims
 	}
 	return ir.Exif, nil
 }

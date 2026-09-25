@@ -661,8 +661,9 @@ func TestReadMetadataUntilEOFReturnsNilOnCleanEOF(t *testing.T) {
 	}
 }
 
-func TestReadMetaSkipsNonExifItemGraphBoxesForHEIF(t *testing.T) {
-	// Malformed iprp/ipma payload that would fail if parsed.
+func TestReadMetaParsesItemGraphForAllBrands(t *testing.T) {
+	// Malformed iprp/ipma payload fails parsing for every brand: pitm and
+	// iprp are parsed unconditionally so primary-item dimensions resolve.
 	badIPMA := makeReaderTestBox("ipma", []byte{
 		0x00, 0x00, 0x00, 0x00, // flags
 		0x00, 0x00, // truncated entry_count
@@ -671,39 +672,80 @@ func TestReadMetaSkipsNonExifItemGraphBoxesForHEIF(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // meta full box flags
 	}, makeReaderTestBox("iprp", badIPMA)...)
 
-	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
-	t.Cleanup(r.Close)
-	r.ftyp.MajorBrand = brandHeic
+	for _, major := range []brand{brandHeic, brandCrx} {
+		t.Run(major.String(), func(t *testing.T) {
+			r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
+			t.Cleanup(r.Close)
+			r.ftyp.MajorBrand = major
 
-	b, err := r.readBox()
-	if err != nil {
-		t.Fatalf("readBox() error = %v", err)
-	}
-	if err := r.readMeta(&b); err != nil {
-		t.Fatalf("readMeta() error = %v, want nil for HEIF skip path", err)
+			b, err := r.readBox()
+			if err != nil {
+				t.Fatalf("readBox() error = %v", err)
+			}
+			if err := r.readMeta(&b); !errors.Is(err, ErrBufLength) {
+				t.Fatalf("readMeta() error = %v, want %v", err, ErrBufLength)
+			}
+		})
 	}
 }
 
-func TestReadMetaParsesItemGraphBoxesForCR3(t *testing.T) {
-	// Same malformed payload as above, but CR3 path should parse iprp/ipma and fail.
-	badIPMA := makeReaderTestBox("ipma", []byte{
+func TestPrimaryItemDimensions(t *testing.T) {
+	ispe := makeReaderTestBox("ispe", []byte{
 		0x00, 0x00, 0x00, 0x00, // flags
-		0x00, 0x00, // truncated entry_count
+		0x00, 0x00, 0x02, 0x80, // width 640
+		0x00, 0x00, 0x01, 0xE0, // height 480
 	})
-	metaPayload := append([]byte{
-		0x00, 0x00, 0x00, 0x00, // meta full box flags
-	}, makeReaderTestBox("iprp", badIPMA)...)
+	ipco := makeReaderTestBox("ipco", ispe)
+	ipma := makeReaderTestBox("ipma", []byte{
+		0x00, 0x00, 0x00, 0x00, // flags
+		0x00, 0x00, 0x00, 0x01, // entry_count 1
+		0x00, 0x01, // item 1
+		0x01, // association_count 1
+		0x01, // property 1, non-essential
+	})
+	iprp := makeReaderTestBox("iprp", append(ipco, ipma...))
 
-	r := NewReader(bytes.NewReader(makeReaderTestBox("meta", metaPayload)), nil, nil, nil)
-	t.Cleanup(r.Close)
-	r.ftyp.MajorBrand = brandCrx
+	for _, tc := range []struct {
+		name   string
+		pitmID uint16
+		want   meta.Dimensions
+		wantOK bool
+	}{
+		{name: "primary linked to ispe", pitmID: 1, want: meta.Dimensions{Width: 640, Height: 480}, wantOK: true},
+		{name: "primary not linked", pitmID: 9, wantOK: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pitm := makeReaderTestBox("pitm", []byte{
+				0x00, 0x00, 0x00, 0x00, // flags
+				byte(tc.pitmID >> 8), byte(tc.pitmID),
+			})
+			metaPayload := append([]byte{
+				0x00, 0x00, 0x00, 0x00, // meta full box flags
+			}, append(pitm, iprp...)...)
+			data := append([]byte{
+				0x00, 0x00, 0x00, 0x10,
+				'f', 't', 'y', 'p',
+				'h', 'e', 'i', 'c',
+				0x00, 0x00, 0x00, 0x00,
+			}, makeReaderTestBox("meta", metaPayload)...)
 
-	b, err := r.readBox()
-	if err != nil {
-		t.Fatalf("readBox() error = %v", err)
-	}
-	if err := r.readMeta(&b); !errors.Is(err, ErrBufLength) {
-		t.Fatalf("readMeta() error = %v, want %v", err, ErrBufLength)
+			r := NewReader(bytes.NewReader(data), nil, nil, nil)
+			t.Cleanup(r.Close)
+
+			if err := r.ReadFTYP(); err != nil {
+				t.Fatalf("ReadFTYP() error = %v", err)
+			}
+			if err := r.ReadMetadata(); err != nil {
+				t.Fatalf("ReadMetadata() error = %v", err)
+			}
+			got, ok := r.PrimaryItemDimensions()
+			if ok != tc.wantOK {
+				t.Fatalf("PrimaryItemDimensions() ok = %v, want %v", ok, tc.wantOK)
+			}
+			if got != tc.want {
+				t.Fatalf("PrimaryItemDimensions() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 

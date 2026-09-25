@@ -493,11 +493,8 @@ func (r *Reader) readMeta(b *box) (err error) {
 			}
 			return nil
 		case typePitm:
-			if parseCR3ItemGraph {
-				r.heic.pitm, err = readPitm(inner)
-				return err
-			}
-			return nil
+			r.heic.pitm, err = readPitm(inner)
+			return err
 		case typeIinf:
 			return r.readIinf(inner)
 		case typeIref:
@@ -506,10 +503,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 			}
 			return nil
 		case typeIprp:
-			if parseCR3ItemGraph {
-				return r.readIprp(inner)
-			}
-			return nil
+			return r.readIprp(inner)
 		case typeIdat:
 			r.heic.idatData = offsetLength{
 				offset: boxPayloadOffset(inner),
