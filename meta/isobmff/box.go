@@ -48,6 +48,11 @@ func (b *box) Peek(n int) ([]byte, error) {
 // consume returns the next n bytes and advances past them in one step.
 // It fuses the Peek/Discard pair used by fixed-width field reads into a
 // single bounds check and a single delegation hop.
+//
+// Only the leaf remain is checked: boxes are processed strictly in order
+// (a child is always closed before its siblings proceed), so an active
+// child never outlives its ancestors' bounds. adjust() still propagates
+// the consumption up the whole chain.
 func (b *box) consume(n int) ([]byte, error) {
 	if n < 0 || b.remain < n {
 		if n < 0 {
@@ -55,19 +60,11 @@ func (b *box) consume(n int) ([]byte, error) {
 		}
 		return nil, ErrRemainLengthInsufficient
 	}
-	var (
-		buf []byte
-		err error
-	)
-	if b.outer != nil {
-		buf, err = b.outer.consume(n)
-	} else {
-		buf, err = b.reader.consume(n)
-	}
+	buf, err := b.reader.consume(n)
 	if err != nil {
 		return nil, err
 	}
-	b.remain -= n
+	b.adjust(n)
 	return buf, nil
 }
 
