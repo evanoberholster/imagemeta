@@ -7,7 +7,7 @@ import (
 // readHdlr reads an "hdlr" box
 func readHdlr(b *box) (ht hdlrType, err error) {
 	if !b.isType(typeHdlr) {
-		return hdlrUnknown, fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return hdlrUnknown, fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if err = b.readFlags(); err != nil {
 		return hdlrUnknown, err

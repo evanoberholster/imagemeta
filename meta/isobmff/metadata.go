@@ -202,7 +202,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 // readExif parses a top-level Exif box payload and streams it to the Exif callback.
 func (r *Reader) readExif(b *box) (err error) {
 	if !b.isType(typeExif) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 
 	if err = seekExifTIFFHeader(b); err != nil {
@@ -473,7 +473,7 @@ func imageTypeFromBrand(brand brand) (imagetype.ImageType, bool) {
 // metadata needed to locate Exif/XMP payloads in mdat.
 func (r *Reader) readMeta(b *box) (err error) {
 	if !b.isType(typeMeta) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if err = b.readFlags(); err != nil {
 		return err
@@ -531,7 +531,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 // readMoovBox reads an 'moov' box from a BMFF file.
 func (r *Reader) readMoovBox(b *box) (err error) {
 	if !b.isType(typeMoov) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read movie box")

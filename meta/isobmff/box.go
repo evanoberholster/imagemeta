@@ -339,7 +339,7 @@ func (b *box) readCStringBytes(dst []byte, maxLen int) ([]byte, error) {
 		}
 		buf, err := b.Peek(chunk)
 		if err != nil {
-			return dst, fmt.Errorf("readCString: %w", ErrBufLength)
+			return dst, fmt.Errorf("readCStringBytes: %w", ErrBufLength)
 		}
 		if idx := bytes.IndexByte(buf, 0); idx >= 0 {
 			if len(dst)+idx > maxLen {

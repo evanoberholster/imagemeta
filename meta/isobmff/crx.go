@@ -31,7 +31,7 @@ var (
 // - PRVW JPEG preview payload
 func (r *Reader) readUUIDBox(b *box) error {
 	if !b.isType(typeUUID) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	uuid, err := b.readUUID()
 	if err != nil {

@@ -54,10 +54,10 @@ func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 	}
 
 	if b.remain < 16 {
-		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
+		return inner, fmt.Errorf("createPRVWBox: %w", ErrBufLength)
 	}
 	if _, err = b.Discard(8); err != nil {
-		return inner, fmt.Errorf("readPRVWBoxDiscard: %w", ErrBufLength)
+		return inner, fmt.Errorf("createPRVWBox: %w", ErrBufLength)
 	}
 	return buildPRVWInnerBox(b)
 }
@@ -66,7 +66,7 @@ func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
 func buildPRVWInnerBox(b *box) (inner box, err error) {
 	buf, err := b.Peek(8)
 	if err != nil {
-		return inner, fmt.Errorf("readPRVWBoxPeek: %w", ErrBufLength)
+		return inner, fmt.Errorf("buildPRVWInnerBox: %w", ErrBufLength)
 	}
 
 	inner.reader = b.reader
@@ -96,7 +96,7 @@ func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 
 	buf, err := b.consume(24)
 	if err != nil {
-		return prvw, fmt.Errorf("parsePreviewBoxPeek: %w", ErrBufLength)
+		return prvw, fmt.Errorf("parsePreviewBox: %w", ErrBufLength)
 	}
 
 	prvw.Width = bmffEndian.Uint16(buf[14:16])
