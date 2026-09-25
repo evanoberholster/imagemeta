@@ -311,20 +311,21 @@ func (r *Reader) readIloc(b *box) (err error) {
 	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
 		var idSize uint8
-		switch b.flags.version() {
+		ver := b.flags.version()
+		switch ver {
 		case 0, 1:
 			idSize = 2
 		case 2:
 			idSize = 4
 		default:
-			return fmt.Errorf("readIloc: unsupported version %d", b.flags.version())
+			return fmt.Errorf("readIloc: unsupported version %d", ver)
 		}
 		ent.id, err = readItemIDBySize(b, idSize)
 		if err != nil {
 			return err
 		}
 
-		if b.flags.version() > 0 { // versions 1 and 2
+		if ver > 0 { // versions 1 and 2
 			cmeth, readErr := b.readUint16()
 			if readErr != nil {
 				return readErr
@@ -347,7 +348,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 
 		firstExtentResolved := false
 		for j := 0; j < int(ent.count); j++ {
-			if b.flags.version() > 0 && ilb.indexSize > 0 {
+			if ver > 0 && ilb.indexSize > 0 {
 				if _, err = b.readUintN(ilb.indexSize); err != nil {
 					return err
 				}
@@ -459,11 +460,12 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if b.flags.version() > 0 { // versions 1 and 2
+	ver := b.flags.version()
+	if ver > 0 { // versions 1 and 2
 		ilb.indexSize = buf[1] & 15
 	}
 
-	switch b.flags.version() {
+	switch ver {
 	case 0, 1:
 		ilb.count, err = readUint16Or32(b, false)
 		if err != nil {
@@ -475,7 +477,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 			return ilb, err
 		}
 	default:
-		return ilb, fmt.Errorf("readIlocHeader: unsupported version %d", b.flags.version())
+		return ilb, fmt.Errorf("readIlocHeader: unsupported version %d", ver)
 	}
 
 	if logLevelInfo() {

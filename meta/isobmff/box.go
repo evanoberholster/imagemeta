@@ -23,7 +23,7 @@ type box struct {
 const maxIntValue = int(^uint(0) >> 1)
 
 // isType reports whether the box has the expected type.
-func (b box) isType(bt boxType) bool { return b.boxType == bt }
+func (b *box) isType(bt boxType) bool { return b.boxType == bt }
 
 // Peek returns bytes without advancing the read position.
 // Access is constrained to the current box bounds.

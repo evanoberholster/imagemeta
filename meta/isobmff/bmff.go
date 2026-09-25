@@ -89,9 +89,12 @@ func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {
 	ftyp.MajorBrand = brandFromBuf(buf[:4])
 	copy(ftyp.MinorVersion[:], buf[4:8])
 
-	for i, compatibleBrand := ftypHeaderSize, 0; i+fourCCSize <= len(buf) && compatibleBrand < maxBrandCount; compatibleBrand++ {
-		ftyp.Compatible[compatibleBrand] = brandFromBuf(buf[i : i+fourCCSize])
-		i += fourCCSize
+	for i := 0; i < maxBrandCount; i++ {
+		off := ftypHeaderSize + i*fourCCSize
+		if off+fourCCSize > len(buf) {
+			break
+		}
+		ftyp.Compatible[i] = brandFromBuf(buf[off : off+fourCCSize])
 	}
 	if logLevelInfo() {
 		logInfoBox(b).

@@ -13,11 +13,7 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 		return hdlrUnknown, err
 	}
 
-	if b.remain < 8 {
-		return hdlrUnknown, fmt.Errorf("readHdlr: %w", ErrBufLength)
-	}
-
-	buf, err := b.Peek(8)
+	buf, err := b.consume(8)
 	if err != nil {
 		return hdlrUnknown, err
 	}
@@ -88,14 +84,15 @@ func readPitm(b *box) (id itemID, err error) {
 	if err = b.readFlags(); err != nil {
 		return invalidItemID, err
 	}
-	switch b.flags.version() {
-	case 0:
-		id, err = readItemIDBySize(b, 2)
-	case 1:
-		id, err = readItemIDBySize(b, 4)
-	default:
-		return invalidItemID, fmt.Errorf("readPitm: unsupported version %d", b.flags.version())
+	// Version 0 stores a 16-bit item ID, version 1 a 32-bit one.
+	ver := b.flags.version()
+	idSize := uint8(2)
+	if ver == 1 {
+		idSize = 4
+	} else if ver != 0 {
+		return invalidItemID, fmt.Errorf("readPitm: unsupported version %d", ver)
 	}
+	id, err = readItemIDBySize(b, idSize)
 	if err != nil {
 		return invalidItemID, err
 	}
@@ -301,11 +298,12 @@ func (r *Reader) readIpma(b *box) (err error) {
 		return err
 	}
 	extendedIndex := b.flags.flags()&1 != 0
+	idSize32 := b.flags.version() >= 1
 	if logLevelInfo() {
 		logInfoBox(b).Uint32("entries", count).Msg("read item property associations")
 	}
 	for i := uint32(0); i < count; i++ {
-		id32, readErr := readUint16Or32(b, b.flags.version() >= 1)
+		id32, readErr := readUint16Or32(b, idSize32)
 		if readErr != nil {
 			return readErr
 		}
