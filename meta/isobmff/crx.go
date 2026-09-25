@@ -177,6 +177,7 @@ func readCCTPBox(b *box) (err error) {
 		return ErrWrongBoxType
 	}
 	if !logLevelInfo() {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	var cctp cctpBox
@@ -225,6 +226,7 @@ func readCTBOBox(b *box) (err error) {
 		return ErrWrongBoxType
 	}
 	if !logLevelInfo() {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	var ctbo ctboBox
@@ -285,6 +287,7 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 		return ErrWrongBoxType
 	}
 	if !r.hasGoal(metadataKindTHMB) {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	if r.previewImageReader == nil {
