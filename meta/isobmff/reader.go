@@ -402,7 +402,6 @@ func (r *Reader) readBox() (b box, err error) {
 	b.size = size
 	b.boxType = boxType
 	b.offset = r.offset
-	b.flags = 0
 
 	b.remain = b.size
 	_, err = b.Discard(headerSize)
