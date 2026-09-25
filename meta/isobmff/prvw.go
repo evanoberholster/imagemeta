@@ -9,9 +9,9 @@ import (
 )
 
 type prvwBox struct {
-	Size   uint32
-	Width  uint16
-	Height uint16
+	width  uint16
+	height uint16
+	size   uint32
 }
 
 // readPreview parses Canon PRVW preview metadata and streams JPEG bytes via callback.
@@ -28,13 +28,13 @@ func (r *Reader) readPreview(b *box) (err error) {
 
 	if r.previewImageReader != nil {
 		header := meta.PreviewHeader{
-			Size:      prvw.Size,
-			Width:     prvw.Width,
-			Height:    prvw.Height,
+			Size:      prvw.size,
+			Width:     prvw.width,
+			Height:    prvw.height,
 			ImageType: imagetype.ImageJPEG,
 			Source:    meta.PreviewSourcePRVW,
 		}
-		if err = r.emitPreviewPayload(&inner, prvw.Size, header, metadataKindPRVW); err != nil {
+		if err = r.emitPreviewPayload(&inner, prvw.size, header, metadataKindPRVW); err != nil {
 			return err
 		}
 	}
@@ -99,11 +99,11 @@ func parsePreviewBox(b *box) (prvw prvwBox, err error) {
 		return prvw, fmt.Errorf("parsePreviewBox: %w", ErrBufLength)
 	}
 
-	prvw.Width = bmffEndian.Uint16(buf[14:16])
-	prvw.Height = bmffEndian.Uint16(buf[16:18])
-	prvw.Size = bmffEndian.Uint32(buf[20:24])
+	prvw.width = bmffEndian.Uint16(buf[14:16])
+	prvw.height = bmffEndian.Uint16(buf[16:18])
+	prvw.size = bmffEndian.Uint32(buf[20:24])
 
-	if int(prvw.Size) > b.remain {
+	if int(prvw.size) > b.remain {
 		return prvw, ErrRemainLengthInsufficient
 	}
 
