@@ -638,6 +638,29 @@ func TestReadMetadataReturnsEOF(t *testing.T) {
 	}
 }
 
+func TestReadMetadataUntilEOFReturnsNilOnCleanEOF(t *testing.T) {
+	data := []byte{
+		// ftyp
+		0x00, 0x00, 0x00, 0x10,
+		'f', 't', 'y', 'p',
+		'h', 'e', 'i', 'c',
+		0x00, 0x00, 0x00, 0x00,
+	}
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+
+	if err := r.ReadFTYP(); err != nil {
+		t.Fatalf("ReadFTYP() error = %v", err)
+	}
+	if err := r.ReadMetadataUntilEOF(); err != nil {
+		t.Fatalf("ReadMetadataUntilEOF() error = %v", err)
+	}
+	if r.offset != int64(len(data)) {
+		t.Fatalf("offset = %d, want %d", r.offset, len(data))
+	}
+}
+
 func TestReadMetaSkipsNonExifItemGraphBoxesForHEIF(t *testing.T) {
 	// Malformed iprp/ipma payload that would fail if parsed.
 	badIPMA := makeReaderTestBox("ipma", []byte{

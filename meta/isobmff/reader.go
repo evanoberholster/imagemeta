@@ -73,7 +73,10 @@ func (k metadataKind) String() string {
 	}
 }
 
-// goalBit returns the bit index used for requested metadata kinds.
+// goalBit returns the bit index used for requested metadata kinds,
+// haveBit the index for completed ones. Goals occupy bits [0..3] and
+// completion bits [4..7], so haveBit(kind) == goalBit(kind)+4; e.g. an
+// Exif goal is bit 0 and a completed Exif is bit 4.
 func goalBit(kind metadataKind) uint8 {
 	return uint8(kind)
 }
@@ -111,7 +114,7 @@ type Reader struct {
 	previewImageReader meta.PreviewImageReader
 
 	pooledBufio          bool
-	offset               int64
+	offset               int64 // absolute offset of the next unread byte
 	discardSeekThreshold int
 
 	metadataFlags uint8
@@ -230,6 +233,8 @@ func (r *Reader) discardWithSeek(n int) (discarded int, err error) {
 	}
 
 	// For large skips on seekable sources, avoid read-and-throw-away loops.
+	// n shrank above by the buffered prefix, so the threshold applies to
+	// the remaining seekable span, not the original request.
 	if n >= r.discardSeekThreshold {
 		if _, err = r.seeker.Seek(int64(n), io.SeekCurrent); err == nil {
 			r.br.Reset(r.source)
