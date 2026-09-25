@@ -50,3 +50,54 @@ func TestBoxReadAdvancesAbsoluteOffset(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// TestReadInnerBoxNestedOffsets checks that nested child boxes resolve
+// exact absolute offsets however deep the nesting. The offset must be
+// captured before the child header is consumed.
+func TestReadInnerBoxNestedOffsets(t *testing.T) {
+	t.Parallel()
+	var data []byte
+	data = append(data, 0, 0, 0, 28, 'm', 'o', 'o', 'v')
+	data = append(data, 0, 0, 0, 20, 't', 'r', 'a', 'k')
+	data = append(data, 0, 0, 0, 12, 'f', 'r', 'e', 'e')
+	data = append(data, bytes.Repeat([]byte{0x63}, 4)...)
+
+	r := NewReader(bytes.NewReader(data), nil, nil, nil)
+	t.Cleanup(r.Close)
+	outer, err := r.readBox()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outer.offset != 0 {
+		t.Fatalf("outer offset = %d, want 0", outer.offset)
+	}
+	mid, ok, err := outer.readInnerBox()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("readInnerBox returned no box")
+	}
+	if mid.offset != 8 || !mid.isType(typeTrak) {
+		t.Fatalf("mid offset = %d type = %s, want 8 trak", mid.offset, mid.boxType)
+	}
+	leaf, ok, err := mid.readInnerBox()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("readInnerBox returned no nested box")
+	}
+	if leaf.offset != 16 || !leaf.isType(typeFree) {
+		t.Fatalf("leaf offset = %d type = %s, want 16 free", leaf.offset, leaf.boxType)
+	}
+	if err = leaf.close(); err != nil {
+		t.Fatal(err)
+	}
+	if err = mid.close(); err != nil {
+		t.Fatal(err)
+	}
+	if err = outer.close(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -199,6 +199,9 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	if b.remain < 8 {
 		return inner, false, nil
 	}
+	// Capture the child start before consuming its header: remain still
+	// includes the header here, so this is the exact box start.
+	start := b.offset + int64(b.size-b.remain)
 	size, bt, err := b.parseBoxSizeAndType()
 	if err != nil {
 		return inner, false, err
@@ -224,7 +227,7 @@ func (b *box) readInnerBox() (inner box, next bool, err error) {
 	inner = box{
 		reader:  b.reader,
 		outer:   b,
-		offset:  b.offset + int64(b.size-b.remain),
+		offset:  start,
 		size:    size,
 		boxType: bt,
 		remain:  size - headerSize,
