@@ -133,6 +133,32 @@ func brandFromBuf(buf []byte) brand {
 	}
 
 	switch bmffEndian.Uint32(buf[:4]) {
+	// Hot brands first, ordered by observed frequency across the corpus;
+	// the remainder stays in table order.
+	case brandMif1FourCC:
+		return brandMif1
+	case brandHeicFourCC:
+		return brandHeic
+	case brandAvifFourCC:
+		return brandAvif
+	case brandHeixFourCC:
+		return brandHeix
+	case brandMsf1FourCC:
+		return brandMsf1
+	case brandMiafFourCC:
+		return brandMiaf
+	case brandHevcFourCC:
+		return brandHevc
+	case brandIso8FourCC:
+		return brandIso8
+	case brandIsomFourCC:
+		return brandIsom
+	case brandMiHBFourCC:
+		return brandMiHB
+	case brandHeifFourCC:
+		return brandHeif
+	case brandCrxFourCC:
+		return brandCrx
 	case brand3G2AFourCC:
 		return brand3G2A
 	case brand3G2BFourCC:
@@ -149,26 +175,14 @@ func brandFromBuf(buf []byte) brand {
 		return brand3GP7
 	case brandAvciFourCC:
 		return brandAvci
-	case brandAvifFourCC:
-		return brandAvif
 	case brandAvisFourCC:
 		return brandAvis
-	case brandCrxFourCC:
-		return brandCrx
 	case brandDashFourCC:
 		return brandDash
-	case brandHeicFourCC:
-		return brandHeic
-	case brandHeifFourCC:
-		return brandHeif
 	case brandHeimFourCC:
 		return brandHeim
 	case brandHeisFourCC:
 		return brandHeis
-	case brandHeixFourCC:
-		return brandHeix
-	case brandHevcFourCC:
-		return brandHevc
 	case brandHevmFourCC:
 		return brandHevm
 	case brandHevsFourCC:
@@ -185,10 +199,6 @@ func brandFromBuf(buf []byte) brand {
 		return brandIso5
 	case brandIso6FourCC:
 		return brandIso6
-	case brandIso8FourCC:
-		return brandIso8
-	case brandIsomFourCC:
-		return brandIsom
 	case brandJxlFourCC:
 		return brandJxl
 	case brandM4AFourCC:
@@ -203,22 +213,16 @@ func brandFromBuf(buf []byte) brand {
 		return brandMA1B
 	case brandMetaFourCC:
 		return brandMeta
-	case brandMiafFourCC:
-		return brandMiaf
 	case brandMiAnFourCC:
 		return brandMiAn
 	case brandMiBrFourCC:
 		return brandMiBr
-	case brandMif1FourCC:
-		return brandMif1
 	case brandMif2FourCC:
 		return brandMif2
 	case brandMif3FourCC:
 		return brandMif3
 	case brandMiHAFourCC:
 		return brandMiHA
-	case brandMiHBFourCC:
-		return brandMiHB
 	case brandMiHEFourCC:
 		return brandMiHE
 	case brandMiPrFourCC:
@@ -229,8 +233,6 @@ func brandFromBuf(buf []byte) brand {
 		return brandMp42
 	case brandMp71FourCC:
 		return brandMp71
-	case brandMsf1FourCC:
-		return brandMsf1
 	case brandQtFourCC:
 		return brandQt
 	default:
