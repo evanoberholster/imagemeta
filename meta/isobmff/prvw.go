@@ -16,7 +16,17 @@ type prvwBox struct {
 
 // readPreview parses Canon PRVW preview metadata and streams JPEG bytes via callback.
 func (r *Reader) readPreview(b *box) (err error) {
-	inner, err := r.createPRVWBox(b)
+	inner, err := buildPRVWInnerBox(b)
+	if errors.Is(err, ErrWrongBoxType) {
+		// Some CR3 UUID payloads include an 8-byte prefix before the PRVW header.
+		if b.remain < 16 {
+			return fmt.Errorf("readPreview: %w", ErrBufLength)
+		}
+		if _, err = b.Discard(8); err != nil {
+			return fmt.Errorf("readPreview: %w", ErrBufLength)
+		}
+		inner, err = buildPRVWInnerBox(b)
+	}
 	if err != nil {
 		return fmt.Errorf("readPreview: %w", err)
 	}
@@ -40,26 +50,6 @@ func (r *Reader) readPreview(b *box) (err error) {
 	}
 
 	return inner.close()
-}
-
-// createPRVWBox creates an inner view over the PRVW box.
-// Some CR3 UUID payloads include an 8-byte prefix before the PRVW header.
-func (r *Reader) createPRVWBox(b *box) (inner box, err error) {
-	inner, err = buildPRVWInnerBox(b)
-	if err == nil {
-		return inner, nil
-	}
-	if !errors.Is(err, ErrWrongBoxType) {
-		return inner, err
-	}
-
-	if b.remain < 16 {
-		return inner, fmt.Errorf("createPRVWBox: %w", ErrBufLength)
-	}
-	if _, err = b.Discard(8); err != nil {
-		return inner, fmt.Errorf("createPRVWBox: %w", ErrBufLength)
-	}
-	return buildPRVWInnerBox(b)
 }
 
 // buildPRVWInnerBox validates the next box as PRVW and returns a bounded view.
