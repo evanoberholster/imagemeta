@@ -198,10 +198,10 @@ func toASCIILowerByte(c byte) byte {
 	return c
 }
 
-// itemType
+// itemType identifies an infe entry: image coding, metadata or grouping.
 type itemType uint8
 
-// itemTypes
+// Known infe item types.
 const (
 	itemTypeUnknown itemType = iota
 	itemTypeInfe

@@ -24,10 +24,8 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 	return ht, b.close()
 }
 
-// hdlrType
-
-// hdlrType always 4 bytes;
-// Handler; usually "pict" for HEIF images
+// hdlrType identifies a handler: picture, video or metadata.
+// HEIF images usually carry "pict".
 type hdlrType uint8
 
 // hdlr types
@@ -75,11 +73,8 @@ func hdlrFromBuf(buf []byte) hdlrType {
 	}
 }
 
-// pitmID is a "pitm" box.
-//
-// Primary Item Reference pitm allows setting one image as the primary item.
-// 0 represents not set.
-
+// readPitm parses the primary item reference: the one image designated
+// as the primary item. 0 represents not set.
 func readPitm(b *box) (id itemID, err error) {
 	if err = b.readFlags(); err != nil {
 		return invalidItemID, err
@@ -102,7 +97,7 @@ func readPitm(b *box) (id itemID, err error) {
 	return id, b.close()
 }
 
-// itemID
+// itemID identifies a meta-box item; 0 means unset.
 type itemID uint32
 
 const invalidItemID itemID = 0
