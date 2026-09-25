@@ -35,10 +35,10 @@ func TestReadBoxSizeZeroSeekable(t *testing.T) {
 	if b.size != 16 {
 		t.Fatalf("box size = %d, want 16 (extends to EOF)", b.size)
 	}
-	if err := b.close(); err != nil {
+	if err = b.close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.readBox(); !errors.Is(err, io.EOF) {
+	if _, err = r.readBox(); !errors.Is(err, io.EOF) {
 		t.Fatalf("readBox after EOF = %v, want io.EOF", err)
 	}
 }
@@ -83,7 +83,7 @@ func TestReadInnerBoxSizeZero(t *testing.T) {
 	if inner.size != len(data) {
 		t.Fatalf("inner size = %d, want %d (bounded by outer)", inner.size, len(data))
 	}
-	if err := inner.close(); err != nil {
+	if err = inner.close(); err != nil {
 		t.Fatal(err)
 	}
 	if outer.remain != 0 {

@@ -30,13 +30,13 @@ func TestBoxReadAdvancesAbsoluteOffset(t *testing.T) {
 		t.Fatal(err)
 	}
 	tmp := make([]byte, 4)
-	if _, err := b.Read(tmp); err != nil {
+	if _, err = b.Read(tmp); err != nil {
 		t.Fatal(err)
 	}
 	if r.offset != 36 {
 		t.Fatalf("r.offset = %d, want 36 after reading 4 payload bytes", r.offset)
 	}
-	if err := b.close(); err != nil {
+	if err = b.close(); err != nil {
 		t.Fatal(err)
 	}
 	next, err := r.readBox()
@@ -46,7 +46,7 @@ func TestBoxReadAdvancesAbsoluteOffset(t *testing.T) {
 	if next.offset != 40 || !next.isType(typeFree) {
 		t.Fatalf("next box offset = %d type = %s, want 40 free", next.offset, next.boxType)
 	}
-	if err := next.close(); err != nil {
+	if err = next.close(); err != nil {
 		t.Fatal(err)
 	}
 }
