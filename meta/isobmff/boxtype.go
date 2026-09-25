@@ -180,14 +180,46 @@ func boxTypeFromBuf(buf []byte) boxType {
 	}
 
 	switch bmffEndian.Uint32(buf[:4]) {
+	// Hot boxes first, ordered by observed frequency across the corpus;
+	// the remainder stays alphabetical.
+	case boxTypeFtypFourCC:
+		return typeFtyp
+	case boxTypeMetaFourCC:
+		return typeMeta
+	case boxTypeMdatFourCC:
+		return typeMdat
+	case boxTypeHdlrFourCC:
+		return typeHdlr
+	case boxTypePitmFourCC:
+		return typePitm
+	case boxTypeIlocFourCC:
+		return typeIloc
+	case boxTypeIinfFourCC:
+		return typeIinf
+	case boxTypeInfeFourCC:
+		return typeInfe
+	case boxTypeIrefFourCC:
+		return typeIref
+	case boxTypeIprpFourCC:
+		return typeIprp
+	case boxTypeIpcoFourCC:
+		return typeIpco
+	case boxTypeIpmaFourCC:
+		return typeIpma
+	case boxTypeIspeFourCC:
+		return typeIspe
+	case boxTypeHvcCFourCC:
+		return typeHvcC
+	case boxTypeAv1CFourCC:
+		return typeAv1C
+	case boxTypeColrFourCC:
+		return typeColr
 	case boxTypeAuxCFourCC:
 		return typeAuxC
 	case boxTypeAuxlFourCC:
 		return typeAuxl
 	case boxTypeAv01FourCC:
 		return typeAv01
-	case boxTypeAv1CFourCC:
-		return typeAv1C
 	case boxTypeAvcCFourCC:
 		return typeAvcC
 	case boxTypeCCDTFourCC:
@@ -210,8 +242,6 @@ func boxTypeFromBuf(buf []byte) boxType {
 		return typeCNCV
 	case boxTypeCo64FourCC:
 		return typeCo64
-	case boxTypeColrFourCC:
-		return typeColr
 	case boxTypeCRAWFourCC:
 		return typeCRAW
 	case boxTypeCrttFourCC:
@@ -230,38 +260,18 @@ func boxTypeFromBuf(buf []byte) boxType {
 		return typeEtyp
 	case boxTypeFreeFourCC:
 		return typeFree
-	case boxTypeFtypFourCC:
-		return typeFtyp
 	case boxTypeGrplFourCC:
 		return typeGrpl
-	case boxTypeHdlrFourCC:
-		return typeHdlr
-	case boxTypeHvcCFourCC:
-		return typeHvcC
 	case boxTypeIdatFourCC:
 		return typeIdat
-	case boxTypeIinfFourCC:
-		return typeIinf
-	case boxTypeIlocFourCC:
-		return typeIloc
 	case boxTypeImirFourCC:
 		return typeImir
-	case boxTypeInfeFourCC:
-		return typeInfe
 	case boxTypeIovlFourCC:
 		return typeIovl
-	case boxTypeIpcoFourCC:
-		return typeIpco
-	case boxTypeIpmaFourCC:
-		return typeIpma
-	case boxTypeIprpFourCC:
-		return typeIprp
 	case boxTypeIrefFourCC:
 		return typeIref
 	case boxTypeIrotFourCC:
 		return typeIrot
-	case boxTypeIspeFourCC:
-		return typeIspe
 	case boxTypeJXLFourCC:
 		return typeJXL
 	case boxTypeJumbFourCC:
@@ -274,16 +284,12 @@ func boxTypeFromBuf(buf []byte) boxType {
 		return typeJxlp
 	case boxTypeLhvCFourCC:
 		return typeLhvC
-	case boxTypeMdatFourCC:
-		return typeMdat
 	case boxTypeMdftFourCC:
 		return typeMdft
 	case boxTypeMdhdFourCC:
 		return typeMdhd
 	case boxTypeMdiaFourCC:
 		return typeMdia
-	case boxTypeMetaFourCC:
-		return typeMeta
 	case boxTypeMinfFourCC:
 		return typeMinf
 	case boxTypeMoovFourCC:
@@ -296,8 +302,6 @@ func boxTypeFromBuf(buf []byte) boxType {
 		return typeOinf
 	case boxTypePaspFourCC:
 		return typePasp
-	case boxTypePitmFourCC:
-		return typePitm
 	case boxTypePixiFourCC:
 		return typePixi
 	case boxTypePRVWFourCC:
