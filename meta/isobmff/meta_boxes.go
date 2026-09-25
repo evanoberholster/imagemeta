@@ -169,6 +169,7 @@ func (r *Reader) readIref(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item reference box")
 	}
+	info := logLevelInfo()
 	err = readContainerBoxes(b, func(inner *box) error {
 		if isSupportedItemReferenceType(inner.boxType) {
 			entryErr := r.readIrefEntry(inner, itemIDSize)
@@ -176,7 +177,7 @@ func (r *Reader) readIref(b *box) (err error) {
 				return entryErr
 			}
 		}
-		if logLevelInfo() {
+		if info {
 			logInfoBox(inner).Msg("processed item reference entry")
 		}
 		return nil
@@ -238,6 +239,7 @@ func (r *Reader) readIprp(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item properties box")
 	}
+	info := logLevelInfo()
 	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeIpma:
@@ -245,7 +247,7 @@ func (r *Reader) readIprp(b *box) (err error) {
 		case typeIpco:
 			return r.readIpco(inner)
 		default:
-			if logLevelInfo() {
+			if info {
 				logInfoBox(inner).Msg("skipping unsupported item property box")
 			}
 			return nil

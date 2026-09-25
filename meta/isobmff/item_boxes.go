@@ -308,10 +308,13 @@ func (r *Reader) readIloc(b *box) (err error) {
 		}
 	}
 
+	// Level guards are hoisted: they cost an atomic load each, and boxes
+	// can hold hundreds of entries.
+	ver := b.flags.version()
+	dbg := logLevelDebug()
 	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
 		var idSize uint8
-		ver := b.flags.version()
 		switch ver {
 		case 0, 1:
 			idSize = 2
@@ -378,7 +381,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 				}
 			}
 		}
-		if logLevelDebug() {
+		if dbg {
 			logDebug().
 				Uint32("itemID", uint32(ent.id)).
 				Uint64("extentOffset", ent.firstExtent.offset).
