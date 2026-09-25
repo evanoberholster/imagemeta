@@ -124,6 +124,11 @@ type itemPropertyLink struct {
 
 const maxStoredItemGraphEntries = 4096
 
+// maxLinkRetentionPresize caps the working prealloc for ipma link
+// retention: entry counts are file-controlled, so pathological counts must
+// not cause huge preallocs (incremental growth bounds those instead).
+const maxLinkRetentionPresize = 64
+
 func (r *Reader) addItemReference(refType boxType, from, to itemID) {
 	if len(r.heic.references) >= maxStoredItemGraphEntries {
 		return
@@ -285,6 +290,10 @@ func (r *Reader) readIpco(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item property container")
 	}
+	// Most files hold a handful of properties; size once to avoid growth.
+	if r.heic.properties == nil {
+		r.heic.properties = make([]itemProperty, 0, 8)
+	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		prop := itemProperty{boxType: inner.boxType}
 		if inner.boxType == typeIspe {
@@ -328,6 +337,17 @@ func (r *Reader) readIpma(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Uint32("entries", count).Msg("read item property associations")
 	}
+	// Size the link retention once: when the primary item is already known
+	// only its links are kept (a few); otherwise every link is retained so
+	// a later pitm still resolves. Counts are file-controlled, so the
+	// fallback prealloc is capped and growth bounds the rest.
+	if r.heic.propertyLinks == nil {
+		n := uint32(4)
+		if r.heic.pitm == invalidItemID && count > n {
+			n = min(count, uint32(maxLinkRetentionPresize))
+		}
+		r.heic.propertyLinks = make([]itemPropertyLink, 0, n)
+	}
 	for i := uint32(0); i < count; i++ {
 		id32, readErr := readUint16Or32(b, idSize32)
 		if readErr != nil {
@@ -367,6 +387,9 @@ func (r *Reader) readIpma(b *box) (err error) {
 				propertyIndex = raw & 0x007f
 			}
 			if propertyIndex == 0 {
+				continue
+			}
+			if r.heic.pitm != invalidItemID && id != r.heic.pitm {
 				continue
 			}
 			r.addItemPropertyLink(itemPropertyLink{
