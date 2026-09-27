@@ -139,6 +139,16 @@ func NewReader(r io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader
 // seeker), while source must be that stream's underlying reader. Seeks only
 // engage when source implements io.Seeker.
 func NewReaderWithSource(stream io.Reader, source io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *Reader {
+	reader := new(Reader)
+	reader.ResetWithSource(stream, source, exifReader, xmpReader, previewImageReader)
+	return reader
+}
+
+// ResetWithSource reinitializes reader state for a buffered stream plus its
+// underlying seekable source, mirroring NewReaderWithSource. Prior box state
+// is closed and callbacks are replaced.
+func (r *Reader) ResetWithSource(stream io.Reader, source io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) {
+	r.Close()
 	var br *bufio.Reader
 	pooled := false
 	// Reuse caller-provided bufio.Reader when large enough to avoid stacking buffers.
@@ -148,11 +158,10 @@ func NewReaderWithSource(stream io.Reader, source io.Reader, exifReader meta.Exi
 		br = readerPool.Acquire(stream)
 		pooled = true
 	}
-	reader := newReaderWithBufio(br, source, pooled)
-	reader.exifReader = exifReader
-	reader.xmpReader = xmpReader
-	reader.previewImageReader = previewImageReader
-	return &reader
+	*r = newReaderWithBufio(br, source, pooled)
+	r.exifReader = exifReader
+	r.xmpReader = xmpReader
+	r.previewImageReader = previewImageReader
 }
 
 func newReader(r io.Reader) Reader {

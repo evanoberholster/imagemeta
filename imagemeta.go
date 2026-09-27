@@ -10,7 +10,6 @@ import (
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
 	"github.com/evanoberholster/imagemeta/meta/exif"
-	"github.com/evanoberholster/imagemeta/meta/isobmff"
 	"github.com/evanoberholster/imagemeta/meta/jpeg"
 	metalog "github.com/evanoberholster/imagemeta/meta/logging"
 	"github.com/evanoberholster/imagemeta/meta/png"
@@ -72,8 +71,8 @@ func Decode(r io.ReadSeeker) (exif.Exif, error) {
 			return ir.Exif, decodeErr
 		}
 	case imagetype.ImageCR3, imagetype.ImageAVIF, imagetype.ImageJXL, imagetype.ImageHEIF, imagetype.ImageHEIC:
-		bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
-		defer bmr.Close()
+		bmr := exif.AcquirePooledISOBMFFReader(rr, r, ir.DecodeIfdAppend, nil, nil)
+		defer exif.ReleasePooledISOBMFFReader(bmr)
 		if readErr := bmr.ReadFTYP(); readErr != nil {
 			return ir.Exif, errors.Wrapf(readErr, "ReadFtypBox")
 		}
@@ -119,8 +118,8 @@ func DecodeCR3(r io.ReadSeeker) (exif.Exif, error) {
 	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
-	bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
-	defer bmr.Close()
+	bmr := exif.AcquirePooledISOBMFFReader(rr, r, ir.DecodeIfdAppend, nil, nil)
+	defer exif.ReleasePooledISOBMFFReader(bmr)
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
@@ -171,7 +170,13 @@ func DecodeCRW(r io.ReadSeeker) (exif.Exif, error) {
 	if _, seekErr := r.Seek(0, io.SeekStart); seekErr != nil {
 		return exif.Exif{}, seekErr
 	}
-	it, err := imagetype.Scan(r)
+	rr, err := getPooledReader()
+	if err != nil {
+		return exif.Exif{}, err
+	}
+	rr.Reset(r)
+	it, err := imagetype.ScanBuf(rr)
+	readerPool.Put(rr)
 	if err != nil {
 		return exif.Exif{}, err
 	}
@@ -209,8 +214,8 @@ func DecodeHeif(r io.ReadSeeker) (exif.Exif, error) {
 	ir := exif.AcquirePooledReader(metalog.GetLogger())
 	defer exif.ReleasePooledReader(ir)
 
-	bmr := isobmff.NewReaderWithSource(rr, r, ir.DecodeIfdAppend, nil, nil)
-	defer bmr.Close()
+	bmr := exif.AcquirePooledISOBMFFReader(rr, r, ir.DecodeIfdAppend, nil, nil)
+	defer exif.ReleasePooledISOBMFFReader(bmr)
 	if err := bmr.ReadFTYP(); err != nil {
 		return ir.Exif, errors.Wrapf(err, "ReadFtypBox")
 	}
@@ -278,8 +283,8 @@ func PreviewCR3(r io.ReadSeeker) ([]byte, error) {
 
 	pr := preview.NewPreviewReader(preview.Logger)
 
-	bmr := isobmff.NewReaderWithSource(rr, r, nil, nil, pr.RenderPreview)
-	defer bmr.Close()
+	bmr := exif.AcquirePooledISOBMFFReader(rr, r, nil, nil, pr.RenderPreview)
+	defer exif.ReleasePooledISOBMFFReader(bmr)
 
 	if err := bmr.ReadFTYP(); err != nil {
 		return nil, errors.Wrapf(err, "ReadFtypBox")
