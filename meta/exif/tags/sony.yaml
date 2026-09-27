@@ -1,0 +1,881 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Sony %Main (Sony.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/Sony.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Sony"
+  table: "%Main"
+  file: "Sony.pm"
+  docs: "https://exiftool.org/TagNames/Sony.html"
+groups:
+  0: "MakerNotes"
+  2: "Camera"
+source_tag_count: 114
+tag_count: 95
+tags:
+  - id: 0x0102
+    name: "Quality"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0104
+    name: "FlashExposureComp"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: "Flash Exposure Compensation"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0105
+    name: "Teleconverter"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0112
+    name: "WhiteBalanceFineTune"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0115
+    name: "WhiteBalance"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0e00
+    name: "PrintIM"
+    writable: ""
+    group: ""
+    count: ""
+    description: "Print Image Matching"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "PrintIM::Main"
+  - id: 0x1000
+    name: "MultiBurstMode"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "MultiBurst tags valid only for models with this feature, like the F88"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1001
+    name: "MultiBurstImageWidth"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1002
+    name: "MultiBurstImageHeight"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1003
+    name: "Panorama"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Panorama"
+  - id: 0x2001
+    name: "PreviewImage"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "HD-size preview in JPEG images from almost all DSLR/SLT/ILCA/NEX/ILCE."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2002
+    name: "Rating"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2004
+    name: "Contrast"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2005
+    name: "Saturation"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2006
+    name: "Sharpness"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2007
+    name: "Brightness"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2008
+    name: "LongExposureNoiseReduction"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2009
+    name: "HighISONoiseReduction"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x200a
+    name: "HDR"
+    writable: "int32u"
+    group: ""
+    count: "2"
+    description: "stored as a 32-bit integer, but read as two 16-bit integers"
+    print_conv: "array"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x200b
+    name: "MultiFrameNoiseReduction"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: "may not be valid for RS100"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x200e
+    name: "PictureEffect"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x200f
+    name: "SoftSkinEffect"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2011
+    name: "VignettingCorrection"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2012
+    name: "LateralChromaticAberration"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2013
+    name: "DistortionCorrectionSetting"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2014
+    name: "WBShiftAB_GM"
+    writable: "int32s"
+    group: ""
+    count: "2"
+    description: " 2 numbers: 1. positive is a shift toward amber, 2. positive is a shift toward magenta "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2016
+    name: "AutoPortraitFramed"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "\"Yes\" if this image was created by the Auto Portrait Framing feature"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2017
+    name: "FlashAction"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x201a
+    name: "ElectronicFrontCurtainShutter"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x201b
+    name: "FocusMode"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x201d
+    name: "FlexibleSpotPosition"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: " X and Y coordinates of the AF point, valid only when AFAreaMode is Flexible Spot "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2021
+    name: "AFTracking"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2023
+    name: "MultiFrameNREffect"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2026
+    name: "WBShiftAB_GM_Precise"
+    writable: "int32s"
+    group: ""
+    count: "2"
+    description: " 2 numbers: 1. positive is a shift toward amber, 2. positive is a shift toward magenta "
+    print_conv: "scalar:my @v=split(\" \",$val); $_/=1000 foreach @v; sprintf(\"%.2f %.2f\",$v[0],$v[1])"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2027
+    name: "FocusLocation"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2028
+    name: "VariableLowPassFilter"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2029
+    name: "RAWFileType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x202a
+    name: "Tag202a"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Tag202a"
+  - id: 0x202b
+    name: "PrioritySetInAWB"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x202c
+    name: "MeteringMode2"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x202d
+    name: "ExposureStandardAdjustment"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x202e
+    name: "Quality"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x202f
+    name: "PixelShiftInfo"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2031
+    name: "SerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:sprintf(\"%.8d\",$val)"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x2032
+    name: "Shadows"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2033
+    name: "Highlights"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2034
+    name: "Fade"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2035
+    name: "SharpnessRange"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2036
+    name: "Clarity"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2037
+    name: "FocusFrameSize"
+    writable: ""
+    group: ""
+    count: "3"
+    description: "width and height of FocusFrame, centered on FocusLocation"
+    print_conv: "scalar:my @a = split ' ', $val;\n            return $a[2] ? sprintf('%3dx%3d', $a[0], $a[1]) : 'n/a';"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2039
+    name: "JPEG-HEIFSwitch"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x2044
+    name: "HiddenInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::HiddenInfo"
+  - id: 0x204a
+    name: "FocusLocation2"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x205c
+    name: "StepCropShooting"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x3000
+    name: "ShotInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::ShotInfo"
+  - id: 0x900b
+    name: "Tag900b"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Tag900b"
+  - id: 0x9401
+    name: "Tag9401"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Tag9401"
+  - id: 0x9403
+    name: "Tag9403"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Tag9403"
+  - id: 0x9407
+    name: "Sony_0x9407"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x9408
+    name: "Sony_0x9408"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x9409
+    name: "Sony_0x9409"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x940b
+    name: "Sony_0x940b"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x940d
+    name: "Sony_0x940d"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x940f
+    name: "Sony_0x940f"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x9411
+    name: "Sony_0x9411"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:PrintHex($val)"
+    subdirectory: false
+  - id: 0x9416
+    name: "Sony_0x9416"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Sony::Tag9416"
+  - id: 0xb000
+    name: "FileFormat"
+    writable: "int8u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb001
+    name: "SonyModelID"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb020
+    name: "CreativeStyle"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb021
+    name: "ColorTemperature"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb022
+    name: "ColorCompensationFilter"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: "negative is green, positive is magenta"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb023
+    name: "SceneMode"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb024
+    name: "ZoneMatching"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb025
+    name: "DynamicRangeOptimizer"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb026
+    name: "ImageStabilization"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb027
+    name: "LensType"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb028
+    name: "MinoltaMakerNote"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Minolta::Main"
+  - id: 0xb029
+    name: "ColorMode"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb02a
+    name: "LensSpec"
+    writable: "int8u"
+    group: ""
+    count: "8"
+    description: " like LensInfo, but also specifies lens features: DT, E, ZA, G, SSM, SAM, OSS, STF, Reflex, Macro and Fisheye "
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xb02b
+    name: "FullImageSize"
+    writable: "int32u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:join(\" \", reverse split(\" \", $val))"
+    subdirectory: false
+  - id: 0xb02c
+    name: "PreviewImageSize"
+    writable: "int32u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:join(\" \", reverse split(\" \", $val))"
+    subdirectory: false
+  - id: 0xb040
+    name: "Macro"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb041
+    name: "ExposureMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb042
+    name: "FocusMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "not valid for all models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb044
+    name: "AFIlluminator"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb047
+    name: "JPEGQuality"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb048
+    name: "FlashLevel"
+    writable: "int16s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb049
+    name: "ReleaseMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb04a
+    name: "SequenceNumber"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "shot number in continuous burst"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb04b
+    name: "Anti-Blur"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb04e
+    name: "FocusMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "valid for DSC-HX9V generation and newer"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb04f
+    name: "DynamicRangeOptimizer"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb050
+    name: "HighISONoiseReduction2"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "DSC models only"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb052
+    name: "IntelligentAuto"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb054
+    name: "WhiteBalance"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: " decoding of the Fluorescent settings matches the EXIF standard, which is different than the names used by Sony for some models "
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false

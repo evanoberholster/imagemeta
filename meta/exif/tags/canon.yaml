@@ -1,0 +1,771 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Canon %Main (Canon.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/Canon.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Canon"
+  table: "%Main"
+  file: "Canon.pm"
+  docs: "https://exiftool.org/TagNames/Canon.html"
+groups:
+  0: "MakerNotes"
+  2: "Camera"
+source_tag_count: 85
+tag_count: 79
+tags:
+  - id: 0x0001
+    name: "CanonCameraSettings"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::CameraSettings"
+  - id: 0x0002
+    name: "CanonFocalLength"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FocalLength"
+  - id: 0x0003
+    name: "CanonFlashInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0004
+    name: "CanonShotInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::ShotInfo"
+  - id: 0x0005
+    name: "CanonPanorama"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::Panorama"
+  - id: 0x0006
+    name: "CanonImageType"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0007
+    name: "CanonFirmwareVersion"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0008
+    name: "FileNumber"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:$_=$val,s/(\\d+)(\\d{4})/$1-$2/,$_"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0009
+    name: "OwnerName"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000a
+    name: "UnknownD30"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::UnknownD30"
+  - id: 0x000e
+    name: "CanonFileLength"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0010
+    name: "CanonModelID"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0011
+    name: "MovieInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::MovieInfo"
+  - id: 0x0012
+    name: "CanonAFInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AFInfo"
+  - id: 0x0013
+    name: "ThumbnailImageValidArea"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: "all zeros for full frame"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0015
+    name: "SerialNumberFormat"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001a
+    name: "SuperMacro"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001c
+    name: "DateStampMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "used only in postcard mode"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001d
+    name: "MyColors"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::MyColors"
+  - id: 0x001e
+    name: "FirmwareRevision"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:my $rev = sprintf(\"%.8x\", $val);\n            my ($rel, $v1, $v2, $r1, $r2) = ($rev =~ /^(.)(.)(..)0?(.+)(..)$/);\n    ..."
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0023
+    name: "Categories"
+    writable: "int32u"
+    group: ""
+    count: "2"
+    description: "2 values: 1. always 8, 2. Categories"
+    print_conv: "hash"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0024
+    name: "FaceDetect1"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FaceDetect1"
+  - id: 0x0025
+    name: "FaceDetect2"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FaceDetect2"
+  - id: 0x0026
+    name: "CanonAFInfo2"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AFInfo2"
+  - id: 0x0027
+    name: "ContrastInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::ContrastInfo"
+  - id: 0x0028
+    name: "ImageUniqueID"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:unpack(\"H*\", $val)"
+    subdirectory: false
+  - id: 0x0029
+    name: "WBInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::WBInfo"
+  - id: 0x002f
+    name: "FaceDetect3"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FaceDetect3"
+  - id: 0x0035
+    name: "TimeInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::TimeInfo"
+  - id: 0x0038
+    name: "BatteryType"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003c
+    name: "AFInfo3"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AFInfo2"
+  - id: 0x0081
+    name: "RawDataOffset"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0082
+    name: "RawDataLength"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0083
+    name: "OriginalDecisionDataOffset"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0090
+    name: "CustomFunctions1D"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "CanonCustom::Functions1D"
+  - id: 0x0091
+    name: "PersonalFunctions"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "CanonCustom::PersonalFuncs"
+  - id: 0x0092
+    name: "PersonalFunctionValues"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "CanonCustom::PersonalFuncValues"
+  - id: 0x0093
+    name: "CanonFileInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FileInfo"
+  - id: 0x0094
+    name: "AFPointsInFocus1D"
+    writable: ""
+    group: ""
+    count: ""
+    description: "EOS 1D -- 5 rows: A1-7, B1-10, C1-11, D1-10, E1-7, center point is C6"
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0095
+    name: "LensModel"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0097
+    name: "DustRemovalData"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0098
+    name: "CropInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::CropInfo"
+  - id: 0x0099
+    name: "CustomFunctions2"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "CanonCustom::Functions2"
+  - id: 0x009a
+    name: "AspectInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AspectInfo"
+  - id: 0x00a0
+    name: "ProcessingInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::Processing"
+  - id: 0x00a1
+    name: "ToneCurveTable"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00a2
+    name: "SharpnessTable"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00a3
+    name: "SharpnessFreqTable"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00a4
+    name: "WhiteBalanceTable"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00a9
+    name: "ColorBalance"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::ColorBalance"
+  - id: 0x00aa
+    name: "MeasuredColor"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::MeasuredColor"
+  - id: 0x00ae
+    name: "ColorTemperature"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b0
+    name: "CanonFlags"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::Flags"
+  - id: 0x00b1
+    name: "ModifiedInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::ModifiedInfo"
+  - id: 0x00b2
+    name: "ToneCurveMatching"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00b3
+    name: "WhiteBalanceMatching"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x00b4
+    name: "ColorSpace"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b6
+    name: "PreviewImageInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::PreviewImageInfo"
+  - id: 0x00d0
+    name: "VRDOffset"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: "offset of VRD \"recipe data\" if it exists"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00e0
+    name: "SensorInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::SensorInfo"
+  - id: 0x4002
+    name: "CRWParam"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4003
+    name: "ColorInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::ColorInfo"
+  - id: 0x4005
+    name: "Flavor"
+    writable: ""
+    group: ""
+    count: ""
+    description: "unknown 49kB block, not copied to JPEG images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4008
+    name: "PictureStyleUserDef"
+    writable: "int16u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "array"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4009
+    name: "PictureStylePC"
+    writable: "int16u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "array"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4010
+    name: "CustomPictureStyleFileName"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4013
+    name: "AFMicroAdj"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AFMicroAdj"
+  - id: 0x4016
+    name: "VignettingCorr2"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::VignettingCorr2"
+  - id: 0x4018
+    name: "LightingOpt"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::LightingOpt"
+  - id: 0x4019
+    name: "LensInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::LensInfo"
+  - id: 0x4020
+    name: "AmbienceInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::Ambience"
+  - id: 0x4021
+    name: "MultiExp"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::MultiExp"
+  - id: 0x4024
+    name: "FilterInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FilterInfo"
+  - id: 0x4025
+    name: "HDRInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::HDRInfo"
+  - id: 0x4026
+    name: "LogInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::LogInfo"
+  - id: 0x4028
+    name: "AFConfig"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::AFConfig"
+  - id: 0x403f
+    name: "RawBurstModeRoll"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::RawBurstInfo"
+  - id: 0x4053
+    name: "FocusBracketingInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::FocusBracketingInfo"
+  - id: 0x4059
+    name: "LevelInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Canon::LevelInfo"

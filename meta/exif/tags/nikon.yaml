@@ -1,0 +1,929 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Nikon %Main (Nikon.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/Nikon.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Nikon"
+  table: "%Main"
+  file: "Nikon.pm"
+  docs: "https://exiftool.org/TagNames/Nikon.html"
+groups:
+  0: "MakerNotes"
+  2: "Camera"
+source_tag_count: 111
+tag_count: 99
+tags:
+  - id: 0x0001
+    name: "MakerNoteVersion"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "scalar:$_=$val;s/^(\\d{2})/$1\\./;s/^0//;$_"
+    value_conv: "scalar:$_=$val; /^[\\x00-\\x09]/ and $_=join(\"\",unpack(\"CCCC\",$_)); $_"
+    subdirectory: false
+  - id: 0x0002
+    name: "ISO"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "scalar:$_=$val;s/^0 //;s/^1 (\\d+)/Hi $1/;$_"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0003
+    name: "ColorMode"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0004
+    name: "Quality"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0005
+    name: "WhiteBalance"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0006
+    name: "Sharpness"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0007
+    name: "FocusMode"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0008
+    name: "FlashSetting"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0009
+    name: "FlashType"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000b
+    name: "WhiteBalanceFineTune"
+    writable: "int16s"
+    group: ""
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000c
+    name: "WB_RBLevels"
+    writable: "rational64u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000d
+    name: "ProgramShift"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x000e
+    name: "ExposureDifference"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x000f
+    name: "ISOSelection"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0010
+    name: "DataDump"
+    writable: "0"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0011
+    name: "PreviewIFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::PreviewIFD"
+  - id: 0x0012
+    name: "FlashExposureComp"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: "Flash Exposure Compensation"
+    print_conv: "code"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x0013
+    name: "ISOSetting"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "scalar:$_=$val;s/^0 //;$_"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0016
+    name: "ImageBoundary"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0017
+    name: "ExternalFlashExposureComp"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x0018
+    name: "FlashExposureBracketValue"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "scalar:sprintf(\"%.1f\",$val)"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x0019
+    name: "ExposureBracketValue"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001a
+    name: "ImageProcessing"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001b
+    name: "CropHiSpeed"
+    writable: "int16u"
+    group: ""
+    count: "7"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001c
+    name: "ExposureTuning"
+    writable: "undef"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "code"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"c3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x001d
+    name: "SerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: " this value is used as a key to decrypt other information -- writing this tag causes the other information to be re-encrypted with the new key "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001e
+    name: "ColorSpace"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001f
+    name: "VRInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::VRInfo"
+  - id: 0x0020
+    name: "ImageAuthentication"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0021
+    name: "FaceDetect"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::FaceDetect"
+  - id: 0x0022
+    name: "ActiveD-Lighting"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0024
+    name: "WorldTime"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::WorldTime"
+  - id: 0x0025
+    name: "ISOInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::ISOInfo"
+  - id: 0x002a
+    name: "VignetteControl"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002b
+    name: "DistortInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::DistortInfo"
+  - id: 0x002c
+    name: "UnknownInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::UnknownInfo"
+  - id: 0x0032
+    name: "UnknownInfo2"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::UnknownInfo2"
+  - id: 0x0034
+    name: "ShutterMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0037
+    name: "MechanicalShutterCount"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0039
+    name: "LocationInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::LocationInfo"
+  - id: 0x003d
+    name: "BlackLevel"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003e
+    name: "ImageSizeRAW"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003f
+    name: "WhiteBalanceFineTune"
+    writable: "rational64s"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0044
+    name: "JPGCompression"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0045
+    name: "CropArea"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: "left, top, width, height"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x004e
+    name: "NikonSettings"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "NikonSettings::Main"
+  - id: 0x004f
+    name: "ColorTemperatureAuto"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0051
+    name: "MakerNotes0x51"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::MakerNotes0x51"
+  - id: 0x0056
+    name: "MakerNotes0x56"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::MakerNotes0x56"
+  - id: 0x0080
+    name: "ImageAdjustment"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0081
+    name: "ToneComp"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0082
+    name: "AuxiliaryLens"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0083
+    name: "LensType"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0084
+    name: "Lens"
+    writable: "rational64u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0085
+    name: "ManualFocusDistance"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0086
+    name: "DigitalZoom"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0087
+    name: "FlashMode"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0089
+    name: "ShootingMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "for the D70, Bit 5 = Unused LE-NR Slowdown"
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008b
+    name: "LensFStops"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "scalar:sprintf(\"%.2f\", $val)"
+    value_conv: "scalar:my ($a,$b,$c)=unpack(\"C3\",$val); $c ? $a*($b/$c) : 0"
+    subdirectory: false
+  - id: 0x008c
+    name: "ContrastCurve"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008d
+    name: "ColorHue"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008f
+    name: "SceneMode"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0090
+    name: "LightSource"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0092
+    name: "HueAdjustment"
+    writable: "int16s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0093
+    name: "NEFCompression"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0094
+    name: "SaturationAdj"
+    writable: "int16s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0095
+    name: "NoiseReduction"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0096
+    name: "NEFLinearizationTable"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0099
+    name: "RawImageCenter"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009a
+    name: "SensorPixelSize"
+    writable: "rational64u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009c
+    name: "SceneAssist"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009d
+    name: "DateStampMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "feature to imprint date/time on image"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009e
+    name: "RetouchHistory"
+    writable: "int16u"
+    group: ""
+    count: "10"
+    description: ""
+    print_conv: "array"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x00a0
+    name: "SerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a2
+    name: "ImageDataSize"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a5
+    name: "ImageCount"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a6
+    name: "DeletedImageCount"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a7
+    name: "ShutterCount"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: " includes both mechanical and electronic shutter activations for models with this feature. This value is used as a key to decrypt other information, and writing this tag causes the other information to be re-encrypted..."
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a9
+    name: "ImageOptimization"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00aa
+    name: "Saturation"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ab
+    name: "VariProgram"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ac
+    name: "ImageStabilization"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ad
+    name: "AFResponse"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b1
+    name: "HighISONoiseReduction"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b3
+    name: "ToningEffect"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b6
+    name: "PowerUpTime"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "date/time when camera was last powered up"
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b9
+    name: "AFTune"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::AFTune"
+  - id: 0x00bb
+    name: "RetouchInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::RetouchInfo"
+  - id: 0x00bd
+    name: "PictureControlData"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::PictureControl"
+  - id: 0x00bf
+    name: "SilentPhotography"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00c3
+    name: "BarometerInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::BarometerInfo"
+  - id: 0x0e00
+    name: "PrintIM"
+    writable: "0"
+    group: ""
+    count: ""
+    description: "Print Image Matching"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "PrintIM::Main"
+  - id: 0x0e01
+    name: "NikonCaptureData"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: " this data is dropped when copying Nikon MakerNotes since it may be too large to fit in the EXIF segment of a JPEG image, but it may be copied as a block into existing Nikon MakerNotes later if desired "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "NikonCapture::Main"
+  - id: 0x0e09
+    name: "NikonCaptureVersion"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0e0e
+    name: "NikonCaptureOffsets"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::CaptureOffsets"
+  - id: 0x0e10
+    name: "NikonScanIFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::Scan"
+  - id: 0x0e1d
+    name: "NikonICCProfile"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "ICC_Profile::Main"
+  - id: 0x0e1e
+    name: "NikonCaptureOutput"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::CaptureOutput"
+  - id: 0x0e22
+    name: "NEFBitDepth"
+    writable: "int16u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false

@@ -1,0 +1,1226 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Panasonic %Main (Panasonic.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/Panasonic.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Panasonic"
+  table: "%Main"
+  file: "Panasonic.pm"
+  docs: "https://exiftool.org/TagNames/Panasonic.html"
+groups:
+  0: "MakerNotes"
+  2: "Camera"
+source_tag_count: 136
+tag_count: 134
+tags:
+  - id: 0x0001
+    name: "ImageQuality"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "quality of the main image, which may be in a different file"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0002
+    name: "FirmwareVersion"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: " for some camera models such as the FZ30 this may be an internal production reference number and not the actual firmware version "
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0003
+    name: "WhiteBalance"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0007
+    name: "FocusMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001a
+    name: "ImageStabilization"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001c
+    name: "MacroMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001f
+    name: "ShootingMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0020
+    name: "Audio"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0021
+    name: "DataDump"
+    writable: "0"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0023
+    name: "WhiteBalanceBias"
+    writable: "int16s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0024
+    name: "FlashBias"
+    writable: "int16s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0025
+    name: "InternalSerialNumber"
+    writable: "undef"
+    group: ""
+    count: "16"
+    description: " this number is unique, and contains the date of manufacture, but is not the same as the number printed on the camera body "
+    print_conv: "scalar:return $val unless $val=~/^([A-Z][0-9A-Z]{2})(\\d{2})(\\d{2})(\\d{2})(\\d{4})/;\n            my $yr = $2 + ($2 < 70 ? 2000..."
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0026
+    name: "PanasonicExifVersion"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0027
+    name: "VideoFrameRate"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "only valid for older models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0028
+    name: "ColorEffect"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0029
+    name: "TimeSincePowerOn"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: " time in 1/100 s from when the camera was powered on to when the image is written to memory card "
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x002a
+    name: "BurstMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "decoding may be different for some models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002b
+    name: "SequenceNumber"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002d
+    name: "NoiseReduction"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "the encoding for this value is not consistent between models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002e
+    name: "SelfTimer"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0030
+    name: "Rotation"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0031
+    name: "AFAssistLamp"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0032
+    name: "ColorMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0033
+    name: "BabyAge"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "or pet age"
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0034
+    name: "OpticalZoomMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0035
+    name: "ConversionLens"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0036
+    name: "TravelDay"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0038
+    name: "BatteryLevel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0039
+    name: "Contrast"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003a
+    name: "WorldTimeLocation"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003b
+    name: "TextStamp"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003c
+    name: "ProgramISO"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003d
+    name: "AdvancedSceneType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "used together with SceneMode to derive Composite AdvancedSceneMode"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003e
+    name: "TextStamp"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003f
+    name: "FacesDetected"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0040
+    name: "Saturation"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0041
+    name: "Sharpness"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0042
+    name: "FilmMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0043
+    name: "JPEGQuality"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0044
+    name: "ColorTempKelvin"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0045
+    name: "BracketSettings"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0046
+    name: "WBShiftAB"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is a shift toward blue"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0047
+    name: "WBShiftGM"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is a shift toward green"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0048
+    name: "FlashCurtain"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0049
+    name: "LongExposureNoiseReduction"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x004b
+    name: "PanasonicImageWidth"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x004c
+    name: "PanasonicImageHeight"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x004d
+    name: "AFPointPosition"
+    writable: "rational64u"
+    group: ""
+    count: "2"
+    description: " X Y coordinates of primary AF area center, in the range 0.0 to 1.0, or \"n/a\" or \"none\" for invalid values "
+    print_conv: "scalar:return 'none' if $val eq '16777216 16777216';\n            return 'n/a' if $val =~ /^4194303\\.9/;\n            my @a = ..."
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x004e
+    name: "FaceDetInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:length $val"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Panasonic::FaceDetInfo"
+  - id: 0x0051
+    name: "LensType"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0052
+    name: "LensSerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0053
+    name: "AccessoryType"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0054
+    name: "AccessorySerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0059
+    name: "Transform"
+    writable: "undef"
+    group: ""
+    count: "2"
+    description: "decoded as two 16-bit signed integers"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x005d
+    name: "IntelligentExposure"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "not valid for some models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0060
+    name: "LensFirmwareVersion"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0061
+    name: "FaceRecInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Panasonic::FaceRecInfo"
+  - id: 0x0062
+    name: "FlashWarning"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0063
+    name: "RecognizedFaceFlags"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0065
+    name: "Title"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0066
+    name: "BabyName"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "or pet name"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0067
+    name: "Location"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0069
+    name: "Country"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x006b
+    name: "State"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x006d
+    name: "City"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "City/Town as stored by some models, or County/Township for others"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x006f
+    name: "Landmark"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0070
+    name: "IntelligentResolution"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0076
+    name: "MergedImages"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "number of images in HDR or Live View Composite picture"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0077
+    name: "BurstSpeed"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "images per second"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0079
+    name: "IntelligentD-Range"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x007c
+    name: "ClearRetouch"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0080
+    name: "City2"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "City/Town/Village as stored by some models"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0086
+    name: "ManometerPressure"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:sprintf(\"%.1f kPa\",$val)"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0089
+    name: "PhotoStyle"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008a
+    name: "ShadingCompensation"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008b
+    name: "WBShiftIntelligentAuto"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "value is -9 for blue to +9 for amber. Valid for Intelligent-Auto modes"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008c
+    name: "AccelerometerZ"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is acceleration upwards"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008d
+    name: "AccelerometerX"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is acceleration to the left"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008e
+    name: "AccelerometerY"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is acceleration backwards"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x008f
+    name: "CameraOrientation"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0090
+    name: "RollAngle"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "converted to degrees of clockwise camera rotation"
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0091
+    name: "PitchAngle"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "converted to degrees of upward camera tilt"
+    print_conv: "none"
+    value_conv: "scalar:-$val / 10"
+    subdirectory: false
+  - id: 0x0092
+    name: "WBShiftCreativeControl"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: "WB shift or style strength. Valid for Creative-Control modes"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0093
+    name: "SweepPanoramaDirection"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0094
+    name: "SweepPanoramaFieldOfView"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0096
+    name: "TimerRecording"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009d
+    name: "InternalNDFilter"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009e
+    name: "HDR"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x009f
+    name: "ShutterType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a1
+    name: "FilterEffect"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a3
+    name: "ClearRetouchValue"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00a7
+    name: "OutputLUT"
+    writable: ""
+    group: ""
+    count: ""
+    description: " 2-column by 432-row binary lookup table of unsigned short values for converting to 16-bit output (1st column) from 14 bits (2nd column) with camera contrast "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ab
+    name: "TouchAE"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ac
+    name: "MonochromeFilterEffect"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ad
+    name: "HighlightShadow"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00af
+    name: "TimeStamp"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b3
+    name: "VideoBurstResolution"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b4
+    name: "MultiExposure"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00b9
+    name: "RedEyeRemoval"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00bb
+    name: "VideoBurstMode"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00bc
+    name: "DiffractionCorrection"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00bd
+    name: "FocusBracket"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "positive is further, negative is closer"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00be
+    name: "LongExposureNRUsed"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00bf
+    name: "PostFocusMerging"
+    writable: ""
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00c1
+    name: "VideoPreburst"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00c4
+    name: "LensTypeMake"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00c5
+    name: "LensTypeModel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$_=sprintf(\"%.4x\",$val); s/(..)(..)/$2 $1/; $_"
+    subdirectory: false
+  - id: 0x00ca
+    name: "SensorType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00d1
+    name: "ISO"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00d2
+    name: "MonochromeGrainEffect"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00d4
+    name: "HybridLogGamma"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00d6
+    name: "NoiseReductionStrength"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00de
+    name: "AFAreaSize"
+    writable: "rational64u"
+    group: ""
+    count: "2"
+    description: "relative to size of image. \"n/a\" for manual focus"
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00e4
+    name: "LensTypeModel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$_=sprintf(\"%.4x\",$val); s/(..)(..)/$2 $1/; $_"
+    subdirectory: false
+  - id: 0x00e8
+    name: "MinimumISO"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00e9
+    name: "AFSubjectDetection"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ee
+    name: "DynamicRangeBoost"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00f1
+    name: "LUT1Name"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00f3
+    name: "LUT1Opacity"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00f4
+    name: "LUT2Name"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00f5
+    name: "LUT2Opacity"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0e00
+    name: "PrintIM"
+    writable: "0"
+    group: ""
+    count: ""
+    description: "Print Image Matching"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "PrintIM::Main"
+  - id: 0x2003
+    name: "TimeInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Panasonic::TimeInfo"
+  - id: 0x8000
+    name: "MakerNoteVersion"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8001
+    name: "SceneMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8002
+    name: "HighlightWarning"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8003
+    name: "DarkFocusEnvironment"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8004
+    name: "WBRedLevel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8005
+    name: "WBGreenLevel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8006
+    name: "WBBlueLevel"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8008
+    name: "TextStamp"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8009
+    name: "TextStamp"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8010
+    name: "BabyAge"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "or pet age"
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8012
+    name: "Transform"
+    writable: "undef"
+    group: ""
+    count: "2"
+    description: "decoded as two 16-bit signed integers"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false

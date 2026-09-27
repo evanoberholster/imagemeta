@@ -1,0 +1,395 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Apple %Main (Apple.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/Apple.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Apple"
+  table: "%Main"
+  file: "Apple.pm"
+  docs: "https://exiftool.org/TagNames/Apple.html"
+groups:
+  0: "MakerNotes"
+  2: "Image"
+source_tag_count: 42
+tag_count: 42
+tags:
+  - id: 0x0001
+    name: "MakerNoteVersion"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0002
+    name: "AEMatrix"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0003
+    name: "RunTime"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Apple::RunTime"
+  - id: 0x0004
+    name: "AEStable"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0005
+    name: "AETarget"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0006
+    name: "AEAverage"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0007
+    name: "AFStable"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0008
+    name: "AccelerationVector"
+    writable: "rational64s"
+    group: ""
+    count: "3"
+    description: " XYZ coordinates of the acceleration vector in units of g. As viewed from the front of the phone, positive X is toward the left side, positive Y is toward the bottom, and positive Z points into the face of the phone "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000a
+    name: "HDRImageType"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000b
+    name: "BurstUUID"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "unique ID for all images in a burst"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000c
+    name: "FocusDistanceRange"
+    writable: "rational64s"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "scalar:my @a = split ' ', $val;\n            sprintf('%.2f - %.2f m', $a[0] <= $a[1] ? @a : reverse @a);"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000f
+    name: "OISMode"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0011
+    name: "ContentIdentifier"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "called MediaGroupUUID when it appears as an XAttr"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0014
+    name: "ImageCaptureType"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0015
+    name: "ImageUniqueID"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0017
+    name: "LivePhotoVideoIndex"
+    writable: ""
+    group: ""
+    count: ""
+    description: "divide by RunTimeScale to get time in seconds"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0019
+    name: "ImageProcessingFlags"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001a
+    name: "QualityHint"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001d
+    name: "LuminanceNoiseAmplitude"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001f
+    name: "PhotosAppFeatureFlags"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: "set if person or pet detected in image"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0020
+    name: "ImageCaptureRequestID"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0021
+    name: "HDRHeadroom"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0023
+    name: "AFPerformance"
+    writable: "int32s"
+    group: ""
+    count: "2"
+    description: " first number maybe related to focus distance, last number maybe related to focus accuracy "
+    print_conv: "scalar:my @a=split \" \",$val; sprintf(\"%d %d %d\",$a[0],$a[1]>>28,$a[1]&0xfffffff)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0025
+    name: "SceneFlags"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0026
+    name: "SignalToNoiseRatioType"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0027
+    name: "SignalToNoiseRatio"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002b
+    name: "PhotoIdentifier"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002d
+    name: "ColorTemperature"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002e
+    name: "CameraType"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x002f
+    name: "FocusPosition"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0030
+    name: "HDRGain"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0038
+    name: "AFMeasuredDepth"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: "from the time-of-flight-assisted auto-focus estimator"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003d
+    name: "AFConfidence"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x003e
+    name: "ColorCorrectionMatrix"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x003f
+    name: "GreenGhostMitigationStatus"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0040
+    name: "SemanticStyle"
+    writable: ""
+    group: ""
+    count: ""
+    description: "_1=Tone, _2=Warm, _3=1.Std,2.Vibrant,3.Rich Contrast,4.Warm,5.Cool"
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0041
+    name: "SemanticStyleRenderingVer"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0042
+    name: "SemanticStylePreset"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x004e
+    name: "Apple_0x004e"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x004f
+    name: "Apple_0x004f"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0054
+    name: "Apple_0x0054"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x005a
+    name: "Apple_0x005a"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false

@@ -1,0 +1,305 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::GPS %Main (GPS.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/GPS.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::GPS"
+  table: "%Main"
+  file: "GPS.pm"
+  docs: "https://exiftool.org/TagNames/GPS.html"
+groups:
+  0: "EXIF"
+  1: "GPS"
+  2: "Location"
+source_tag_count: 32
+tag_count: 32
+tags:
+  - id: 0x0000
+    name: "GPSVersionID"
+    writable: "int8u"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0001
+    name: "GPSLatitudeRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: " tags 0x0001-0x0006 used for camera location according to MWG 2.0. ExifTool will also accept a number when writing GPSLatitudeRef, positive for north latitudes or negative for south, or a string containing N, North, S..."
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0002
+    name: "GPSLatitude"
+    writable: "rational64u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0003
+    name: "GPSLongitudeRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: " ExifTool will also accept a number when writing this tag, positive for east longitudes or negative for west, or a string containing E, East, W or West "
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0004
+    name: "GPSLongitude"
+    writable: "rational64u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0005
+    name: "GPSAltitudeRef"
+    writable: "int8u"
+    group: ""
+    count: ""
+    description: " ExifTool will also accept number when writing this tag, with negative numbers indicating below sea level "
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0006
+    name: "GPSAltitude"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0007
+    name: "GPSTimeStamp"
+    writable: "rational64u"
+    group: ""
+    count: "3"
+    description: " UTC time of GPS fix. When writing, date is stripped off if present, and time is adjusted to UTC if it includes a timezone "
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0008
+    name: "GPSSatellites"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0009
+    name: "GPSStatus"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000a
+    name: "GPSMeasureMode"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000b
+    name: "GPSDOP"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "GPS Dilution Of Precision"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000c
+    name: "GPSSpeedRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000d
+    name: "GPSSpeed"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000e
+    name: "GPSTrackRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000f
+    name: "GPSTrack"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0010
+    name: "GPSImgDirectionRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0011
+    name: "GPSImgDirection"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0012
+    name: "GPSMapDatum"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0013
+    name: "GPSDestLatitudeRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: "tags 0x0013-0x001a used for subject location according to MWG 2.0"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0014
+    name: "GPSDestLatitude"
+    writable: "rational64u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0015
+    name: "GPSDestLongitudeRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0016
+    name: "GPSDestLongitude"
+    writable: "rational64u"
+    group: ""
+    count: "3"
+    description: ""
+    print_conv: "code"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x0017
+    name: "GPSDestBearingRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0018
+    name: "GPSDestBearing"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0019
+    name: "GPSDestDistanceRef"
+    writable: "string"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001a
+    name: "GPSDestDistance"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001b
+    name: "GPSProcessingMethod"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: "values of \"GPS\", \"CELLID\", \"WLAN\" or \"MANUAL\" by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001c
+    name: "GPSAreaInformation"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001d
+    name: "GPSDateStamp"
+    writable: "string"
+    group: ""
+    count: "11"
+    description: " when writing, time is stripped off if present, after adjusting date/time to UTC if time includes a timezone. Format is YYYY:mm:dd "
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x001e
+    name: "GPSDifferential"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x001f
+    name: "GPSHPositioningError"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "GPS Horizontal Positioning Error"
+    print_conv: "scalar:\"$val m\""
+    value_conv: "none"
+    subdirectory: false

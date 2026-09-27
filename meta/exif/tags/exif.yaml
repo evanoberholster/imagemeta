@@ -1,0 +1,3767 @@
+# Code generated from ExifTool. DO NOT EDIT.
+# Source: Image::ExifTool::Exif %Main (Exif.pm), ExifTool 13.55
+# Docs: https://exiftool.org/TagNames/EXIF.html
+# Generator: meta/exif/tags/dump_exiftool_tables.pl (see README.md)
+exiftool_version: "13.55"
+source:
+  module: "Image::ExifTool::Exif"
+  table: "%Main"
+  file: "Exif.pm"
+  docs: "https://exiftool.org/TagNames/EXIF.html"
+groups:
+  0: "EXIF"
+  1: "IFD0"
+  2: "Image"
+source_tag_count: 590
+tag_count: 414
+tags:
+  - id: 0x0001
+    name: "InteropIndex"
+    writable: "string"
+    group: "InteropIFD"
+    count: ""
+    description: "Interoperability Index"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0002
+    name: "InteropVersion"
+    writable: "undef"
+    group: "InteropIFD"
+    count: ""
+    description: "Interoperability Version"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x000b
+    name: "ProcessingSoftware"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: "used by ACD Systems Digital Imaging"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00fe
+    name: "SubfileType"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: "called NewSubfileType by the TIFF specification"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x00ff
+    name: "OldSubfileType"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: "called SubfileType by the TIFF specification"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0100
+    name: "ImageWidth"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0101
+    name: "ImageHeight"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: "called ImageLength by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0102
+    name: "BitsPerSample"
+    writable: "int16u"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0103
+    name: "Compression"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0106
+    name: "PhotometricInterpretation"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0107
+    name: "Thresholding"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0108
+    name: "CellWidth"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0109
+    name: "CellLength"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x010a
+    name: "FillOrder"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x010d
+    name: "DocumentName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x010e
+    name: "ImageDescription"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x010f
+    name: "Make"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0110
+    name: "Model"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: "Camera Model Name"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0112
+    name: "Orientation"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0115
+    name: "SamplesPerPixel"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0116
+    name: "RowsPerStrip"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0118
+    name: "MinSampleValue"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0119
+    name: "MaxSampleValue"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011a
+    name: "XResolution"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011b
+    name: "YResolution"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011c
+    name: "PlanarConfiguration"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011d
+    name: "PageName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011e
+    name: "XPosition"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x011f
+    name: "YPosition"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0120
+    name: "FreeOffsets"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 32 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x0121
+    name: "FreeByteCounts"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 32 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x0122
+    name: "GrayResponseUnit"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0123
+    name: "GrayResponseCurve"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0124
+    name: "T4Options"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0125
+    name: "T6Options"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0128
+    name: "ResolutionUnit"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: "the value 1 is not standard EXIF"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0129
+    name: "PageNumber"
+    writable: "int16u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x012d
+    name: "TransferFunction"
+    writable: "int16u"
+    group: "IFD0"
+    count: "768"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0131
+    name: "Software"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0132
+    name: "ModifyDate"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: "called DateTime by the EXIF spec."
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x013b
+    name: "Artist"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: "becomes a list-type tag when the MWG module is loaded"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x013c
+    name: "HostComputer"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x013d
+    name: "Predictor"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x013e
+    name: "WhitePoint"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x013f
+    name: "PrimaryChromaticities"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "6"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0140
+    name: "ColorMap"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0141
+    name: "HalftoneHints"
+    writable: "int16u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0142
+    name: "TileWidth"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0143
+    name: "TileLength"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0144
+    name: "TileOffsets"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 32 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x0145
+    name: "TileByteCounts"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 32 ? \\$val : $val"
+    subdirectory: false
+  - id: 0x0147
+    name: "CleanFaxData"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x014c
+    name: "InkSet"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0151
+    name: "TargetPrinter"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0152
+    name: "ExtraSamples"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0153
+    name: "SampleFormat"
+    writable: ""
+    group: "SubIFD"
+    count: ""
+    description: "SamplesPerPixel values"
+    print_conv: "array"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x015a
+    name: "Indexed"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x015b
+    name: "JPEGTables"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x015f
+    name: "OPIProxy"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0190
+    name: "GlobalParametersIFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+  - id: 0x0191
+    name: "ProfileType"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0192
+    name: "FaxProfile"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0193
+    name: "CodingMethods"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x01b5
+    name: "JPEGTables"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0200
+    name: "JPEGProc"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0207
+    name: "JPEGQTables"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0208
+    name: "JPEGDCTables"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0209
+    name: "JPEGACTables"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0211
+    name: "YCbCrCoefficients"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "3"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0212
+    name: "YCbCrSubSampling"
+    writable: "int16u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0213
+    name: "YCbCrPositioning"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x0214
+    name: "ReferenceBlackWhite"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "6"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x02bc
+    name: "ApplicationNotes"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "XMP::Main"
+  - id: 0x0303
+    name: "RenderingIntent"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1000
+    name: "RelatedImageFileFormat"
+    writable: "string"
+    group: "InteropIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1001
+    name: "RelatedImageWidth"
+    writable: "int16u"
+    group: "InteropIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x1002
+    name: "RelatedImageHeight"
+    writable: "int16u"
+    group: "InteropIFD"
+    count: ""
+    description: "called RelatedImageLength by the DCF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4746
+    name: "Rating"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x4747
+    name: "XP_DIP_XML"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0x4748
+    name: "StitchInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Microsoft::Stitch"
+  - id: 0x4749
+    name: "RatingPercent"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x5001
+    name: "ResolutionXUnit"
+    writable: ""
+    group: ""
+    count: ""
+    description: "ID's from 0x5001 to 0x5113 are obscure tags defined by Microsoft"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x5011
+    name: "GridSize"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x501a
+    name: "ColorTransferFunction"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x501b
+    name: "ThumbnailData"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x5033
+    name: "ThumbnailDateTime"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7000
+    name: "SonyRawFileType"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7010
+    name: "SonyToneCurve"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7031
+    name: "VignettingCorrection"
+    writable: "int16s"
+    group: "SubIFD"
+    count: ""
+    description: "found in Sony ARW images"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7032
+    name: "VignettingCorrParams"
+    writable: "int16s"
+    group: "SubIFD"
+    count: "17"
+    description: "found in Sony ARW images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7034
+    name: "ChromaticAberrationCorrection"
+    writable: "int16s"
+    group: "SubIFD"
+    count: ""
+    description: "found in Sony ARW images"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7035
+    name: "ChromaticAberrationCorrParams"
+    writable: "int16s"
+    group: "SubIFD"
+    count: "33"
+    description: "found in Sony ARW images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7036
+    name: "DistortionCorrection"
+    writable: "int16s"
+    group: "SubIFD"
+    count: ""
+    description: "found in Sony ARW images"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7037
+    name: "DistortionCorrParams"
+    writable: "int16s"
+    group: "SubIFD"
+    count: "17"
+    description: "found in Sony ARW images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7038
+    name: "SonyRawImageSize"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "2"
+    description: "size of actual image in Sony ARW files"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7310
+    name: "BlackLevel"
+    writable: "int16u"
+    group: "SubIFD"
+    count: "4"
+    description: "found in Sony ARW images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x7313
+    name: "WB_RGGBLevels"
+    writable: "int16s"
+    group: "SubIFD"
+    count: "4"
+    description: "found in Sony ARW images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x74c7
+    name: "SonyCropTopLeft"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x74c8
+    name: "SonyCropSize"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x80a3
+    name: "WangTag1"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x80a4
+    name: "WangAnnotation"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x80a5
+    name: "WangTag3"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x80a6
+    name: "WangTag4"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:length($val) <= 64 ? $val : \\$val"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x828d
+    name: "CFARepeatPatternDim"
+    writable: "int16u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x828e
+    name: "CFAPattern2"
+    writable: "int8u"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x828f
+    name: "BatteryLevel"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8290
+    name: "KodakIFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: "used in various types of Kodak images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Kodak::IFD"
+  - id: 0x8298
+    name: "Copyright"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: " may contain copyright notices for photographer and editor, separated by a newline. As per the EXIF specification, the newline is replaced by a null byte when writing to file, but this may be avoided by disabling the ..."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x829a
+    name: "ExposureTime"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x829d
+    name: "FNumber"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x82a5
+    name: "MDFileTag"
+    writable: ""
+    group: ""
+    count: ""
+    description: "tags 0x82a5-0x82ac are used in Molecular Dynamics GEL files"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x830e
+    name: "PixelScale"
+    writable: "double"
+    group: "IFD0"
+    count: "3"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x83bb
+    name: "IPTC-NAA"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "IPTC::Main"
+  - id: 0x8480
+    name: "IntergraphMatrix"
+    writable: "double"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8482
+    name: "ModelTiePoint"
+    writable: "double"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x84e3
+    name: "RasterPadding"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x84e7
+    name: "ImageColorIndicator"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x84e8
+    name: "BackgroundColorIndicator"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x84ee
+    name: "HCUsage"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8546
+    name: "SEMInfo"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: "found in some scanning electron microscope images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8568
+    name: "AFCP_IPTC"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "IPTC::Main"
+  - id: 0x85d8
+    name: "ModelTransform"
+    writable: "double"
+    group: "IFD0"
+    count: "16"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8602
+    name: "WB_GRGBLevels"
+    writable: ""
+    group: ""
+    count: ""
+    description: "found in IFD0 of Leaf MOS images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8606
+    name: "LeafData"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Leaf::Main"
+  - id: 0x8649
+    name: "PhotoshopSettings"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Photoshop::Main"
+  - id: 0x8769
+    name: "ExifOffset"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+  - id: 0x8773
+    name: "ICC_Profile"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "ICC_Profile::Main"
+  - id: 0x877f
+    name: "TIFF_FXExtensions"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8780
+    name: "MultiProfiles"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8781
+    name: "SharedData"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x87af
+    name: "GeoTiffDirectory"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: " these \"GeoTiff\" tags may read and written as a block, but they aren't extracted unless specifically requested. Byte order changes are handled automatically when copying between TIFF images with different byte order "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x87b0
+    name: "GeoTiffDoubleParams"
+    writable: "double"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x87b1
+    name: "GeoTiffAsciiParams"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8822
+    name: "ExposureProgram"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "the value of 9 is not standard EXIF, but is used by some Canon models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8824
+    name: "SpectralSensitivity"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8825
+    name: "GPSInfo"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "GPS::Main"
+  - id: 0x8827
+    name: "ISO"
+    writable: "int16u"
+    group: ""
+    count: "-1"
+    description: " called ISOSpeedRatings by EXIF 2.2, then PhotographicSensitivity by EXIF 2.3. This tag has a maximum value of 65535 because the brain-dead EXIF specification limits it to a short integer, and while they can change th..."
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8828
+    name: "Opto-ElectricConvFactor"
+    writable: ""
+    group: ""
+    count: ""
+    description: "called OECF by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x882a
+    name: "TimeZoneOffset"
+    writable: "int16s"
+    group: ""
+    count: "-1"
+    description: " 1 or 2 values: 1. The time zone offset of DateTimeOriginal from GMT in hours, 2. If present, the time zone offset of ModifyDate "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x882b
+    name: "SelfTimerMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8830
+    name: "SensitivityType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "applies to EXIF:ISO tag"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8831
+    name: "StandardOutputSensitivity"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8832
+    name: "RecommendedExposureIndex"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8833
+    name: "ISOSpeed"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8834
+    name: "ISOSpeedLatitudeyyy"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: "ISO Speed Latitude yyy"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x8835
+    name: "ISOSpeedLatitudezzz"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: "ISO Speed Latitude zzz"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x888a
+    name: "LeafSubIFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Leaf::SubIFD"
+  - id: 0x9000
+    name: "ExifVersion"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9003
+    name: "DateTimeOriginal"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "Date/Time Original"
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9004
+    name: "CreateDate"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "called DateTimeDigitized by the EXIF spec."
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9009
+    name: "GooglePlusUploadCode"
+    writable: "undef"
+    group: ""
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9010
+    name: "OffsetTime"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "time zone for ModifyDate"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9011
+    name: "OffsetTimeOriginal"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "time zone for DateTimeOriginal"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9012
+    name: "OffsetTimeDigitized"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "time zone for CreateDate"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9101
+    name: "ComponentsConfiguration"
+    writable: "undef"
+    group: ""
+    count: "4"
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9102
+    name: "CompressedBitsPerPixel"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9201
+    name: "ShutterSpeedValue"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: "displayed in seconds, but stored as an APEX value"
+    print_conv: "code"
+    value_conv: "scalar:IsFloat($val) && abs($val)<100 ? 2**(-$val) : 0"
+    subdirectory: false
+  - id: 0x9202
+    name: "ApertureValue"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "displayed as an F number, but stored as an APEX value"
+    print_conv: "scalar:sprintf(\"%.1f\",$val)"
+    value_conv: "scalar:2 ** ($val / 2)"
+    subdirectory: false
+  - id: 0x9203
+    name: "BrightnessValue"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9204
+    name: "ExposureCompensation"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: "called ExposureBiasValue by the EXIF spec."
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9205
+    name: "MaxApertureValue"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "displayed as an F number, but stored as an APEX value"
+    print_conv: "scalar:sprintf(\"%.1f\",$val)"
+    value_conv: "scalar:2 ** ($val / 2)"
+    subdirectory: false
+  - id: 0x9206
+    name: "SubjectDistance"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9207
+    name: "MeteringMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9208
+    name: "LightSource"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9209
+    name: "Flash"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x920a
+    name: "FocalLength"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "scalar:sprintf(\"%.1f mm\",$val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x920b
+    name: "FlashEnergy"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9210
+    name: "FocalPlaneResolutionUnit"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9211
+    name: "ImageNumber"
+    writable: "int32u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9212
+    name: "SecurityClassification"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9213
+    name: "ImageHistory"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9214
+    name: "SubjectArea"
+    writable: "int16u"
+    group: ""
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9216
+    name: "TIFF-EPStandardID"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9217
+    name: "SensingMethod"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9286
+    name: "UserComment"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9290
+    name: "SubSecTime"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "fractional seconds for ModifyDate"
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x9291
+    name: "SubSecTimeOriginal"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "fractional seconds for DateTimeOriginal"
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x9292
+    name: "SubSecTimeDigitized"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "fractional seconds for CreateDate"
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0x9330
+    name: "MSPropertySetStorage"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9331
+    name: "MSDocumentTextPosition"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x935c
+    name: "ImageSourceData"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Photoshop::DocumentData"
+  - id: 0x9400
+    name: "AmbientTemperature"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: "ambient temperature in degrees C, called Temperature by the EXIF spec."
+    print_conv: "scalar:\"$val C\""
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9401
+    name: "Humidity"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "ambient relative humidity in percent"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9402
+    name: "Pressure"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "air pressure in hPa or mbar"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9403
+    name: "WaterDepth"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: "depth under water in metres, negative for above water"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9404
+    name: "Acceleration"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: "directionless camera acceleration in units of mGal, or 10-5 m/s2"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9405
+    name: "CameraElevationAngle"
+    writable: "rational64s"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9999
+    name: "XiaomiSettings"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "JSON::Main"
+  - id: 0x9a00
+    name: "XiaomiModel"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0x9c9b
+    name: "XPTitle"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: " tags 0x9c9b-0x9c9f are used by Windows Explorer; special characters in these values are converted to UTF-8 by default, or Windows Latin1 with the -L option. XPTitle is ignored by Windows Explorer if ImageDescription ..."
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0x9c9c
+    name: "XPComment"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0x9c9d
+    name: "XPAuthor"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: "ignored by Windows Explorer if Artist exists"
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0x9c9e
+    name: "XPKeywords"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0x9c9f
+    name: "XPSubject"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val,\"UCS2\",\"II\")"
+    subdirectory: false
+  - id: 0xa000
+    name: "FlashpixVersion"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa001
+    name: "ColorSpace"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: " the value of 0x2 is not standard EXIF. Instead, an Adobe RGB image is indicated by \"Uncalibrated\" with an InteropIndex of \"R03\". The values 0xfffd and 0xfffe are also non-standard, and are used by some Sony cameras "
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa002
+    name: "ExifImageWidth"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "called PixelXDimension by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa003
+    name: "ExifImageHeight"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "called PixelYDimension by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa004
+    name: "RelatedSoundFile"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa005
+    name: "InteropOffset"
+    writable: ""
+    group: ""
+    count: ""
+    description: "Interoperability Offset"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+  - id: 0xa010
+    name: "SamsungRawPointersOffset"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa011
+    name: "SamsungRawPointersLength"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa101
+    name: "SamsungRawByteOrder"
+    writable: ""
+    group: ""
+    count: "1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa102
+    name: "SamsungRawUnknown"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa20b
+    name: "FlashEnergy"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa20c
+    name: "SpatialFrequencyResponse"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa20e
+    name: "FocalPlaneXResolution"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa20f
+    name: "FocalPlaneYResolution"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa210
+    name: "FocalPlaneResolutionUnit"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "values 1, 4 and 5 are not standard EXIF"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa214
+    name: "SubjectLocation"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa215
+    name: "ExposureIndex"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa216
+    name: "TIFF-EPStandardID"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa217
+    name: "SensingMethod"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa300
+    name: "FileSource"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa301
+    name: "SceneType"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa302
+    name: "CFAPattern"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa401
+    name: "CustomRendered"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: " only 0 and 1 are standard EXIF, but other values are used by Apple iOS devices "
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa402
+    name: "ExposureMode"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa403
+    name: "WhiteBalance"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa404
+    name: "DigitalZoomRatio"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa405
+    name: "FocalLengthIn35mmFormat"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "called FocalLengthIn35mmFilm by the EXIF spec."
+    print_conv: "scalar:\"$val mm\""
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa406
+    name: "SceneCaptureType"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: "the value of 4 is non-standard, and used by some Samsung models"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa407
+    name: "GainControl"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa408
+    name: "Contrast"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa409
+    name: "Saturation"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa40a
+    name: "Sharpness"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa40b
+    name: "DeviceSettingDescription"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa40c
+    name: "SubjectDistanceRange"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa420
+    name: "ImageUniqueID"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa430
+    name: "OwnerName"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "called CameraOwnerName by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa431
+    name: "SerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: "called BodySerialNumber by the EXIF spec."
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa432
+    name: "LensInfo"
+    writable: "rational64u"
+    group: ""
+    count: "4"
+    description: " 4 rational values giving focal and aperture ranges, called LensSpecification by the EXIF spec. "
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa433
+    name: "LensMake"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa434
+    name: "LensModel"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa435
+    name: "LensSerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa436
+    name: "ImageTitle"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa437
+    name: "Photographer"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa438
+    name: "ImageEditor"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa439
+    name: "CameraFirmware"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa43a
+    name: "RAWDevelopingSoftware"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa43b
+    name: "ImageEditingSoftware"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa43c
+    name: "MetadataEditingSoftware"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa460
+    name: "CompositeImage"
+    writable: "int16u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa461
+    name: "CompositeImageCount"
+    writable: "int16u"
+    group: ""
+    count: "2"
+    description: " 2 values: 1. Number of source images, 2. Number of images used. Called SourceImageNumberOfCompositeImage by the EXIF spec. "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa462
+    name: "CompositeImageExposureTimes"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: " 11 or more values: 1. Total exposure time period, 2. Total exposure of all source images, 3. Total exposure of all used images, 4. Max exposure time of source images, 5. Max exposure time of used images, 6. Min expos..."
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa480
+    name: "GDALMetadata"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa481
+    name: "GDALNoData"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xa500
+    name: "Gamma"
+    writable: "rational64u"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xb4c3
+    name: "HasselbladRawImage"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbc01
+    name: "PixelFormat"
+    writable: ""
+    group: ""
+    count: ""
+    description: " tags 0xbc** are used in Windows HD Photo (HDP and WDP) images. The actual PixelFormat values are 16-byte GUID's but the leading 15 bytes, '6fddc324-4e03-4bfe-b1853-d77768dc9', have been removed below to avoid unneces..."
+    print_conv: "hash"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xbc02
+    name: "Transformation"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbc03
+    name: "Uncompressed"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbc04
+    name: "ImageType"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc0
+    name: "ImageOffset"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc1
+    name: "ImageByteCount"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc2
+    name: "AlphaOffset"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc3
+    name: "AlphaByteCount"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc4
+    name: "ImageDataDiscard"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xbcc5
+    name: "AlphaDataDiscard"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc44f
+    name: "Annotations"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc4a5
+    name: "PrintIM"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: "Print Image Matching"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "PrintIM::Main"
+  - id: 0xc519
+    name: "HasselbladXML"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "PLIST::Main"
+  - id: 0xc51b
+    name: "HasselbladExif"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Exif::Main"
+  - id: 0xc573
+    name: "OriginalFileName"
+    writable: ""
+    group: ""
+    count: ""
+    description: "used by some obscure software"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc580
+    name: "USPTOOriginalContentType"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc5e0
+    name: "CR2CFAPattern"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "hash"
+    subdirectory: false
+  - id: 0xc612
+    name: "DNGVersion"
+    writable: "int8u"
+    group: "IFD0"
+    count: "4"
+    description: " tags 0xc612-0xcd48 are defined by the DNG specification unless otherwise noted. See L<https://helpx.adobe.com/photoshop/digital-negative.html> for the specification "
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc613
+    name: "DNGBackwardVersion"
+    writable: "int8u"
+    group: "IFD0"
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc614
+    name: "UniqueCameraModel"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc615
+    name: "LocalizedCameraModel"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "scalar:$self->Printable($val, 0)"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc616
+    name: "CFAPlaneColor"
+    writable: ""
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "scalar:my @cols = qw(Red Green Blue Cyan Magenta Yellow White);\n            my @vals = map { $cols[$_] || \"Unknown($_)\" } sp..."
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc617
+    name: "CFALayout"
+    writable: ""
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc618
+    name: "LinearizationTable"
+    writable: "int16u"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc619
+    name: "BlackLevelRepeatDim"
+    writable: "int16u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc61a
+    name: "BlackLevel"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc61b
+    name: "BlackLevelDeltaH"
+    writable: "rational64s"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc61c
+    name: "BlackLevelDeltaV"
+    writable: "rational64s"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc61d
+    name: "WhiteLevel"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc61e
+    name: "DefaultScale"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc61f
+    name: "DefaultCropOrigin"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc620
+    name: "DefaultCropSize"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc621
+    name: "ColorMatrix1"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc622
+    name: "ColorMatrix2"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc623
+    name: "CameraCalibration1"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc624
+    name: "CameraCalibration2"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc625
+    name: "ReductionMatrix1"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc626
+    name: "ReductionMatrix2"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc627
+    name: "AnalogBalance"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc628
+    name: "AsShotNeutral"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc629
+    name: "AsShotWhiteXY"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62a
+    name: "BaselineExposure"
+    writable: "rational64s"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62b
+    name: "BaselineNoise"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62c
+    name: "BaselineSharpness"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62d
+    name: "BayerGreenSplit"
+    writable: "int32u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62e
+    name: "LinearResponseLimit"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc62f
+    name: "CameraSerialNumber"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc630
+    name: "DNGLensInfo"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc631
+    name: "ChromaBlurRadius"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc632
+    name: "AntiAliasStrength"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc633
+    name: "ShadowScale"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc635
+    name: "MakerNoteSafety"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc640
+    name: "RawImageSegmentation"
+    writable: ""
+    group: ""
+    count: ""
+    description: " used in segmented Canon CR2 images. 3 numbers: 1. Number of segments minus one; 2. Pixel width of segments except last; 3. Pixel width of last segment "
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc65a
+    name: "CalibrationIlluminant1"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc65b
+    name: "CalibrationIlluminant2"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc65c
+    name: "BestQualityScale"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc65d
+    name: "RawDataUniqueID"
+    writable: "int8u"
+    group: "IFD0"
+    count: "16"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:uc(unpack(\"H*\",$val))"
+    subdirectory: false
+  - id: 0xc660
+    name: "AliasLayerMetadata"
+    writable: ""
+    group: ""
+    count: ""
+    description: "used by Alias Sketchbook Pro"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc68b
+    name: "OriginalRawFileName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc68c
+    name: "OriginalRawFileData"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "DNG::OriginalRaw"
+  - id: 0xc68d
+    name: "ActiveArea"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc68e
+    name: "MaskedAreas"
+    writable: "int32u"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc68f
+    name: "AsShotICCProfile"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "ICC_Profile::Main"
+  - id: 0xc690
+    name: "AsShotPreProfileMatrix"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc691
+    name: "CurrentICCProfile"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "ICC_Profile::Main"
+  - id: 0xc692
+    name: "CurrentPreProfileMatrix"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6bf
+    name: "ColorimetricReference"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6c5
+    name: "SRawType"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: "SRaw Type"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6d2
+    name: "PanasonicTitle"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: "proprietary Panasonic tag used for baby/pet name, etc"
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6d3
+    name: "PanasonicTitle2"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: "proprietary Panasonic tag used for baby/pet name with age"
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6f3
+    name: "CameraCalibrationSig"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6f4
+    name: "ProfileCalibrationSig"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6f5
+    name: "ProfileIFD"
+    writable: ""
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+  - id: 0xc6f6
+    name: "AsShotProfileName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6f7
+    name: "NoiseReductionApplied"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6f8
+    name: "ProfileName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc6f9
+    name: "ProfileHueSatMapDims"
+    writable: "int32u"
+    group: "IFD0"
+    count: "3"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6fa
+    name: "ProfileHueSatMapData1"
+    writable: "float"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc6fb
+    name: "ProfileHueSatMapData2"
+    writable: "float"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc6fc
+    name: "ProfileToneCurve"
+    writable: "float"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc6fd
+    name: "ProfileEmbedPolicy"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc6fe
+    name: "ProfileCopyright"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc714
+    name: "ForwardMatrix1"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc715
+    name: "ForwardMatrix2"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc716
+    name: "PreviewApplicationName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc717
+    name: "PreviewApplicationVersion"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc718
+    name: "PreviewSettingsName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:$self->Decode($val, \"UTF8\")"
+    subdirectory: false
+  - id: 0xc719
+    name: "PreviewSettingsDigest"
+    writable: "int8u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:unpack(\"H*\", $val)"
+    subdirectory: false
+  - id: 0xc71a
+    name: "PreviewColorSpace"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc71b
+    name: "PreviewDateTime"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "scalar:$self->ConvertDateTime($val)"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xc71c
+    name: "RawImageDigest"
+    writable: "int8u"
+    group: "IFD0"
+    count: "16"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:unpack(\"H*\", $val)"
+    subdirectory: false
+  - id: 0xc71d
+    name: "OriginalRawFileDigest"
+    writable: "int8u"
+    group: "IFD0"
+    count: "16"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:unpack(\"H*\", $val)"
+    subdirectory: false
+  - id: 0xc725
+    name: "ProfileLookTableDims"
+    writable: "int32u"
+    group: "IFD0"
+    count: "3"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc726
+    name: "ProfileLookTableData"
+    writable: "float"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xc740
+    name: "OpcodeList1"
+    writable: "undef"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc741
+    name: "OpcodeList2"
+    writable: "undef"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc74e
+    name: "OpcodeList3"
+    writable: "undef"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc761
+    name: "NoiseProfile"
+    writable: "double"
+    group: "SubIFD"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc763
+    name: "TimeCodes"
+    writable: "int8u"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "scalar:my @a = map hex, split /[. ]+/, $val;\n            my @v;\n            while (@a >= 8) {\n                my $str = spri..."
+    value_conv: "scalar:my @a = split ' ', $val;\n            my @v;\n            push @v, join('.', map { sprintf('%.2x',$_) } splice(@a,0,8))..."
+    subdirectory: false
+  - id: 0xc764
+    name: "FrameRate"
+    writable: "rational64s"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "scalar:int($val * 1000 + 0.5) / 1000"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc772
+    name: "TStop"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "scalar:join(\"-\", map { sprintf(\"%.2f\",$_) } split \" \", $val)"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc789
+    name: "ReelName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc791
+    name: "OriginalDefaultFinalSize"
+    writable: "int32u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc792
+    name: "OriginalBestQualitySize"
+    writable: "int32u"
+    group: "IFD0"
+    count: "2"
+    description: "called OriginalBestQualityFinalSize by the DNG spec"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc793
+    name: "OriginalDefaultCropSize"
+    writable: "rational64u"
+    group: "IFD0"
+    count: "2"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a1
+    name: "CameraLabel"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a3
+    name: "ProfileHueSatMapEncoding"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a4
+    name: "ProfileLookTableEncoding"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a5
+    name: "BaselineExposureOffset"
+    writable: "rational64s"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a6
+    name: "DefaultBlackRender"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7a7
+    name: "NewRawImageDigest"
+    writable: "int8u"
+    group: "IFD0"
+    count: "16"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:unpack(\"H*\", $val)"
+    subdirectory: false
+  - id: 0xc7a8
+    name: "RawToPreviewGain"
+    writable: "double"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7aa
+    name: "CacheVersion"
+    writable: "int32u"
+    group: "SubIFD2"
+    count: "4"
+    description: ""
+    print_conv: "code"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7b5
+    name: "DefaultUserCrop"
+    writable: "rational64u"
+    group: "SubIFD"
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7d5
+    name: "NikonNEFInfo"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Nikon::NEFInfo"
+  - id: 0xc7d7
+    name: "ZIFMetadata"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7d8
+    name: "ZIFAnnotations"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7e9
+    name: "DepthFormat"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: "tags 0xc7e9-0xc7ee added by DNG 1.5.0.0"
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7ea
+    name: "DepthNear"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7eb
+    name: "DepthFar"
+    writable: "rational64u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7ec
+    name: "DepthUnits"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7ed
+    name: "DepthMeasureType"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xc7ee
+    name: "EnhanceParams"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd2d
+    name: "ProfileGainTableMap"
+    writable: "undef"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd2e
+    name: "SemanticName"
+    writable: ""
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd30
+    name: "SemanticInstanceID"
+    writable: ""
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd31
+    name: "CalibrationIlluminant3"
+    writable: "int16u"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "hash"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd32
+    name: "CameraCalibration3"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd33
+    name: "ColorMatrix3"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd34
+    name: "ForwardMatrix3"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd35
+    name: "IlluminantData1"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd36
+    name: "IlluminantData2"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd37
+    name: "IlluminantData3"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd38
+    name: "MaskSubArea"
+    writable: ""
+    group: "SubIFD"
+    count: "4"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd39
+    name: "ProfileHueSatMapData3"
+    writable: "float"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "scalar:length($val) > 64 ? \\$val : $val"
+    subdirectory: false
+  - id: 0xcd3a
+    name: "ReductionMatrix3"
+    writable: "rational64s"
+    group: "IFD0"
+    count: "-1"
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd3f
+    name: "RGBTables"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd40
+    name: "ProfileGainTableMap2"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd41
+    name: "JUMBF"
+    writable: ""
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Jpeg2000::Main"
+  - id: 0xcd43
+    name: "ColumnInterleaveFactor"
+    writable: "int32u"
+    group: "SubIFD"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd44
+    name: "ImageSequenceInfo"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "DNG::ImageSeq"
+  - id: 0xcd46
+    name: "ImageStats"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd47
+    name: "ProfileDynamicRange"
+    writable: "undef"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "DNG::ProfileDynamicRange"
+  - id: 0xcd48
+    name: "ProfileGroupName"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd49
+    name: "JXLDistance"
+    writable: "float"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd4a
+    name: "JXLEffort"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: "values range from 1=low to 9=high"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcd4b
+    name: "JXLDecodeSpeed"
+    writable: "int32u"
+    group: "IFD0"
+    count: ""
+    description: "values range from 1=slow to 4=fast"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xcea1
+    name: "SEAL"
+    writable: "string"
+    group: "IFD0"
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "XMP::SEAL"
+  - id: 0xea1c
+    name: "Padding"
+    writable: "undef"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xea1d
+    name: "OffsetSchema"
+    writable: "int32s"
+    group: ""
+    count: ""
+    description: "Microsoft's ill-conceived maker note offset difference"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: false
+  - id: 0xfde8
+    name: "OwnerName"
+    writable: "string"
+    group: ""
+    count: ""
+    description: " tags 0xfde8-0xfdea and 0xfe4c-0xfe58 are generated by Photoshop Camera RAW. Some names are the same as other EXIF tags, but ExifTool will avoid writing these unless they already exist in the file "
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfde9
+    name: "SerialNumber"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfdea
+    name: "Lens"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe00
+    name: "KDC_IFD"
+    writable: ""
+    group: ""
+    count: ""
+    description: "used in some Kodak KDC images"
+    print_conv: "none"
+    value_conv: "none"
+    subdirectory: true
+    subdirectory_table: "Kodak::KDC_IFD"
+  - id: 0xfe4c
+    name: "RawFile"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe4d
+    name: "Converter"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe4e
+    name: "WhiteBalance"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe51
+    name: "Exposure"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe52
+    name: "Shadows"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe53
+    name: "Brightness"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe54
+    name: "Contrast"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe55
+    name: "Saturation"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe56
+    name: "Sharpness"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe57
+    name: "Smoothness"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
+  - id: 0xfe58
+    name: "MoireFilter"
+    writable: "string"
+    group: ""
+    count: ""
+    description: ""
+    print_conv: "none"
+    value_conv: "code"
+    subdirectory: false
