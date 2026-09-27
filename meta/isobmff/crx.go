@@ -31,7 +31,7 @@ var (
 // - PRVW JPEG preview payload
 func (r *Reader) readUUIDBox(b *box) error {
 	if !b.isType(typeUUID) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	uuid, err := b.readUUID()
 	if err != nil {
@@ -105,6 +105,9 @@ func (r *Reader) readCrxMoovBox(b *box) (err error) {
 	if err != nil {
 		return err
 	}
+	// THMB completion is recorded through the shared preview path
+	// (callPreviewReader sets the THMB have-bit); here only clear the goal
+	// when no THMB box appeared at all.
 	if r.hasGoal(metadataKindTHMB) && !sawTHMB {
 		// Some CR3 variants do not include a THMB box.
 		r.setGoal(metadataKindTHMB, false)
@@ -168,12 +171,16 @@ type cctpEntry struct {
 	index     uint32
 }
 
+// cctpEntrySize is the encoded size of one CCTP track descriptor record.
+const cctpEntrySize = 5 * 4
+
 // readCCTPBox reads Canon CCTP entries for diagnostics/logging.
 func readCCTPBox(b *box) (err error) {
 	if !b.isType(typeCCTP) {
 		return ErrWrongBoxType
 	}
 	if !logLevelInfo() {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	var cctp cctpBox
@@ -187,7 +194,7 @@ func readCCTPBox(b *box) (err error) {
 	if err != nil {
 		return err
 	}
-	maxEntries := b.remain / 24
+	maxEntries := b.remain / cctpEntrySize
 	if entryCount > maxEntries {
 		entryCount = maxEntries
 	}
@@ -222,6 +229,7 @@ func readCTBOBox(b *box) (err error) {
 		return ErrWrongBoxType
 	}
 	if !logLevelInfo() {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	var ctbo ctboBox
@@ -282,6 +290,7 @@ func (r *Reader) readTHMBBox(b *box) (err error) {
 		return ErrWrongBoxType
 	}
 	if !r.hasGoal(metadataKindTHMB) {
+		// Skip parsing: the container finalizer discards the unread payload.
 		return nil
 	}
 	if r.previewImageReader == nil {
@@ -311,7 +320,7 @@ func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 	if b.remain < 16 {
 		return thmb, ErrBufLength
 	}
-	buf, err := b.Peek(16)
+	buf, err := b.consume(16)
 	if err != nil {
 		return thmb, err
 	}
@@ -320,9 +329,6 @@ func parseTHMBBox(b *box) (thmb thmbBox, err error) {
 	thmb.height = bmffEndian.Uint16(buf[6:8])
 	thmb.size = bmffEndian.Uint32(buf[8:12])
 
-	if _, err = b.Discard(16); err != nil {
-		return thmb, err
-	}
 	return thmb, nil
 }
 
@@ -345,26 +351,6 @@ func fourCCString(v uint32) string {
 // readCrxTrakBox is a placeholder for optional CR3 /trak parsing.
 // The current metadata pipeline intentionally avoids track/sample-table parsing.
 func readCrxTrakBox(b *box) (err error) {
-	//var inner box
-	//var ok bool
-	////for inner, ok, err = b.readInnerBox(); err == nil && ok; inner, ok, err = b.readInnerBox() {
-	//	switch inner.boxType {
-	//	case typeMdia:
-	//		err = readCrxMdia(&inner)
-	//	case typeHdlr:
-	//
-	//	case typeStsd:
-	//
-	//	case typeStsz:
-	//
-	//	case typeCo64:
-	//
-	//	}
-	//	if logLevelInfo() {
-	//		logInfoBox(inner)
-	//	}
-	//	inner.close()
-	//}
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read cr3 track box")
 	}

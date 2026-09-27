@@ -2,22 +2,20 @@ package isobmff
 
 import (
 	"fmt"
+
+	"github.com/evanoberholster/imagemeta/meta"
 )
 
 // readHdlr reads an "hdlr" box
 func readHdlr(b *box) (ht hdlrType, err error) {
 	if !b.isType(typeHdlr) {
-		return hdlrUnknown, fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return hdlrUnknown, fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if err = b.readFlags(); err != nil {
 		return hdlrUnknown, err
 	}
 
-	if b.remain < 8 {
-		return hdlrUnknown, fmt.Errorf("readHdlr: %w", ErrBufLength)
-	}
-
-	buf, err := b.Peek(8)
+	buf, err := b.consume(8)
 	if err != nil {
 		return hdlrUnknown, err
 	}
@@ -28,10 +26,8 @@ func readHdlr(b *box) (ht hdlrType, err error) {
 	return ht, b.close()
 }
 
-// hdlrType
-
-// hdlrType always 4 bytes;
-// Handler; usually "pict" for HEIF images
+// hdlrType identifies a handler: picture, video or metadata.
+// HEIF images usually carry "pict".
 type hdlrType uint8
 
 // hdlr types
@@ -79,23 +75,21 @@ func hdlrFromBuf(buf []byte) hdlrType {
 	}
 }
 
-// pitmID is a "pitm" box.
-//
-// Primary Item Reference pitm allows setting one image as the primary item.
-// 0 represents not set.
-
+// readPitm parses the primary item reference: the one image designated
+// as the primary item. 0 represents not set.
 func readPitm(b *box) (id itemID, err error) {
 	if err = b.readFlags(); err != nil {
 		return invalidItemID, err
 	}
-	switch b.flags.version() {
-	case 0:
-		id, err = readItemIDBySize(b, 2)
-	case 1:
-		id, err = readItemIDBySize(b, 4)
-	default:
-		return invalidItemID, fmt.Errorf("readPitm: unsupported version %d", b.flags.version())
+	// Version 0 stores a 16-bit item ID, version 1 a 32-bit one.
+	ver := b.flags.version()
+	idSize := uint8(2)
+	if ver == 1 {
+		idSize = 4
+	} else if ver != 0 {
+		return invalidItemID, fmt.Errorf("readPitm: unsupported version %d", ver)
 	}
+	id, err = readItemIDBySize(b, idSize)
 	if err != nil {
 		return invalidItemID, err
 	}
@@ -105,7 +99,7 @@ func readPitm(b *box) (id itemID, err error) {
 	return id, b.close()
 }
 
-// itemID
+// itemID identifies a meta-box item; 0 means unset.
 type itemID uint32
 
 const invalidItemID itemID = 0
@@ -129,6 +123,11 @@ type itemPropertyLink struct {
 }
 
 const maxStoredItemGraphEntries = 4096
+
+// maxLinkRetentionPresize caps the working prealloc for ipma link
+// retention: entry counts are file-controlled, so pathological counts must
+// not cause huge preallocs (incremental growth bounds those instead).
+const maxLinkRetentionPresize = 64
 
 func (r *Reader) addItemReference(refType boxType, from, to itemID) {
 	if len(r.heic.references) >= maxStoredItemGraphEntries {
@@ -172,6 +171,7 @@ func (r *Reader) readIref(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item reference box")
 	}
+	info := logLevelInfo()
 	err = readContainerBoxes(b, func(inner *box) error {
 		if isSupportedItemReferenceType(inner.boxType) {
 			entryErr := r.readIrefEntry(inner, itemIDSize)
@@ -179,7 +179,7 @@ func (r *Reader) readIref(b *box) (err error) {
 				return entryErr
 			}
 		}
-		if logLevelInfo() {
+		if info {
 			logInfoBox(inner).Msg("processed item reference entry")
 		}
 		return nil
@@ -236,11 +236,39 @@ func (r *Reader) readIrefEntry(b *box, itemIDSize uint8) error {
 	return nil
 }
 
+// PrimaryItemDimensions returns the ispe dimensions of the primary item,
+// resolved through the ipma/ipco association graph. It reports false when
+// the primary item is unknown or not linked to an ispe property. Image
+// sequences carry dimensions in moov tracks, which this parser skips, so
+// they also report false.
+// Dimensions are stored order (rotation is reported separately by ExifTool,
+// and likewise left unapplied here).
+func (r *Reader) PrimaryItemDimensions() (meta.Dimensions, bool) {
+	if r.heic.pitm == invalidItemID {
+		return meta.Dimensions{}, false
+	}
+	for _, link := range r.heic.propertyLinks {
+		if link.itemID != r.heic.pitm {
+			continue
+		}
+		idx := int(link.propertyIndex) - 1
+		if idx < 0 || idx >= len(r.heic.properties) {
+			continue
+		}
+		if prop := r.heic.properties[idx]; prop.boxType == typeIspe &&
+			prop.width != 0 && prop.height != 0 {
+			return meta.Dimensions{Width: prop.width, Height: prop.height}, true
+		}
+	}
+	return meta.Dimensions{}, false
+}
+
 // readIprp walks item property boxes and parses ipco/ipma payloads.
 func (r *Reader) readIprp(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item properties box")
 	}
+	info := logLevelInfo()
 	err = readContainerBoxes(b, func(inner *box) error {
 		switch inner.boxType {
 		case typeIpma:
@@ -248,7 +276,7 @@ func (r *Reader) readIprp(b *box) (err error) {
 		case typeIpco:
 			return r.readIpco(inner)
 		default:
-			if logLevelInfo() {
+			if info {
 				logInfoBox(inner).Msg("skipping unsupported item property box")
 			}
 			return nil
@@ -261,6 +289,10 @@ func (r *Reader) readIprp(b *box) (err error) {
 func (r *Reader) readIpco(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read item property container")
+	}
+	// Most files hold a handful of properties; size once to avoid growth.
+	if r.heic.properties == nil {
+		r.heic.properties = make([]itemProperty, 0, 8)
 	}
 	err = readContainerBoxes(b, func(inner *box) error {
 		prop := itemProperty{boxType: inner.boxType}
@@ -301,11 +333,23 @@ func (r *Reader) readIpma(b *box) (err error) {
 		return err
 	}
 	extendedIndex := b.flags.flags()&1 != 0
+	idSize32 := b.flags.version() >= 1
 	if logLevelInfo() {
 		logInfoBox(b).Uint32("entries", count).Msg("read item property associations")
 	}
+	// Size the link retention once: when the primary item is already known
+	// only its links are kept (a few); otherwise every link is retained so
+	// a later pitm still resolves. Counts are file-controlled, so the
+	// fallback prealloc is capped and growth bounds the rest.
+	if r.heic.propertyLinks == nil {
+		n := uint32(4)
+		if r.heic.pitm == invalidItemID && count > n {
+			n = min(count, uint32(maxLinkRetentionPresize))
+		}
+		r.heic.propertyLinks = make([]itemPropertyLink, 0, n)
+	}
 	for i := uint32(0); i < count; i++ {
-		id32, readErr := readUint16Or32(b, b.flags.version() >= 1)
+		id32, readErr := readUint16Or32(b, idSize32)
 		if readErr != nil {
 			return readErr
 		}
@@ -343,6 +387,9 @@ func (r *Reader) readIpma(b *box) (err error) {
 				propertyIndex = raw & 0x007f
 			}
 			if propertyIndex == 0 {
+				continue
+			}
+			if r.heic.pitm != invalidItemID && id != r.heic.pitm {
 				continue
 			}
 			r.addItemPropertyLink(itemPropertyLink{

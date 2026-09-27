@@ -553,6 +553,7 @@ func TestBufDetectsAdditionalISOBMFFBrands(t *testing.T) {
 		{name: "HEVM major", major: "hevm", expected: ImageHEIC},
 		{name: "HEVS major", major: "hevs", expected: ImageHEIC},
 		{name: "MIAF major", major: "miaf", expected: ImageHEIF},
+		{name: "MIF3 major", major: "mif3", expected: ImageHEIF},
 		{name: "HEIF major", major: "heif", expected: ImageHEIF},
 		{name: "AVIS late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "avis"}, expected: ImageAVIF},
 		{name: "HEIC late compat", major: "mif1", compatible: []string{"miaf", "xxxx", "yyyy", "zzzz", "hevc"}, expected: ImageHEIC},

@@ -28,6 +28,13 @@ type heicMeta struct {
 	exif item
 	xml  item
 
+	// itemExtents retains every resolved iloc first-extent so items whose
+	// infe entry appears after iloc can still be attributed at dispatch.
+	// Only populated when iloc precedes iinf; nil otherwise.
+	itemExtents []itemExtent
+	// iinfParsed records that item types are final, so later iloc boxes
+	// need no retention (inline attribution suffices).
+	iinfParsed    bool
 	idatData      offsetLength
 	references    []itemReference
 	properties    []itemProperty
@@ -66,7 +73,10 @@ func (k metadataKind) String() string {
 	}
 }
 
-// goalBit returns the bit index used for requested metadata kinds.
+// goalBit returns the bit index used for requested metadata kinds,
+// haveBit the index for completed ones. Goals occupy bits [0..3] and
+// completion bits [4..7], so haveBit(kind) == goalBit(kind)+4; e.g. an
+// Exif goal is bit 0 and a completed Exif is bit 4.
 func goalBit(kind metadataKind) uint8 {
 	return uint8(kind)
 }
@@ -104,7 +114,7 @@ type Reader struct {
 	previewImageReader meta.PreviewImageReader
 
 	pooledBufio          bool
-	offset               int64
+	offset               int64 // absolute offset of the next unread byte
 	discardSeekThreshold int
 
 	metadataFlags uint8
@@ -116,6 +126,29 @@ type Reader struct {
 // NewReader returns a new Reader.
 func NewReader(r io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *Reader {
 	reader := newReader(r)
+	reader.exifReader = exifReader
+	reader.xmpReader = xmpReader
+	reader.previewImageReader = previewImageReader
+	return &reader
+}
+
+// NewReaderWithSource wires a Reader around a buffered stream while retaining
+// the underlying seekable source for seeks and buffer resets. It mirrors the
+// dual-reader pattern of jpeg.ScanJPEGWithSource: stream carries the buffered
+// read position (typically a caller-provided *bufio.Reader that hides the
+// seeker), while source must be that stream's underlying reader. Seeks only
+// engage when source implements io.Seeker.
+func NewReaderWithSource(stream io.Reader, source io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *Reader {
+	var br *bufio.Reader
+	pooled := false
+	// Reuse caller-provided bufio.Reader when large enough to avoid stacking buffers.
+	if b, ok := stream.(*bufio.Reader); ok && b.Size() >= bufReaderSize {
+		br = b
+	} else {
+		br = readerPool.Acquire(stream)
+		pooled = true
+	}
+	reader := newReaderWithBufio(br, source, pooled)
 	reader.exifReader = exifReader
 	reader.xmpReader = xmpReader
 	reader.previewImageReader = previewImageReader
@@ -148,6 +181,23 @@ func newReaderWithBufio(br *bufio.Reader, source io.Reader, pooled bool) Reader 
 
 func (r *Reader) peek(n int) ([]byte, error) {
 	return r.br.Peek(n)
+}
+
+// consume returns the next n bytes, discards them and advances the absolute
+// offset. A partial buffer may accompany an EOF error, like Peek.
+func (r *Reader) consume(n int) ([]byte, error) {
+	if n < 0 {
+		return nil, ErrBufLength
+	}
+	buf, err := r.br.Peek(n)
+	if err != nil {
+		return buf, err
+	}
+	if _, err := r.br.Discard(n); err != nil {
+		return nil, err
+	}
+	r.offset += int64(n)
+	return buf, nil
 }
 
 // discard advances the stream and updates absolute offset.
@@ -183,6 +233,8 @@ func (r *Reader) discardWithSeek(n int) (discarded int, err error) {
 	}
 
 	// For large skips on seekable sources, avoid read-and-throw-away loops.
+	// n shrank above by the buffered prefix, so the threshold applies to
+	// the remaining seekable span, not the original request.
 	if n >= r.discardSeekThreshold {
 		if _, err = r.seeker.Seek(int64(n), io.SeekCurrent); err == nil {
 			r.br.Reset(r.source)
@@ -281,6 +333,28 @@ func (r *Reader) Close() {
 	r.pooledBufio = false
 }
 
+// boxSizeToEOF resolves a zero-size box header ("extends to end of file",
+// ISO/IEC 14496-12) on seekable sources by measuring EOF relative to the box
+// start. The buffered header is dropped and re-read by the caller, so the
+// reader ends positioned exactly as if the declared size had been parsed.
+func (r *Reader) boxSizeToEOF(boxOffset int64) (int, error) {
+	if r.seeker == nil {
+		return 0, fmt.Errorf("readBox: %w", ErrBoxSizeZero)
+	}
+	end, err := r.seeker.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, fmt.Errorf("readBox size 0: %w", errors.Join(ErrBoxSizeZero, err))
+	}
+	if _, err := r.seeker.Seek(boxOffset, io.SeekStart); err != nil {
+		return 0, fmt.Errorf("readBox size 0: %w", errors.Join(ErrBoxSizeZero, err))
+	}
+	r.br.Reset(r.source)
+	if size := end - boxOffset; size >= 8 && uint64(size) <= uint64(maxIntValue) {
+		return int(size), nil
+	}
+	return 0, fmt.Errorf("readBox invalid size 0: %w", ErrBufLength)
+}
+
 // readBox reads an ISOBMFF box
 func (r *Reader) readBox() (b box, err error) {
 	// Read box size and box type (8-byte header)
@@ -308,11 +382,17 @@ func (r *Reader) readBox() (b box, err error) {
 			}
 			return b, fmt.Errorf("readBox: failed to read extended header: %w", errors.Join(ErrBufLength, err))
 		}
-		size, err = parseExtendedBoxSize(buf, boxType)
+		size, err = parseExtendedBoxSize(buf[8:], boxType)
 		if err != nil {
 			return b, err
 		}
 		headerSize = 16
+	}
+	if size == 0 {
+		size, err = r.boxSizeToEOF(r.offset)
+		if err != nil {
+			return b, err
+		}
 	}
 	if err = validateBoxSize(size, headerSize, boxType); err != nil {
 		return b, err
@@ -385,6 +465,8 @@ func (r *Reader) callXMPReader(b *box, h meta.XPacketHeader) error {
 }
 
 // callPreviewReader dispatches preview bytes to the configured callback.
+// The PRVW have-bit gates every preview kind: only one preview is ever
+// emitted per scan, whether it comes from THMB or PRVW.
 func (r *Reader) callPreviewReader(b *box, h meta.PreviewHeader, kind metadataKind) error {
 	if r.previewImageReader == nil {
 		return nil

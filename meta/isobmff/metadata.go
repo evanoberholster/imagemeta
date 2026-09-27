@@ -67,6 +67,30 @@ func (r *Reader) readMetadataBox(b *box) (keepScanning bool, err error) {
 	}
 }
 
+// resolveItemExtents attributes retained iloc extents to the Exif/XMP items
+// identified later by iinf. Boxes may legally order iloc ahead of iinf, in
+// which case the inline attribution in readIloc found unknown IDs.
+func (r *Reader) resolveItemExtents() {
+	if len(r.heic.itemExtents) == 0 {
+		return
+	}
+	if r.heic.exif.id != 0 && r.heic.exif.ol.length == 0 {
+		r.heic.exif.ol = r.lookupItemExtent(r.heic.exif.id)
+	}
+	if r.heic.xml.id != 0 && r.heic.xml.ol.length == 0 {
+		r.heic.xml.ol = r.lookupItemExtent(r.heic.xml.id)
+	}
+}
+
+func (r *Reader) lookupItemExtent(id itemID) offsetLength {
+	for _, e := range r.heic.itemExtents {
+		if e.id == id {
+			return e.ol
+		}
+	}
+	return offsetLength{}
+}
+
 func (r *Reader) readMdat(b *box) (err error) {
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read media data box")
@@ -85,6 +109,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 
 	var items [2]mdatItem
 	itemCount := 0
+	r.resolveItemExtents()
 	if r.hasGoal(metadataKindExif) && !r.hasHave(metadataKindExif) && r.heic.exif.ol.length > 0 {
 		items[itemCount] = mdatItem{
 			kind:     mdatItemExif,
@@ -177,7 +202,7 @@ func (r *Reader) readMdat(b *box) (err error) {
 // readExif parses a top-level Exif box payload and streams it to the Exif callback.
 func (r *Reader) readExif(b *box) (err error) {
 	if !b.isType(typeExif) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 
 	if err = seekExifTIFFHeader(b); err != nil {
@@ -259,7 +284,10 @@ func newMdatExtentBox(b *box, payloadStart uint64, ol offsetLength, innerType bo
 
 // readExifHeader parses byte-order and IFD0 offset from the TIFF header prefix.
 func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (header meta.ExifHeader, err error) {
-	buf, err := b.Peek(8)
+	// Capture the extent length before consuming: it bounds downstream
+	// reads and includes the TIFF header itself.
+	length := clampIntToUint32(b.remain)
+	buf, err := b.consume(8)
 	if err != nil {
 		err = fmt.Errorf("readExifHeader: %w", err)
 		return
@@ -268,13 +296,12 @@ func readExifHeader(b *box, firstIfd exiftag.IfdType, it imagetype.ImageType) (h
 	if endian == utils.UnknownEndian {
 		return header, ErrBufLength
 	}
-	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, clampIntToUint32(b.remain), it)
+	header = meta.NewExifHeader(endian, endian.Uint32(buf[4:8]), 0, length, it)
 	header.FirstIfd = firstIfd
 	if logLevelDebug() {
 		logDebugBox(b).Object("header", header).Msg("read exif header")
 	}
-	_, err = b.Discard(8)
-	return header, err
+	return header, nil
 }
 
 // seekExifTIFFHeader advances through common Exif wrappers until TIFF bytes.
@@ -446,7 +473,7 @@ func imageTypeFromBrand(brand brand) (imagetype.ImageType, bool) {
 // metadata needed to locate Exif/XMP payloads in mdat.
 func (r *Reader) readMeta(b *box) (err error) {
 	if !b.isType(typeMeta) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if err = b.readFlags(); err != nil {
 		return err
@@ -466,11 +493,8 @@ func (r *Reader) readMeta(b *box) (err error) {
 			}
 			return nil
 		case typePitm:
-			if parseCR3ItemGraph {
-				r.heic.pitm, err = readPitm(inner)
-				return err
-			}
-			return nil
+			r.heic.pitm, err = readPitm(inner)
+			return err
 		case typeIinf:
 			return r.readIinf(inner)
 		case typeIref:
@@ -479,10 +503,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 			}
 			return nil
 		case typeIprp:
-			if parseCR3ItemGraph {
-				return r.readIprp(inner)
-			}
-			return nil
+			return r.readIprp(inner)
 		case typeIdat:
 			r.heic.idatData = offsetLength{
 				offset: boxPayloadOffset(inner),
@@ -504,7 +525,7 @@ func (r *Reader) readMeta(b *box) (err error) {
 // readMoovBox reads an 'moov' box from a BMFF file.
 func (r *Reader) readMoovBox(b *box) (err error) {
 	if !b.isType(typeMoov) {
-		return fmt.Errorf("Box %s: %w", b.boxType, ErrWrongBoxType)
+		return fmt.Errorf("box %s: %w", b.boxType, ErrWrongBoxType)
 	}
 	if logLevelInfo() {
 		logInfoBox(b).Msg("read movie box")
@@ -553,6 +574,9 @@ func handleCallbackError(b *box, err error) error {
 	if errors.Is(err, io.EOF) {
 		return io.EOF
 	}
+	// Non-EOF callback errors are swallowed by design: one corrupt payload
+	// must not abort the whole scan. The have-bit stays unset so scanning
+	// continues for other items.
 	if logLevelError() {
 		if b == nil {
 			logError().Err(err).Msg("metadata callback error")

@@ -26,6 +26,11 @@ type Exif struct {
 	CameraSerial string
 	CameraMakeID makernote.CameraMake
 	ImageType    imagetype.ImageType
+	// Dimensions holds the primary image dimensions. For ISOBMFF files
+	// (HEIC/HEIF/AVIF) these come from the primary item's ispe property;
+	// files without a resolvable primary item leave it zero. Stored order
+	// (rotation, if any, is reported separately, matching ExifTool).
+	Dimensions meta.Dimensions
 }
 
 // IFD0Tag groups tags from the primary image IFD (IFD0).

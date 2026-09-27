@@ -12,6 +12,7 @@ var (
 	ErrRemainLengthInsufficient = errors.New("remain length insufficient")
 	ErrUnsupportedFieldSize     = errors.New("unsupported field size")
 	ErrBoxStringTooLong         = errors.New("box string too long")
+	ErrBoxSizeZero              = errors.New("zero box size on non-seekable source")
 	errLargeBox                 = errors.New("unexpectedly large box")
 	ErrWrongBoxType             = errors.New("wrong box type")
 )
@@ -88,9 +89,12 @@ func parseFileTypeBox(b *box) (ftyp fileTypeBox, err error) {
 	ftyp.MajorBrand = brandFromBuf(buf[:4])
 	copy(ftyp.MinorVersion[:], buf[4:8])
 
-	for i, compatibleBrand := ftypHeaderSize, 0; i+fourCCSize <= len(buf) && compatibleBrand < maxBrandCount; compatibleBrand++ {
-		ftyp.Compatible[compatibleBrand] = brandFromBuf(buf[i : i+fourCCSize])
-		i += fourCCSize
+	for i := 0; i < maxBrandCount; i++ {
+		off := ftypHeaderSize + i*fourCCSize
+		if off+fourCCSize > len(buf) {
+			break
+		}
+		ftyp.Compatible[i] = brandFromBuf(buf[off : off+fourCCSize])
 	}
 	if logLevelInfo() {
 		logInfoBox(b).
@@ -128,14 +132,115 @@ func brandFromBuf(buf []byte) brand {
 		return brandUnknown
 	}
 
-	if b, ok := mapFourCCBrand[bmffEndian.Uint32(buf[:4])]; ok {
-		return b
+	switch bmffEndian.Uint32(buf[:4]) {
+	// Hot brands first, ordered by observed frequency across the corpus;
+	// the remainder stays in table order.
+	case brandMif1FourCC:
+		return brandMif1
+	case brandHeicFourCC:
+		return brandHeic
+	case brandAvifFourCC:
+		return brandAvif
+	case brandHeixFourCC:
+		return brandHeix
+	case brandMsf1FourCC:
+		return brandMsf1
+	case brandMiafFourCC:
+		return brandMiaf
+	case brandHevcFourCC:
+		return brandHevc
+	case brandIso8FourCC:
+		return brandIso8
+	case brandIsomFourCC:
+		return brandIsom
+	case brandMiHBFourCC:
+		return brandMiHB
+	case brandHeifFourCC:
+		return brandHeif
+	case brandCrxFourCC:
+		return brandCrx
+	case brand3G2AFourCC:
+		return brand3G2A
+	case brand3G2BFourCC:
+		return brand3G2B
+	case brand3G2CFourCC:
+		return brand3G2C
+	case brand3GP4FourCC:
+		return brand3GP4
+	case brand3GP5FourCC:
+		return brand3GP5
+	case brand3GP6FourCC:
+		return brand3GP6
+	case brand3GP7FourCC:
+		return brand3GP7
+	case brandAvciFourCC:
+		return brandAvci
+	case brandAvisFourCC:
+		return brandAvis
+	case brandDashFourCC:
+		return brandDash
+	case brandHeimFourCC:
+		return brandHeim
+	case brandHeisFourCC:
+		return brandHeis
+	case brandHevmFourCC:
+		return brandHevm
+	case brandHevsFourCC:
+		return brandHevs
+	case brandHevxFourCC:
+		return brandHevx
+	case brandIso2FourCC:
+		return brandIso2
+	case brandIso3FourCC:
+		return brandIso3
+	case brandIso4FourCC:
+		return brandIso4
+	case brandIso5FourCC:
+		return brandIso5
+	case brandIso6FourCC:
+		return brandIso6
+	case brandJxlFourCC:
+		return brandJxl
+	case brandM4AFourCC:
+		return brandM4A
+	case brandM4VFourCC:
+		return brandM4V
+	case brandM4VHFourCC:
+		return brandM4VH
+	case brandM4VPFourCC:
+		return brandM4VP
+	case brandMA1BFourCC:
+		return brandMA1B
+	case brandMetaFourCC:
+		return brandMeta
+	case brandMiAnFourCC:
+		return brandMiAn
+	case brandMiBrFourCC:
+		return brandMiBr
+	case brandMif2FourCC:
+		return brandMif2
+	case brandMif3FourCC:
+		return brandMif3
+	case brandMiHAFourCC:
+		return brandMiHA
+	case brandMiHEFourCC:
+		return brandMiHE
+	case brandMiPrFourCC:
+		return brandMiPr
+	case brandMp41FourCC:
+		return brandMp41
+	case brandMp42FourCC:
+		return brandMp42
+	case brandMp71FourCC:
+		return brandMp71
+	case brandQtFourCC:
+		return brandQt
+	default:
+		if logLevelDebug() {
+			logDebug().Str("brand", string(buf[:4])).Msg("unknown brand")
+		}
+		return brandUnknown
 	}
-
-	if logLevelDebug() {
-		logDebug().Str("brand", string(buf[:4])).Msg("unknown brand")
-	}
-	return brandUnknown
 }
 
 func minorBrandsToString(ftyp fileTypeBox) []string {
@@ -191,6 +296,7 @@ const (
 	brandMiBr                 // 'MiBr'
 	brandMif1                 // 'mif1': image
 	brandMif2                 // 'mif2'
+	brandMif3                 // 'mif3'
 	brandMiHA                 // 'MiHA'
 	brandMiHB                 // 'MiHB' :
 	brandMiHE                 // 'MiHE' :
@@ -245,6 +351,7 @@ var (
 		brandMiBr:    "MiBr",
 		brandMif1:    "mif1",
 		brandMif2:    "mif2",
+		brandMif3:    "mif3",
 		brandMiHA:    "MiHA",
 		brandMiHB:    "MiHB",
 		brandMiHE:    "MiHE",
@@ -256,14 +363,55 @@ var (
 		brandQt:      "qt  ",
 	}
 
-	mapFourCCBrand = func() map[uint32]brand {
-		m := make(map[uint32]brand, len(brandCodes))
-		for i, code := range brandCodes {
-			if len(code) != fourCCSize || code == "nnnn" {
-				continue
-			}
-			m[fourCCFromString(code)] = brand(i)
-		}
-		return m
-	}()
+	// Brand FourCC values parallel the boxType*FourCC vars in boxtype.go.
+	brand3G2AFourCC = fourCCFromString("3g2a")
+	brand3G2BFourCC = fourCCFromString("3g2b")
+	brand3G2CFourCC = fourCCFromString("3g2c")
+	brand3GP4FourCC = fourCCFromString("3gp4")
+	brand3GP5FourCC = fourCCFromString("3gp5")
+	brand3GP6FourCC = fourCCFromString("3gp6")
+	brand3GP7FourCC = fourCCFromString("3gp7")
+	brandAvciFourCC = fourCCFromString("avci")
+	brandAvifFourCC = fourCCFromString("avif")
+	brandAvisFourCC = fourCCFromString("avis")
+	brandCrxFourCC  = fourCCFromString("crx ")
+	brandDashFourCC = fourCCFromString("dash")
+	brandHeicFourCC = fourCCFromString("heic")
+	brandHeifFourCC = fourCCFromString("heif")
+	brandHeimFourCC = fourCCFromString("heim")
+	brandHeisFourCC = fourCCFromString("heis")
+	brandHeixFourCC = fourCCFromString("heix")
+	brandHevcFourCC = fourCCFromString("hevc")
+	brandHevmFourCC = fourCCFromString("hevm")
+	brandHevsFourCC = fourCCFromString("hevs")
+	brandHevxFourCC = fourCCFromString("hevx")
+	brandIso2FourCC = fourCCFromString("iso2")
+	brandIso3FourCC = fourCCFromString("iso3")
+	brandIso4FourCC = fourCCFromString("iso4")
+	brandIso5FourCC = fourCCFromString("iso5")
+	brandIso6FourCC = fourCCFromString("iso6")
+	brandIso8FourCC = fourCCFromString("iso8")
+	brandIsomFourCC = fourCCFromString("isom")
+	brandJxlFourCC  = fourCCFromString("jxl ")
+	brandM4AFourCC  = fourCCFromString("M4A ")
+	brandM4VFourCC  = fourCCFromString("M4V ")
+	brandM4VHFourCC = fourCCFromString("M4VH")
+	brandM4VPFourCC = fourCCFromString("M4VP")
+	brandMA1BFourCC = fourCCFromString("MA1B")
+	brandMetaFourCC = fourCCFromString("meta")
+	brandMiafFourCC = fourCCFromString("miaf")
+	brandMiAnFourCC = fourCCFromString("MiAn")
+	brandMiBrFourCC = fourCCFromString("MiBr")
+	brandMif1FourCC = fourCCFromString("mif1")
+	brandMif2FourCC = fourCCFromString("mif2")
+	brandMif3FourCC = fourCCFromString("mif3")
+	brandMiHAFourCC = fourCCFromString("MiHA")
+	brandMiHBFourCC = fourCCFromString("MiHB")
+	brandMiHEFourCC = fourCCFromString("MiHE")
+	brandMiPrFourCC = fourCCFromString("MiPr")
+	brandMp41FourCC = fourCCFromString("mp41")
+	brandMp42FourCC = fourCCFromString("mp42")
+	brandMp71FourCC = fourCCFromString("mp71")
+	brandMsf1FourCC = fourCCFromString("msf1")
+	brandQtFourCC   = fourCCFromString("qt  ")
 )

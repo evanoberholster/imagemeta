@@ -9,6 +9,11 @@ import (
 
 const mimeContentTypeMaxLen = 64
 
+// maxRetainedItemExtents caps the exact prealloc for deferred iloc extent
+// retention: ilb.count is file-controlled, and pathological counts must not
+// cause huge preallocs (incremental growth bounds those instead).
+const maxRetainedItemExtents = 4096
+
 // readIinf parses the HEIF item info box and dispatches contained infe entries.
 func (r *Reader) readIinf(b *box) (err error) {
 	if err = b.readFlags(); err != nil {
@@ -19,7 +24,8 @@ func (r *Reader) readIinf(b *box) (err error) {
 	switch b.flags.version() {
 	case 0:
 		use32 = false
-	case 1:
+	case 1, 2, 3:
+		// Versions 1-3 all store entry_count as uint32 (ISO/IEC 14496-12).
 		use32 = true
 	default:
 		return fmt.Errorf("readIinf: unsupported version %d", b.flags.version())
@@ -47,6 +53,7 @@ func (r *Reader) readIinf(b *box) (err error) {
 	if logLevelDebug() && parsed != count {
 		logDebugBox(b).Uint32("declared", count).Uint32("parsed", parsed).Msg("item info entry count mismatch")
 	}
+	r.heic.iinfParsed = true
 	return nil
 }
 
@@ -134,15 +141,22 @@ func (r *Reader) readInfe(b *box) (err error) {
 	return nil
 }
 
+var (
+	xmpMIMETypeRDFXML = []byte("application/rdf+xml")
+	xmpMIMETypeXML    = []byte("application/xml")
+	xmpMIMETypeText   = []byte("text/xml")
+	xmpMIMESubstrXMP  = []byte("xmp")
+	xmpMIMESubstrRDF  = []byte("rdf+xml")
+)
+
 func isXMPMIMETypeBytes(contentType []byte) bool {
 	ct := bytes.TrimSpace(contentType)
-	switch {
-	case asciiEqualFoldBytes(ct, []byte("application/rdf+xml")),
-		asciiEqualFoldBytes(ct, []byte("application/xml")),
-		asciiEqualFoldBytes(ct, []byte("text/xml")):
+	if asciiEqualFoldBytes(ct, xmpMIMETypeRDFXML) ||
+		asciiEqualFoldBytes(ct, xmpMIMETypeXML) ||
+		asciiEqualFoldBytes(ct, xmpMIMETypeText) {
 		return true
 	}
-	return asciiContainsFoldBytes(ct, []byte("xmp")) || asciiContainsFoldBytes(ct, []byte("rdf+xml"))
+	return asciiContainsFoldBytes(ct, xmpMIMESubstrXMP) || asciiContainsFoldBytes(ct, xmpMIMESubstrRDF)
 }
 
 func asciiContainsFoldBytes(s, sub []byte) bool {
@@ -166,6 +180,9 @@ func asciiContainsFoldBytes(s, sub []byte) bool {
 }
 
 func asciiEqualFoldBytes(a, b []byte) bool {
+	if len(a) < len(b) {
+		return false
+	}
 	for i := 0; i < len(b); i++ {
 		if toASCIILowerByte(a[i]) != toASCIILowerByte(b[i]) {
 			return false
@@ -181,10 +198,10 @@ func toASCIILowerByte(c byte) byte {
 	return c
 }
 
-// itemType
+// itemType identifies an infe entry: image coding, metadata or grouping.
 type itemType uint8
 
-// itemTypes
+// Known infe item types.
 const (
 	itemTypeUnknown itemType = iota
 	itemTypeInfe
@@ -268,6 +285,12 @@ type offsetLength struct {
 	length int
 }
 
+// itemExtent pairs an iloc item ID with its resolved first extent.
+type itemExtent struct {
+	id itemID
+	ol offsetLength
+}
+
 // MarshalLogObject is a structured logging interface
 func (ol offsetLength) MarshalLogObject(e *metalog.Event) {
 	e.Int("length", ol.length).Uint64("offset", ol.offset)
@@ -281,23 +304,41 @@ func (r *Reader) readIloc(b *box) (err error) {
 		return err
 	}
 
+	// Retain extents only when item types are still unknown (iloc precedes
+	// iinf); once iinf is parsed the inline attribution below is complete
+	// and retention would just cost an allocation. The prealloc is exact
+	// (count is known) but capped against file-controlled huge counts.
+	if !r.heic.iinfParsed && r.heic.itemExtents == nil {
+		n := ilb.count
+		if n > maxRetainedItemExtents {
+			n = 0
+		}
+		if n > 0 {
+			r.heic.itemExtents = make([]itemExtent, 0, n)
+		}
+	}
+
+	// Level guards are hoisted: they cost an atomic load each, and boxes
+	// can hold hundreds of entries.
+	ver := b.flags.version()
+	dbg := logLevelDebug()
 	for i := uint32(0); i < ilb.count; i++ {
 		var ent ilocEntry
 		var idSize uint8
-		switch b.flags.version() {
+		switch ver {
 		case 0, 1:
 			idSize = 2
 		case 2:
 			idSize = 4
 		default:
-			return fmt.Errorf("readIloc: unsupported version %d", b.flags.version())
+			return fmt.Errorf("readIloc: unsupported version %d", ver)
 		}
 		ent.id, err = readItemIDBySize(b, idSize)
 		if err != nil {
 			return err
 		}
 
-		if b.flags.version() > 0 { // versions 1 and 2
+		if ver > 0 { // versions 1 and 2
 			cmeth, readErr := b.readUint16()
 			if readErr != nil {
 				return readErr
@@ -320,7 +361,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 
 		firstExtentResolved := false
 		for j := 0; j < int(ent.count); j++ {
-			if b.flags.version() > 0 && ilb.indexSize > 0 {
+			if ver > 0 && ilb.indexSize > 0 {
 				if _, err = b.readUintN(ilb.indexSize); err != nil {
 					return err
 				}
@@ -350,7 +391,7 @@ func (r *Reader) readIloc(b *box) (err error) {
 				}
 			}
 		}
-		if logLevelDebug() {
+		if dbg {
 			logDebug().
 				Uint32("itemID", uint32(ent.id)).
 				Uint64("extentOffset", ent.firstExtent.offset).
@@ -370,6 +411,9 @@ func (r *Reader) readIloc(b *box) (err error) {
 			if firstExtentResolved {
 				r.heic.xml.ol = ent.firstExtent
 			}
+		}
+		if firstExtentResolved && !r.heic.iinfParsed {
+			r.heic.itemExtents = append(r.heic.itemExtents, itemExtent{id: ent.id, ol: ent.firstExtent})
 		}
 	}
 	return b.close()
@@ -422,21 +466,19 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 		return ilb, err
 	}
 
-	buf, err := b.Peek(2)
+	buf, err := b.consume(2)
 	if err != nil {
 		return ilb, fmt.Errorf("readIlocHeader: %w", ErrBufLength)
 	}
 	ilb.offsetSize = buf[0] >> 4
 	ilb.lengthSize = buf[0] & 15
 	ilb.baseOffsetSize = buf[1] >> 4
-	if b.flags.version() > 0 { // versions 1 and 2
+	ver := b.flags.version()
+	if ver > 0 { // versions 1 and 2
 		ilb.indexSize = buf[1] & 15
 	}
-	if _, err = b.Discard(2); err != nil {
-		return ilb, err
-	}
 
-	switch b.flags.version() {
+	switch ver {
 	case 0, 1:
 		ilb.count, err = readUint16Or32(b, false)
 		if err != nil {
@@ -448,7 +490,7 @@ func readIlocHeader(b *box) (ilb itemLocationBox, err error) {
 			return ilb, err
 		}
 	default:
-		return ilb, fmt.Errorf("readIlocHeader: unsupported version %d", b.flags.version())
+		return ilb, fmt.Errorf("readIlocHeader: unsupported version %d", ver)
 	}
 
 	if logLevelInfo() {

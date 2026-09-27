@@ -216,3 +216,39 @@ func readMetadataToEOFOrBufLength(r *Reader) error {
 		return err
 	}
 }
+
+func TestBrandFromBufParity(t *testing.T) {
+	t.Parallel()
+	for i, code := range brandCodes {
+		if len(code) != fourCCSize {
+			t.Fatalf("brandCodes[%d] = %q, want 4-byte FourCC", i, code)
+		}
+		got := brandFromBuf([]byte(code))
+		if code == "nnnn" {
+			if got != brandUnknown {
+				t.Fatalf("brandFromBuf(%q) = %v, want brandUnknown", code, got)
+			}
+			continue
+		}
+		if got != brand(i) {
+			t.Fatalf("brandFromBuf(%q) = %v (%q), want brand(%d) (%q)",
+				code, got, got.String(), i, brand(i).String())
+		}
+		if got.String() != code {
+			t.Fatalf("brand(%d).String() = %q, want %q", i, got.String(), code)
+		}
+	}
+	for _, tc := range []struct {
+		name string
+		buf  []byte
+	}{
+		{"empty", nil},
+		{"short", []byte("ab")},
+		{"unknown", []byte("zzzz")},
+		{"uppercase-unknown", []byte("HEIC")},
+	} {
+		if got := brandFromBuf(tc.buf); got != brandUnknown {
+			t.Fatalf("brandFromBuf(%s) = %v, want brandUnknown", tc.name, got)
+		}
+	}
+}
