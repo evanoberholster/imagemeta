@@ -83,14 +83,7 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 	}
 	if len(trimmed) <= 512 {
 		var out [512]byte
-		for i := 0; i < len(trimmed); i++ {
-			b := trimmed[i]
-			if b >= 0x20 && b <= 0x7e {
-				out[i] = b
-				continue
-			}
-			out[i] = '.'
-		}
+		sanitizeASCIIToDots(out[:len(trimmed)], trimmed)
 		sanitized := trimASCIIWhitespace(out[:len(trimmed)])
 		if len(sanitized) == 0 {
 			return ""
@@ -98,14 +91,7 @@ func (r *Reader) parseStringAllowUndefined(t tag.Entry) string {
 		return string(sanitized)
 	}
 	out := make([]byte, len(trimmed))
-	for i := 0; i < len(trimmed); i++ {
-		b := trimmed[i]
-		if b >= 0x20 && b <= 0x7e {
-			out[i] = b
-			continue
-		}
-		out[i] = '.'
-	}
+	sanitizeASCIIToDots(out, trimmed)
 	out = trimASCIIWhitespace(out)
 	if len(out) == 0 {
 		return ""
@@ -226,14 +212,7 @@ func (r *Reader) parseDisplayStringWithMode(t tag.Entry, maxBytes uint32, mode d
 
 	if len(buf) <= 512 {
 		var out [512]byte
-		for i := 0; i < len(buf); i++ {
-			b := buf[i]
-			if b >= 0x20 && b <= 0x7e {
-				out[i] = b
-				continue
-			}
-			out[i] = '.'
-		}
+		sanitizeASCIIToDots(out[:len(buf)], buf)
 		if mode == displayTrimRightSpaceNewlineMode {
 			return string(out[:len(buf)])
 		}
@@ -241,14 +220,7 @@ func (r *Reader) parseDisplayStringWithMode(t tag.Entry, maxBytes uint32, mode d
 	}
 
 	out := make([]byte, len(buf))
-	for i := 0; i < len(buf); i++ {
-		b := buf[i]
-		if b >= 0x20 && b <= 0x7e {
-			out[i] = b
-			continue
-		}
-		out[i] = '.'
-	}
+	sanitizeASCIIToDots(out, buf)
 	if mode == displayTrimRightSpaceNewlineMode {
 		return string(out)
 	}
@@ -278,6 +250,21 @@ func (r *Reader) parseDisplayBytes(t tag.Entry, maxBytes uint32) []byte {
 		return buf
 	default:
 		return nil
+	}
+}
+
+// sanitizeASCIIToDots maps non-printable bytes to '.' for ExifTool text-dump
+// parity. Exactly dst[:len(src)] is written, so dst must have room for
+// len(src). Callers keep their stack ([512]byte) vs heap selection, so
+// allocation behavior is unchanged.
+func sanitizeASCIIToDots(dst, src []byte) {
+	for i := 0; i < len(src); i++ {
+		b := src[i]
+		if b >= 0x20 && b <= 0x7e {
+			dst[i] = b
+			continue
+		}
+		dst[i] = '.'
 	}
 }
 
