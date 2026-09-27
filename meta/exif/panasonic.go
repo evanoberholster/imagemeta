@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/evanoberholster/imagemeta/meta"
@@ -123,14 +122,34 @@ func (r *Reader) parsePanasonicVersionString(t tag.Entry) string {
 	if allPrintable {
 		return strings.TrimSpace(string(trimNULBuffer(raw)))
 	}
-	var b strings.Builder
+	// Non-printable payload: decimal bytes joined by single spaces.
+	// Stack buffer avoids Builder growth plus one strconv alloc per byte;
+	// output is byte-identical ("1 255 0"). Max 16 bytes -> 63 chars.
+	var buf [64]byte
+	n := 0
 	for i, v := range raw {
 		if i > 0 {
-			b.WriteByte(' ')
+			buf[n] = ' '
+			n++
 		}
-		b.WriteString(strconv.Itoa(int(v)))
+		if v >= 100 {
+			buf[n] = '0' + v/100
+			n++
+			buf[n] = '0' + (v/10)%10
+			n++
+			buf[n] = '0' + v%10
+			n++
+		} else if v >= 10 {
+			buf[n] = '0' + v/10
+			n++
+			buf[n] = '0' + v%10
+			n++
+		} else {
+			buf[n] = '0' + v
+			n++
+		}
 	}
-	return b.String()
+	return string(buf[:n])
 }
 
 func (r *Reader) parsePanasonicAFAreaMode(t tag.Entry) [2]uint8 {
