@@ -2,7 +2,6 @@ package exif
 
 import (
 	"io"
-	"slices"
 
 	"github.com/evanoberholster/imagemeta/imagetype"
 	"github.com/evanoberholster/imagemeta/meta"
@@ -72,7 +71,19 @@ func (r *Reader) readSonyMakerNoteDirectory(child tag.Directory, headerLen int) 
 		}
 	}
 	if len(entries) > 0 {
-		slices.SortFunc(entries, compareSonyTagEntry)
+		// Insertion sort with the same total order as the previous
+		// slices.SortFunc call: file-offset order keeps seeks forward.
+		// The queue is small (<= maxTagCount) so this avoids the
+		// generic-sort overhead without changing parse order.
+		for i := 1; i < len(entries); i++ {
+			v := entries[i]
+			j := i
+			for j > 0 && compareSonyTagEntry(v, entries[j-1]) < 0 {
+				entries[j] = entries[j-1]
+				j--
+			}
+			entries[j] = v
+		}
 		for i := range entries {
 			r.parseSonyTag(entries[i])
 		}

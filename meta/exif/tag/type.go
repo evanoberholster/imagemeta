@@ -60,6 +60,25 @@ const (
 	TypeIfd8Size           = 8
 )
 
+var typeSizeLookup = [256]uint8{
+	TypeByte:           TypeByteSize,
+	TypeASCII:          TypeASCIISize,
+	TypeShort:          TypeShortSize,
+	TypeLong:           TypeLongSize,
+	TypeRational:       TypeRationalSize,
+	TypeUndefined:      TypeByteSize,
+	TypeSignedShort:    TypeShortSize,
+	TypeSignedLong:     TypeSignedLongSize,
+	TypeSignedRational: TypeSignedRationalSize,
+	TypeFloat:          TypeFloatSize,
+	TypeDouble:         TypeDoubleSize,
+	TypeASCIINoNul:     TypeASCIINoNulSize,
+	TypeIfd:            TypeIfdSize,
+	TypeLong8:          TypeLong8Size,
+	TypeSignedLong8:    TypeSignedLong8Size,
+	TypeIfd8:           TypeIfd8Size,
+}
+
 var typeIsValidLookup = [256]uint8{
 	TypeByte:           1,
 	TypeASCII:          1,
@@ -85,42 +104,7 @@ func (tt Type) Is(t Type) bool {
 
 // Size returns the size of one atomic unit for this type.
 func (tt Type) Size() uint8 {
-	switch tt {
-	case TypeByte:
-		return TypeByteSize
-	case TypeASCII:
-		return TypeASCIISize
-	case TypeShort:
-		return TypeShortSize
-	case TypeLong:
-		return TypeLongSize
-	case TypeRational:
-		return TypeRationalSize
-	case TypeUndefined:
-		return TypeByteSize
-	case TypeSignedShort:
-		return TypeShortSize
-	case TypeSignedLong:
-		return TypeSignedLongSize
-	case TypeSignedRational:
-		return TypeSignedRationalSize
-	case TypeFloat:
-		return TypeFloatSize
-	case TypeDouble:
-		return TypeDoubleSize
-	case TypeASCIINoNul:
-		return TypeASCIINoNulSize
-	case TypeIfd:
-		return TypeIfdSize
-	case TypeLong8:
-		return TypeLong8Size
-	case TypeSignedLong8:
-		return TypeSignedLong8Size
-	case TypeIfd8:
-		return TypeIfd8Size
-	default:
-		return 0
-	}
+	return typeSizeLookup[uint8(tt)]
 }
 
 func (tt Type) String() string {
