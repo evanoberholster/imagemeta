@@ -158,6 +158,23 @@ func releasePooledISOBMFFReader(r *isobmff.Reader) {
 	isobmffReaderPool.Put(r)
 }
 
+// AcquirePooledISOBMFFReader gets an ISOBMFF reader from the shared pool,
+// wired around a buffered stream plus its underlying seekable source (the
+// NewReaderWithSource pattern). Callers must defer ReleasePooledISOBMFFReader.
+func AcquirePooledISOBMFFReader(stream, source io.Reader, exifReader meta.ExifReader, xmpReader meta.XMPReader, previewImageReader meta.PreviewImageReader) *isobmff.Reader {
+	r, ok := isobmffReaderPool.Get().(*isobmff.Reader)
+	if !ok || r == nil {
+		return isobmff.NewReaderWithSource(stream, source, exifReader, xmpReader, previewImageReader)
+	}
+	r.ResetWithSource(stream, source, exifReader, xmpReader, previewImageReader)
+	return r
+}
+
+// ReleasePooledISOBMFFReader returns an ISOBMFF reader to the shared pool.
+func ReleasePooledISOBMFFReader(r *isobmff.Reader) {
+	releasePooledISOBMFFReader(r)
+}
+
 // Close returns parser state to the pool.
 func (r *Reader) Close() {
 	r.releaseOwnedReader()
